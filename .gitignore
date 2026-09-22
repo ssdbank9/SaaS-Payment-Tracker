@@ -1,1 +1,11 @@
-# Nothing to ignore yet; the app is a single index.html file.
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+# Local server data (the real one lives in DATA_DIR on the VM)
+data/
+server/data/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm

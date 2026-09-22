@@ -157,6 +157,13 @@ details.except[open] summary{background:var(--accent-soft)}
 .except-list label.chk .when{color:var(--muted);font-family:var(--mono);font-size:11px;margin-left:auto}
 .except-list .hint{font-size:11px;color:var(--muted);white-space:normal}
 .skipped-note{font-size:12px;color:var(--ink-2);margin:0 0 6px}
+.ans{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:500;white-space:nowrap}
+.ans[data-ans="yes"]{color:var(--good)}
+.ans[data-ans="no"]{color:var(--crit)}
+.ans[data-ans="none"]{color:var(--muted);font-weight:400}
+.ans .when{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400}
+.ans .note{font-weight:400;color:var(--ink-2);white-space:normal}
+table.fn td.st .ans{display:flex;margin-top:2px}
 .upto-plan{font-size:12px;color:var(--ink-2);margin-top:6px;min-height:1.2em}
 .upto-plan b{color:var(--ink)}
 
@@ -411,6 +418,8 @@ table.costs td.cat{color:var(--ink-2)}
         <span class="small muted" style="align-self:center">Shown next to the name in the header and in the browser tab title. Leave blank for <b>Know who's paid.</b></span>
         <label class="f">Reading model<select id="s-model"><option value="quick">Quick (cheapest, fastest)</option><option value="default">Default (more careful)</option></select></label>
         <span class="small muted" style="align-self:center">The Claude model that reads statement screenshots, pasted statement text and Quick add lines. <b>Quick</b> is the cheapest and fastest and is enough for clean screenshots; switch to <b>Default</b> if it misreads amounts or dates.</span>
+        <label class="f">Public base URL <span class="muted">(for confirmation links)</span><input id="s-base-url" type="url" placeholder="https://wasool.example.com" autocomplete="off" inputmode="url"></label>
+        <span class="small muted" style="align-self:center" id="s-base-url-help">Where your self-hosted copy of this app runs. Each user gets a private one-tap page at <code>{base}/c/{token}</code> where they answer YES or NO; the answer shows in the reminder run. On the self-hosted server this is filled in from the address bar; in the claude.ai copy, paste your server address here to put links into reminders.</span>
         <label class="f">Default exchange rate (PKR per 1 USD)<input id="s-rate" type="number" min="0" step="0.01" class="num" placeholder="280"></label>
         <span class="small muted" style="align-self:center">Payments and costs saved without their own rate use this default, so changing it here re-values all of them in the summary tiles and chart. An entry with its own rate keeps it. Rows in the tables always show each entry's own currency; the tiles amalgamate into PKR and USD.</span>
         <label class="f">Billing cycle anchor<input id="s-anchor" type="date" required></label>
@@ -431,11 +440,17 @@ table.costs td.cat{color:var(--ink-2)}
       <label class="f" style="margin-top:12px">WhatsApp reminder message
         <textarea id="s-template" rows="3"></textarea>
       </label>
-      <p class="small muted" style="margin-top:6px">Placeholders: <code>{name_or_email}</code> <code>{package}</code> <code>{plan}</code> <code>{amount_due}</code> (next cycle, after credit) <code>{period}</code> (e.g. Sep 24 – Oct 23) <code>{due_date}</code> <code>{reply_by}</code> <code>{balance_due}</code> <code>{periods_missing}</code>. For someone who is overdue, <code>{amount_due}</code>, <code>{period}</code> and <code>{due_date}</code> describe the unpaid period instead. Reminders open WhatsApp with this text prefilled; nothing is sent automatically.</p>
+      <p class="small muted" style="margin-top:6px">Placeholders: <code>{name_or_email}</code> <code>{package}</code> <code>{plan}</code> <code>{amount_due}</code> (next cycle, after credit) <code>{period}</code> (e.g. Sep 24 – Oct 23) <code>{due_date}</code> <code>{reply_by}</code> <code>{balance_due}</code> <code>{periods_missing}</code> <code>{confirm_link}</code> (the user's one-tap YES/NO page; needs the Public base URL below, and is added to the end of the message automatically when the template does not mention it). For someone who is overdue, <code>{amount_due}</code>, <code>{period}</code> and <code>{due_date}</code> describe the unpaid period instead. Reminders open WhatsApp with this text prefilled; nothing is sent automatically.</p>
       <label class="f" style="margin-top:12px">Final notice message <span class="muted">(reply-by day, for people who have not confirmed)</span>
         <textarea id="s-final-template" rows="3"></textarea>
       </label>
       <p class="small muted" style="margin-top:6px">Same placeholders. In the final notice <code>{due_date}</code> is the day the new cycle starts (the deactivation day), and <code>{amount_due}</code> and <code>{period}</code> describe the unpaid amount for someone who is overdue.</p>
+      <div style="margin-top:14px" id="dataBlock">
+        <div class="block-head" style="margin-bottom:2px"><h3>Your data</h3></div>
+        <p class="small muted">Everything the tracker stores (users, payments, costs, reminder ticks and settings) as one JSON file. Export from the claude.ai copy, then import on your own server to move in two clicks. Importing replaces the users and costs with the file's contents.</p>
+        <div class="form-actions" style="margin-top:8px"><button class="btn" type="button" id="btn-export-all">Export everything (JSON)</button><label class="btn" for="import-all-file" style="cursor:pointer">Import everything (JSON)…<input id="import-all-file" type="file" accept="application/json,.json" hidden></label><span class="small muted" id="data-msg"></span></div>
+        <textarea id="export-all-text" class="mono" hidden readonly aria-label="Exported data" style="margin-top:8px"></textarea>
+      </div>
       <div class="form-actions"><button class="btn primary" type="submit">Save settings</button><span class="small muted" id="s-msg"></span><span style="flex:1"></span><span id="reset-wrap"><button class="btn sm danger" type="button" id="btn-reset">Reset data</button></span></div>
     </form>
   </section>
@@ -674,9 +689,10 @@ const digits=s=>String(s||'').replace(/\D/g,'');
 const fmtPhone=p=>p?'+'+p:'';
 const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const clone=o=>JSON.parse(JSON.stringify(o));
+const TOKEN_RE=/^[A-Za-z0-9_-]{16,64}$/;
 const newId=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 
-const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY},mode:'connecting',loaded:false,costsLoaded:false};
+const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,publicBaseUrl:''},mode:'connecting',backend:'local',loaded:false,costsLoaded:false};
 const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'run',cancelPre:{}};
 let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,migrateChecked=false;
 
@@ -710,7 +726,8 @@ const DEFAULT_RATE=280;
 function normalizePackages(arr){if(!Array.isArray(arr))return [];const seen={};const out=[];for(const p of arr){if(!p||typeof p!=='object')continue;const id=String(p.id||'').trim()||newId('pkg');const name=String(p.name||'').trim();if(!name||seen[id])continue;seen[id]=1;const pr=Number(p.price);out.push({id,name,cycle:normCycle(p.cycle),price:isFinite(pr)&&pr>0?pr:null,currency:p.currency?normCur(p.currency):'',description:String(p.description||'').trim()});}return out;}
 const packages=()=>state.settings.packages||[];
 const DEFAULT_APP_NAME='Wasool';const DEFAULT_TAGLINE='Know who\'s paid.';const appNameOf=v=>String(v==null?'':v).trim().slice(0,40)||DEFAULT_APP_NAME;const rawAppName=v=>{const t=String(v==null?'':v).trim().slice(0,40);return t===DEFAULT_APP_NAME?'':t;};const taglineOf=v=>String(v==null?'':v).trim().slice(0,60)||DEFAULT_TAGLINE;const rawTagline=v=>{const t=String(v==null?'':v).trim().slice(0,60);return t===DEFAULT_TAGLINE?'':t;};const tagline=()=>taglineOf(state.settings.tagline);const normModel=v=>v==='default'?'default':'quick';const readModel=()=>normModel(state.settings.readModel);const appName=()=>appNameOf(state.settings.appName);
-const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,appName:'',tagline:'',readModel:'quick'});
+const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,appName:'',tagline:'',readModel:'quick',publicBaseUrl:''});
+const pubBaseRaw=v=>{const t=String(v==null?'':v).trim().replace(/\/+$/,'');return /^https?:\/\/[^\s]+$/i.test(t)?t.slice(0,200):'';};
 const basis=()=>normBasis(state.settings.prorationBasis);
 const normDiscount=d=>{if(!d||typeof d!=='object')return null;const t=d.type==='percent'?'percent':d.type==='fixed'?'fixed':null;const v=Number(d.value);return t&&isFinite(v)&&v>0?{type:t,value:t==='percent'?Math.min(100,v):v}:null;};
 const discountLabel=s=>{const d=s&&s.discount;if(!d)return '';return d.type==='percent'?`${d.value}% off`:`${fmtAmt(d.value,s.currency)} off`;};
@@ -742,7 +759,7 @@ function normDate(s){if(!s)return null;s=String(s);if(isDateKey(s))return s;if(i
 const normRate=r=>{const x=Number(r);return x>0?x:null;};
 const normTg=v=>{let t=String(v||'').trim().replace(/^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\//i,'').replace(/^@+/,'').replace(/[\/?#].*$/,'');if(/^\+?[\d\s\-()]+$/.test(t)&&digits(t).length>=7)t=digits(t);return t;};
 function normalizeUser(b,id){
-  const u={id,name:String(b.name||'').trim(),email:String(b.email||'').trim(),phone:digits(b.phone),telegram:normTg(b.telegram),joinDate:normDate(b.joinDate)||todayISO(),notes:String(b.notes||'').trim(),createdAt:b.createdAt||'',subscriptions:[],reminders:{},cancel:null};
+  const u={id,name:String(b.name||'').trim(),email:String(b.email||'').trim(),phone:digits(b.phone),telegram:normTg(b.telegram),joinDate:normDate(b.joinDate)||todayISO(),notes:String(b.notes||'').trim(),createdAt:b.createdAt||'',subscriptions:[],reminders:{},cancel:null,confirmToken:TOKEN_RE.test(String(b.confirmToken||''))?String(b.confirmToken):''};
   if(b.cancel&&typeof b.cancel==='object'&&normDate(b.cancel.lastDay))u.cancel={lastDay:normDate(b.cancel.lastDay),reason:String(b.cancel.reason||'').trim(),note:String(b.cancel.note||'').trim(),at:normDate(b.cancel.at)||''};
   const rm=b.reminders&&typeof b.reminders==='object'?b.reminders:{};for(const k in rm){if(!isDateKey(k))continue;const v=rm[k]||{};const r={reminded:normDate(v.reminded),confirmed:normDate(v.confirmed),final:normDate(v.final),skipped:normDate(v.skipped)};if(r.reminded||r.confirmed||r.final||r.skipped)u.reminders[k]=r;}
   for(const s of b.subscriptions||[]){
@@ -756,7 +773,7 @@ function normalizeUser(b,id){
   }
   return u;
 }
-function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,telegram:n.telegram||'',joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{},cancel:n.cancel||null};}
+function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,telegram:n.telegram||'',joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{},cancel:n.cancel||null,confirmToken:n.confirmToken||''};}
 function normalizeCost(b,id){return {id,date:normDate(b.date)||todayISO(),description:String(b.description||'').trim(),category:String(b.category||'').trim(),currency:normCur(b.currency),cost:Number(b.cost)||0,tax:Number(b.tax)||0,rate:normRate(b.rate),source:String(b.source||''),receipt:String(b.receipt||''),createdAt:b.createdAt||''};}
 function cleanCost(c){const n=normalizeCost(c,c.id);delete n.id;n.createdAt=n.createdAt||new Date().toISOString();return n;}
 
@@ -835,8 +852,8 @@ function statusLabel(a){switch(a.status){case 'cancelled':return a.balance&&a.ba
 const displayName=u=>u.name||u.email||'(unnamed)';
 
 /* ---------- reminders ---------- */
-function reminderText(u,a,today,mode,tplOverride,x){
-  const tpl=tplOverride||(x&&x.tpl)||tplOf(state.settings.template);const w=reminderWindow(today);mode=mode||(a.unpaid?'overdue':'cycle');
+function reminderFields(u,a,today,mode,x){
+  const w=reminderWindow(today);mode=mode||(a.unpaid?'overdue':'cycle');
   const plans=(a.duePlans.length?a.duePlans:(u.subscriptions||[]).map(s=>planLabel(s))).filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'subscription';
   let amount,period,dueDate;
   const parts=[];
@@ -845,8 +862,37 @@ function reminderText(u,a,today,mode,tplOverride,x){
   if(parts.length>1)amount+=' in total ('+parts.join(' + ')+')';
   if(x&&x.dueDate)dueDate=x.dueDate;
   const pkgs=mode==='overdue'?(a.duePkgs.length?a.duePkgs:[...a.pkgIds].map(pkgName)):(cyclePkgs(u,a).length?cyclePkgs(u,a):[...a.pkgIds].map(pkgName));
-  return tpl.replace(/\{name_or_email\}/g,displayName(u)).replace(/\{plan\}/g,plans).replace(/\{package\}/g,pkgs.filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'package not set').replace(/\{balance_due\}/g,ownText(a.balance,a.mainCur)).replace(/\{amount_due\}/g,amount).replace(/\{period\}/g,period).replace(/\{reply_by\}/g,fmtD(w.replyBy)).replace(/\{due_date\}/g,dueDate).replace(/\{periods_missing\}/g,String(a.overdue)).replace(/\{month\}/g,mLabel(monthKey(today)));
+  const pkgStr=pkgs.filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'package not set';
+  return {w,mode,name:displayName(u),plans,pkgs:pkgStr,amount,period,dueDate,replyBy:fmtD(w.replyBy),balance:ownText(a.balance,a.mainCur),missing:String(a.overdue)};
 }
+function reminderText(u,a,today,mode,tplOverride,x){
+  const tpl=tplOverride||(x&&x.tpl)||tplOf(state.settings.template);const f=reminderFields(u,a,today,mode,x);const link=confirmLink(u);
+  let out=tpl.replace(/\{name_or_email\}/g,f.name).replace(/\{plan\}/g,f.plans).replace(/\{package\}/g,f.pkgs).replace(/\{balance_due\}/g,f.balance).replace(/\{amount_due\}/g,f.amount).replace(/\{period\}/g,f.period).replace(/\{reply_by\}/g,f.replyBy).replace(/\{due_date\}/g,f.dueDate).replace(/\{periods_missing\}/g,f.missing).replace(/\{month\}/g,mLabel(monthKey(today))).replace(/\{confirm_link\}/g,link);
+  if(link&&!tplOverride&&!/\{confirm_link\}/.test(tpl))out+=' Reply here: '+link;
+  return out;
+}
+/* ---------- confirmation links (self-hosted server) ---------- */
+const firstName=u=>{const n=String(u.name||'').trim().split(/\s+/)[0];return n||'there';};
+function newToken(){const b=new Uint8Array(16);crypto.getRandomValues(b);let t='';for(const x of b)t+=String.fromCharCode(x);return btoa(t).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function publicBase(){return pubBaseRaw(state.settings.publicBaseUrl)||(state.backend==='api'?location.origin:'');}
+const confirmLinkFor=tok=>{const b=publicBase();return b&&TOKEN_RE.test(tok||'')?b+'/c/'+tok:'';};
+const confirmLink=u=>confirmLinkFor(u&&u.confirmToken);
+const tokenPending={};
+async function ensureToken(id){const u=state.users[id];if(!u)return '';if(TOKEN_RE.test(u.confirmToken||''))return u.confirmToken;if(tokenPending[id])return '';tokenPending[id]=true;const c=clone(u);c.confirmToken=newToken();const ok=await persistUser(id,c);delete tokenPending[id];return ok?c.confirmToken:'';}
+function ensureConfirmTokens(){for(const id in state.users){const u=state.users[id];if(!u.cancel&&!TOKEN_RE.test(u.confirmToken||''))ensureToken(id);}}
+const confirmSynced={};
+function syncConfirmRequests(R,today){
+  if(state.backend!=='api')return;const w=R.w;
+  const put=(tok,body)=>{const k=JSON.stringify(body);if(confirmSynced[tok]===k)return;confirmSynced[tok]=k;apiPut('confirm/'+tok,Object.assign({updatedAt:new Date().toISOString()},body)).catch(()=>{delete confirmSynced[tok];});};
+  for(const r of R.due){const u=r.u;if(!TOKEN_RE.test(u.confirmToken||''))continue;const f=reminderFields(u,r.a,today,r.a.unpaid?'overdue':'cycle');put(u.confirmToken,{userId:r.id,name:firstName(u),package:f.pkgs,amount:f.amount,period:f.period,dueDate:f.dueDate,replyBy:f.replyBy,cycleStart:w.nc,appName:appName(),nothingDue:false});}
+  for(const r of R.covered){const u=r.u;if(!TOKEN_RE.test(u.confirmToken||''))continue;const pk=[...r.a.pkgIds].map(pkgName).filter(Boolean).join(' + ');put(u.confirmToken,{userId:r.id,name:firstName(u),package:pk,amount:'',period:fmtD(w.nc)+' – '+fmtD(w.periodEnd),dueDate:fmtD(w.nc,true),replyBy:fmtD(w.replyBy),cycleStart:w.nc,appName:appName(),nothingDue:true});}
+}
+const confirmAnswers={cycle:'',key:'',byUser:{}};
+async function refreshConfirmations(){if(state.backend!=='api'||!state.loaded)return;const cycle=nextCycleStart(todayISO());try{const j=await apiJSON('/api/confirmations?cycle='+cycle);const by={};for(const a of j.answers||[])if(a.user_id)by[a.user_id]=a;const k=JSON.stringify(by);const changed=confirmAnswers.cycle!==cycle||confirmAnswers.key!==k;confirmAnswers.cycle=cycle;confirmAnswers.key=k;confirmAnswers.byUser=by;if(changed)render();}catch(e){}}
+function fmtWhen(iso){const d=new Date(iso);if(isNaN(d))return '';return MONTHS[d.getMonth()]+' '+d.getDate()+', '+pad(d.getHours())+':'+pad(d.getMinutes());}
+function answerBadge(id){if(state.backend!=='api')return '';const a=confirmAnswers.byUser[id];if(!a)return '<span class="ans" data-ans="none">no reply on the link yet</span>';return `<span class="ans" data-ans="${a.answer==='yes'?'yes':'no'}">${a.answer==='yes'?'✓ Replied YES':'✗ Replied NO'} <span class="when">${esc(fmtWhen(a.at))}</span>${a.note?`<span class="note">· “${esc(a.note)}”</span>`:''}</span>`;}
+const answerLine=id=>state.backend==='api'?`<br>${answerBadge(id)}`:'';
+function linkControl(id){if(!publicBase())return '';return `<button class="btn sm" type="button" data-act="copy-link" data-user="${esc(id)}" title="Copy this user's private YES/NO confirmation link">Copy link</button>`;}
 const waLink=(u,text)=>'https://wa.me/'+u.phone+'?text='+encodeURIComponent(text);
 function remindControl(u,a,today,label,mode,x){
   if(!u.phone)return `<button class="btn sm" type="button" disabled title="Add a WhatsApp number in Edit user">add phone</button>`;
@@ -1005,7 +1051,8 @@ async function persistUser(id,u){const body=cleanUser(Object.assign({},u,{id}));
 async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.users[id];saveLocal();render();}return true;}
 async function persistCost(id,c){const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}else{state.costs[id]=normalizeCost(body,id);saveLocal();render();}return true;}
 async function removeCost(id){if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.costs[id];saveLocal();render();}return true;}
-async function persistSettings(){if(db){try{await db.doc('settings/main').set({rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),packages:state.settings.packages||[],anchor:anchor(),remindDay:remindDay(),replyDay:replyDay()});}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
+function settingsDoc(){return {rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),publicBaseUrl:pubBaseRaw(state.settings.publicBaseUrl),packages:state.settings.packages||[],anchor:anchor(),remindDay:remindDay(),replyDay:replyDay()};}
+async function persistSettings(){if(db){try{await db.doc('settings/main').set(settingsDoc());}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
 function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||'').trim().toLowerCase();const ids=Object.keys(state.users);if(e){const hit=ids.find(id=>(state.users[id].email||'').toLowerCase()===e);if(hit)return hit;}if(n&&!e){const hit=ids.find(id=>(state.users[id].name||'').toLowerCase()===n);if(hit)return hit;}return null;}
 
 /* ---------- ranges ---------- */
@@ -1025,12 +1072,12 @@ function applyBranding(){const name=appName();const tag=tagline();const letter=(
   const big=iconPNG(letter,512);const icons=[{src:svg,sizes:'any',type:'image/svg+xml',purpose:'any'}];if(big)icons.push({src:big,sizes:'512x512',type:'image/png',purpose:'any maskable'});if(png)icons.push({src:png,sizes:'180x180',type:'image/png'});
   const man={name:name,short_name:name.length>12?name.split(/\s+/)[0].slice(0,12):name,description:tag,start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f3f5f3',theme_color:'#0f6e56',icons:icons};
   const lm=$('#link-manifest');if(lm)lm.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));}
-function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();}}
+function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
-  el.textContent=state.mode==='shared'?'Shared with your team, saves live':state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
+  el.textContent=state.mode==='shared'?(state.backend==='api'?'Saved on your server, shared across your devices':'Shared with your team, saves live'):state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
   const r=defaultRate();$('#rate-badge').innerHTML=r?`1 USD = Rs ${r.toLocaleString(undefined,{maximumFractionDigits:2})}`:`<button class="link" type="button" data-act="open-settings">Set exchange rate</button>`;
-  $('#foot').innerHTML=(state.mode==='shared'?'<span>Everyone who opens this page sees and edits the same data.</span>':state.mode==='local'?'<span>Shared storage is not available in this view, so entries are kept in this browser only. Export CSV to move them.</span>':'')
+  $('#foot').innerHTML=(state.mode==='shared'?(state.backend==='api'?'<span>Self-hosted: data lives in SQLite on your server, and every device you sign in on sees the same data. <button class="link sm" type="button" data-act="logout">Sign out</button></span>':'<span>Everyone who opens this page sees and edits the same data.</span>'):state.mode==='local'?'<span>Shared storage is not available in this view, so entries are kept in this browser only. Export CSV to move them.</span>':'')
     +'<span>Everyone bills on the same cycle, anchored in Settings (Jul 24 → Jul 24–Aug 23, Aug 24–Sep 23, …; yearly plans Jul 24–Jul 23). A plan\'s first period is the cycle period containing its start date and is charged by days (actual days in the cycle or a fixed 30-day month, set in Settings) unless proration is off; payments fill periods in order and any extra carries into the next as credit. <b>Current</b> = the current period is covered; <b>Overdue</b> = a period that has started is not fully paid. <b>Balance due</b> = unpaid started periods plus what is left on one-time items. Conversions use each entry\'s own rate, or the default rate from Settings.</span>';
 }
 function reminderRows(today){const w=reminderWindow(today);const all=Object.keys(state.users).filter(id=>!state.users[id].cancel).map(id=>({id,u:state.users[id],a:analyze(state.users[id],today)}));const byName=(x,y)=>displayName(x.u).localeCompare(displayName(y.u));
@@ -1045,7 +1092,7 @@ function reminderRows(today){const w=reminderWindow(today);const all=Object.keys
 function renderReminderBits(){
   const today=todayISO();const ids=Object.keys(state.users);const ban=$('#remindBanner'),cnt=$('#rem-cnt');
   if(!ids.length||!state.loaded){ban.hidden=true;cnt.hidden=true;return;}
-  const R=reminderRows(today);const w=R.w;const n=R.overdue.length+R.cycle.length;
+  const R=reminderRows(today);const w=R.w;const n=R.overdue.length+R.cycle.length;syncConfirmRequests(R,today);
   const finalDay=today>=w.replyBy&&today<w.nc;
   if(finalDay){const F=finalRows(today);ban.hidden=false;ban.dataset.kind='final';cnt.hidden=!F.pending;cnt.textContent=F.pending;$('#remindBannerBtn').textContent='Open final notice';
     $('#remindBannerText').innerHTML=`<b>Final notice day</b>: <b>${F.pending}</b> user${F.pending===1?'':'s'} not confirmed for the cycle starting <b>${esc(fmtD(w.nc,true))}</b>${F.rows.some(r=>r.deact)?` · ${F.rows.filter(r=>r.deact).length} already deactivated`:''}. Send the final notice and compile the deactivation list.`;return;}
@@ -1063,7 +1110,7 @@ function renderRemindRun(){
   const tog=(r,f,label)=>{const st=remState(r.u,key);const v=st[f];return `<label class="chk f"><input type="checkbox" data-act="rem" data-user="${esc(r.id)}" data-f="${f}"${v?' checked':''}>${label}${v?` <span class="when">${esc(fmtD(v))}</span>`:''}</label>`;};
   const row=(r,mode)=>{const a=r.a,u=r.u;const pk=(mode==='overdue'?(a.duePkgs.length?a.duePkgs:[...a.pkgIds].map(pkgName)):cyclePkgs(u,a)).filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'package not set';const st=remState(u,key);
     const due=mode==='overdue'?`<b>${esc(ownText(a.balance.n?a.balance:a.due,a.mainCur))}</b> overdue${a.nextDue?` since ${esc(fmtD(a.nextDue))}`:''}${a.cycleDue.n?` · plus ${esc(ownText(a.cycleDue,a.mainCur))} on ${esc(fmtD(w.nc))}`:''}`:`<b>${esc(ownText(a.cycleDue,a.mainCur))}</b> due ${esc(fmtD(w.nc))}${creditNote(r)}`;
-    return `<div class="rr-row" data-user="${esc(r.id)}" data-done="${st.confirmed?'1':'0'}"><span class="who" title="${esc(displayName(u))}">${esc(displayName(u))}</span><span class="due">${esc(pk)} · ${due}</span>${tog(r,'reminded','Reminded')}${tog(r,'confirmed','Confirmed')}<span class="remind-pair">${remindControl(u,a,today,'Open WhatsApp',mode)}${emailControl(u,a,today,'Email',mode)}${telegramControl(u,'Telegram')}</span></div>`;};
+    return `<div class="rr-row" data-user="${esc(r.id)}" data-done="${st.confirmed?'1':'0'}"><span class="who" title="${esc(displayName(u))}">${esc(displayName(u))}</span><span class="due">${esc(pk)} · ${due}${answerLine(r.id)}</span>${tog(r,'reminded','Reminded')}${tog(r,'confirmed','Confirmed')}<span class="remind-pair">${remindControl(u,a,today,'Open WhatsApp',mode)}${emailControl(u,a,today,'Email',mode)}${telegramControl(u,'Telegram')}${linkControl(r.id)}</span></div>`;};
   const creditNote=r=>{let c=[];for(const s of r.u.subscriptions||[]){const sa=r.a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.nextDue===w.nc&&sa.nextCredit>0)c.push(fmtAmt(sa.nextCredit,s.currency));}return c.length?` <span class="muted">(after ${esc(c.join(' + '))} credit)</span>`:'';};
   const dueTxt=r=>r.a.unpaid?ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur)+' overdue':ownText(r.a.cycleDue,r.a.mainCur);
   const ticked=R.overdue.length+R.cycle.length-R.todo.length;
@@ -1104,10 +1151,10 @@ function renderFinalNotice(){
       <td class="ct">${u.phone?esc(fmtPhone(u.phone)):'<span class="muted">no WhatsApp</span>'}<br>${u.telegram?esc(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram):'<span class="muted">no Telegram</span>'}</td>
       <td>${esc(fnPkgs(r)||'—')}</td>
       <td class="amt">${esc(fnAmount(r,w))}</td>
-      <td class="st">${k(!!r.st.reminded,r.st.reminded?'reminded '+esc(fmtD(r.st.reminded)):'not reminded')}${k(!!r.st.confirmed,r.st.confirmed?'confirmed '+esc(fmtD(r.st.confirmed))+(a.unpaid?' · still overdue':''):'not confirmed')}${r.deact?k(true,'deactivated'):''}</td>
+      <td class="st">${k(!!r.st.reminded,r.st.reminded?'reminded '+esc(fmtD(r.st.reminded)):'not reminded')}${k(!!r.st.confirmed,r.st.confirmed?'confirmed '+esc(fmtD(r.st.confirmed))+(a.unpaid?' · still overdue':''):'not confirmed')}${r.deact?k(true,'deactivated'):''}${r.deact?'':answerBadge(r.id)}</td>
       <td>${tog(r,'final','Final notice sent')}</td>
       <td>${deact(r)}</td>
-      <td>${r.deact?'<span class="muted">—</span>':`<span class="remind-pair">${remindControl(u,a,today,'WhatsApp',mode,x)}${emailControl(u,a,today,'Email',mode,x)}${telegramControl(u,'Telegram')}</span>`}</td>
+      <td>${r.deact?'<span class="muted">—</span>':`<span class="remind-pair">${remindControl(u,a,today,'WhatsApp',mode,x)}${emailControl(u,a,today,'Email',mode,x)}${telegramControl(u,'Telegram')}${linkControl(r.id)}</span>`}</td>
     </tr>`;}).join('');
   $('#rr-body').innerHTML=`<div class="fn-bar"><span class="lead"><b>${F.pending}</b> not confirmed${F.rows.length-F.pending?` · ${F.rows.length-F.pending} more listed (confirmed but overdue, or already deactivated)`:''} · ${F.rows.length} line${F.rows.length===1?'':'s'} in the deactivation list</span><button class="btn sm primary" type="button" data-act="fn-copy"${F.rows.length?'':' disabled'}>Copy deactivation list</button><button class="btn sm" type="button" data-act="fn-csv"${F.rows.length?'':' disabled'}>Download CSV</button><span class="small muted" id="fn-msg"></span></div>
     ${F.rows.length?`<div class="table-wrap"><table class="fn" aria-label="Final notice list"><thead><tr><th>User · account emails</th><th>Contact</th><th>Package</th><th class="r">Amount due</th><th>State</th><th>Final notice</th><th>Deactivate</th><th>Send final notice</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<p class="small muted">Nobody to list: everyone with an amount due for this cycle has confirmed, and nobody is overdue.</p>'}
@@ -1507,7 +1554,7 @@ function updCostConv(){const cur=$('#c-cur').value;const t=(Number($('#c-cost').
 function toast(msg,ms){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms||3400);}
 function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel'])$('#'+p).hidden=p!==id;}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
-function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
+function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);if(state.backend==='api')$('#s-base-url').placeholder=location.origin;ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
 function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
 function openAdd(){showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
 function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';}
@@ -1542,7 +1589,8 @@ function bind(){
   $('#remindBannerBtn').addEventListener('click',()=>{ui.rrTab=$('#remindBanner').dataset.kind==='final'?'final':'run';openRemindRun();});
   $('#rr-tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;ui.rrTab=b.dataset.tab;renderRemindRun();});
   $('#rr-body').addEventListener('toggle',e=>{if(e.target&&e.target.matches&&e.target.matches('details.except'))ui.exceptOpen=e.target.open;},true);
-  $('#rr-body').addEventListener('click',async e=>{const b=e.target.closest('button[data-act]');if(!b)return;if(b.dataset.act==='unskip'){const id=b.dataset.user;if(!state.users[id])return;const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[key]||{});r.skipped=null;if(r.reminded||r.confirmed||r.final)u.reminders[key]=r;else delete u.reminders[key];b.disabled=true;const ok=await persistUser(id,u);if(ok&&db)renderRemindRun();return;}if(b.dataset.act==='fn-copy')copyFinalList();else if(b.dataset.act==='fn-csv'){const F=finalRows(todayISO());exportCSV(fnCSV(F),'deactivation-list-'+F.w.nc,'fn-msg','fn-text');}});
+  $('#rr-body').addEventListener('click',async e=>{const b=e.target.closest('button[data-act]');if(!b)return;if(b.dataset.act==='unskip'){const id=b.dataset.user;if(!state.users[id])return;const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[key]||{});r.skipped=null;if(r.reminded||r.confirmed||r.final)u.reminders[key]=r;else delete u.reminders[key];b.disabled=true;const ok=await persistUser(id,u);if(ok&&db)renderRemindRun();return;}if(b.dataset.act==='copy-link'){const id=b.dataset.user;if(!state.users[id])return;b.disabled=true;let tok=state.users[id].confirmToken;if(!TOKEN_RE.test(tok||''))tok=await ensureToken(id);const link=confirmLinkFor(tok);b.disabled=false;if(!link){toast('Set the Public base URL in Settings first.');return;}try{await navigator.clipboard.writeText(link);toast('Link copied: '+link);}catch(e){window.prompt('Copy this link',link);}return;}
+    if(b.dataset.act==='fn-copy')copyFinalList();else if(b.dataset.act==='fn-csv'){const F=finalRows(todayISO());exportCSV(fnCSV(F),'deactivation-list-'+F.w.nc,'fn-msg','fn-text');}});
   $('#rr-close').addEventListener('click',()=>{$('#remindRun').hidden=true;});
   $('#rr-body').addEventListener('change',async e=>{
     const dc=e.target.closest('input[data-act="deact"]');
@@ -1554,7 +1602,7 @@ function bind(){
     cb.disabled=true;const ok=await persistUser(id,u);if(!ok){cb.disabled=false;cb.checked=!cb.checked;}else if(db)renderRemindRun();
   });
   $('#settings-close').addEventListener('click',()=>{$('#settingsPanel').hidden=true;});
-  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.appName=rawAppName($('#s-app-name').value);state.settings.tagline=rawTagline($('#s-tagline').value);state.settings.readModel=normModel($('#s-model').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
+  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.appName=rawAppName($('#s-app-name').value);state.settings.tagline=rawTagline($('#s-tagline').value);state.settings.readModel=normModel($('#s-model').value);state.settings.publicBaseUrl=pubBaseRaw($('#s-base-url').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
   $('#reset-wrap').addEventListener('click',async e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.id==='btn-reset'){$('#reset-wrap').innerHTML=`<span class="small" style="margin-right:8px">Remove every user, payment and cost? This cannot be undone.</span><button class="btn sm danger" type="button" data-act="reset-yes">Yes, reset</button> <button class="btn sm" type="button" data-act="reset-no">Cancel</button>`;}
@@ -1720,6 +1768,9 @@ function bind(){
 
   bindShot();
   $('#btn-export').addEventListener('click',()=>exportCSV(buildUsersCSV(),'payments','importMsg','exportText'));
+  $('#btn-export-all').addEventListener('click',exportAll);
+  $('#import-all-file').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];e.target.value='';importAll(f);});
+  document.addEventListener('click',e=>{const b=e.target.closest('button[data-act="logout"]');if(!b)return;b.disabled=true;fetch('/logout',{method:'POST',credentials:'same-origin'}).finally(()=>{location.href='/login';});});
   $('#btn-export-costs').addEventListener('click',()=>exportCSV(buildCostsCSV(),'costs','importCostMsg','exportCostText'));
   $('#btn-import').addEventListener('click',importUsersCSV);
   $('#btn-import-costs').addEventListener('click',importCostsCSV);
@@ -1825,7 +1876,7 @@ function updateShotCaption(){
   const cap=$('#shot-cap');const drop=$('#drop');
   if(sample&&canImage){cap.textContent='Claude reads each image and lists the transactions for you to review. Nothing is saved until you choose which rows to add.';drop.hidden=false;}
   else if(sample){cap.textContent='This view cannot send images to Claude. Paste the statement as text below and Claude will structure it.';drop.hidden=true;$('#shot-alt').open=true;}
-  else{cap.textContent='Claude is not available in this view, so paste the statement as text below; dates and amounts are picked out line by line.';drop.hidden=true;$('#shot-alt').open=true;}
+  else{cap.textContent=state.backend==='api'?'Screenshot reading is off on this server. Add ANTHROPIC_API_KEY to /etc/payments-tracker.env and restart the service; Claude (Haiku 4.5) then reads screenshots here. Until then, paste the statement as text below; dates and amounts are picked out line by line.':'Claude is not available in this view, so paste the statement as text below; dates and amounts are picked out line by line.';drop.hidden=true;$('#shot-alt').open=true;}
 }
 function openShot(){$('#shotPanel').hidden=false;$('#costPanel').hidden=true;updateShotCaption();$('#rv-cur').value='PKR';$('#shotPanel').scrollIntoView({behavior:'smooth',block:'start'});}
 function closeShot(){$('#shotPanel').hidden=true;}
@@ -1997,9 +2048,29 @@ function buildUsersCSV(){
   return lines.join('\n');
 }
 function buildCostsCSV(){const ids=Object.keys(state.costs).sort((a,b)=>state.costs[a].date.localeCompare(state.costs[b].date));return [['date','description','category','currency','cost','tax','rate'].join(','),...ids.map(id=>{const c=state.costs[id];return [c.date,c.description,c.category,c.currency,c.cost,c.tax||'',c.rate||''].map(csvCell).join(',');})].join('\n');}
+function blobDownload(filename,text,type){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'text/plain'}));a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);return true;}catch(e){return false;}}
+function buildExportAll(){const docs={};for(const id in state.users)docs['users/'+id]=cleanUser(Object.assign({},state.users[id],{id}));for(const id in state.costs)docs['costs/'+id]=cleanCost(Object.assign({},state.costs[id],{id}));docs['settings/main']=settingsDoc();const at=new Date().toISOString();docs['meta/schema']={version:SCHEMA,at};docs['meta/seed']={done:true,at,exported:true};return {format:'wasool-docs',version:1,exportedAt:at,app:appName(),docs};}
+async function exportAll(){const msg=$('#data-msg'),ta=$('#export-all-text');msg.textContent='';const text=JSON.stringify(buildExportAll(),null,1);const name='wasool-export-'+todayISO()+'.json';
+  if(downloads){try{await downloads.save({filename:name,data:text});msg.textContent='Saved.';return;}catch(e){if(e&&e.code==='declined')return;}}
+  if(state.backend!=='artifact'&&blobDownload(name,text,'application/json')){msg.textContent='Downloaded '+name+'.';return;}
+  ta.hidden=false;ta.value=text;ta.focus();ta.select();msg.textContent='Copy the JSON below and save it as a file.';}
+async function importAll(file){const msg=$('#data-msg');if(!file)return;msg.textContent='Reading…';let j;try{j=JSON.parse(await file.text());}catch(e){msg.textContent='That file is not valid JSON.';return;}
+  const docs=j&&j.docs&&typeof j.docs==='object'?j.docs:null;if(!docs){msg.textContent='Expected a file made with "Export everything".';return;}
+  const paths=Object.keys(docs).filter(p=>/^(users|costs|settings|meta)\/[A-Za-z0-9_\-.:@]+$/.test(p)&&docs[p]&&typeof docs[p]==='object');const nu=paths.filter(p=>p.startsWith('users/')).length,nc=paths.filter(p=>p.startsWith('costs/')).length;
+  if(!paths.length){msg.textContent='No records found in that file.';return;}
+  if(!window.confirm(`Import ${nu} user${nu===1?'':'s'} and ${nc} cost${nc===1?'':'s'} from ${file.name}? Users and costs already here that are not in the file will be removed, and settings replaced. This cannot be undone.`)){msg.textContent='';return;}
+  msg.textContent='Importing…';
+  try{
+    if(state.backend==='api'){const body={docs:{},replace:['users/','costs/']};for(const p of paths)body.docs[p]=docs[p];const r=await apiJSON('/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});msg.textContent=`Imported ${r.imported} records.`;apiTouch();}
+    else if(db){for(const id of Object.keys(state.users))if(!docs['users/'+id])await db.collection('users').doc(id).delete();for(const id of Object.keys(state.costs))if(!docs['costs/'+id])await db.collection('costs').doc(id).delete();let n=0;for(const p of paths){await db.doc(p).set(docs[p]);n++;}msg.textContent=`Imported ${n} records.`;}
+    else{state.users={};state.costs={};for(const p of paths){const c=p.split('/')[0],id=p.slice(c.length+1);if(c==='users')state.users[id]=normalizeUser(docs[p],id);else if(c==='costs')state.costs[id]=normalizeCost(docs[p],id);else if(p==='settings/main')applySettingsDoc(docs[p]);}saveLocal();try{localStorage.setItem('pt-seeded','1');localStorage.setItem('pt-schema',String(SCHEMA));}catch(e){}render();msg.textContent=`Imported ${paths.length} records into this browser.`;}
+    toast('Import finished.');
+  }catch(e){msg.textContent='Import failed: '+((e&&(e.message||e.code))||'unknown');}
+}
 async function exportCSV(csv,stem,msgId,taId){
   const msg=$('#'+msgId);msg.textContent='';const ta=$('#'+taId);
   if(downloads){try{await downloads.save({filename:stem+'-'+todayISO()+'.csv',data:csv});msg.textContent='Saved.';return;}catch(e){if(e&&e.code==='declined')return;if(e&&e.code==='rate_limited'){msg.textContent='A save prompt is already open.';return;}}}
+  if(state.backend!=='artifact'&&blobDownload(stem+'-'+todayISO()+'.csv',csv,'text/csv')){msg.textContent='Downloaded.';return;}
   ta.hidden=false;ta.value=csv;ta.focus();ta.select();msg.textContent='Copy the CSV below.';
 }
 function splitLine(line,d){const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){cur+='"';i++;}else q=!q;}else if(ch===d&&!q){out.push(cur);cur='';}else cur+=ch;}out.push(cur);return out.map(s=>s.trim());}
@@ -2064,26 +2135,57 @@ async function importCostsCSV(){
   if(!failed)$('#importCostText').value='';
 }
 
+/* ---------- api backend: the self-hosted server's /api/docs store, same interface as the artifact db ---------- */
+const API={version:-1,timer:null,listeners:[]};
+async function apiFetch(path,opts){const o=Object.assign({credentials:'same-origin'},opts||{});o.headers=Object.assign({'X-Requested-With':'wasool'},o.headers||{});const r=await fetch(path,o);if(r.status===401){location.href='/login?next='+encodeURIComponent(location.pathname);throw {code:'unauthorized'};}return r;}
+async function apiJSON(path,opts){const r=await apiFetch(path,opts);let j=null;try{j=await r.json();}catch(e){}if(!r.ok)throw Object.assign({code:(j&&j.error)||('http_'+r.status),status:r.status},j||{});return j;}
+const apiBody=(method,body)=>({method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+async function apiPut(path,body){const j=await apiJSON('/api/docs/'+path,apiBody('PUT',body));apiTouch();return j;}
+function apiListen(fetcher,cb,err){const L={fetcher,cb,err,last:null};API.listeners.push(L);return apiRun(L);}
+async function apiRun(L){try{const snap=await L.fetcher();if(snap._k!==L.last){const first=L.last===null;L.last=snap._k;L.cb(snap);if(first&&state.mode==='error')state.mode='shared';}}catch(e){if(L.last===null&&L.err)L.err(e);}}
+async function apiPoll(){try{const j=await apiJSON('/api/version');if(j.version!==API.version){API.version=j.version;await Promise.all(API.listeners.map(apiRun));refreshConfirmations();}}catch(e){}apiSchedule();}
+function apiSchedule(){clearTimeout(API.timer);API.timer=setTimeout(apiPoll,document.hidden?30000:4000);}
+function apiTouch(){clearTimeout(API.timer);API.timer=setTimeout(apiPoll,80);}
+function makeApiDb(){
+  const snapOf=docs=>({docs:docs.map(d=>({id:d.path.split('/').pop(),data:()=>d.data})),empty:!docs.length,metadata:{fromCache:false},_k:JSON.stringify(docs.map(d=>[d.path,d.updated_at]))});
+  const getDoc=async path=>{const r=await apiFetch('/api/docs/'+path);if(r.status===404)return {exists:false,data:()=>null,_k:'null'};const j=await r.json();if(!r.ok)throw {code:j.error||'error'};return {exists:true,data:()=>j.data,_k:j.updated_at};};
+  const docRef=path=>({get:()=>getDoc(path),set:body=>apiPut(path,body),update:async body=>{const j=await apiJSON('/api/docs/'+path,apiBody('PATCH',body));apiTouch();return j;},delete:async()=>{const j=await apiJSON('/api/docs/'+path,{method:'DELETE'});apiTouch();return j;},acquire:async()=>({acquired:true}),onSnapshot:(cb,err)=>{apiListen(()=>getDoc(path),cb,err);}});
+  const coll=name=>({doc:id=>docRef(name+'/'+id),limit:()=>coll(name),get:async()=>snapOf((await apiJSON('/api/docs?prefix='+encodeURIComponent(name+'/'))).docs),onSnapshot:(cb,err)=>{apiListen(async()=>snapOf((await apiJSON('/api/docs?prefix='+encodeURIComponent(name+'/'))).docs),cb,err);}});
+  return {collection:coll,doc:docRef};
+}
+function makeApiSample(info){return {limits:async()=>({images:{mediaTypes:info.mediaTypes||['image/png','image/jpeg','image/webp','image/gif'],maxBytes:5*1024*1024}}),json:async(prompt,opts)=>{const fd=new FormData();fd.append('prompt',prompt);for(const f of (opts&&opts.images)||[])fd.append('image',f,f.name||'image');const r=await apiFetch('/api/read-image',{method:'POST',body:fd});let j={};try{j=await r.json();}catch(e){}if(!r.ok||j.error){const e={code:j.error||('http_'+r.status),message:j.message||''};if(j.text)e.text=j.text;throw e;}return j.data;}};}
+function makeApiAssets(){return {upload:async file=>{const fd=new FormData();fd.append('file',file,file.name||'receipt');return apiJSON('/api/assets',{method:'POST',body:fd});}};}
+async function detectServer(){if(window.__PT_SERVER__)return true;if(typeof window.claude==='object'&&window.claude)return false;if(!/^https?:$/.test(location.protocol))return false;try{const r=await fetch('/healthz',{credentials:'same-origin'});if(!r.ok)return false;const j=await r.json();return !!(j&&j.app==='wasool');}catch(e){return false;}}
+async function initApi(){
+  state.backend='api';db=makeApiDb();downloads=null;assets=makeApiAssets();
+  let info=null;try{const r=await apiFetch('/api/read-image');if(r.ok)info=await r.json();}catch(e){}
+  sample=info&&info.enabled?makeApiSample(info):null;canImage=!!sample;updateShotCaption();
+  state.mode='shared';render();subscribe();apiSchedule();refreshConfirmations();
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)apiTouch();});
+}
 /* ---------- boot ---------- */
+function applySettingsDoc(b){state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.appName=rawAppName(b.appName);state.settings.tagline=rawTagline(b.tagline);state.settings.readModel=normModel(b.readModel);state.settings.publicBaseUrl=pubBaseRaw(b.publicBaseUrl);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);}
 function subscribe(){
   db.collection('users').onSnapshot(snap=>{
     const users={};snap.docs.forEach(d=>{const b=d.data();if(b&&(b.email||b.name))users[d.id]=normalizeUser(b,d.id);});
     state.users=users;state.loaded=true;render();
     if(!snap.metadata.fromCache){if(snap.empty)maybeSeedShared();else maybeMigrateShared(snap.docs);}
+    if(publicBase())ensureConfirmTokens();
   },e=>{state.mode='error';state.loaded=true;toast('Live data unavailable ('+(e&&e.code||'unknown')+'). Reload to reconnect.');render();});
   db.collection('costs').onSnapshot(snap=>{const costs={};snap.docs.forEach(d=>{const b=d.data();if(b)costs[d.id]=normalizeCost(b,d.id);});state.costs=costs;state.costsLoaded=true;render();},()=>{});
-  db.doc('settings/main').onSnapshot(snap=>{if(snap.exists){const b=snap.data()||{};state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.appName=rawAppName(b.appName);state.settings.tagline=rawTagline(b.tagline);state.settings.readModel=normModel(b.readModel);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);render();}},()=>{});
+  db.doc('settings/main').onSnapshot(snap=>{if(snap.exists){applySettingsDoc(snap.data()||{});render();}},()=>{});
 }
 async function init(){
   loadPrefs();bind();render();
+  if(await detectServer()){await initApi();return;}
   const hasClaude=typeof window.claude==='object'&&window.claude&&typeof window.claude.use==='function';
   const use=n=>hasClaude?Promise.resolve().then(()=>window.claude.use(n)).catch(()=>null):Promise.resolve(null);
   const [d,dl,sm,as]=await Promise.all([use('db'),use('downloads'),use('sample'),use('assets')]);
   downloads=dl;sample=sm;assets=as;
   if(sample){try{const lim=await sample.limits();canImage=!!(lim&&lim.images);if(lim&&lim.images&&lim.images.mediaTypes&&lim.images.mediaTypes.length)$('#shot-file').accept=lim.images.mediaTypes.join(',');}catch(e){canImage=false;}}
   updateShotCaption();
-  if(d){db=d;state.mode='shared';render();subscribe();}
-  else{state.mode='local';state.loaded=true;loadLocal();maybeSeedLocal();maybeMigrateLocal();render();}
+  if(d){db=d;state.backend='artifact';state.mode='shared';render();subscribe();}
+  else{state.backend='local';state.mode='local';state.loaded=true;loadLocal();maybeSeedLocal();maybeMigrateLocal();render();}
 }
 init();
 })();
