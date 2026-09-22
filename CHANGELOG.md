@@ -2,6 +2,12 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v18 - 2026-09-22
+
+- The starter data now matches the owner's real records on every backend: fixed 30-day proration (Ataullah's first period is 23 days × Rs 140 = Rs 3,220), Tabraiz charged 24 days with his Rs 4,200 payment on Sep 22 leaving Rs 840 credit, Eren paid through Nov 23, Haroon's second C account with its waived stub plus the yearly G plan, Mohib under maggdoto@gmail.com, and no Uqba.
+- Schema migration 11 reconciles an existing store to the same values once: it pins the fixed 30-day basis, fills the default rate, packages (C at Rs 4,200, G yearly), anchor and reminder days, and lets the existing per-user migrations add Tabraiz's 24-day override and payment, Eren's last payment, Haroon's second account and Mohib's email; payments recorded since are untouched.
+- Root cause: the seed wrote the schema marker before the settings document, so an interrupted first load left a store that read as fully migrated but had no proration basis, and every later load returned early. Settings are now written first and the marker last, by one writer (the old ones also dropped the Public base URL), and the migration waits for a running seed.
+
 ## v17 - 2026-09-22
 
 - Each user row now shows the WhatsApp number and Telegram handle under the name and email, so contact details are visible without opening the row.

@@ -391,7 +391,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v17</span>
+      <span class="small muted num" id="app-ver" title="App version">v18</span>
       <button class="btn" type="button" id="btn-reminders">Run reminders<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
     </div>
@@ -681,8 +681,8 @@ const normBasis=v=>v==='fixed30'?'fixed30':'actual';const rawBasis=v=>v==='fixed
 const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
-const SCHEMA=10;
-const APP_VERSION='17';
+const SCHEMA=11;
+const APP_VERSION='18';
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
@@ -712,7 +712,7 @@ const newId=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,
 
 const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,publicBaseUrl:''},mode:'connecting',backend:'local',loaded:false,costsLoaded:false};
 const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'run',cancelPre:{}};
-let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,migrateChecked=false;
+let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,seedActive=false,migrateChecked=false;
 
 /* ---------- money: two currencies, per-entry rate ---------- */
 const normCur=c=>{c=String(c||'').trim();return c==='USD'||c==='$'||/usd|\$|dollar/i.test(c)?'USD':'PKR';};
@@ -1000,56 +1000,54 @@ function migrateUserV2(raw){
   return changed?u:null;
 }
 async function maybeSeedShared(){
-  if(seedChecked)return;seedChecked=true;
+  if(seedChecked)return;seedChecked=true;seedActive=true;
   try{
     const flag=await db.doc('meta/seed').get();if(flag.exists)return;
     const lease=await db.doc('meta/seed').acquire({holder:'seed_'+Math.random().toString(36).slice(2),ttlMs:30000});if(!lease.acquired)return;
     const again=await db.doc('meta/seed').get();if(again.exists&&again.data()&&again.data().done)return;
     const existing=await db.collection('users').limit(1).get();if(!existing.empty)return;
+    /* v18: settings first and the schema marker last. Before v18 the marker was written before the settings doc, so a reload or a
+       lost request in between left a store that read as fully migrated but had no proration basis (actual days instead of fixed 30). */
+    await ensureSettingsShared(true);
     for(const [id,u] of seedUsers())await db.collection('users').doc(id).set(cleanUser(Object.assign({id},u)));
     await db.doc('meta/seed').set({done:true,at:new Date().toISOString()});
     await db.doc('meta/schema').set({version:SCHEMA,at:new Date().toISOString()});
-    await setBasisShared('fixed30');
-    await ensureDefaultRateShared();
     toast('Loaded the initial user list. Edit anything that is off.');
-  }catch(e){}
+  }catch(e){}finally{seedActive=false;}
 }
-async function ensureDefaultRateShared(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const pk=normalizePackages(b.packages);const needRate=!normRate(b.rate),needPk=!pk.length,needAnchor=!isDateKey(b.anchor),needTpl=tplOf(b.template)!==b.template,needDays=!b.remindDay||!b.replyDay;if(needRate||needPk||needAnchor||needTpl||needDays)await db.doc('settings/main').set({rate:needRate?DEFAULT_RATE:normRate(b.rate),template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:rawBasis(b.prorationBasis),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),packages:needPk?clone(DEFAULT_PACKAGES):pk,anchor:needAnchor?DEFAULT_ANCHOR:b.anchor,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
-async function setBasisShared(v){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};if(rawBasis(b.prorationBasis))return;const pk=normalizePackages(b.packages);await db.doc('settings/main').set({rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:v,appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),packages:pk.length?pk:clone(DEFAULT_PACKAGES),anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
-async function ensurePackageCycles(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};let pk=normalizePackages(b.packages);let changed=false;if(!pk.length){pk=clone(DEFAULT_PACKAGES);changed=true;}for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(p&&!(b.packages||[]).find(x=>x&&x.id===d.id&&x.cycle)){p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}changed=true;}}if(changed)await db.doc('settings/main').set({rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:rawBasis(b.prorationBasis),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
+/* v11 (v18 app): the one writer of settings/main. Fills the default rate, packages, anchor and days, keeps everything else
+   (including publicBaseUrl, which the older writers dropped), and sets the proration basis: `force` (seed, and stores below
+   schema 11) pins the fixed 30-day month that the owner's records use even when the doc says "actual"; otherwise a chosen basis is kept. */
+function canonicalSettings(b,force){b=b||{};let pk=normalizePackages(b.packages);if(!pk.length)pk=clone(DEFAULT_PACKAGES);for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(!p)continue;if(!p.cycle||(force&&p.cycle!==d.cycle))p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}}return {rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:force?'fixed30':(rawBasis(b.prorationBasis)||'fixed30'),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),publicBaseUrl:pubBaseRaw(b.publicBaseUrl),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)};}
+async function ensureSettingsShared(force){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const want=canonicalSettings(b,force);const same=sn.exists&&Object.keys(want).every(k=>JSON.stringify(want[k])===JSON.stringify(b[k]));if(!same)await db.doc('settings/main').set(want);}catch(e){}}
 async function maybeMigrateShared(rawDocs){
-  if(migrateChecked)return;migrateChecked=true;
+  if(migrateChecked||seedActive)return;migrateChecked=true; /* a seed in progress writes the schema marker itself; try again on a later snapshot */
   try{
-    const sch=await db.doc('meta/schema').get();if(sch.exists&&Number((sch.data()||{}).version)>=SCHEMA)return;
+    const verOf=sn=>sn.exists?(Number((sn.data()||{}).version)||0):0;
+    const prev=verOf(await db.doc('meta/schema').get());if(prev>=SCHEMA)return;
     const lease=await db.doc('meta/schema').acquire({holder:'mig_'+Math.random().toString(36).slice(2),ttlMs:60000});if(!lease.acquired)return;
-    const again=await db.doc('meta/schema').get();if(again.exists&&Number((again.data()||{}).version)>=SCHEMA)return;
+    if(verOf(await db.doc('meta/schema').get())>=SCHEMA)return;
+    /* settings first, users next, the schema marker last: an interrupted run is simply redone on the next load */
+    await ensureSettingsShared(prev<11);
     let n=0,removed=0;for(const d of rawDocs){const body=d.data();if(!body)continue;if(isUntouchedSeedUqba(body)){await db.collection('users').doc(d.id).delete();removed++;continue;}const m=migrateUserV2(body);if(m){await db.collection('users').doc(d.id).set(cleanUser(Object.assign({id:d.id},m)));n++;}}
     if(removed)toast('Removed Uqba (never joined).');
-    await db.doc('meta/schema').set({version:SCHEMA,at:new Date().toISOString(),migrated:n});
-    await setBasisShared('fixed30');
-    await ensureDefaultRateShared();
-    await ensurePackageCycles();if(n)toast('Updated '+n+' user record'+(n===1?'':'s')+' to the current format.');
+    await db.doc('meta/schema').set({version:SCHEMA,at:new Date().toISOString(),migrated:n,from:prev});
+    if(n)toast('Updated '+n+' user record'+(n===1?'':'s')+' to the current format.');
   }catch(e){}
 }
 function maybeSeedLocal(){
   let flag=null;try{flag=localStorage.getItem('pt-seeded');}catch(e){}
   if(flag||Object.keys(state.users).length)return;
   for(const [id,u] of seedUsers())state.users[id]=normalizeUser(u,id);
-  if(!rawBasis(state.settings.prorationBasis))state.settings.prorationBasis='fixed30';
-  if(!normRate(state.settings.rate))state.settings.rate=DEFAULT_RATE;
-  if(!packages().length)state.settings.packages=clone(DEFAULT_PACKAGES);
-  if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;
+  Object.assign(state.settings,canonicalSettings(state.settings,true));
   saveLocal();try{localStorage.setItem('pt-seeded','1');localStorage.setItem('pt-schema',String(SCHEMA));}catch(e){}
 }
 function maybeMigrateLocal(){
   let v=0;try{v=Number(localStorage.getItem('pt-schema')||0);}catch(e){}
   if(v>=SCHEMA)return;
   for(const id in state.users){if(isUntouchedSeedUqba(state.users[id])){delete state.users[id];continue;}const m=migrateUserV2(state.users[id]);if(m)state.users[id]=normalizeUser(m,id);}
-  if(v<10&&!rawBasis(state.settings.prorationBasis))state.settings.prorationBasis='fixed30';
-  if(!normRate(state.settings.rate))state.settings.rate=DEFAULT_RATE;
-  if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;
-  state.settings.template=tplOf(state.settings.template);
-  if(!packages().length)state.settings.packages=clone(DEFAULT_PACKAGES);else{for(const d of DEFAULT_PACKAGES){const p=packages().find(x=>x.id===d.id);if(p&&v<4){p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}}}}
+  /* v11: the same canonical settings as a shared store; below v11 the fixed 30-day basis is pinned, later a chosen basis is kept */
+  Object.assign(state.settings,canonicalSettings(state.settings,v<11));
   saveLocal();try{localStorage.setItem('pt-schema',String(SCHEMA));}catch(e){}
 }
 async function resetData(){
