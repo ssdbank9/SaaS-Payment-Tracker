@@ -1,6 +1,13 @@
-# Changelog
+# Wasooli · Changelog
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
+
+## v24 - 2026-09-23
+
+- Renamed to **Wasooli** with a real logo: a rounded green tile carrying a white W whose last stroke turns into a check mark (paid = done), a "Wasooli" wordmark in IBM Plex Sans and the tagline "Know who's paid." The mark is inline SVG in the header (light and dark), the favicon and the login and public choice pages; `assets/` holds `logo.svg`, `mark.svg`, PNG icons (32, 180, 192, 512, 512 maskable) and `manifest.webmanifest`, which Flask serves at `/assets/<file>` and `/manifest.webmanifest`, so "Add to home screen" on the server shows the Wasooli icon and name (the claude.ai and browser-local copies draw the same mark on a canvas). Every user-visible "Wasool" became "Wasooli" (page titles, Settings defaults and placeholders, email subjects and from name, `/healthz` now says `"app": "wasooli"`, the JSON export is `wasooli-export-<date>.json`); a stored app name of "Wasool" reads as the default. Repo paths, systemd unit names, `/etc/payments-tracker.env`, data paths and the domain are unchanged.
+- Period tiles wrap on phones: the expanded plan card used to be as wide as the 960px table, so on a phone only the first two and a half period boxes were in view and the rest looked missing. Below 760px the card is now the visible width and sticks to the left edge while the table scrolls; below 700px the period boxes lay out two per row (an open edit form takes the full row), so all of a plan's periods are visible without sideways scrolling.
+- Warning on retroactive amount edits: the edit-amount form (period boxes and Queue rows) shows a yellow inline note before Save when the typed amount would make an already-covered period short ("This makes Aug 24 – Sep 23 short by $18 and marks Eren overdue; paid-through moves from Nov 23 to Aug 23."), with a **Reset to computed** link that puts the computed amount back. Saving an amount re-renders the row, the plan box, Paid through and the totals at once.
+- Dimmed settled rows: users whose every active plan is paid through the current cycle (and paid one-time items), and plan boxes that are paid up, render at reduced emphasis with a muted status pill so unpaid and overdue rows stand out; hovering, focusing or expanding restores full strength, and secondary text keeps a readable contrast in both themes. Settings → **Dim paid-up users** (on by default) turns it off. Server VERSION and the badge are 24.
 
 ## v23 - 2026-09-22
 

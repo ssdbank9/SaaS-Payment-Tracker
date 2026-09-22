@@ -1,4 +1,4 @@
-"""Wasool daily notifier: emails today's queue stage to subscribers who still need it.
+"""Wasooli daily notifier: emails today's queue stage to subscribers who still need it.
 
 Run once a day (payments-tracker-notify.timer, 09:00 Asia/Karachi). Reads the same
 SQLite store the admin page writes: settings/main (anchor, reminder and reply-by days,
@@ -32,7 +32,7 @@ log = logging.getLogger("notify")
 TZ = ZoneInfo(os.environ.get("APP_TZ", "Asia/Karachi"))
 DEFAULT_ANCHOR = "2026-07-24"
 DEFAULT_REMIND_DAY, DEFAULT_REPLY_DAY = 20, 23
-DEFAULT_APP_NAME = "Wasool"
+DEFAULT_APP_NAME = "Wasooli"
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 # Keep in step with DEFAULT_QUEUE_TPL / DEFAULT_PAY_HOW in index.html.

@@ -1,5 +1,5 @@
 [Unit]
-Description=Wasool (Payments Tracker) - pull the latest main from GitHub and restart if it changed
+Description=Wasooli (Payments Tracker) - pull the latest main from GitHub and restart if it changed
 After=network-online.target
 Wants=network-online.target
 

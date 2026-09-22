@@ -1,5 +1,5 @@
 [Unit]
-Description=Wasool (Payments Tracker) - nightly SQLite backup
+Description=Wasooli (Payments Tracker) - nightly SQLite backup
 
 [Service]
 Type=oneshot

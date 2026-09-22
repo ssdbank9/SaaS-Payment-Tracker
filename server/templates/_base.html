@@ -4,19 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}{{ app_name }}{% endblock %}</title>
-<meta name="theme-color" content="#0f6e56">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f6e56'/%3E%3Ctext x='50%25' y='50%25' dy='0.36em' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='600' font-size='36' fill='%23fff'%3E{{ app_name[:1]|upper }}%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#1f6b4e">
+<link rel="icon" type="image/svg+xml" href="/assets/mark.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-:root{--bg:#f3f5f3;--surface:#fff;--surface-2:#eaeeeb;--ink:#161a17;--ink-2:#4a534d;--muted:#76817b;--line:#d8ded9;--line-strong:#b3bcb6;--accent:#0f6e56;--accent-ink:#0b5a46;--accent-soft:#dcefe8;--good:#166534;--good-bg:#e1f3e6;--crit:#a12b22;--crit-bg:#fae3df;--focus:#0f6e56;--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111412;--surface:#191d1a;--surface-2:#212723;--ink:#edf1ee;--ink-2:#b4bdb7;--muted:#838d87;--line:#2b322d;--line-strong:#3e4841;--accent:#3fb391;--accent-ink:#78d4b8;--accent-soft:#1a3a31;--good:#7fd89a;--good-bg:#17311f;--crit:#f0958a;--crit-bg:#3d1f1b;--focus:#3fb391;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#111412;--surface:#191d1a;--surface-2:#212723;--ink:#edf1ee;--ink-2:#b4bdb7;--muted:#838d87;--line:#2b322d;--line-strong:#3e4841;--accent:#3fb391;--accent-ink:#78d4b8;--accent-soft:#1a3a31;--good:#7fd89a;--good-bg:#17311f;--crit:#f0958a;--crit-bg:#3d1f1b;--focus:#3fb391;color-scheme:dark}
+:root{--bg:#f3f5f3;--surface:#fff;--surface-2:#eaeeeb;--ink:#161a17;--ink-2:#4a534d;--muted:#76817b;--line:#d8ded9;--line-strong:#b3bcb6;--accent:#1f6b4e;--accent-ink:#175a41;--accent-soft:#dcefe8;--brand:#1f6b4e;--good:#166534;--good-bg:#e1f3e6;--crit:#a12b22;--crit-bg:#fae3df;--focus:#1f6b4e;--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111412;--surface:#191d1a;--surface-2:#212723;--ink:#edf1ee;--ink-2:#b4bdb7;--muted:#838d87;--line:#2b322d;--line-strong:#3e4841;--accent:#3fb391;--accent-ink:#78d4b8;--accent-soft:#1a3a31;--brand:#26805d;--good:#7fd89a;--good-bg:#17311f;--crit:#f0958a;--crit-bg:#3d1f1b;--focus:#3fb391;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111412;--surface:#191d1a;--surface-2:#212723;--ink:#edf1ee;--ink-2:#b4bdb7;--muted:#838d87;--line:#2b322d;--line-strong:#3e4841;--accent:#3fb391;--accent-ink:#78d4b8;--accent-soft:#1a3a31;--brand:#26805d;--good:#7fd89a;--good-bg:#17311f;--crit:#f0958a;--crit-bg:#3d1f1b;--focus:#3fb391;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
 body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;align-items:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom,0px))}
 .brand{display:flex;align-items:center;gap:10px;margin:8px 0 20px;color:var(--ink)}
-.brand .mark{width:34px;height:34px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:600;font-size:18px}
+.brand .mark{width:36px;height:36px;display:block;flex:none}
+.brand .mark rect{fill:var(--brand)}
 .brand .name{font-weight:600;font-size:18px;letter-spacing:-.01em}
 .brand .tag{font-size:13px;color:var(--accent-ink);font-weight:500}
 .card{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px 20px 20px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
@@ -51,7 +55,8 @@ textarea{min-height:72px;resize:vertical}
 {% block head %}{% endblock %}
 </head>
 <body>
-<div class="brand" aria-label="{{ app_name }}"><span class="mark" aria-hidden="true">{{ app_name[:1]|upper }}</span><span><span class="name">{{ app_name }}</span> <span class="tag">{{ tagline }}</span></span></div>
+{# v24: the Wasooli mark (a W whose last stroke is a check); a custom app name shows its first letter on the same tile #}
+<div class="brand" aria-label="{{ app_name }}"><svg class="mark" viewBox="0 0 64 64" width="36" height="36" aria-hidden="true" focusable="false"><rect width="64" height="64" rx="14"/>{% if app_name == 'Wasooli' %}<path d="M11.5 22 L20 44 L28.5 27 L37 44 L52.5 16" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>{% else %}<text x="32" y="32" dy="0.36em" text-anchor="middle" font-family="IBM Plex Sans,system-ui,sans-serif" font-weight="600" font-size="37" fill="#fff">{{ app_name[:1]|upper }}</text>{% endif %}</svg><span><span class="name">{{ app_name }}</span> <span class="tag">{{ tagline }}</span></span></div>
 {% block body %}{% endblock %}
 </body>
 </html>

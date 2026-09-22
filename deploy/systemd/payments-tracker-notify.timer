@@ -1,5 +1,5 @@
 [Unit]
-Description=Wasool (Payments Tracker) - run the daily reminder emails at 09:00 Asia/Karachi (04:00 UTC)
+Description=Wasooli (Payments Tracker) - run the daily reminder emails at 09:00 Asia/Karachi (04:00 UTC)
 
 [Timer]
 OnCalendar=*-*-* 04:00:00 UTC

@@ -1,4 +1,4 @@
-# Wasool · SaaS Payment Tracker
+# Wasooli · SaaS Payment Tracker
 
 **Know who's paid.**
 
@@ -15,7 +15,16 @@ Opening `index.html` directly in a browser also runs the app, but with per-devic
 - `index.html` - the whole app (markup, styles and script) in one file. It detects where it runs: the claude.ai artifact (shared `db`), your own server (the `/api/docs` store below) or a plain file (browser-local storage).
 - `server/` - the self-hosted backend: Flask + SQLite, no build step (`app.py` routes, `db.py` storage, `auth.py` passcode login, `claude_read.py` / `gemini_read.py` screenshot reading, `notify.py` daily reminder emails).
 - `deploy/` - `setup.sh` one-command installer, `update.sh` auto-deploy, `backup.sh`, and the systemd units (service, update, backup and notify timers).
+- `assets/` - the brand: `logo.svg` (mark + wordmark), `mark.svg`, the PNG icons (32, 180, 192, 512 and a 512 maskable) and `manifest.webmanifest`, served by Flask at `/assets/<file>` and `/manifest.webmanifest`.
 - `CHANGELOG.md` - version history.
+
+## Brand
+
+- Mark: a rounded-square tile (corner radius 22%) in the brand green with a white single-stroke W whose last stroke rises into a check mark (paid = done). Source: `assets/mark.svg`; the same path is drawn inline in `index.html`, the server templates and on a canvas for the home-screen icons.
+- Colours: green `#1f6b4e` (tile, buttons, accents; `#26805d` on the dark theme), accent ink `#175a41` (tagline, links), ink `#161a17` on `#f3f5f3` / `#edf1ee` on `#111412`.
+- Wordmark "Wasooli" in IBM Plex Sans 600 with -1% letter-spacing; tagline "Know who's paid." in IBM Plex Sans 500, accent ink. Lockup in `assets/logo.svg`.
+- Use the mark alone at 16-64px (favicon, home screen); the mark with the wordmark on pages and documents; keep at least the stroke width as clear space around it.
+- Do not recolour the tile, add effects, or set the wordmark in another face; the letter monogram tile appears only when the owner renames the app in Settings.
 
 ## Development
 
@@ -31,19 +40,19 @@ The same `index.html` runs on your own VM with a small Python server, so it work
 
 1. An **Oracle Cloud Always Free** compute instance: shape *VM.Standard.A1.Flex* (Ampere, arm64), image *Ubuntu 22.04 or 24.04*, any size (1 OCPU / 6 GB is plenty). Note its public IP.
 2. In the instance's **VCN → subnet → Security List** (or its Network Security Group) add two ingress rules: TCP **80** and TCP **443** from `0.0.0.0/0`. Oracle blocks these at the cloud level by default; the installer opens the VM's own firewall but cannot touch this one.
-3. A subdomain: an **A record** such as `wasool.yourdomain.com → <public IP>` at your DNS provider. HTTPS is automatic once it resolves.
+3. A subdomain: an **A record** such as `wasooli.yourdomain.com → <public IP>` at your DNS provider. HTTPS is automatic once it resolves.
 4. SSH access as the `ubuntu` user.
 
 ### The one command
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ssdbank9/SaaS-Payment-Tracker/main/deploy/setup.sh \
-  | sudo DOMAIN=wasool.yourdomain.com ADMIN_PASSCODE='a-long-passcode-you-will-type-once' bash
+  | sudo DOMAIN=wasooli.yourdomain.com ADMIN_PASSCODE='a-long-passcode-you-will-type-once' bash
 ```
 
 It installs `python3-venv`, `git` and Caddy (official apt repo), clones this repository to `/opt/payments-tracker`, creates a virtualenv with the pinned `server/requirements.txt`, writes `/etc/payments-tracker.env` (passcode, a generated `SECRET_KEY`, `DATA_DIR=/var/lib/payments-tracker`, `DOMAIN`), installs the systemd units, writes `/etc/caddy/Caddyfile` with `reverse_proxy 127.0.0.1:8080` (Caddy fetches and renews the certificate), opens ports 80/443 in iptables and persists them with `netfilter-persistent`, starts everything and prints a health check plus the steps left to do. Re-running it is safe; it repairs the install or changes the domain and passcode. Leave `ADMIN_PASSCODE`/`DOMAIN` off the command line and it asks for them.
 
-Then open `https://wasool.yourdomain.com` on your phone, sign in with the passcode (the session lasts 60 days) and use *Add to Home Screen*: the page ships a manifest and icon, so it behaves like an app. Nothing here depends on your desktop being on.
+Then open `https://wasooli.yourdomain.com` on your phone, sign in with the passcode (the session lasts 60 days) and use *Add to Home Screen*: the server serves `/manifest.webmanifest` and the icons under `/assets`, so the phone shows the Wasooli mark with the name "Wasooli" and opens it like an app. Nothing here depends on your desktop being on.
 
 ### How updates deploy
 
@@ -81,6 +90,6 @@ Paste an Anthropic API key in Settings → **AI reading** (kept on the server, m
 
 - Service: `sudo systemctl status payments-tracker`, logs `journalctl -u payments-tracker -f`, Caddy logs `journalctl -u caddy -f`.
 - Change the passcode: edit `/etc/payments-tracker.env`, then `sudo systemctl restart payments-tracker`.
-- Health: `https://<domain>/healthz` (no login) returns `{"ok": true, "app": "wasool", ...}`.
+- Health: `https://<domain>/healthz` (no login) returns `{"ok": true, "app": "wasooli", ...}`.
 - Login is rate limited (8 failures per IP per 15 minutes); state-changing API calls need the `X-Requested-With: wasool` header the page sends; the admin cookie is HttpOnly, Secure, SameSite=Lax.
 - Everything lives in `/var/lib/payments-tracker`; the code in `/opt/payments-tracker` is disposable.

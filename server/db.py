@@ -1,4 +1,4 @@
-"""SQLite storage for Wasool (Payments Tracker).
+"""SQLite storage for Wasooli (Payments Tracker).
 
 A generic JSON document store mirroring the claude.ai artifact ``db`` API
 (get / set / update / delete / list by prefix), plus tables for public

@@ -1,5 +1,5 @@
 [Unit]
-Description=Wasool (Payments Tracker) - run the backup every night at 03:15
+Description=Wasooli (Payments Tracker) - run the backup every night at 03:15
 
 [Timer]
 OnCalendar=*-*-* 03:15:00

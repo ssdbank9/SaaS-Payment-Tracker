@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wasool · Know who's paid</title>
+<title>Wasooli · Know who's paid</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Wasool" id="meta-app-title">
-<meta name="application-name" content="Wasool" id="meta-app-name">
+<meta name="apple-mobile-web-app-title" content="Wasooli" id="meta-app-title">
+<meta name="application-name" content="Wasooli" id="meta-app-name">
 <meta name="description" content="Know who's paid." id="meta-desc">
 <meta name="theme-color" content="#1f6b4e">
 <link rel="icon" type="image/svg+xml" id="link-icon" href="">
@@ -27,6 +27,7 @@
   --crit:#a12b22; --crit-bg:#fae3df;
   --wa:#128c5e;
   --focus:#1f6b4e;
+  --brand:#1f6b4e;
   --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   color-scheme:light;
@@ -44,6 +45,7 @@
     --crit:#f0958a; --crit-bg:#3d1f1b;
     --wa:#3fcf8e;
     --focus:#3fb391;
+    --brand:#26805d;
     color-scheme:dark;
   }
 }
@@ -59,6 +61,7 @@
   --crit:#f0958a; --crit-bg:#3d1f1b;
   --wa:#3fcf8e;
   --focus:#3fb391;
+  --brand:#26805d;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -105,6 +108,12 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--in
 td.r .m2{align-items:flex-end}
 
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+/* v24: the Wasooli lockup: mark (a W whose last stroke is a check) + wordmark + tagline */
+.brand{display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 320px}
+.brand-mark{flex:none;width:40px;height:40px;display:block;margin-top:1px}
+.brand-mark rect{fill:var(--brand)}
+.brand-mark text{font-family:var(--sans)}
+@media (max-width:640px){.brand-mark{width:34px;height:34px;margin-top:3px}}
 .top-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
 .sync::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--line-strong)}
@@ -277,10 +286,22 @@ td.late .num{color:var(--crit);font-weight:500}
 .pill[data-status="overdue"]{color:var(--crit);background:var(--crit-bg)}
 .pill[data-status="upcoming"],.pill[data-status="ended"],.pill[data-status="nosub"],.pill[data-status="cancelled"]{color:var(--ink-2);background:var(--surface-2)}
 tr.row[data-cancelled="1"] td.who .nm{color:var(--ink-2)}
+/* v24: settled rows (every active plan paid through the current cycle) and paid-up plan boxes step back; hover, focus or expanding restores them.
+   Secondary text inside a dimmed row uses the stronger ink so it stays readable through the opacity. */
+tr.row[data-settled="1"] td{opacity:.68;transition:opacity .15s}
+tr.row[data-settled="1"]:hover td,tr.row[data-settled="1"]:focus-visible td,tr.row[data-settled="1"][aria-expanded="true"] td{opacity:1}
+tr.row[data-settled="1"] td .muted,tr.row[data-settled="1"] td.who .em,tr.row[data-settled="1"] td.who .ct,tr.row[data-settled="1"] td.plan .l2,tr.row[data-settled="1"] .m2 .s{color:var(--ink-2)}
+tr.row[data-settled="1"] .pill[data-status="current"],tr.row[data-settled="1"] .pill[data-status="paid"],tr.row[data-settled="1"] .pill[data-status="ended"]{color:var(--ink-2);background:var(--surface-2)}
+.detail-card .sub[data-settled="1"]{opacity:.68;transition:opacity .15s}
+.detail-card .sub[data-settled="1"]:hover,.detail-card .sub[data-settled="1"]:focus-within{opacity:1}
+.detail-card .sub[data-settled="1"]:has(form:not([hidden])){opacity:1}
+.detail-card .sub[data-settled="1"] .pill[data-status="current"],.detail-card .sub[data-settled="1"] .pill[data-status="paid"]{color:var(--ink-2);background:var(--surface-2)}
 tr.detail>td{background:var(--accent-soft);padding:0 10px 12px;white-space:normal;border-bottom:1px solid var(--line-strong);box-shadow:inset 2px 0 0 var(--accent),inset -2px 0 0 var(--accent),inset 0 -2px 0 var(--accent)}
 .detail-card{position:relative;background:var(--accent-tint);border:2px solid var(--accent);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px 16px 20px;overflow:hidden}
 .detail-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent)}
-@media (max-width:760px){tr.detail>td{padding:0 6px 8px}.detail-card{padding:12px 12px 14px 16px;border-radius:10px}}
+/* v24: the table is 960px wide and scrolls sideways on a phone; the expanded card used to be as wide as the table, so only its first
+   ~2 period tiles were in view. On narrow screens the card is the visible width and sticks to the left edge while the table scrolls. */
+@media (max-width:760px){tr.detail>td{padding:0 6px 8px}.detail-card{padding:12px 12px 14px 16px;border-radius:10px;position:sticky;left:0;width:calc(100vw - 46px);max-width:100%}}
 .detail-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline;margin-bottom:12px}
 .detail-head .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
 .detail-head .meta b{color:var(--ink);font-weight:500}
@@ -344,10 +365,15 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .cell .custom-line s{color:var(--muted);text-decoration-thickness:1px}
 .cell .custom-line b{font-weight:600;color:var(--ink)}
 .cell.editing{grid-column:span 2}
-@media (max-width:480px){.cell.editing{grid-column:span 1}}
+/* v24: period tiles wrap two per row below 700px so every period is visible without sideways scrolling */
+@media (max-width:700px){.periods{grid-template-columns:repeat(2,minmax(0,1fr))}.cell.editing{grid-column:1/-1}}
 .amt-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;align-items:end;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line-strong);text-align:left}
 .amt-form .form-actions,.amt-form .d,.amt-form .amt-plan{grid-column:1/-1}
 .amt-form .amt-plan{font-weight:600;font-size:12px;color:var(--ink)}
+/* v24: what a hand-set amount would do to the plan, shown before Save */
+.amt-form .amt-warn{grid-column:1/-1;display:flex;gap:4px 10px;flex-wrap:wrap;align-items:baseline;background:var(--warn-bg);border:1px solid var(--warn);border-radius:4px;padding:6px 9px;font:12px/1.45 var(--sans);color:var(--ink)}
+.amt-form .amt-warn b{color:var(--warn);font-weight:600}
+.amt-form .amt-warn[hidden]{display:none}
 .amt-form .d{font-family:var(--sans);font-size:11px;color:var(--ink-2)}
 .qamt-box{margin-top:8px;padding:0 10px 8px;border:1px dashed var(--line-strong);border-radius:4px;background:var(--surface-2)}
 .qamt-box .amt-form{border-top:0}
@@ -471,14 +497,17 @@ table.costs td.cat{color:var(--ink-2)}
 
 <div class="wrap">
   <header class="top">
-    <div>
-      <h1 id="app-title">Wasool <span class="tagline" id="app-tagline">Know who's paid.</span></h1>
-      <p class="muted small">Who is paid up, who is overdue, what each user has paid, what it costs to run, and what is left. Rows in their own currency; totals in PKR and USD.</p>
+    <div class="brand">
+      <svg class="brand-mark" id="brand-mark" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true" focusable="false"><rect width="64" height="64" rx="14"/><path d="M11.5 22 L20 44 L28.5 27 L37 44 L52.5 16" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>
+        <h1 id="app-title">Wasooli <span class="tagline" id="app-tagline">Know who's paid.</span></h1>
+        <p class="muted small">Who is paid up, who is overdue, what each user has paid, what it costs to run, and what is left. Rows in their own currency; totals in PKR and USD.</p>
+      </div>
     </div>
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v23</span>
+      <span class="small muted num" id="app-ver" title="App version">v24</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
     </div>
@@ -514,13 +543,13 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="panel-head"><h3>Settings</h3><button class="link" type="button" id="settings-close">Close</button></div>
     <form id="settingsForm" novalidate>
       <div class="form-grid" style="grid-template-columns:minmax(160px,220px) 1fr">
-        <label class="f">App name<input id="s-app-name" type="text" maxlength="40" placeholder="Wasool" autocomplete="off"></label>
-        <span class="small muted" style="align-self:center">Shown in the header, the browser tab and the home-screen icon (a monogram of the first letter). Leave blank for <b>Wasool</b>.</span>
+        <label class="f">App name<input id="s-app-name" type="text" maxlength="40" placeholder="Wasooli" autocomplete="off"></label>
+        <span class="small muted" style="align-self:center">Shown in the header, the browser tab and under the home-screen icon. Leave blank for <b>Wasooli</b> and the Wasooli mark; a custom name gets a monogram of its first letter instead.</span>
         <label class="f">Tagline<input id="s-tagline" type="text" maxlength="60" placeholder="Know who's paid." autocomplete="off"></label>
         <span class="small muted" style="align-self:center">Shown next to the name in the header and in the browser tab title. Leave blank for <b>Know who's paid.</b></span>
         <label class="f">Reading model<select id="s-model"><option value="quick">Quick (cheapest, fastest)</option><option value="default">Default (more careful)</option></select></label>
         <span class="small muted" style="align-self:center">The Claude model that reads statement screenshots, pasted statement text and Quick add lines. <b>Quick</b> is the cheapest and fastest and is enough for clean screenshots; switch to <b>Default</b> if it misreads amounts or dates.</span>
-        <label class="f">Public base URL <span class="muted">(for confirmation links)</span><input id="s-base-url" type="url" placeholder="https://wasool.example.com" autocomplete="off" inputmode="url"></label>
+        <label class="f">Public base URL <span class="muted">(for confirmation links)</span><input id="s-base-url" type="url" placeholder="https://wasooli.example.com" autocomplete="off" inputmode="url"></label>
         <span class="small muted" style="align-self:center" id="s-base-url-help">Where your self-hosted copy of this app runs. Each user gets a private page at <code>{base}/c/{token}</code> where they choose Continue, Upgrade to C Max (or Move back to C) or Discontinue for the coming cycle; the answer shows in the Queue and Reminder run and is applied to their record. On the self-hosted server this is filled in from the address bar; in the claude.ai copy, paste your server address here to put links into reminders.</span>
         <label class="f">Default exchange rate (PKR per 1 USD)<input id="s-rate" type="number" min="0" step="0.01" class="num" placeholder="280"></label>
         <span class="small muted" style="align-self:center">Payments and costs saved without their own rate use this default, so changing it here re-values all of them in the summary tiles and chart. An entry with its own rate keeps it. Rows in the tables always show each entry's own currency; the tiles amalgamate into PKR and USD.</span>
@@ -537,6 +566,8 @@ table.costs td.cat{color:var(--ink-2)}
         <span class="small muted" style="align-self:center" id="s-anchor-help">Every plan bills on the same cycle: monthly periods run from the billing day to the day before the next one, and yearly periods from the anchor month each year. Someone who joins mid-period pays a prorated share of that first period (by days), unless proration is turned off on their plan.</span>
         <label class="f">WhatsApp opens in<select id="s-wa-app"><option value="regular">Regular WhatsApp (default)</option><option value="business">WhatsApp Business</option><option value="ask">Ask (wa.me link; the phone picks)</option></select></label>
         <span class="small muted" style="align-self:center" id="s-wa-app-help">Which app every WhatsApp button (rows, expanded panel, Queue) opens on this device. On Android, <b>Regular</b> or <b>Business</b> opens that app directly; on iPhone and desktop, Regular uses the <code>whatsapp://</code> link and the others the <code>wa.me</code> page. Or on your phone: Settings → Apps → WhatsApp Business → Open by default → Clear defaults.</span>
+        <label class="f chk" style="align-self:center"><input id="s-dim" type="checkbox" checked>Dim paid-up users</label>
+        <span class="small muted" style="align-self:center">Users whose every active plan is paid through the current cycle, and plan boxes that are paid up, are shown at reduced emphasis so unpaid and overdue rows stand out. Hovering over a row or expanding it shows it at full strength.</span>
       </div>
       <div style="margin-top:14px">
         <div class="block-head" style="margin-bottom:2px"><h3>Packages &amp; products</h3><button class="btn primary sm" type="button" id="pkg-add">Add package or product</button></div>
@@ -581,7 +612,7 @@ table.costs td.cat{color:var(--ink-2)}
           <label class="f">Port<input id="m-port" type="number" min="1" max="65535" placeholder="587" class="num"></label>
           <label class="f">User (login)<input id="m-user" type="text" placeholder="you@gmail.com" autocomplete="off"></label>
           <label class="f">App password<input id="m-pass" type="password" placeholder="leave blank to keep" autocomplete="new-password"></label>
-          <label class="f">From name<input id="m-from" type="text" placeholder="Wasool" autocomplete="off"></label>
+          <label class="f">From name<input id="m-from" type="text" placeholder="Wasooli" autocomplete="off"></label>
           <label class="f">From email <span class="muted">(blank = user)</span><input id="m-from-email" type="email" placeholder="you@gmail.com" autocomplete="off"></label>
           <label class="f">Send test to <span class="muted">(your address)</span><input id="m-test-to" type="email" placeholder="me@example.com" autocomplete="off"></label>
         </div>
@@ -823,7 +854,7 @@ const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
 const SCHEMA=11;
-const APP_VERSION='23';
+const APP_VERSION='24';
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
@@ -884,8 +915,10 @@ const DEFAULT_RATE=280;
 /* ---------- normalisation ---------- */
 function normalizePackages(arr){if(!Array.isArray(arr))return [];const seen={};const out=[];for(const p of arr){if(!p||typeof p!=='object')continue;const id=String(p.id||'').trim()||newId('pkg');const name=String(p.name||'').trim();if(!name||seen[id])continue;seen[id]=1;const pr=Number(p.price);out.push({id,name,cycle:normCycle(p.cycle),price:isFinite(pr)&&pr>0?pr:null,currency:p.currency?normCur(p.currency):'',description:String(p.description||'').trim()});}return out;}
 const packages=()=>state.settings.packages||[];
-const DEFAULT_APP_NAME='Wasool';const DEFAULT_TAGLINE='Know who\'s paid.';const appNameOf=v=>String(v==null?'':v).trim().slice(0,40)||DEFAULT_APP_NAME;const rawAppName=v=>{const t=String(v==null?'':v).trim().slice(0,40);return t===DEFAULT_APP_NAME?'':t;};const taglineOf=v=>String(v==null?'':v).trim().slice(0,60)||DEFAULT_TAGLINE;const rawTagline=v=>{const t=String(v==null?'':v).trim().slice(0,60);return t===DEFAULT_TAGLINE?'':t;};const tagline=()=>taglineOf(state.settings.tagline);const normModel=v=>v==='default'?'default':'quick';const readModel=()=>normModel(state.settings.readModel);const appName=()=>appNameOf(state.settings.appName);
-const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,cycleDay:null,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,appName:'',tagline:'',readModel:'quick',publicBaseUrl:'',queueTemplates:{},payHow:'',waApp:'regular'});
+const DEFAULT_APP_NAME='Wasooli';const LEGACY_APP_NAME='Wasool';/* v24: the app was Wasool until v23; a stored name equal to either reads as the default */const DEFAULT_TAGLINE='Know who\'s paid.';const appNameOf=v=>String(v==null?'':v).trim().slice(0,40)||DEFAULT_APP_NAME;const rawAppName=v=>{const t=String(v==null?'':v).trim().slice(0,40);return t===DEFAULT_APP_NAME||t===LEGACY_APP_NAME?'':t;};const taglineOf=v=>String(v==null?'':v).trim().slice(0,60)||DEFAULT_TAGLINE;const rawTagline=v=>{const t=String(v==null?'':v).trim().slice(0,60);return t===DEFAULT_TAGLINE?'':t;};const tagline=()=>taglineOf(state.settings.tagline);const normModel=v=>v==='default'?'default':'quick';const readModel=()=>normModel(state.settings.readModel);const appName=()=>appNameOf(state.settings.appName);
+const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,cycleDay:null,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,appName:'',tagline:'',readModel:'quick',publicBaseUrl:'',queueTemplates:{},payHow:'',waApp:'regular',dimSettled:true});
+/* v24: settled rows and paid-up plan boxes render at reduced emphasis; off only when the owner unticks it (absent = on) */
+const dimOn=()=>state.settings.dimSettled!==false;
 /* v21: which WhatsApp app the buttons open. regular (default) / business force that app on Android; ask = the wa.me page (the phone asks when both apps are installed);
    through an intent URL (with wa.me as the fallback), and use whatsapp:// (regular) or wa.me (business) on iPhone and desktop. */
 const normWaApp=v=>v==='ask'||v==='business'?v:'regular';const waApp=()=>normWaApp(state.settings.waApp);
@@ -1049,7 +1082,7 @@ function analyze(u,today){
   if(!subs.length)status='nosub';
   if(u.cancel){status='cancelled';nextDue=null;const cd=newSum();return {sa,totals,balance,due:balance,cycleDue:cd,cyclePaid:false,mainCur,status,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:u.cancel,unpaid:balance.n>0,needsReminder:false};}
   if(!due.n){for(const s of subs){const a=sa[s.id];if(a.kind==='monthly'&&a.status!=='ended')sumAdd(due,a.amountDue,s.currency,null);}}
-  return {sa,totals,balance,due,cycleDue,cyclePaid,mainCur,status,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:null,unpaid:status==='overdue'||status==='due-today',needsReminder:['overdue','due-today','due-soon'].includes(status)||cycleDue.n>0};
+  return {sa,totals,balance,due,cycleDue,cyclePaid,mainCur,status,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:null,unpaid:status==='overdue'||status==='due-today',needsReminder:['overdue','due-today','due-soon'].includes(status)||cycleDue.n>0,settled:!balance.n&&(status==='current'||status==='paid'||status==='ended')};
 }
 function statusLabel(a){switch(a.status){case 'cancelled':return a.balance&&a.balance.n?'Cancelled · owes':'Cancelled · settled';case 'overdue':return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';case 'due-today':return 'Due today';case 'due-soon':return 'Due soon';case 'current':return 'Current';case 'open':return 'Open balance';case 'upcoming':return 'Starts later';case 'ended':return 'Ended';case 'paid':return 'Paid';default:return 'No plan';}}
 const displayName=u=>u.name||u.email||'(unnamed)';
@@ -1272,7 +1305,7 @@ async function maybeSeedShared(){
 /* v11 (v18 app): the one writer of settings/main. Fills the default rate, packages, anchor and days, keeps everything else
    (including publicBaseUrl, which the older writers dropped), and sets the proration basis: `force` (seed, and stores below
    schema 11) pins the fixed 30-day month that the owner's records use even when the doc says "actual"; otherwise a chosen basis is kept. */
-function canonicalSettings(b,force){b=b||{};let pk=normalizePackages(b.packages);if(!pk.length)pk=clone(DEFAULT_PACKAGES);for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(!p)continue;if(!p.cycle||(force&&p.cycle!==d.cycle))p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}}return {rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:force?'fixed30':(rawBasis(b.prorationBasis)||'fixed30'),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),publicBaseUrl:pubBaseRaw(b.publicBaseUrl),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,cycleDay:clampDay(b.cycleDay,+(isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR).slice(8,10)),remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY),queueTemplates:normQueueTpl(b.queueTemplates),payHow:rawPayHow(b.payHow),waApp:normWaApp(b.waApp)};}
+function canonicalSettings(b,force){b=b||{};let pk=normalizePackages(b.packages);if(!pk.length)pk=clone(DEFAULT_PACKAGES);for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(!p)continue;if(!p.cycle||(force&&p.cycle!==d.cycle))p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}}return {rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:force?'fixed30':(rawBasis(b.prorationBasis)||'fixed30'),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),publicBaseUrl:pubBaseRaw(b.publicBaseUrl),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,cycleDay:clampDay(b.cycleDay,+(isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR).slice(8,10)),remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY),queueTemplates:normQueueTpl(b.queueTemplates),payHow:rawPayHow(b.payHow),waApp:normWaApp(b.waApp),dimSettled:b.dimSettled!==false};}
 async function ensureSettingsShared(force){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const want=canonicalSettings(b,force);const same=sn.exists&&Object.keys(want).every(k=>JSON.stringify(want[k])===JSON.stringify(b[k]));if(!same)await db.doc('settings/main').set(want);}catch(e){}}
 async function maybeMigrateShared(rawDocs){
   if(migrateChecked||seedActive)return;migrateChecked=true; /* a seed in progress writes the schema marker itself; try again on a later snapshot */
@@ -1312,7 +1345,7 @@ async function resetData(){
 }
 
 /* ---------- persistence ---------- */
-function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.prorationBasis=rawBasis(state.settings.prorationBasis);state.settings.appName=rawAppName(state.settings.appName);state.settings.tagline=rawTagline(state.settings.tagline);state.settings.readModel=normModel(state.settings.readModel);state.settings.cycleDay=cycleDay();state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();state.settings.queueTemplates=normQueueTpl(state.settings.queueTemplates);state.settings.payHow=rawPayHow(state.settings.payHow);state.settings.waApp=waApp();}}catch(e){}}
+function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.prorationBasis=rawBasis(state.settings.prorationBasis);state.settings.appName=rawAppName(state.settings.appName);state.settings.tagline=rawTagline(state.settings.tagline);state.settings.readModel=normModel(state.settings.readModel);state.settings.cycleDay=cycleDay();state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();state.settings.queueTemplates=normQueueTpl(state.settings.queueTemplates);state.settings.payHow=rawPayHow(state.settings.payHow);state.settings.waApp=waApp();state.settings.dimSettled=dimOn();}}catch(e){}}
 function saveLocal(){try{localStorage.setItem('pt-data',JSON.stringify({users:state.users,costs:state.costs,settings:state.settings}));}catch(e){}}
 function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;}catch(e){}}
 function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur}));}catch(e){}}
@@ -1321,7 +1354,7 @@ async function persistUser(id,u){const body=cleanUser(Object.assign({},u,{id}));
 async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.users[id];saveLocal();render();}return true;}
 async function persistCost(id,c){const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}else{state.costs[id]=normalizeCost(body,id);saveLocal();render();}return true;}
 async function removeCost(id){if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.costs[id];saveLocal();render();}return true;}
-function settingsDoc(){return {rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),publicBaseUrl:pubBaseRaw(state.settings.publicBaseUrl),packages:state.settings.packages||[],anchor:anchor(),cycleDay:cycleDay(),remindDay:remindDay(),replyDay:replyDay(),queueTemplates:normQueueTpl(state.settings.queueTemplates),payHow:rawPayHow(state.settings.payHow),waApp:waApp()};}
+function settingsDoc(){return {rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),publicBaseUrl:pubBaseRaw(state.settings.publicBaseUrl),packages:state.settings.packages||[],anchor:anchor(),cycleDay:cycleDay(),remindDay:remindDay(),replyDay:replyDay(),queueTemplates:normQueueTpl(state.settings.queueTemplates),payHow:rawPayHow(state.settings.payHow),waApp:waApp(),dimSettled:dimOn()};}
 async function persistSettings(){if(db){try{await db.doc('settings/main').set(settingsDoc());}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
 function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||'').trim().toLowerCase();const ids=Object.keys(state.users);if(e){const hit=ids.find(id=>(state.users[id].email||'').toLowerCase()===e);if(hit)return hit;}if(n&&!e){const hit=ids.find(id=>(state.users[id].name||'').toLowerCase()===n);if(hit)return hit;}return null;}
 
@@ -1333,16 +1366,29 @@ const costTotal=c=>(Number(c.cost)||0)+(Number(c.tax)||0);
 
 /* ---------- rendering ---------- */
 const brand={key:null};
-function iconSVG(letter,size){return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}"><rect width="${size}" height="${size}" rx="${Math.round(size*0.22)}" fill="#0f6e56"/><text x="50%" y="50%" dy="0.36em" text-anchor="middle" font-family="IBM Plex Sans, Segoe UI, Helvetica, Arial, sans-serif" font-weight="600" font-size="${Math.round(size*0.58)}" fill="#ffffff">${letter}</text></svg>`;}
-function iconPNG(letter,size){try{const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');if(!g)return '';const r=Math.round(size*0.22);g.fillStyle='#0f6e56';g.beginPath();g.moveTo(r,0);g.arcTo(size,0,size,size,r);g.arcTo(size,size,0,size,r);g.arcTo(0,size,0,0,r);g.arcTo(0,0,size,0,r);g.closePath();g.fill();g.fillStyle='#fff';g.font='600 '+Math.round(size*0.58)+'px "IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(letter,size/2,size/2+size*0.03);return c.toDataURL('image/png');}catch(e){return '';}}
-function applyBranding(){const name=appName();const tag=tagline();const letter=(name.match(/[A-Za-z0-9\u0600-\u06FF]/)||[name.charAt(0)])[0].toUpperCase();const key=name+'|'+tag+'|'+letter;if(brand.key===key)return;brand.key=key;
+/* v24: the Wasooli mark: a rounded tile in the brand green with a white W whose last stroke turns into a check (paid = done).
+   Source of truth for the header, the favicon, the home-screen icons drawn on a canvas (claude.ai and browser-local copies) and
+   assets/mark.svg on the server. A custom app name keeps the tile and shows a monogram of its first letter instead. */
+const MARK_PATH='M11.5 22 L20 44 L28.5 27 L37 44 L52.5 16';const BRAND_GREEN='#1f6b4e';
+const markInner=letter=>letter?`<text x="32" y="32" dy="0.36em" text-anchor="middle" font-family="IBM Plex Sans, Segoe UI, Helvetica, Arial, sans-serif" font-weight="600" font-size="37" fill="#fff">${esc(letter)}</text>`:`<path d="${MARK_PATH}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`;
+function markSVG(size,rx,letter){return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}"><rect width="64" height="64" rx="${rx}" fill="${BRAND_GREEN}"/>${markInner(letter)}</svg>`;}
+function markPNG(size,rx,letter){try{const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');if(!g)return '';g.scale(size/64,size/64);g.fillStyle=BRAND_GREEN;g.beginPath();g.moveTo(rx,0);g.arcTo(64,0,64,64,rx);g.arcTo(64,64,0,64,rx);g.arcTo(0,64,0,0,rx);g.arcTo(0,0,64,0,rx);g.closePath();g.fill();
+  if(letter){g.fillStyle='#fff';g.font='600 37px "IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(letter,32,34);}
+  else{g.strokeStyle='#fff';g.lineWidth=7;g.lineCap='round';g.lineJoin='round';g.stroke(new Path2D(MARK_PATH));}
+  return c.toDataURL('image/png');}catch(e){return '';}}
+function applyBranding(){const name=appName();const tag=tagline();const custom=name!==DEFAULT_APP_NAME;const letter=custom?(name.match(/[A-Za-z0-9؀-ۿ]/)||[name.charAt(0)])[0].toUpperCase():'';
+  /* on the self-hosted server the default brand uses the files under /assets and the served manifest, so "Add to home screen" gets real PNG icons */
+  const served=state.backend==='api'&&!custom;const key=name+'|'+tag+'|'+letter+'|'+(served?'s':'d');if(brand.key===key)return;brand.key=key;
   document.title=name+' · '+tag.replace(/[.!]+$/,'');const h=$('#app-title');if(h){h.textContent=name+' ';const sp=document.createElement('span');sp.className='tagline';sp.id='app-tagline';sp.textContent=tag;h.appendChild(sp);}const mt=$('#meta-app-title');if(mt)mt.content=name;const mn=$('#meta-app-name');if(mn)mn.content=name;const md=$('#meta-desc');if(md)md.content=tag;
-  const svg='data:image/svg+xml,'+encodeURIComponent(iconSVG(letter,64));const ic=$('#link-icon');if(ic)ic.href=svg;
-  const png=iconPNG(letter,180);const tc=$('#link-touch');if(tc)tc.href=png||'data:image/svg+xml,'+encodeURIComponent(iconSVG(letter,180));
-  const big=iconPNG(letter,512);const icons=[{src:svg,sizes:'any',type:'image/svg+xml',purpose:'any'}];if(big)icons.push({src:big,sizes:'512x512',type:'image/png',purpose:'any maskable'});if(png)icons.push({src:png,sizes:'180x180',type:'image/png'});
-  const man={name:name,short_name:name.length>12?name.split(/\s+/)[0].slice(0,12):name,description:tag,start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f3f5f3',theme_color:'#0f6e56',icons:icons};
-  const lm=$('#link-manifest');if(lm)lm.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));}
-function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);fillQueueSettings();}}
+  const mk=$('#brand-mark');if(mk)mk.innerHTML='<rect width="64" height="64" rx="14"/>'+markInner(letter);
+  const svg='data:image/svg+xml,'+encodeURIComponent(markSVG(64,14,letter));const ic=$('#link-icon');if(ic)ic.href=svg;
+  const tc=$('#link-touch'),lm=$('#link-manifest');
+  if(served){if(tc)tc.href='/assets/apple-touch-icon.png';if(lm)lm.href='/manifest.webmanifest';return;}
+  const png=markPNG(180,0,letter);if(tc)tc.href=png||'data:image/svg+xml,'+encodeURIComponent(markSVG(180,0,letter));
+  const big=markPNG(512,14,letter),mask=markPNG(512,0,letter);const icons=[{src:svg,sizes:'any',type:'image/svg+xml',purpose:'any'}];if(big)icons.push({src:big,sizes:'512x512',type:'image/png',purpose:'any'});if(mask)icons.push({src:mask,sizes:'512x512',type:'image/png',purpose:'maskable'});if(png)icons.push({src:png,sizes:'180x180',type:'image/png'});
+  const man={name:name,short_name:name.length>12?name.split(/\s+/)[0].slice(0,12):name,description:tag,start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f3f5f3',theme_color:BRAND_GREEN,icons:icons};
+  if(lm)lm.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));}
+function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);$('#s-dim').checked=dimOn();fillQueueSettings();}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
   el.textContent=state.mode==='shared'?(state.backend==='api'?'Saved on your server, shared across your devices':'Shared with your team, saves live'):state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
@@ -1605,7 +1651,7 @@ function renderTable(){
     const {u,a,id}=r;const exp=ui.expanded===id;const late=a.status==='overdue';
     const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):(a.planParts.length&&!u.cancel?'nothing yet':'—');
     const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?'<span class="muted">paid</span>':'<span class="muted">—</span>');
-    html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}">
+    html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}" data-settled="${dimOn()&&a.settled?1:0}">
       <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${contactLine(u)}</td>
       <td class="plan">${planCell(a)}</td>
       <td title="${esc(u.joinDate)}">${esc(fmtD(u.joinDate))}</td>
@@ -1694,8 +1740,23 @@ function amtFormHTML(id,s,p,ctx,label){const cur=s.currency;const ov=periodOverr
     <label class="f">Amount for ${esc(fmtD(p.st))} – ${esc(fmtD(p.en))} (${cur})<input name="amount" type="number" min="0" step="0.01" required value="${p.pr}" aria-label="Amount for ${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}"></label>
     <label class="f">Discount <span class="muted">(10% or 500 off)</span><input name="disc" type="text" inputmode="decimal" placeholder="e.g. 10%" autocomplete="off" aria-label="Discount"></label>
     <label class="f">Note <span class="muted">(optional)</span><input name="note" type="text" maxlength="140" placeholder="e.g. Eid discount, correction" value="${esc(ov?ov.note:'')}" aria-label="Note"></label>
+    <span class="amt-warn" data-role="amt-warn" role="status" hidden></span>
     <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button>${ov?`<button class="link sm" type="button" data-act="amt-reset">Reset to computed (${esc(fmtAmt(p.listed,cur))})</button>`:''}<button class="link sm" type="button" data-act="amt-cancel">Cancel</button></span>
     <span class="d">Computed ${esc(fmtAmt(p.listed,cur))}${ov?` · currently set to ${esc(fmtAmt(p.pr,cur))}`:''}${credit?` · ${esc(fmtAmt(credit,cur))} credit already applies, so the message says <b data-role="net">${esc(fmtAmt(Math.max(0,p.pr-credit),cur))}</b>`:''}. Recorded payments stay as they are.</span></form>`;}
+/* v24: before Save, what the typed amount would do to this plan: a period that stops being covered (and by how much), an Overdue
+   status, a paid-through date that moves back. Computed on a copy of the plan; nothing is stored until Save. */
+function amtPreview(form){const warn=form.querySelector('[data-role=amt-warn]');if(!warn)return;const u=state.users[form.dataset.id];const s0=u&&(u.subscriptions||[]).find(x=>x.id===form.dataset.sub);const st=form.dataset.start;
+  const raw=String((form.querySelector('[name=amount]')||{}).value||'').trim();if(!s0||s0.kind!=='monthly'||!isDateKey(st)||!validAmt(raw)){warn.hidden=true;return;}
+  const amount=Math.round(Number(raw)*100)/100;const today=todayISO();const before=analyzeMonthly(s0,today);const sim=clone(s0);setPeriodOverride(sim,st,amount,'');if(pStart(sim,0)===st)sim.prorationAmountOverride=null;const after=analyzeMonthly(sim,today);
+  /* periods that were covered before and are not after (the simulation stops listing periods after the first shortfall, so a missing one counts too) */
+  const cur=s0.currency;const lost=[];for(const b of before.periods){if(b.state!=='paid'&&b.state!=='waived')continue;const p=after.periods.find(x=>x.st===b.st);if(!p)lost.push({st:b.st,en:b.en,short:b.pr});else if(p.state!=='paid'&&p.state!=='waived'&&p.covered<p.pr)lost.push({st:p.st,en:p.en,short:p.pr-p.covered});}
+  const worse=RANK[after.status]<RANK[before.status]&&['overdue','due-today','open'].includes(after.status);const moved=after.paidThrough<before.paidThrough;
+  if(!lost.length&&!worse&&!moved){warn.hidden=true;return;}
+  const parts=[];if(lost.length){const f=lost[0];parts.push(`makes ${esc(fmtD(f.st))} – ${esc(fmtD(f.en))} short by <b>${esc(fmtAmt(f.short,cur))}</b>`);if(lost.length>1)parts.push(`leaves ${lost.length-1} later period${lost.length===2?'':'s'} uncovered`);}
+  if(worse)parts.push(`marks ${esc(displayName(u))} <b>${esc(statusLabel(after).toLowerCase())}</b>`);
+  const joined=parts.length>1?parts.slice(0,-1).join(', ')+' and '+parts[parts.length-1]:(parts[0]||'changes what the payments cover');
+  let txt='This '+joined;if(moved)txt+=`; paid-through moves from <b>${esc(fmtD(before.paidThrough))}</b> to <b>${esc(fmtD(after.paidThrough))}</b>`;
+  warn.innerHTML=`<span>${txt}.</span><button class="link sm" type="button" data-act="amt-restore" title="Put the computed amount back in the box (nothing is saved until you press Save)">Reset to computed (${esc(fmtAmt(Number(form.dataset.listed),cur))})</button>`;warn.hidden=false;}
 function closeAmtForm(id,sid,st,ctx){if(ctx==='queue')delete ui.qOpen[id];else if(ui.open[id])ui.open[id]['amt:'+sid+':'+st]=false;}
 /* persist and show the change at once (the server poll would repeat the same render a moment later) */
 async function commitUser(id,u){const ok=await persistUser(id,u);if(ok&&db){state.users[id]=normalizeUser(cleanUser(Object.assign({},clone(u),{id})),id);render();}return ok;}
@@ -1735,7 +1796,7 @@ function detailHTML(id,u,a,today){
       const tierPkgs=packages().filter(p=>p.cycle===subCycle(s));const canTier=tierPkgs.some(p=>p.id!==sa.curPkgId);
       const shownPrice=sa.tiered?sa.curPrice:sa.price,shownList=sa.tiered?sa.curListPrice:sa.listPrice;
       const tl=tierEntries(s);const tierHist=tl.length?`<div class="hist">Tier history: ${tl.map(t=>`${esc(pkgName(t.packageId)||'?')} at ${esc(fmtAmt(t.price,s.currency))}${perOf(s)} from ${esc(fmtD(t.from,true))}${t.note?` (${esc(t.note)})`:''} <button class="link sm danger" type="button" data-act="tier-remove" data-sub="${s.id}" data-from="${t.from}">undo</button>`).join(' → ')}</div>`:'';
-      subsHtml+=`<div class="sub" data-sub="${s.id}">
+      subsHtml+=`<div class="sub" data-sub="${s.id}" data-settled="${dimOn()&&!u.cancel&&sa.status==='current'?1:0}">
         <div class="sub-head">
           ${acctLine(u,s)}
           <div class="sub-line"><span class="pkg-badge" title="Package / tier">${esc(pkgName(sa.curPkgId)||planLabel(s))}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="kind">${subCycle(s)} · ${s.currency}</span><span class="num">${s.discount?`${esc(fmtAmt(shownList,s.currency))}<span class="muted">${perOf(s)}</span> · ${esc(discountLabel(s))} = <b>${esc(fmtAmt(shownPrice,s.currency))}</b>`:`${esc(fmtAmt(shownPrice,s.currency))}<span class="muted">${perOf(s)}</span>`}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>${tierBadgeHTML(s,today)}
@@ -1792,7 +1853,7 @@ function detailHTML(id,u,a,today){
         </div>
       </div>`;
     }else{
-      subsHtml+=`<div class="sub" data-sub="${s.id}">
+      subsHtml+=`<div class="sub" data-sub="${s.id}" data-settled="${dimOn()&&!u.cancel&&sa.status==='paid'?1:0}">
         <div class="sub-head">
           ${acctLine(u,s)}
           <div class="sub-line"><span class="pkg-badge" title="Package / product">${esc(pkgName(s.packageId)||'One-time')}</span><span class="name">${esc(s.name)}</span><span class="kind">one-time · ${s.currency}</span><span class="num">${esc(fmtAmt(s.total,s.currency))}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>
@@ -1963,7 +2024,7 @@ function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','rem
 function syncSettingsBtn(){const open=!$('#settingsPanel').hidden;const b=$('#btn-settings');b.innerHTML=open?'<span class="glyph" aria-hidden="true">‹</span>Home':'Settings';b.setAttribute('aria-expanded',String(open));b.title=open?'Back to the user list':'Open settings';}
 function closeSettings(){$('#settingsPanel').hidden=true;syncSettingsBtn();window.scrollTo({top:0,behavior:'smooth'});}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
-function openSettings(){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);if(state.backend==='api')$('#s-base-url').placeholder=location.origin;fillQueueSettings();$('#s-wa-app').value=waApp();$('#mailBlock').hidden=state.backend!=='api';$('#aiBlock').hidden=state.backend!=='api';if(state.backend==='api'){loadMailSettings();loadAiSettings();}ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
+function openSettings(){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);if(state.backend==='api')$('#s-base-url').placeholder=location.origin;fillQueueSettings();$('#s-wa-app').value=waApp();$('#s-dim').checked=dimOn();$('#mailBlock').hidden=state.backend!=='api';$('#aiBlock').hidden=state.backend!=='api';if(state.backend==='api'){loadMailSettings();loadAiSettings();}ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
 function fillQueueSettings(){$('#s-q1').value=queueTplOf(1);$('#s-q2').value=queueTplOf(2);$('#s-q3').value=queueTplOf(3);$('#s-payhow').value=payHowOf();}
 /* v21: the billing anchor is edited as "day of the month" + "yearly month"; the hidden #s-anchor carries the date they make (year kept from the current anchor) */
 function anchorFrom(day,month){const y=+anchor().slice(0,4);const m=Math.min(12,Math.max(1,Math.round(Number(month))||+anchor().slice(5,7)));const d=clampDay(day,cycleDay());return toISO(new Date(y,m-1,Math.min(d,daysIn(y,m-1))));}
@@ -2076,7 +2137,10 @@ function bind(){
   /* v22: the Discount field fills the amount; the amount field updates the "message says" figure */
   document.addEventListener('input',e=>{const el=e.target;const form=el&&el.closest?el.closest('form.amt-form'):null;if(!form)return;
     if(el.name==='disc'){const v=discountTo(el.value,Number(form.dataset.listed));if(v!=null)form.querySelector('[name=amount]').value=v;}
-    const net=form.querySelector('[data-role=net]');if(net){const credit=Number(form.dataset.credit)||0;net.textContent=fmtAmt(Math.max(0,(Number(form.querySelector('[name=amount]').value)||0)-credit),form.dataset.cur);}});
+    const net=form.querySelector('[data-role=net]');if(net){const credit=Number(form.dataset.credit)||0;net.textContent=fmtAmt(Math.max(0,(Number(form.querySelector('[name=amount]').value)||0)-credit),form.dataset.cur);}
+    amtPreview(form);});
+  /* v24: the warning's "Reset to computed" puts the computed amount back in the box; Save (or Cancel) still decides */
+  document.addEventListener('click',e=>{const b=e.target.closest('button[data-act="amt-restore"]');if(!b)return;const form=b.closest('form.amt-form');if(!form)return;const a=form.querySelector('[name=amount]');a.value=form.dataset.listed;const d=form.querySelector('[name=disc]');if(d)d.value='';a.dispatchEvent(new Event('input',{bubbles:true}));a.focus();});
   $('#rr-close').addEventListener('click',()=>{$('#remindRun').hidden=true;});
   $('#rr-body').addEventListener('change',async e=>{
     const dc=e.target.closest('input[data-act="deact"]');
@@ -2098,7 +2162,7 @@ function bind(){
   $('#ai-key').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveAiKey();}});
   $('#s-cycle-day').addEventListener('input',previewCycleSettings);$('#s-anchor-month').addEventListener('change',previewCycleSettings);
   document.addEventListener('click',e=>{const b=e.target.closest('[data-act="open-ai-settings"]');if(b){e.preventDefault();e.stopPropagation();openAiSettings();}},true);
-  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const cd=Number($('#s-cycle-day').value);if(!(cd>=1&&cd<=31)){err.textContent='The billing cycle day must be between 1 and 31.';return;}const an=anchorFrom(cd,$('#s-anchor-month').value);if(!isDateKey(an)){err.textContent='Pick the month yearly plans renew in.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.cycleDay=Math.round(cd);state.settings.waApp=normWaApp($('#s-wa-app').value);state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.appName=rawAppName($('#s-app-name').value);state.settings.tagline=rawTagline($('#s-tagline').value);state.settings.readModel=normModel($('#s-model').value);state.settings.publicBaseUrl=pubBaseRaw($('#s-base-url').value);state.settings.queueTemplates=normQueueTpl({1:$('#s-q1').value,2:$('#s-q2').value,3:$('#s-q3').value});state.settings.payHow=rawPayHow($('#s-payhow').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
+  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const cd=Number($('#s-cycle-day').value);if(!(cd>=1&&cd<=31)){err.textContent='The billing cycle day must be between 1 and 31.';return;}const an=anchorFrom(cd,$('#s-anchor-month').value);if(!isDateKey(an)){err.textContent='Pick the month yearly plans renew in.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.cycleDay=Math.round(cd);state.settings.waApp=normWaApp($('#s-wa-app').value);state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.appName=rawAppName($('#s-app-name').value);state.settings.tagline=rawTagline($('#s-tagline').value);state.settings.readModel=normModel($('#s-model').value);state.settings.publicBaseUrl=pubBaseRaw($('#s-base-url').value);state.settings.queueTemplates=normQueueTpl({1:$('#s-q1').value,2:$('#s-q2').value,3:$('#s-q3').value});state.settings.payHow=rawPayHow($('#s-payhow').value);state.settings.dimSettled=$('#s-dim').checked;state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
   $('#reset-wrap').addEventListener('click',async e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.id==='btn-reset'){$('#reset-wrap').innerHTML=`<span class="small" style="margin-right:8px">Remove every user, payment and cost? This cannot be undone.</span><button class="btn sm danger" type="button" data-act="reset-yes">Yes, reset</button> <button class="btn sm" type="button" data-act="reset-no">Cancel</button>`;}
@@ -2603,7 +2667,7 @@ function buildUsersCSV(){
 function buildCostsCSV(){const ids=Object.keys(state.costs).sort((a,b)=>state.costs[a].date.localeCompare(state.costs[b].date));return [['date','description','category','currency','cost','tax','rate','product'].join(','),...ids.map(id=>{const c=state.costs[id];return [c.date,c.description,c.category,c.currency,c.cost,c.tax||'',c.rate||'',costPkgName(c)].map(csvCell).join(',');})].join('\n');}
 function blobDownload(filename,text,type){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'text/plain'}));a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);return true;}catch(e){return false;}}
 function buildExportAll(){const docs={};for(const id in state.users)docs['users/'+id]=cleanUser(Object.assign({},state.users[id],{id}));for(const id in state.costs)docs['costs/'+id]=cleanCost(Object.assign({},state.costs[id],{id}));docs['settings/main']=settingsDoc();const at=new Date().toISOString();docs['meta/schema']={version:SCHEMA,at};docs['meta/seed']={done:true,at,exported:true};return {format:'wasool-docs',version:1,exportedAt:at,app:appName(),docs};}
-async function exportAll(){const msg=$('#data-msg'),ta=$('#export-all-text');msg.textContent='';const text=JSON.stringify(buildExportAll(),null,1);const name='wasool-export-'+todayISO()+'.json';
+async function exportAll(){const msg=$('#data-msg'),ta=$('#export-all-text');msg.textContent='';const text=JSON.stringify(buildExportAll(),null,1);const name='wasooli-export-'+todayISO()+'.json';
   if(downloads){try{await downloads.save({filename:name,data:text});msg.textContent='Saved.';return;}catch(e){if(e&&e.code==='declined')return;}}
   if(state.backend!=='artifact'&&blobDownload(name,text,'application/json')){msg.textContent='Downloaded '+name+'.';return;}
   ta.hidden=false;ta.value=text;ta.focus();ta.select();msg.textContent='Copy the JSON below and save it as a file.';}
@@ -2709,7 +2773,7 @@ function makeApiDb(){
 }
 function makeApiSample(info){return {provider:info.provider||'anthropic',model:info.model||'',limits:async()=>({images:{mediaTypes:info.mediaTypes||['image/png','image/jpeg','image/webp','image/gif'],maxBytes:5*1024*1024}}),json:async(prompt,opts)=>{const fd=new FormData();fd.append('prompt',prompt);for(const f of (opts&&opts.images)||[])fd.append('image',f,f.name||'image');const r=await apiFetch('/api/read-image',{method:'POST',body:fd});let j={};try{j=await r.json();}catch(e){}if(!r.ok||j.error){const e={code:j.error||('http_'+r.status),message:j.message||''};if(j.text)e.text=j.text;throw e;}return j.data;}};}
 function makeApiAssets(){return {upload:async file=>{const fd=new FormData();fd.append('file',file,file.name||'receipt');return apiJSON('/api/assets',{method:'POST',body:fd});}};}
-async function detectServer(){if(window.__PT_SERVER__)return true;if(typeof window.claude==='object'&&window.claude)return false;if(!/^https?:$/.test(location.protocol))return false;try{const r=await fetch('/healthz',{credentials:'same-origin'});if(!r.ok)return false;const j=await r.json();return !!(j&&j.app==='wasool');}catch(e){return false;}}
+async function detectServer(){if(window.__PT_SERVER__)return true;if(typeof window.claude==='object'&&window.claude)return false;if(!/^https?:$/.test(location.protocol))return false;try{const r=await fetch('/healthz',{credentials:'same-origin'});if(!r.ok)return false;const j=await r.json();return !!(j&&(j.app==='wasooli'||j.app==='wasool'));}catch(e){return false;}}
 async function initApi(){
   state.backend='api';db=makeApiDb();downloads=null;assets=makeApiAssets();
   let info=null;try{const r=await apiFetch('/api/read-image');if(r.ok)info=await r.json();}catch(e){}
@@ -2718,7 +2782,7 @@ async function initApi(){
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)apiTouch();});
 }
 /* ---------- boot ---------- */
-function applySettingsDoc(b){state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.appName=rawAppName(b.appName);state.settings.tagline=rawTagline(b.tagline);state.settings.readModel=normModel(b.readModel);state.settings.publicBaseUrl=pubBaseRaw(b.publicBaseUrl);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.cycleDay=clampDay(b.cycleDay,+state.settings.anchor.slice(8,10));state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);state.settings.queueTemplates=normQueueTpl(b.queueTemplates);state.settings.payHow=rawPayHow(b.payHow);state.settings.waApp=normWaApp(b.waApp);}
+function applySettingsDoc(b){state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.appName=rawAppName(b.appName);state.settings.tagline=rawTagline(b.tagline);state.settings.readModel=normModel(b.readModel);state.settings.publicBaseUrl=pubBaseRaw(b.publicBaseUrl);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.cycleDay=clampDay(b.cycleDay,+state.settings.anchor.slice(8,10));state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);state.settings.queueTemplates=normQueueTpl(b.queueTemplates);state.settings.payHow=rawPayHow(b.payHow);state.settings.waApp=normWaApp(b.waApp);state.settings.dimSettled=b.dimSettled!==false;}
 function subscribe(){
   db.collection('users').onSnapshot(snap=>{
     const users={};snap.docs.forEach(d=>{const b=d.data();if(b&&(b.email||b.name))users[d.id]=normalizeUser(b,d.id);});

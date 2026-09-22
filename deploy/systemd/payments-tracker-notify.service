@@ -1,5 +1,5 @@
 [Unit]
-Description=Wasool (Payments Tracker) - email today's queue stage to subscribers (notify.py)
+Description=Wasooli (Payments Tracker) - email today's queue stage to subscribers (notify.py)
 After=network-online.target payments-tracker.service
 Wants=network-online.target
 

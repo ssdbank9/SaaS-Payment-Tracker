@@ -1,5 +1,5 @@
 [Unit]
-Description=Wasool (Payments Tracker) - check GitHub for updates every 5 minutes
+Description=Wasooli (Payments Tracker) - check GitHub for updates every 5 minutes
 
 [Timer]
 OnBootSec=2min

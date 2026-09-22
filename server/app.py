@@ -1,4 +1,4 @@
-"""Wasool (Payments Tracker) self-hosted server.
+"""Wasooli (Payments Tracker) self-hosted server.
 
 Serves the single-file admin app from the repository root, a JSON document
 store behind /api/docs that mirrors the claude.ai artifact ``db`` capability,
@@ -22,13 +22,15 @@ import db  # noqa: E402
 import gemini_read  # noqa: E402
 import notify  # noqa: E402
 
-APP_NAME = "Wasool"
+APP_NAME = "Wasooli"
 TAGLINE = "Know who's paid."
-VERSION = "23"
+VERSION = "24"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
 ASSET_RE = re.compile(r"^[A-Za-z0-9_-]{8,40}\.(png|jpg|jpeg|webp|gif)$")
+BRAND_DIR = os.path.join(ROOT, "assets")  # v24: logo, icons and the web-app manifest, committed in the repo
+BRAND_FILE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,60}\.(svg|png|webmanifest|ico)$")
 APP_TZ = ZoneInfo(os.environ.get("APP_TZ", "Asia/Karachi"))
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 ASSET_EXT = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif"}
@@ -116,8 +118,23 @@ def healthz():
     try:
         v = db.version()
     except Exception as e:  # pragma: no cover
-        return jsonify({"ok": False, "app": "wasool", "error": str(e)}), 500
-    return jsonify({"ok": True, "app": "wasool", "version": VERSION, "docs_version": v, "claude": claude_read.enabled(), "reading": reading_provider() if reading_enabled() else ""})
+        return jsonify({"ok": False, "app": "wasooli", "error": str(e)}), 500
+    return jsonify({"ok": True, "app": "wasooli", "version": VERSION, "docs_version": v, "claude": claude_read.enabled(), "reading": reading_provider() if reading_enabled() else ""})
+
+
+# ---------- brand assets (v24): public, so the phone can fetch the icons and manifest for "Add to home screen" ----------
+
+@app.get("/assets/<name>")
+def brand_asset(name):
+    if not BRAND_FILE_RE.match(name) or not os.path.isfile(os.path.join(BRAND_DIR, name)):
+        abort(404)
+    mimetype = "application/manifest+json" if name.endswith(".webmanifest") else None
+    return send_from_directory(BRAND_DIR, name, mimetype=mimetype, max_age=86400)
+
+
+@app.get("/manifest.webmanifest")
+def manifest():
+    return send_from_directory(BRAND_DIR, "manifest.webmanifest", mimetype="application/manifest+json", max_age=3600)
 
 
 # ---------- document store ----------
@@ -169,7 +186,7 @@ def api_export():
     docs = {d["path"]: d["data"] for d in db.list_docs("")}
     out = {"format": "wasool-docs", "version": 1, "exportedAt": db.now_iso(), "docs": docs}
     resp = jsonify(out)
-    resp.headers["Content-Disposition"] = "attachment; filename=wasool-export-%s.json" % db.now_iso()[:10]
+    resp.headers["Content-Disposition"] = "attachment; filename=wasooli-export-%s.json" % db.now_iso()[:10]
     return resp
 
 

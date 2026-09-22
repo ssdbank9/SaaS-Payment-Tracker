@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Wasool (Payments Tracker) - one-shot installer for a fresh Ubuntu 22.04/24.04 VM
+# Wasooli (Payments Tracker) - one-shot installer for a fresh Ubuntu 22.04/24.04 VM
 # (Oracle Cloud Always Free Ampere A1, arm64, or any Ubuntu box).
 #
 #   curl -fsSL https://raw.githubusercontent.com/ssdbank9/SaaS-Payment-Tracker/main/deploy/setup.sh \
-#     | sudo DOMAIN=wasool.example.com ADMIN_PASSCODE='choose-a-long-passcode' bash
+#     | sudo DOMAIN=wasooli.example.com ADMIN_PASSCODE='choose-a-long-passcode' bash
 #
 # Idempotent: run it again to repair or to change DOMAIN / ADMIN_PASSCODE.
 # What it does: installs python3-venv, git and Caddy; clones or updates the repo in
@@ -18,7 +18,7 @@ APP_DIR=${APP_DIR:-/opt/payments-tracker}
 DATA_DIR=${DATA_DIR:-/var/lib/payments-tracker}
 ENV_FILE=${ENV_FILE:-/etc/payments-tracker.env}
 SERVICE_USER=${SERVICE_USER:-payments-tracker}
-APP_NAME="Wasool"
+APP_NAME="Wasooli"
 
 say() { printf '\n\033[1;32m==> %s\033[0m\n' "$*"; }
 warn() { printf '\033[1;33m!!  %s\033[0m\n' "$*" >&2; }
@@ -42,7 +42,7 @@ existing_env() { [ -f "$ENV_FILE" ] && sed -n "s/^$1=//p" "$ENV_FILE" | head -1 
 DOMAIN=${DOMAIN:-$(existing_env DOMAIN || true)}
 if [ -z "${DOMAIN:-}" ]; then
   host_hint=$(hostname -d 2>/dev/null || true)
-  ask DOMAIN "Domain for $APP_NAME (an A record must point here), e.g. wasool.${host_hint:-yourdomain.com}: " ""
+  ask DOMAIN "Domain for $APP_NAME (an A record must point here), e.g. wasooli.${host_hint:-yourdomain.com}: " ""
 fi
 DOMAIN=$(echo "$DOMAIN" | tr 'A-Z' 'a-z' | sed 's#^https\?://##; s#/.*$##')
 [[ "$DOMAIN" =~ ^[a-z0-9.-]+$ ]] || die "DOMAIN '$DOMAIN' does not look like a hostname"
