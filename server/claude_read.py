@@ -54,11 +54,30 @@ def key_hint(k):
     return (k[:7] + "…" + k[-4:]) if len(k) >= 16 else ("•" * len(k))
 
 
+PROVIDERS = ("anthropic", "gemini")
+
+
+def provider(m=None):
+    """v23: which service reads screenshots.  Stores from v22 and earlier have no ``provider`` field: they mean
+    Anthropic, unless the only key present is a Gemini one."""
+    m = ai_settings() if m is None else m
+    p = str(m.get("provider") or "").strip().lower()
+    if p in PROVIDERS:
+        return p
+    if not (stored_key(m) or env_key()) and str(m.get("geminiKey") or "").strip():
+        return "gemini"
+    return "anthropic"
+
+
 def public_ai_settings(m=None):
-    """What the admin page may see: never the key itself."""
+    """What the admin page may see: never a key itself (v23: both providers, and which one is selected)."""
+    import gemini_read
     m = ai_settings() if m is None else m
     k = stored_key(m)
-    return {"hasKey": bool(k), "keyHint": key_hint(k) if k else "", "source": key_source(), "configured": enabled(), "model": MODEL,
+    p = provider(m)
+    g = gemini_read.public_settings(m)
+    return {"provider": p, "hasKey": bool(k), "keyHint": key_hint(k) if k else "", "source": key_source(), "model": MODEL,
+            "gemini": g, "configured": g["configured"] if p == "gemini" else enabled(),
             "savedAt": m.get("savedAt", ""), "lastTest": m.get("lastTest") if isinstance(m.get("lastTest"), dict) else None}
 
 
@@ -101,7 +120,7 @@ class ReadError(Exception):
         self.text = text
 
 
-def _extract_json(text):
+def _extract_json(text, who="Claude"):
     """Pull the first JSON array or object out of a reply that may include prose or fences."""
     t = text.strip()
     fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", t)
@@ -119,7 +138,7 @@ def _extract_json(text):
                 return json.loads(t[i:j + 1])
             except ValueError:
                 continue
-    raise ReadError("invalid_json", "Claude replied but the reply was not JSON.", 200, text)
+    raise ReadError("invalid_json", "%s replied but the reply was not JSON." % who, 200, text)
 
 
 def read(prompt, images=()):

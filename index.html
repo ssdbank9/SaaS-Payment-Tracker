@@ -403,9 +403,9 @@ table.brk tr:last-child td{border-bottom:0}
 .drop.over{border-color:var(--accent);background:var(--accent-soft)}
 .drop label.link{cursor:pointer}
 .thumbs{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-.thumb{width:150px;border:1px solid var(--line);border-radius:4px;padding:6px;background:var(--surface);font-size:11px;color:var(--ink-2)}
+.thumb{flex:1 1 150px;max-width:190px;border:1px solid var(--line);border-radius:4px;padding:6px;background:var(--surface);font-size:11px;color:var(--ink-2)}
 .thumb img{display:block;width:100%;height:90px;object-fit:cover;object-position:top;border-radius:3px;background:var(--surface-2)}
-.thumb .st{margin-top:4px;display:flex;justify-content:space-between;gap:6px;align-items:center}
+.thumb .st{margin-top:4px;display:flex;justify-content:space-between;gap:4px 8px;align-items:center;flex-wrap:wrap}.thumb .st>span:first-child{white-space:nowrap}
 .thumb[data-status="reading"] .st{color:var(--accent-ink)}
 .thumb[data-status="error"] .st{color:var(--crit)}
 .review-bar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin:14px 0 8px}
@@ -437,6 +437,13 @@ table.costs td.prod{color:var(--ink-2);white-space:nowrap}
 .ai-status[data-state="ok"]{color:var(--good);border-color:var(--good)}.ai-status[data-state="ok"]::before{background:var(--good)}
 .ai-status[data-state="bad"]{color:var(--crit);border-color:var(--crit)}.ai-status[data-state="bad"]::before{background:var(--crit)}
 .ai-status[data-state="saved"]{color:var(--warn);border-color:var(--warn)}.ai-status[data-state="saved"]::before{background:var(--warn)}
+.ai-model-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.ai-model-row select,.ai-model-row input{flex:1 1 180px;min-width:0}.ai-model-row [hidden]{display:none}
+#aiBlock [data-provider][hidden]{display:none}
+.thumb .st .act{display:flex;gap:6px;align-items:center;flex:none}
+.thumb[data-status="reading"] .st>span:first-child::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border:2px solid var(--accent);border-right-color:transparent;border-radius:50%;vertical-align:-1px;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.thumb[data-status="reading"] img{opacity:.55}
+.drop.reading-off{border-style:dashed;opacity:.85}
 table.brk tfoot td{font-weight:600;border-top:2px solid var(--line-strong);border-bottom:0}
 table.brk td.neg{color:var(--crit)}
 table.brk td.pos{color:var(--good)}
@@ -471,7 +478,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v22</span>
+      <span class="small muted num" id="app-ver" title="App version">v23</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
     </div>
@@ -555,11 +562,16 @@ table.costs td.cat{color:var(--ink-2)}
       </div>
       <div style="margin-top:16px" id="aiBlock" hidden>
         <div class="block-head" style="margin-bottom:2px"><h3>AI reading (screenshots)</h3><span class="ai-status" id="ai-status" data-state="unset">Not set up</span></div>
-        <p class="small muted">Claude reads statement screenshots and pasted statement text in <b>Import from screenshot</b>, and the lines in <b>Quick add</b>. Paste an Anthropic API key from <code>console.anthropic.com</code> → API keys: it is kept on the server only, never in exports or in the browser, and only its first and last characters are shown again. <code>ANTHROPIC_API_KEY</code> in <code>/etc/payments-tracker.env</code> still works as a fallback. A test costs nothing: it only asks the API whether the key can use the reading model.</p>
+        <p class="small muted">Reads statement screenshots, photos and pasted statement text in <b>Import from screenshot</b>, and the lines in <b>Quick add</b>. Choose a provider and paste its API key: keys are kept on the server only, never in exports or in the browser, and only their first and last characters are shown again. A test makes one tiny request and repeats the API's own answer.</p>
         <div class="form-grid mail-grid" style="margin-top:8px">
-          <label class="f">Anthropic API key<input id="ai-key" type="password" placeholder="sk-ant-api03-…" autocomplete="off" spellcheck="false"></label>
+          <label class="f">Provider<select id="ai-provider"><option value="anthropic">Anthropic (Claude)</option><option value="gemini">Google Gemini</option></select></label>
+          <label class="f" data-provider="anthropic">Anthropic API key <span class="muted">(console.anthropic.com → API keys)</span><input id="ai-key" type="password" placeholder="sk-ant-api03-…" autocomplete="off" spellcheck="false"></label>
+          <label class="f" data-provider="gemini" hidden>Gemini API key <span class="muted">(aistudio.google.com → Get API key)</span><input id="ai-gemini-key" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false"></label>
+          <label class="f" data-provider="gemini" hidden>Model<span class="ai-model-row"><select id="ai-gemini-model" aria-label="Gemini model" hidden></select><input id="ai-gemini-model-text" type="text" placeholder="press Load models, or type a model id" autocomplete="off" spellcheck="false"><button class="btn sm" type="button" id="ai-load-models">Load models</button></span></label>
         </div>
-        <div class="form-actions" style="margin-top:8px"><button class="btn primary" type="button" id="ai-save">Save key</button><button class="btn" type="button" id="ai-test">Test</button><button class="link" type="button" id="ai-clear" hidden>Remove saved key</button><span class="small muted" id="ai-msg"></span></div>
+        <p class="small muted" data-provider="gemini" hidden id="ai-gemini-help"><b>Load models</b> asks the Gemini API which models this key can use and preselects the newest <b>Flash-Lite</b> one (the cheapest that reads pictures). Pick another from the list or choose <i>Type a model id…</i> to enter one by hand.</p>
+        <p class="small muted" data-provider="anthropic"><code>ANTHROPIC_API_KEY</code> in <code>/etc/payments-tracker.env</code> still works as a fallback for the Anthropic key.</p>
+        <div class="form-actions" style="margin-top:8px"><button class="btn primary" type="button" id="ai-save">Save</button><button class="btn" type="button" id="ai-test">Test</button><button class="link" type="button" id="ai-clear" hidden>Remove saved key</button><span class="small muted" id="ai-msg"></span></div>
       </div>
       <div style="margin-top:16px" id="mailBlock" hidden>
         <div class="block-head" style="margin-bottom:2px"><h3>Mail (daily reminder emails)</h3></div>
@@ -727,11 +739,11 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     <section class="panel" id="shotPanel" hidden aria-label="Import costs from a screenshot">
       <div class="panel-head"><h3>Import costs from a screenshot</h3><button class="link" type="button" id="shot-close">Close</button></div>
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add statement screenshots">
-        <p><b>Drop statement screenshots here</b>, paste them with Ctrl+V / Cmd+V, or use the buttons below.</p>
+        <p><b>Drop statement screenshots or photos here</b>, paste them with Ctrl+V / Cmd+V, or use the buttons below. Each picture is read as soon as it is picked.</p>
         <p class="small muted" id="shot-cap" style="margin-top:4px">Claude reads each image and lists the transactions for you to review. Nothing is saved until you choose which rows to add.</p>
       </div>
       <div class="shot-acts" id="shot-acts"><button class="btn" type="button" id="shot-pick">Choose picture</button><button class="btn" type="button" id="shot-camera">Take photo</button><span class="small muted" id="shot-acts-msg"></span></div>
-      <input id="shot-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+      <input id="shot-file" type="file" accept="image/*" multiple hidden>
       <input id="shot-camera-file" type="file" accept="image/*" capture="environment" hidden>
       <div class="notice" id="shot-notice" hidden role="status"><span id="shot-notice-text"></span><button class="btn sm primary" type="button" data-act="open-ai-settings" id="shot-notice-btn">Open Settings → AI reading</button></div>
       <div class="thumbs" id="thumbs"></div>
@@ -752,7 +764,7 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
           <thead><tr><th><input type="checkbox" id="rv-all" aria-label="Select all" checked></th><th>Date</th><th>Description</th><th class="r">Amount</th><th>Currency</th><th>Role</th><th>Category</th><th>Product</th><th>From</th></tr></thead>
           <tbody id="rv-body"></tbody></table></div>
         <p class="small muted" style="margin-top:6px">Debits are pre-selected, credits are not. Mark a row <b>Tax of row above</b> to fold it into the previous cost's tax; a standalone <b>Tax</b> row is saved with cost 0.</p>
-        <div class="form-actions"><button class="btn primary" type="button" id="rv-save">Add 0 selected</button><button class="link" type="button" id="rv-clear">Clear</button><span class="small muted" id="rv-msg"></span><span class="err" id="rv-err"></span></div>
+        <div class="form-actions"><button class="btn primary" type="button" id="rv-save">Apply · add 0 selected</button><button class="link" type="button" id="rv-clear">Clear</button><span class="small muted" id="rv-msg"></span><span class="err" id="rv-err"></span></div>
       </div>
     </section>
     <section class="panel" id="costPanel" hidden>
@@ -811,7 +823,7 @@ const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
 const SCHEMA=11;
-const APP_VERSION='22';
+const APP_VERSION='23';
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
@@ -1957,28 +1969,62 @@ function fillQueueSettings(){$('#s-q1').value=queueTplOf(1);$('#s-q2').value=que
 function anchorFrom(day,month){const y=+anchor().slice(0,4);const m=Math.min(12,Math.max(1,Math.round(Number(month))||+anchor().slice(5,7)));const d=clampDay(day,cycleDay());return toISO(new Date(y,m-1,Math.min(d,daysIn(y,m-1))));}
 function previewCycleSettings(){const d=clampDay($('#s-cycle-day').value,cycleDay()),m=+$('#s-anchor-month').value||+anchor().slice(5,7);const an=anchorFrom(d,m);$('#s-anchor').value=an;const t=$('#s-anchor-text');if(t)t.textContent=`${fmtD(an,true)} · monthly ${ordinal(d)} to ${d===1?'end of month':ordinal(d-1)}${d>28?' (shorter months: the last day)':''}`;}
 function fillCycleSettings(){$('#s-cycle-day').value=cycleDay();$('#s-anchor-month').value=String(+anchor().slice(5,7));$('#s-anchor').value=anchor();previewCycleSettings();}
-/* ---------- v21: AI reading (self-hosted): the Anthropic key lives on the server; the page only ever sees a hint and the last test result ---------- */
-const aiUI={info:null};
-function renderAiStatus(j){aiUI.info=j||null;const st=$('#ai-status'),clr=$('#ai-clear'),key=$('#ai-key');if(!st)return;
+/* ---------- v21: AI reading (self-hosted): the keys live on the server; the page only ever sees a hint and the last test result.
+   v23: two providers (Anthropic / Google Gemini) with a Gemini model picker filled from the API. ---------- */
+const aiUI={info:null,models:[],loadedFor:''};
+const PROVIDER_NAMES={anthropic:'Claude',gemini:'Gemini'};
+function aiProvider(){const v=$('#ai-provider').value;return v==='gemini'?'gemini':'anthropic';}
+function showProviderFields(){const p=aiProvider();document.querySelectorAll('#aiBlock [data-provider]').forEach(el=>{el.hidden=el.dataset.provider!==p;});
+  const j=aiUI.info||{};const g=j.gemini||{};$('#ai-clear').hidden=p==='gemini'?!g.hasKey:!j.hasKey;$('#ai-clear').textContent=p==='gemini'?'Remove saved Gemini key':'Remove saved Anthropic key';}
+function geminiModelValue(){const sel=$('#ai-gemini-model'),txt=$('#ai-gemini-model-text');if(!sel.hidden&&sel.value&&sel.value!=='__custom')return sel.value;return txt.value.trim().replace(/^models\//,'');}
+function fillGeminiModels(models,chosen){const sel=$('#ai-gemini-model'),txt=$('#ai-gemini-model-text');aiUI.models=models||[];
+  if(!aiUI.models.length){sel.hidden=true;txt.hidden=false;if(chosen)txt.value=chosen;return;}
+  const ids=new Set(aiUI.models.map(m=>m.id));const best=aiUI.models.find(m=>m.flash&&m.lite);let opts=aiUI.models.map(m=>`<option value="${esc(m.id)}" title="${esc(m.displayName||m.id)}">${esc(m.id)}${m===best?' · newest Flash-Lite':m.stable?'':' · preview'}</option>`).join('');
+  if(chosen&&!ids.has(chosen))opts=`<option value="${esc(chosen)}">${esc(chosen)} · saved</option>`+opts;
+  opts+='<option value="__custom">Type a model id…</option>';sel.innerHTML=opts;sel.hidden=false;
+  if(chosen)sel.value=chosen;if(!sel.value)sel.value=aiUI.models[0].id;txt.hidden=sel.value!=='__custom';}
+function renderAiStatus(j){aiUI.info=j||null;const st=$('#ai-status'),key=$('#ai-key'),gkey=$('#ai-gemini-key');if(!st)return;
   if(!j){st.dataset.state='unset';st.textContent='Not set up';return;}
-  const lt=j.lastTest;const when=lt&&lt.at?fmtWhen(lt.at):'';
-  if(!j.configured){st.dataset.state='unset';st.textContent='Not set up';}
-  else if(lt&&lt.ok){st.dataset.state='ok';st.textContent=`Working · ${lt.model||j.model}${when?' · tested '+when:''}`;}
-  else if(lt&&lt.ok===false){st.dataset.state='bad';st.textContent=`Not working: ${lt.message||lt.error||'test failed'}`;}
-  else{st.dataset.state='saved';st.textContent=j.source==='env'?'Key from the server environment · not tested yet':'Key saved · not tested yet';}
-  clr.hidden=!j.hasKey;key.placeholder=j.hasKey?`${j.keyHint||'saved'} · paste a new key to replace`:(j.source==='env'?'using ANTHROPIC_API_KEY from the server · paste a key to override':'sk-ant-api03-…');}
-async function loadAiSettings(){const msg=$('#ai-msg');try{const j=await apiJSON('/api/ai-settings');renderAiStatus(j);msg.textContent=j.configured?(j.source==='env'?'Using the key from /etc/payments-tracker.env.':''):'Paste a key and press Save; screenshots in Costs → Import from screenshot then read automatically.';}catch(e){msg.textContent='Could not load the AI settings.';}}
+  const p=j.provider||'anthropic';const g=j.gemini||{};const name=p==='gemini'?'Gemini':'Claude';
+  const lt=j.lastTest;const when=lt&&lt.at?fmtWhen(lt.at):'';const model=p==='gemini'?(g.model||''):(j.model||'');
+  if(!j.configured){st.dataset.state='unset';st.textContent=p==='gemini'&&g.hasKey&&!g.model?'Gemini key saved · pick a model':'Not set up';}
+  else if(lt&&lt.ok){st.dataset.state='ok';st.textContent=`Working (${name}${(lt.model||model)?' · '+(lt.model||model):''})${when?' · tested '+when:''}`;}
+  else if(lt&&lt.ok===false){st.dataset.state='bad';st.textContent=`Not working (${name}): ${lt.message||lt.error||'test failed'}`;}
+  else{st.dataset.state='saved';st.textContent=(p==='anthropic'&&j.source==='env'?'Key from the server environment':`${name} key saved${model?' · '+model:''}`)+' · not tested yet';}
+  key.placeholder=j.hasKey?`${j.keyHint||'saved'} · paste a new key to replace`:(j.source==='env'?'using ANTHROPIC_API_KEY from the server · paste a key to override':'sk-ant-api03-…');
+  gkey.placeholder=g.hasKey?`${g.keyHint||'saved'} · paste a new key to replace`:'AIza…';
+  if(document.activeElement!==$('#ai-provider'))$('#ai-provider').value=p;
+  if(!aiUI.models.length)fillGeminiModels([],g.model||'');else if(g.model&&geminiModelValue()!==g.model)fillGeminiModels(aiUI.models,g.model);
+  showProviderFields();}
+async function loadAiSettings(){const msg=$('#ai-msg');try{const j=await apiJSON('/api/ai-settings');renderAiStatus(j);
+    msg.textContent=j.configured?(j.provider==='anthropic'&&j.source==='env'?'Using the key from /etc/payments-tracker.env.':''):(j.provider==='gemini'&&j.gemini&&j.gemini.hasKey?'Press Load models, pick one and Save.':'Choose a provider, paste its key and press Save; pictures in Costs → Import from screenshot then read as soon as they are picked.');}
+  catch(e){msg.textContent='Could not load the AI settings.';}}
 async function refreshAiInfo(){if(state.backend!=='api')return;let info=null;try{const r=await apiFetch('/api/read-image');if(r.ok)info=await r.json();}catch(e){}sample=info&&info.enabled?makeApiSample(info):null;canImage=!!sample;updateShotCaption();}
-async function saveAiKey(){const msg=$('#ai-msg');const k=$('#ai-key').value.trim();if(!k){msg.textContent='Paste the API key first.';$('#ai-key').focus();return;}msg.textContent='Saving…';$('#ai-save').disabled=true;
-  try{const j=await apiJSON('/api/ai-settings',apiBody('PUT',{apiKey:k}));$('#ai-key').value='';renderAiStatus(j);msg.textContent='Saved. Testing…';await testAiKey(true);await refreshAiInfo();}
-  catch(e){msg.textContent='Could not save: '+(e.message||e.code||'error');}
+async function loadGeminiModels(){const msg=$('#ai-msg'),btn=$('#ai-load-models');const typed=$('#ai-gemini-key').value.trim();const g=(aiUI.info||{}).gemini||{};
+  if(!typed&&!g.hasKey){msg.textContent='Paste the Gemini API key first.';$('#ai-gemini-key').focus();return;}
+  msg.textContent='Asking the Gemini API which models this key can use…';btn.disabled=true;
+  try{const j=await apiJSON('/api/ai-models',apiBody('POST',typed?{geminiKey:typed}:{}));const chosen=geminiModelValue()||j.current||j.default;const pick=(j.models||[]).some(m=>m.id===chosen)?chosen:(j.default||chosen);fillGeminiModels(j.models||[],pick);aiUI.loadedFor=typed||'stored';
+    const lite=(j.models||[]).filter(m=>m.flash&&m.lite).length;msg.textContent=j.models&&j.models.length?`${j.models.length} model${j.models.length===1?'':'s'} can read pictures with this key${j.default?`; ${j.default} preselected${lite?' (newest Flash-Lite)':''}`:''}. Press Save to keep it.`:'The API listed no model that reads pictures for this key.';}
+  catch(e){msg.textContent='Could not load models: '+(e.message||e.code||'error')+(e.code==='not_configured'?'':' (message from the Gemini API)');}
+  finally{btn.disabled=false;}}
+async function saveAiKey(){const msg=$('#ai-msg');const p=aiProvider();const body={provider:p};
+  if(p==='gemini'){const k=$('#ai-gemini-key').value.trim();const m=geminiModelValue();const g=(aiUI.info||{}).gemini||{};if(!k&&!g.hasKey){msg.textContent='Paste the Gemini API key first.';$('#ai-gemini-key').focus();return;}if(k)body.geminiKey=k;if(m!==(g.model||''))body.geminiModel=m;}
+  else{const k=$('#ai-key').value.trim();const j=aiUI.info||{};if(!k&&!j.hasKey&&j.source!=='env'){msg.textContent='Paste the API key first.';$('#ai-key').focus();return;}if(k)body.apiKey=k;}
+  msg.textContent='Saving…';$('#ai-save').disabled=true;
+  try{const j=await apiJSON('/api/ai-settings',apiBody('PUT',body));$('#ai-key').value='';$('#ai-gemini-key').value='';renderAiStatus(j);
+    if(j.configured){msg.textContent='Saved. Testing…';await testAiKey(true);}else msg.textContent=p==='gemini'&&!(j.gemini||{}).model?'Key saved. Press Load models, pick one and Save again.':'Saved.';
+    await refreshAiInfo();}
+  catch(e){msg.textContent=e.code==='nothing_to_save'?'Nothing changed.':'Could not save: '+(e.message||e.code||'error');}
   finally{$('#ai-save').disabled=false;}}
-async function testAiKey(afterSave){const msg=$('#ai-msg');const typed=afterSave?'':$('#ai-key').value.trim();if(!afterSave)msg.textContent='Testing…';$('#ai-test').disabled=true;
-  try{const j=await apiJSON('/api/ai-test',apiBody('POST',typed?{apiKey:typed}:{}));msg.textContent=`Working: the key can use ${j.model}.${typed?' Press Save key to keep it.':''}`;if(!typed)renderAiStatus(Object.assign({},aiUI.info||{},{configured:true,lastTest:j.lastTest||{ok:true,model:j.model,at:j.at}}));}
-  catch(e){const m=e.message||e.code||'error';msg.textContent='Not working: '+m+(e.code==='not_configured'?'':' (message from the Claude API)');if(!typed&&aiUI.info)renderAiStatus(Object.assign({},aiUI.info,{lastTest:e.lastTest||{ok:false,message:m,at:new Date().toISOString()}}));}
+async function testAiKey(afterSave){const msg=$('#ai-msg');const p=aiProvider();const body={provider:p};let typed='';
+  if(p==='gemini'){typed=afterSave?'':$('#ai-gemini-key').value.trim();if(typed)body.geminiKey=typed;const m=geminiModelValue();if(m)body.model=m;}
+  else{typed=afterSave?'':$('#ai-key').value.trim();if(typed)body.apiKey=typed;}
+  if(!afterSave)msg.textContent='Testing…';$('#ai-test').disabled=true;
+  try{const j=await apiJSON('/api/ai-test',apiBody('POST',body));msg.textContent=`Working: ${PROVIDER_NAMES[p]} answered with ${j.model}.${typed?' Press Save to keep the key.':''}`;if(!typed&&aiUI.info&&p===(aiUI.info.provider||'anthropic'))renderAiStatus(Object.assign({},aiUI.info,{configured:true,lastTest:j.lastTest||{ok:true,model:j.model,at:j.at,provider:p}}));}
+  catch(e){const m=e.message||e.code||'error';msg.textContent='Not working: '+m+(e.code==='not_configured'?'':` (message from the ${PROVIDER_NAMES[p]} API)`);if(!typed&&aiUI.info&&p===(aiUI.info.provider||'anthropic'))renderAiStatus(Object.assign({},aiUI.info,{lastTest:e.lastTest||{ok:false,message:m,at:new Date().toISOString(),provider:p}}));}
   finally{$('#ai-test').disabled=false;}}
-async function clearAiKey(){const msg=$('#ai-msg');msg.textContent='Removing…';try{const j=await apiJSON('/api/ai-settings',apiBody('PUT',{clearKey:true}));renderAiStatus(j);msg.textContent=j.configured?'Saved key removed; the server environment key is used.':'Saved key removed. Screenshot reading is off until a key is saved.';await refreshAiInfo();}catch(e){msg.textContent='Could not remove: '+(e.message||e.code||'error');}}
-function openAiSettings(){openSettings();const b=$('#aiBlock');if(b&&!b.hidden){setTimeout(()=>{b.scrollIntoView({behavior:'smooth',block:'start'});$('#ai-key').focus();},350);}}
+async function clearAiKey(){const msg=$('#ai-msg');const p=aiProvider();msg.textContent='Removing…';try{const j=await apiJSON('/api/ai-settings',apiBody('PUT',p==='gemini'?{clearGeminiKey:true}:{clearKey:true}));renderAiStatus(j);msg.textContent=j.configured?'Saved key removed; reading still works with the other configured key.':`Saved ${PROVIDER_NAMES[p]} key removed. Screenshot reading is off until a key is saved.`;await refreshAiInfo();}catch(e){msg.textContent='Could not remove: '+(e.message||e.code||'error');}}
+function openAiSettings(){openSettings();const b=$('#aiBlock');if(b&&!b.hidden){setTimeout(()=>{b.scrollIntoView({behavior:'smooth',block:'start'});(aiProvider()==='gemini'?$('#ai-gemini-key'):$('#ai-key')).focus();},350);}}
 async function loadMailSettings(){const msg=$('#m-msg');try{const m=await apiJSON('/api/mail-settings');$('#m-host').value=m.host||'';$('#m-port').value=m.port||587;$('#m-user').value=m.user||'';$('#m-from').value=m.fromName||'';$('#m-from-email').value=m.fromEmail||'';$('#m-test-to').value=m.testTo||'';$('#m-pass').value='';$('#m-pass').placeholder=m.hasPassword?'•••••••• saved · leave blank to keep':'app password';msg.textContent=m.configured?'Configured: the daily job at 09:00 emails today\'s stage.':'Not configured: nothing is emailed automatically.';}catch(e){msg.textContent='Could not load mail settings.';}}
 async function saveMailSettings(){const msg=$('#m-msg');msg.textContent='Saving…';const body={host:$('#m-host').value.trim(),port:Number($('#m-port').value)||587,user:$('#m-user').value.trim(),fromName:$('#m-from').value.trim(),fromEmail:$('#m-from-email').value.trim(),testTo:$('#m-test-to').value.trim()};const pw=$('#m-pass').value;if(pw)body.password=pw;if(!body.host&&!body.user&&!pw)body.clearPassword=true;
   try{const m=await apiJSON('/api/mail-settings',apiBody('PUT',body));$('#m-pass').value='';$('#m-pass').placeholder=m.hasPassword?'•••••••• saved · leave blank to keep':'app password';msg.textContent=m.configured?'Saved. The daily job at 09:00 will email today\'s stage.':'Saved, but not configured yet (host, user and app password are needed).';}catch(e){msg.textContent='Could not save: '+(e.message||e.code||'error');}}
@@ -2048,7 +2094,7 @@ function bind(){
   });
   $('#settings-close').addEventListener('click',closeSettings);
   $('#m-save').addEventListener('click',saveMailSettings);$('#m-test').addEventListener('click',testMail);
-  $('#ai-save').addEventListener('click',saveAiKey);$('#ai-test').addEventListener('click',()=>testAiKey(false));$('#ai-clear').addEventListener('click',clearAiKey);
+  $('#ai-save').addEventListener('click',saveAiKey);$('#ai-test').addEventListener('click',()=>testAiKey(false));$('#ai-clear').addEventListener('click',clearAiKey);$('#ai-provider').addEventListener('change',()=>{showProviderFields();$('#ai-msg').textContent=aiProvider()==='gemini'?'Paste a Gemini key, press Load models, then Save.':'Paste an Anthropic key and press Save.';});$('#ai-load-models').addEventListener('click',loadGeminiModels);$('#ai-gemini-model').addEventListener('change',e=>{const t=$('#ai-gemini-model-text');t.hidden=e.target.value!=='__custom';if(!t.hidden){t.value='';t.focus();}});
   $('#ai-key').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveAiKey();}});
   $('#s-cycle-day').addEventListener('input',previewCycleSettings);$('#s-anchor-month').addEventListener('change',previewCycleSettings);
   document.addEventListener('click',e=>{const b=e.target.closest('[data-act="open-ai-settings"]');if(b){e.preventDefault();e.stopPropagation();openAiSettings();}},true);
@@ -2330,24 +2376,28 @@ async function quickSave(){
 }
 
 /* ---------- import costs from a screenshot ---------- */
-const shot={images:[],rows:[],busy:false};
+const shot={images:[],rows:[],busy:false,notSetUp:'',noticeIsSetup:false};
 const MONTH_RE='jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec';
 function extractPrompt(){return `You are reading a screenshot of a bank or credit-card statement, or its text. Extract every transaction row.
 Reply with only a JSON array. Each element: {"date":"YYYY-MM-DD","description":"text as printed","amount":123.45,"currency":"USD" or "PKR" or null,"is_credit":true or false}.
 Rules: amount is a positive number with no symbols or thousands separators. is_credit is true for money received, refunds, reversals and payments made to the card, false for purchases, charges, fees and taxes. Infer the year from context on the statement; if none is visible use ${todayISO().slice(0,4)}. Set currency only when a symbol or code is visible next to the amount or in the statement header (Rs, PKR, $, USD), else null. Skip balances, totals, headings and running-balance columns. If there are no transactions reply [].`;}
 const NOT_SET_UP_MSG='Screenshot reading isn\'t set up yet: paste an API key in Settings → AI reading.';
+function readerName(){return sample&&sample.provider==='gemini'?'Gemini':'Claude';}
+function notSetUpMsg(){return (shot.notSetUp||NOT_SET_UP_MSG);}
 function shotNotice(text,withButton,kind){const n=$('#shot-notice');if(!text){n.hidden=true;return;}n.hidden=false;n.dataset.kind=kind||'warn';$('#shot-notice-text').textContent=text;$('#shot-notice-btn').hidden=!withButton;}
 function updateShotCaption(){
   const cap=$('#shot-cap');const drop=$('#drop');const acts=$('#shot-acts');
-  if(sample&&canImage){cap.textContent='Claude reads each image and lists the transactions for you to review. Nothing is saved until you choose which rows to add.';drop.hidden=false;acts.hidden=false;shotNotice('');}
+  drop.classList.toggle('reading-off',!(sample&&canImage));
+  if(sample&&canImage){cap.textContent=`${readerName()}${sample.model?' ('+sample.model+')':''} reads each picture as soon as it is picked and lists the transactions for you to review. Nothing is saved until you press Apply.`;drop.hidden=false;acts.hidden=false;if(shot.noticeIsSetup){shotNotice('');shot.noticeIsSetup=false;}}
   else if(sample){drop.hidden=true;acts.hidden=true;$('#shot-alt').open=true;shotNotice('This view cannot send images to Claude. Paste the statement as text below and Claude will structure it.',false,'info');}
-  else{drop.hidden=true;acts.hidden=true;$('#shot-alt').open=true;shotNotice(state.backend==='api'?NOT_SET_UP_MSG+' Until then, paste the statement as text below; dates and amounts are picked out line by line.':'Claude is not available in this view, so paste the statement as text below; dates and amounts are picked out line by line.',state.backend==='api',state.backend==='api'?'warn':'info');}
+  else if(state.backend==='api'){cap.textContent='Pictures are kept here until reading is set up; add a key in Settings → AI reading, then press Read again.';drop.hidden=false;acts.hidden=false;shotNotice(notSetUpMsg()+' Until then, paste the statement as text below; dates and amounts are picked out line by line.',true,'warn');shot.noticeIsSetup=true;}
+  else{drop.hidden=true;acts.hidden=true;$('#shot-alt').open=true;shotNotice('Claude is not available in this view, so paste the statement as text below; dates and amounts are picked out line by line.',false,'info');}
 }
 function openShot(){$('#shotPanel').hidden=false;$('#costPanel').hidden=true;updateShotCaption();$('#rv-cur').value='PKR';$('#rv-pkg').innerHTML=costPkgOptions('');$('#shotPanel').scrollIntoView({behavior:'smooth',block:'start'});}
 function closeShot(){$('#shotPanel').hidden=true;}
 function clearShot(){shot.images.forEach(i=>{try{URL.revokeObjectURL(i.url);}catch(e){}});shot.images=[];shot.rows=[];$('#shot-raw').hidden=true;$('#shot-raw').textContent='';$('#rv-msg').textContent='';$('#rv-err').textContent='';renderThumbs();renderReview();}
 function renderThumbs(){
-  $('#thumbs').innerHTML=shot.images.map((im,i)=>{const n=shot.rows.filter(r=>r.img===i).length;const st=im.status==='reading'?'Reading…':im.status==='done'?`${n} row${n===1?'':'s'}`:im.status==='error'?(im.err||'Failed'):'Queued';return `<div class="thumb" data-status="${im.status}"><img src="${im.url}" alt="${esc(im.name)}"><div class="st"><span title="${esc(im.name)}">${esc(st)}</span><button class="link sm" type="button" data-act="thumb-remove" data-i="${i}">remove</button></div></div>`;}).join('');
+  $('#thumbs').innerHTML=shot.images.map((im,i)=>{const n=shot.rows.filter(r=>r.img===i).length;const st=im.status==='reading'?'Reading…':im.status==='preparing'?'Preparing…':im.status==='done'?`${n} row${n===1?'':'s'}`:im.status==='error'?(im.err||'Failed'):'Queued';const again=(im.status==='error'||im.status==='done')?`<button class="link sm" type="button" data-act="thumb-again" data-i="${i}" title="Read this picture again">Read again</button>`:'';return `<div class="thumb" data-status="${im.status}" data-i="${i}"><img src="${im.url}" alt="${esc(im.name)}"><div class="st"><span title="${esc(im.name)}">${esc(st)}</span><span class="act">${again}<button class="link sm" type="button" data-act="thumb-remove" data-i="${i}">remove</button></span></div></div>`;}).join('');
 }
 function addRows(data,imgIdx,fromText){
   if(!Array.isArray(data))throw {code:'invalid_json',text:typeof data==='string'?data:JSON.stringify(data)};
@@ -2386,25 +2436,55 @@ function regexParse(text){
 }
 async function extractImage(idx){
   const im=shot.images[idx];if(!im)return;im.status='reading';im.err='';renderThumbs();
+  if(shot.rows.some(r=>r.img===idx)){shot.rows=shot.rows.filter(r=>r.img!==idx);renderReview();}
   try{
-    if(!(sample&&canImage))throw {code:'images_unavailable'};
+    if(!(sample&&canImage)&&state.backend==='api')await refreshAiInfo();
+    if(!(sample&&canImage))throw {code:state.backend==='api'?'not_configured':'images_unavailable'};
     const data=await sample.json(extractPrompt(),{images:[im.file],modelTier:readModel()});
     const n=addRows(data,idx,false);im.status='done';if(!n)im.err='No transactions found';
   }catch(e){
-    im.status='error';const c=e&&e.code;
-    if(c==='not_configured'&&state.backend==='api'){sample=null;canImage=false;updateShotCaption();}
-    im.err=c==='not_configured'?'Reading not set up (see above)':c==='invalid_key'?'API key rejected: check Settings → AI reading':c==='not_granted'||c==='sampling_disabled'?'Claude not allowed here':c==='rate_limited'?'Too many requests, try again in a minute':c==='image_rejected'?'Image not accepted (type or size)':c==='invalid_json'?'Could not parse the reply; see text below':c==='images_unavailable'?'Images cannot be sent from this view':c==='refused'?'Claude declined this image':'Reading failed'+(e&&e.message?': '+e.message:'');
-    if(e&&e.text){$('#shot-raw').hidden=false;$('#shot-raw').textContent='Claude read this from '+im.name+' but it could not be parsed. Fix it and paste it as text below:\n\n'+e.text;}
+    im.status='error';const c=e&&e.code;const who=readerName();
+    if(c==='not_configured'&&state.backend==='api'){if(e&&e.message)shot.notSetUp=e.message;sample=null;canImage=false;updateShotCaption();}
+    im.err=c==='not_configured'?'Reading not set up (see above)':c==='invalid_key'?'API key rejected: check Settings → AI reading':c==='not_granted'||c==='sampling_disabled'?'Claude not allowed here':c==='rate_limited'?'Too many requests, try again in a minute':c==='image_rejected'?'Image not accepted (type or size)':c==='invalid_json'?'Could not parse the reply; see text below':c==='images_unavailable'?'Images cannot be sent from this view':c==='refused'?who+' declined this image':c==='not_found'?'Model not found: pick another in Settings → AI reading':'Reading failed'+(e&&e.message?': '+e.message:'');
+    if(c!=='not_configured'&&e&&e.message&&c!=='invalid_json')shotNotice(`${im.name}: ${e.message}${c==='invalid_key'||c==='not_found'?'':' — the picture is kept; press Read again to retry.'}`,c==='invalid_key'||c==='not_found','warn');
+    if(e&&e.text){$('#shot-raw').hidden=false;$('#shot-raw').textContent=who+' read this from '+im.name+' but it could not be parsed. Fix it and paste it as text below:\n\n'+e.text;}
   }
   renderThumbs();renderReview();
 }
+const SHRINK_MAX=1600,SHRINK_Q=0.85,SHRINK_SKIP_BYTES=900*1024;
+async function shrinkImage(file){
+  /* v23: phone photos are several MB; scale the long side to 1600px and re-encode as JPEG 0.85 before upload. GIFs and small pictures pass through; any failure returns the original. */
+  if(!/^image\/(jpeg|png|webp|heic|heif|bmp|tiff)$/i.test(file.type)&&!/^image\//.test(file.type))return file;
+  if(/gif/i.test(file.type))return file;
+  let bmp=null,w=0,h=0,close=()=>{};
+  try{
+    if(window.createImageBitmap){bmp=await createImageBitmap(file);w=bmp.width;h=bmp.height;close=()=>bmp.close&&bmp.close();}
+    else{const url=URL.createObjectURL(file);try{bmp=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=url;});w=bmp.naturalWidth;h=bmp.naturalHeight;}finally{URL.revokeObjectURL(url);}}
+  }catch(e){return file;}
+  const long=Math.max(w,h);if(!long)return file;
+  const wantScale=long>SHRINK_MAX;const wantReencode=file.size>SHRINK_SKIP_BYTES||!/^image\/(png|jpeg|webp)$/i.test(file.type);
+  if(!wantScale&&!wantReencode){close();return file;}
+  const k=wantScale?SHRINK_MAX/long:1;const cw=Math.max(1,Math.round(w*k)),ch=Math.max(1,Math.round(h*k));
+  try{
+    const c=document.createElement('canvas');c.width=cw;c.height=ch;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cw,ch);ctx.drawImage(bmp,0,0,cw,ch);close();
+    const blob=await new Promise(res=>c.toBlob(res,'image/jpeg',SHRINK_Q));if(!blob)return file;
+    if(!wantScale&&blob.size>=file.size&&/^image\/(png|jpeg|webp)$/i.test(file.type))return file;
+    const base=(file.name||'picture').replace(/\.[a-z0-9]+$/i,'');return new File([blob],base+'.jpg',{type:'image/jpeg',lastModified:Date.now()});
+  }catch(e){close();return file;}
+}
 async function addFiles(files){
-  const list=[...files].filter(f=>/^image\//.test(f.type));
-  if(!list.length){toast('Drop PNG, JPEG or WebP screenshots.');return;}
+  const list=[...files].filter(f=>/^image\//.test(f.type)||/\.(png|jpe?g|webp|gif|heic|heif)$/i.test(f.name||''));
+  if(!list.length){toast('Drop PNG, JPEG or WebP screenshots, or photos.');return;}
   $('#review').hidden=false;
+  const first=shot.images.length;
   for(const f of list){shot.images.push({file:f,name:f.name||'pasted image',url:URL.createObjectURL(f),status:'queued',err:'',assetId:''});}
   renderThumbs();
-  for(let i=shot.images.length-list.length;i<shot.images.length;i++)await extractImage(i);
+  for(let i=first;i<shot.images.length;i++){
+    const im=shot.images[i];if(!im)continue;
+    im.status='preparing';renderThumbs();
+    try{im.file=await shrinkImage(im.file);}catch(e){}
+    await extractImage(i);
+  }
 }
 async function extractText(){
   const text=$('#shot-text').value.trim();const msg=$('#shot-text-msg');if(!text){msg.textContent='Paste some lines first.';return;}
@@ -2441,7 +2521,7 @@ function renderReview(){
   for(const r of sel){const c=rowCur(r);sumAdd(S,r.amount,c,null);if(c!==cur&&!defaultRate())unconv++;}
   const total=cur==='USD'?S.usd:S.pkr;
   $('#rv-total').innerHTML=sel.length?`Will add <b>${esc(fmtAmt(total,cur))}</b>${S.missing?' <span class="muted">(some rows in the other currency, no rate)</span>':''}<br><span class="small muted">${esc(ownText(S,cur))} across ${sel.length} row${sel.length===1?'':'s'}</span>`:'';
-  $('#rv-save').textContent=`Add ${sel.length} selected`;$('#rv-save').disabled=!sel.length||shot.busy;
+  $('#rv-save').textContent=`Apply · add ${sel.length} selected`;$('#rv-save').disabled=!sel.length||shot.busy;
   $('#rv-all').checked=rows.length>0&&sel.length===rows.length;
 }
 function isDupCost(date,desc,total,cur){const d=desc.trim().toLowerCase();return Object.values(state.costs).some(c=>c.date===date&&c.currency===cur&&Math.abs(costTotal(c)-total)<0.005&&c.description.trim().toLowerCase()===d);}
@@ -2484,18 +2564,21 @@ function bindShot(){
   ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
   ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
   drop.addEventListener('drop',e=>{if(e.dataTransfer&&e.dataTransfer.files)addFiles(e.dataTransfer.files);});
+  const panel=$('#shotPanel');['dragenter','dragover'].forEach(ev=>panel.addEventListener(ev,e=>{if(e.dataTransfer&&[...e.dataTransfer.types||[]].includes('Files')){e.preventDefault();drop.classList.add('over');}}));
+  panel.addEventListener('dragleave',e=>{if(!panel.contains(e.relatedTarget))drop.classList.remove('over');});
+  panel.addEventListener('drop',e=>{if(e.target.closest('#drop'))return;if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length){e.preventDefault();drop.classList.remove('over');addFiles(e.dataTransfer.files);}});
   document.addEventListener('paste',e=>{
     if($('#shotPanel').hidden)return;const cd=e.clipboardData;if(!cd)return;
     const files=[...(cd.files||[])].filter(f=>/^image\//.test(f.type));
-    if(files.length&&sample&&canImage){e.preventDefault();addFiles(files);return;}
+    if(files.length){e.preventDefault();addFiles(files);return;}
     if(!files.length&&document.activeElement!==$('#shot-text')&&!(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#review'))){const t=cd.getData('text');if(t&&/\d/.test(t)){e.preventDefault();$('#shot-alt').open=true;$('#shot-text').value=t;extractText();}}
   });
   $('#shot-text-go').addEventListener('click',extractText);
-  $('#thumbs').addEventListener('click',e=>{const b=e.target.closest('[data-act="thumb-remove"]');if(!b)return;const i=+b.dataset.i;shot.rows=shot.rows.filter(r=>r.img!==i).map(r=>Object.assign(r,{img:r.img>i?r.img-1:r.img}));try{URL.revokeObjectURL(shot.images[i].url);}catch(ex){}shot.images.splice(i,1);renderThumbs();renderReview();});
+  $('#thumbs').addEventListener('click',e=>{const a=e.target.closest('[data-act="thumb-again"]');if(a){const i=+a.dataset.i;if(shot.images[i]&&shot.images[i].status!=='reading')extractImage(i);return;}const b=e.target.closest('[data-act="thumb-remove"]');if(!b)return;const i=+b.dataset.i;shot.rows=shot.rows.filter(r=>r.img!==i).map(r=>Object.assign(r,{img:r.img>i?r.img-1:r.img}));try{URL.revokeObjectURL(shot.images[i].url);}catch(ex){}shot.images.splice(i,1);renderThumbs();renderReview();});
   const body=$('#rv-body');
   body.addEventListener('input',e=>{const el=e.target.closest('[data-f]');if(!el)return;const tr=el.closest('tr');const r=shot.rows.find(x=>x.id===tr.dataset.id);if(!r)return;const f=el.dataset.f;
     if(f==='sel'){r.sel=el.checked;tr.dataset.sel=r.sel?1:0;}else if(f==='amount'){r.amount=Number(el.value)||0;}else if(f==='cur'){r.cur=el.value||null;}else if(f==='role'){r.role=el.value;tr.dataset.role=r.role;}else r[f]=el.value;
-    if(f!=='desc'&&f!=='cat'&&f!=='date'&&f!=='pkg')renderReview();else{const sel=shot.rows.filter(x=>x.sel);$('#rv-save').textContent=`Add ${sel.length} selected`;}});
+    if(f!=='desc'&&f!=='cat'&&f!=='date'&&f!=='pkg')renderReview();else{const sel=shot.rows.filter(x=>x.sel);$('#rv-save').textContent=`Apply · add ${sel.length} selected`;}});
   $('#rv-all').addEventListener('change',e=>{shot.rows.forEach(r=>r.sel=e.target.checked);renderReview();});
   $('#rv-cur').addEventListener('change',renderReview);
   $('#rv-cat').addEventListener('input',()=>{body.querySelectorAll('input.cat').forEach(i=>i.placeholder=$('#rv-cat').value||'—');});
@@ -2624,7 +2707,7 @@ function makeApiDb(){
   const coll=name=>({doc:id=>docRef(name+'/'+id),limit:()=>coll(name),get:async()=>snapOf((await apiJSON('/api/docs?prefix='+encodeURIComponent(name+'/'))).docs),onSnapshot:(cb,err)=>{apiListen(async()=>snapOf((await apiJSON('/api/docs?prefix='+encodeURIComponent(name+'/'))).docs),cb,err);}});
   return {collection:coll,doc:docRef};
 }
-function makeApiSample(info){return {limits:async()=>({images:{mediaTypes:info.mediaTypes||['image/png','image/jpeg','image/webp','image/gif'],maxBytes:5*1024*1024}}),json:async(prompt,opts)=>{const fd=new FormData();fd.append('prompt',prompt);for(const f of (opts&&opts.images)||[])fd.append('image',f,f.name||'image');const r=await apiFetch('/api/read-image',{method:'POST',body:fd});let j={};try{j=await r.json();}catch(e){}if(!r.ok||j.error){const e={code:j.error||('http_'+r.status),message:j.message||''};if(j.text)e.text=j.text;throw e;}return j.data;}};}
+function makeApiSample(info){return {provider:info.provider||'anthropic',model:info.model||'',limits:async()=>({images:{mediaTypes:info.mediaTypes||['image/png','image/jpeg','image/webp','image/gif'],maxBytes:5*1024*1024}}),json:async(prompt,opts)=>{const fd=new FormData();fd.append('prompt',prompt);for(const f of (opts&&opts.images)||[])fd.append('image',f,f.name||'image');const r=await apiFetch('/api/read-image',{method:'POST',body:fd});let j={};try{j=await r.json();}catch(e){}if(!r.ok||j.error){const e={code:j.error||('http_'+r.status),message:j.message||''};if(j.text)e.text=j.text;throw e;}return j.data;}};}
 function makeApiAssets(){return {upload:async file=>{const fd=new FormData();fd.append('file',file,file.name||'receipt');return apiJSON('/api/assets',{method:'POST',body:fd});}};}
 async function detectServer(){if(window.__PT_SERVER__)return true;if(typeof window.claude==='object'&&window.claude)return false;if(!/^https?:$/.test(location.protocol))return false;try{const r=await fetch('/healthz',{credentials:'same-origin'});if(!r.ok)return false;const j=await r.json();return !!(j&&j.app==='wasool');}catch(e){return false;}}
 async function initApi(){

@@ -19,11 +19,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import auth  # noqa: E402
 import claude_read  # noqa: E402
 import db  # noqa: E402
+import gemini_read  # noqa: E402
 import notify  # noqa: E402
 
 APP_NAME = "Wasool"
 TAGLINE = "Know who's paid."
-VERSION = "22"
+VERSION = "23"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
@@ -116,7 +117,7 @@ def healthz():
         v = db.version()
     except Exception as e:  # pragma: no cover
         return jsonify({"ok": False, "app": "wasool", "error": str(e)}), 500
-    return jsonify({"ok": True, "app": "wasool", "version": VERSION, "docs_version": v, "claude": claude_read.enabled()})
+    return jsonify({"ok": True, "app": "wasool", "version": VERSION, "docs_version": v, "claude": claude_read.enabled(), "reading": reading_provider() if reading_enabled() else ""})
 
 
 # ---------- document store ----------
@@ -213,21 +214,43 @@ def blob(asset_id):
     return send_from_directory(db.ASSETS_DIR, asset_id, max_age=86400 * 30)
 
 
-# ---------- Claude reading ----------
+# ---------- screenshot reading (v23: Anthropic or Google Gemini, chosen in Settings → AI reading) ----------
+
+def reading_provider():
+    return claude_read.provider()
+
+
+def reading_enabled(p=None):
+    p = p or reading_provider()
+    return gemini_read.enabled() if p == "gemini" else claude_read.enabled()
+
+
+def reading_model(p=None):
+    p = p or reading_provider()
+    return gemini_read.stored_model() if p == "gemini" else claude_read.MODEL
+
+
+def not_set_up_message(p=None):
+    p = p or reading_provider()
+    return gemini_read.not_set_up_message() if p == "gemini" else claude_read.NOT_SET_UP
+
 
 @app.get("/api/read-image")
 @auth.login_required
 def api_read_image_info():
-    on = claude_read.enabled()
-    return jsonify({"enabled": on, "configured": on, "source": claude_read.key_source(), "model": claude_read.MODEL, "mediaTypes": list(claude_read.MEDIA_TYPES),
-                    "message": "" if on else claude_read.NOT_SET_UP}), (200 if on else 501)
+    p = reading_provider()
+    on = reading_enabled(p)
+    return jsonify({"enabled": on, "configured": on, "provider": p, "source": claude_read.key_source() if p == "anthropic" else ("settings" if on else ""),
+                    "model": reading_model(p), "mediaTypes": list(claude_read.MEDIA_TYPES),
+                    "message": "" if on else not_set_up_message(p)}), (200 if on else 501)
 
 
 @app.post("/api/read-image")
 @auth.login_required
 def api_read_image():
-    if not claude_read.enabled():
-        return jsonify({"error": "not_configured", "message": claude_read.NOT_SET_UP}), 501
+    p = reading_provider()
+    if not reading_enabled(p):
+        return jsonify({"error": "not_configured", "provider": p, "message": not_set_up_message(p)}), 501
     if request.is_json:
         body = request.get_json(silent=True) or {}
         prompt = str(body.get("prompt", ""))
@@ -238,15 +261,15 @@ def api_read_image():
     if not prompt.strip():
         return jsonify({"error": "no_prompt"}), 400
     try:
-        data, text = claude_read.read(prompt, images)
+        data, text = (gemini_read.read if p == "gemini" else claude_read.read)(prompt, images)
     except claude_read.ReadError as e:
-        db.audit("admin", "read.error", e.code, auth.client_ip())
-        return jsonify({"error": e.code, "message": e.message, "text": e.text}), e.status
-    db.audit("admin", "read.ok", "%d image(s)" % len(images), auth.client_ip())
-    return jsonify({"data": data, "text": text})
+        db.audit("admin", "read.error", "%s: %s" % (p, e.code), auth.client_ip())
+        return jsonify({"error": e.code, "message": e.message, "text": e.text, "provider": p}), e.status
+    db.audit("admin", "read.ok", "%s: %d image(s)" % (p, len(images)), auth.client_ip())
+    return jsonify({"data": data, "text": text, "provider": p, "model": reading_model(p)})
 
 
-# ---------- AI reading settings (v21: the Anthropic key, kept in the meta table, never in the docs export) ----------
+# ---------- AI reading settings (v21: the Anthropic key; v23: provider choice, Gemini key and model; all in the meta table, never in the docs export) ----------
 
 @app.get("/api/ai-settings")
 @auth.login_required
@@ -262,10 +285,21 @@ def api_ai_settings_put():
         return jsonify({"error": "body_must_be_object"}), 400
     cur = claude_read.ai_settings()
     out = dict(cur)
+    changes = []
+    prov = body.get("provider")
+    if prov is not None:
+        prov = str(prov).strip().lower()
+        if prov not in claude_read.PROVIDERS:
+            return jsonify({"error": "bad_provider", "message": "Provider must be anthropic or gemini."}), 400
+        if prov != claude_read.provider(cur):
+            out["lastTest"] = None
+            changes.append("provider " + prov)
+        out["provider"] = prov
     if body.get("clearKey"):
         out["apiKey"] = ""
         out["lastTest"] = None
-    else:
+        changes.append("Anthropic key cleared")
+    elif body.get("apiKey") is not None:
         key = body.get("apiKey")
         if not isinstance(key, str) or not key.strip():
             return jsonify({"error": "no_key", "message": "Paste the API key first."}), 400
@@ -274,39 +308,91 @@ def api_ai_settings_put():
             return jsonify({"error": "bad_key", "message": "That does not look like an Anthropic API key (it starts with sk-ant- and has no spaces)."}), 400
         out["apiKey"] = key
         out["lastTest"] = None
+        changes.append("Anthropic key saved")
+    if body.get("clearGeminiKey"):
+        out["geminiKey"] = ""
+        out["lastTest"] = None
+        changes.append("Gemini key cleared")
+    elif body.get("geminiKey") is not None:
+        gk = body.get("geminiKey")
+        if not isinstance(gk, str) or not gk.strip():
+            return jsonify({"error": "no_key", "message": "Paste the Gemini API key first."}), 400
+        gk = gk.strip()
+        if len(gk) < 20 or len(gk) > 400 or re.search(r"\s", gk):
+            return jsonify({"error": "bad_key", "message": "That does not look like a Gemini API key (it starts with AIza and has no spaces)."}), 400
+        out["geminiKey"] = gk
+        out["lastTest"] = None
+        changes.append("Gemini key saved")
+    if body.get("geminiModel") is not None:
+        gm = gemini_read.norm_model(body.get("geminiModel"))
+        if str(body.get("geminiModel") or "").strip() and not gm:
+            return jsonify({"error": "bad_model", "message": "A Gemini model id has only letters, digits, dots and dashes (e.g. gemini-2.5-flash-lite)."}), 400
+        if gm != gemini_read.stored_model(cur):
+            out["lastTest"] = None
+            changes.append("Gemini model " + (gm or "cleared"))
+        out["geminiModel"] = gm
+    if not changes:
+        return jsonify({"error": "nothing_to_save", "message": "Nothing to save."}), 400
     out["savedAt"] = db.now_iso()
     db.set_meta("ai", out)
-    db.audit("admin", "ai.settings", "key cleared" if body.get("clearKey") else "key saved", auth.client_ip())
+    db.audit("admin", "ai.settings", "; ".join(changes), auth.client_ip())
     return jsonify(claude_read.public_ai_settings(out))
+
+
+@app.post("/api/ai-models")
+@auth.login_required
+def api_ai_models():
+    """v23: the Gemini models this key can use (generateContent, picture-capable), flash-lite first, and the preselected default.
+    Body may carry a typed geminiKey not saved yet; otherwise the stored key is used."""
+    body = request.get_json(silent=True) or {}
+    key = str(body.get("geminiKey") or "").strip() or gemini_read.stored_key()
+    if not key:
+        return jsonify({"error": "not_configured", "message": "Paste a Gemini API key first."}), 400
+    try:
+        models = gemini_read.list_models(key)
+    except claude_read.ReadError as e:
+        db.audit("admin", "ai.models.error", e.code, auth.client_ip())
+        return jsonify({"error": e.code, "message": e.message}), e.status
+    return jsonify({"models": models, "default": gemini_read.pick_default(models), "current": gemini_read.stored_model()})
 
 
 @app.post("/api/ai-test")
 @auth.login_required
 def api_ai_test():
-    """Validate a key with one request that costs no tokens; report the API's error message as-is."""
+    """Validate the selected provider with one tiny request; report the API's error message as-is."""
     body = request.get_json(silent=True) or {}
-    typed = str(body.get("apiKey") or "").strip()
-    key = typed or claude_read.api_key()
+    p = str(body.get("provider") or "").strip().lower()
+    if p not in claude_read.PROVIDERS:
+        p = claude_read.provider()
+    if p == "gemini":
+        typed = str(body.get("geminiKey") or "").strip()
+        key = typed or gemini_read.stored_key()
+        model = gemini_read.norm_model(body.get("model")) or gemini_read.stored_model()
+        stored = (not typed or typed == gemini_read.stored_key()) and model == gemini_read.stored_model() and p == claude_read.provider()
+    else:
+        typed = str(body.get("apiKey") or "").strip()
+        key = typed or claude_read.api_key()
+        model = claude_read.MODEL
+        stored = (not typed or typed == claude_read.stored_key()) and p == claude_read.provider()
     if not key:
-        return jsonify({"error": "not_configured", "message": "No API key yet: paste one above and save it."}), 400
-    stored = not typed or typed == claude_read.stored_key()
-    result = {"ok": True, "at": db.now_iso()}
+        return jsonify({"error": "not_configured", "provider": p, "message": "No API key yet: paste one above and save it."}), 400
+    result = {"ok": True, "at": db.now_iso(), "provider": p}
     try:
-        result["model"] = claude_read.test_key(key)
+        result["model"] = gemini_read.test_key(key, model) if p == "gemini" else claude_read.test_key(key)
     except claude_read.ReadError as e:
         result.update(ok=False, error=e.code, message=e.message)
         if stored:
             m = claude_read.ai_settings()
             m["lastTest"] = result
             db.set_meta("ai", m)
-        db.audit("admin", "ai.test.error", e.code, auth.client_ip())
-        return jsonify({"error": e.code, "message": e.message, "lastTest": result}), e.status
+        db.audit("admin", "ai.test.error", "%s: %s" % (p, e.code), auth.client_ip())
+        return jsonify({"error": e.code, "message": e.message, "provider": p, "lastTest": result}), e.status
     if stored:
         m = claude_read.ai_settings()
         m["lastTest"] = result
         db.set_meta("ai", m)
-    db.audit("admin", "ai.test", result["model"], auth.client_ip())
-    return jsonify({"ok": True, "model": result["model"], "at": result["at"], "lastTest": result})
+    db.audit("admin", "ai.test", "%s: %s" % (p, result["model"]), auth.client_ip())
+    return jsonify({"ok": True, "provider": p, "model": result["model"], "at": result["at"], "lastTest": result})
 
 
 # ---------- confirmations (answers from the public choice pages) ----------

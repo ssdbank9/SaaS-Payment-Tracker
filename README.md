@@ -13,7 +13,7 @@ Opening `index.html` directly in a browser also runs the app, but with per-devic
 ## Files
 
 - `index.html` - the whole app (markup, styles and script) in one file. It detects where it runs: the claude.ai artifact (shared `db`), your own server (the `/api/docs` store below) or a plain file (browser-local storage).
-- `server/` - the self-hosted backend: Flask + SQLite, no build step (`app.py` routes, `db.py` storage, `auth.py` passcode login, `claude_read.py` screenshot reading, `notify.py` daily reminder emails).
+- `server/` - the self-hosted backend: Flask + SQLite, no build step (`app.py` routes, `db.py` storage, `auth.py` passcode login, `claude_read.py` / `gemini_read.py` screenshot reading, `notify.py` daily reminder emails).
 - `deploy/` - `setup.sh` one-command installer, `update.sh` auto-deploy, `backup.sh`, and the systemd units (service, update, backup and notify timers).
 - `CHANGELOG.md` - version history.
 
@@ -72,6 +72,8 @@ Every user gets a private token (22 random URL-safe characters, stored as `confi
 `payments-tracker-backup.timer` runs `deploy/backup.sh` nightly at 03:15: an online SQLite backup gzipped into `/var/lib/payments-tracker/backups/` (the newest 30 kept) plus a rolling `assets-latest.tar.gz` of uploaded receipts. To restore, stop the service, `gunzip` a backup over `/var/lib/payments-tracker/tracker.sqlite3`, start the service. Copying the `backups/` folder somewhere off the VM now and then is a good idea; **Export everything (JSON)** is the portable alternative.
 
 ### Screenshot reading with Claude (optional)
+
+Since v23 you can use **Google Gemini** instead: in Settings → **AI reading** choose *Google Gemini*, paste a key from aistudio.google.com (kept on the server like the Anthropic one), press **Load models** (the newest Flash-Lite model is preselected) and Save; `server/gemini_read.py` then reads the pictures through `generateContent`.
 
 Paste an Anthropic API key in Settings → **AI reading** (kept on the server, masked on read; the **Test** button validates it), or set `ANTHROPIC_API_KEY=sk-ant-...` in `/etc/payments-tracker.env` and run `sudo systemctl restart payments-tracker` as the fallback. The server then forwards statement screenshots and pasted text to the Claude Messages API with `claude-haiku-4-5-20251001` (both *Quick* and *Default* in Settings use Haiku here) and the *Import from screenshot* panel turns on. Without a key the panel explains that reading is off and still parses pasted text line by line. Your key never reaches the browser.
 
