@@ -2,6 +2,11 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v19 - 2026-09-22
+
+- Every plan in an expanded user is its own framed box: a 2px green border with rounded corners, a tinted header strip naming the account (the email written into the plan label, such as Haroon's "Account 2 · Developerabdullahsnetflix@gmail.com", or the user's own email), the package as a badge, cycle, currency and price, the status pill and the plan's actions, with the period cards and payment table inside; boxes sit 12px apart and wrap on narrow screens. Single-plan users get the same box. No amounts or collapsed rows change.
+- Change tier per plan (C ↔ C Max, or any package with the same billing cycle) from a chosen cycle start, kept as a per-plan `tierHistory` of `{from, packageId, price, currency, note}`: each period resolves to the latest entry on or before its start (the plan's own package and price remain the starting tier, and a later Change price still wins within a tier), so proration, discounts, credit and balances follow the tier's price; the header shows "Upgraded to C Max from Aug 24" or "Moves back to C from Sep 24", period cards carry the tier name, the collapsed PLAN column shows the current tier with an arrow marker, and any entry can be undone. Plans without a history are unchanged and no migration runs; nothing is seeded for anyone.
+
 ## v18 - 2026-09-22
 
 - The starter data now matches the owner's real records on every backend: fixed 30-day proration (Ataullah's first period is 23 days × Rs 140 = Rs 3,220), Tabraiz charged 24 days with his Rs 4,200 payment on Sep 22 leaving Rs 840 credit, Eren paid through Nov 23, Haroon's second C account with its waived stub plus the yearly G plan, Mohib under maggdoto@gmail.com, and no Uqba.

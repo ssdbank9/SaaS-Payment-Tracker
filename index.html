@@ -261,12 +261,37 @@ tr.detail>td{background:var(--accent-soft);padding:0 10px 12px;white-space:norma
 .block{border-top:1px solid var(--accent-line);padding-top:12px;margin-top:12px}
 .block-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px;flex-wrap:wrap}
 .block-head h3,.detail-card form.block>h3{font-size:12px;font-weight:600;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.06em}
-.subs{display:flex;flex-direction:column;gap:8px}
+.subs{display:flex;flex-direction:column;gap:12px}
 .sub{border:1px solid var(--line);border-radius:4px;padding:10px 12px;background:var(--surface)}
-.sub-line{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.detail-card .sub{border:2px solid var(--accent);border-radius:10px;padding:0;overflow:hidden;box-shadow:0 1px 3px rgba(22,26,23,.08)}
+.detail-card .sub.addsub-form{padding:10px 12px;border-style:dashed}
+.sub-head{display:flex;flex-direction:column;gap:6px;padding:8px 12px 9px;background:var(--accent-soft);border-bottom:1px solid var(--accent-line)}
+.sub-acct{display:flex;gap:4px 8px;align-items:baseline;flex-wrap:wrap;font-size:12px;color:var(--accent-ink);min-width:0}
+.sub-acct>*+*::before{content:"·";margin-right:8px;color:var(--muted)}
+.sub-acct .acct-cap{text-transform:uppercase;letter-spacing:.06em;font-size:10px;font-weight:600;color:var(--accent-ink);align-self:center}
+.sub-acct .acct-lbl{font-weight:600;color:var(--ink)}
+.sub-acct .acct-em{font-family:var(--mono);overflow-wrap:anywhere;color:var(--ink-2)}
+.sub-body{padding:8px 12px 12px}
+.sub-line{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap}
 .sub-line .name{font-weight:600}
+.pkg-badge{display:inline-flex;align-items:center;font-weight:600;font-size:12px;line-height:1;padding:5px 9px;border-radius:5px;background:var(--accent);color:#fff;letter-spacing:.01em;white-space:nowrap}
+:root[data-theme="dark"] .pkg-badge{color:#0d1a14}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pkg-badge{color:#0d1a14}}
+.tier-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--accent-line);background:var(--surface);color:var(--accent-ink);white-space:nowrap}
+.tier-badge::before{content:"↗";font-size:12px;line-height:1}
+.tier-badge[data-dir="down"]{color:var(--ink-2);border-color:var(--line-strong)}
+.tier-badge[data-dir="down"]::before{content:"↘"}
+.tier-badge[data-when="scheduled"]{border-style:dashed}
+.tier-mark{display:inline-block;margin-left:3px;font-weight:600;font-size:12px;color:var(--accent-ink);cursor:help}
+.tier-mark[data-dir="down"]{color:var(--ink-2)}
+.cell .tag.tier{color:var(--accent-ink);border-color:var(--accent-line);background:var(--accent-tint);text-transform:none;letter-spacing:0;font-weight:600}
 .sub-line .kind{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .sub-line .spacer{flex:1}
+.sub-acts{display:flex;gap:6px 8px;align-items:center;flex-wrap:wrap;margin-left:auto}
+.tier-form h4{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.06em}
+.tier-list{font-size:12px;color:var(--ink-2);margin-top:8px;display:flex;flex-direction:column;gap:3px}
+.tier-list b{color:var(--ink);font-weight:500}
+@media (max-width:760px){.sub-head{padding:8px 10px}.sub-body{padding:8px 10px 10px}.sub-acts{margin-left:0;width:100%}}
 .sub-facts{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:6px}
 .sub-facts b{color:var(--ink);font-weight:500}
 .sub .hist{font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono)}
@@ -391,7 +416,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v18</span>
+      <span class="small muted num" id="app-ver" title="App version">v19</span>
       <button class="btn" type="button" id="btn-reminders">Run reminders<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
     </div>
@@ -682,7 +707,7 @@ const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
 const SCHEMA=11;
-const APP_VERSION='18';
+const APP_VERSION='19';
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
@@ -760,7 +785,7 @@ function reminderWindow(today){const nc=nextCycleStart(today);const replyBy=dayO
 function remState(u,key){const r=(u.reminders||{})[key];return Object.assign({reminded:null,confirmed:null,final:null,skipped:null},r||{});}
 const pkgById=id=>packages().find(p=>p.id===id)||null;
 const pkgName=id=>{const p=pkgById(id);return p?p.name:'';};
-function planLabel(s){const pn=pkgName(s.packageId);const extra=(s.name||'').trim();if(!pn)return extra||(s.kind==='one-time'?'Item':'Plan');return extra&&extra.toLowerCase()!=='standard'&&extra.toLowerCase()!==pn.toLowerCase()?pn+' · '+extra:pn;}
+function planLabel(s,date){const pn=pkgName(pkgIdAt(s,date||todayISO()));const extra=(s.name||'').trim();if(!pn)return extra||(s.kind==='one-time'?'Item':'Plan');return extra&&extra.toLowerCase()!=='standard'&&extra.toLowerCase()!==pn.toLowerCase()?pn+' · '+extra:pn;}
 const subCycle=s=>s.kind==='one-time'?'one-time':normCycle(s.cycle);
 const cycMonths=s=>CYCLES[subCycle(s)].months||1;
 const anchor=()=>isDateKey(state.settings.anchor)?state.settings.anchor:DEFAULT_ANCHOR;
@@ -772,7 +797,23 @@ function nextCycleStart(today){const a=anchor().split('-').map(Number),b=today.s
 const cycleDay=()=>+anchor().slice(8,10);
 const ordinal=n=>n+(n%10===1&&n!==11?'st':n%10===2&&n!==12?'nd':n%10===3&&n!==13?'rd':'th');
 const perOf=s=>CYCLES[subCycle(s)].per;
-function pkgUsage(id){let n=0;for(const uid in state.users)for(const s of state.users[uid].subscriptions||[])if(s.packageId===id)n++;return n;}
+function pkgUsage(id){let n=0;for(const uid in state.users)for(const s of state.users[uid].subscriptions||[])if(s.packageId===id||(s.tierHistory||[]).some(t=>t.packageId===id))n++;return n;}
+/* ---------- tiers: a plan can switch to another package of the same cycle (C ↔ C Max) from a chosen cycle start.
+   tierHistory: [{from (a cycle start), packageId, price, currency, note}]; the plan's own package and price stay the starting tier,
+   and each period resolves to the latest entry whose `from` is on or before the period start. No entries = the plan as before. ---------- */
+function normTierHistory(arr,cur){if(!Array.isArray(arr))return [];const out=[];const seen={};for(const t of arr){if(!t||typeof t!=='object')continue;const from=normDate(t.from);const pid=String(t.packageId||'').trim();const pr=Number(t.price);if(!from||!pid||!isFinite(pr)||pr<0||seen[from])continue;seen[from]=1;out.push({from,packageId:pid,price:pr,currency:t.currency?normCur(t.currency):cur,note:String(t.note||'').trim().slice(0,140)});}return out.sort((a,b)=>a.from.localeCompare(b.from));}
+const tierEntries=s=>((s&&s.tierHistory)||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));
+function tierAt(s,date){let e=null;for(const t of tierEntries(s)){if(t.from<=date)e=t;else break;}return e;}
+const pkgIdAt=(s,date)=>{const t=tierAt(s,date);return t?t.packageId:(s.packageId||null);};
+/* one entry described against the tier in force the day before: direction, in effect or still scheduled, badge text */
+function tierDesc(s,t,today){const before=addDays(t.from,-1);const prevPrice=priceAt(s,before),prevPkg=pkgIdAt(s,before);const held=s.packageId===t.packageId||tierEntries(s).some(x=>x.from<t.from&&x.packageId===t.packageId);const dir=t.price>prevPrice?'up':t.price<prevPrice?'down':(held?'down':'up');const sched=t.from>today;const name=pkgName(t.packageId)||'another tier';const verb=dir==='up'?(sched?'Upgrades to':'Upgraded to'):held?(sched?'Moves back to':'Moved back to'):(sched?'Moves to':'Moved to');return {dir,sched,name,prevPkg,prevPrice,text:`${verb} ${name} from ${fmtD(t.from)}`,long:`${verb} ${name} at ${fmtAmt(t.price,s.currency)}${perOf(s)} from ${fmtD(t.from,true)}${prevPkg?` (before: ${pkgName(prevPkg)} at ${fmtAmt(prevPrice,s.currency)}${perOf(s)})`:''}${t.note?` · ${t.note}`:''}`};}
+/* the plan header shows the change in effect today and the next scheduled one */
+function tierBadges(s,today){const es=tierEntries(s);if(!es.length)return [];const out=[];const cur=es.filter(t=>t.from<=today).pop();const next=es.find(t=>t.from>today);if(cur)out.push(tierDesc(s,cur,today));if(next)out.push(tierDesc(s,next,today));return out;}
+const tierBadgeHTML=(s,today)=>tierBadges(s,today).map(d=>`<span class="tier-badge" data-dir="${d.dir}" data-when="${d.sched?'scheduled':'active'}" title="${esc(d.long)}">${esc(d.text)}</span>`).join('');
+function tierMarkHTML(s,today){const b=tierBadges(s,today);if(!b.length)return '';const d=b[b.length-1];return `<span class="tier-mark" data-dir="${d.dir}" title="${esc(b.map(x=>x.text).join(' · '))}">${d.dir==='up'?'↗':'↘'}</span>`;}
+/* the account a plan belongs to: an email written into the plan label wins, else the user's email */
+const EMAIL_IN_TEXT=/[^\s@·,;()]+@[^\s@·,;()]+\.[^\s@·,;()]+/;
+function acctParts(u,s){const nm=String(s.name||'').trim();const m=nm.match(EMAIL_IN_TEXT);const email=m?m[0]:'';let label=(m?nm.replace(m[0],''):nm).replace(/^[\s·,;:()\-–]+|[\s·,;:()\-–]+$/g,'').trim();if(/^standard$/i.test(label))label='';return {label,email:email||u.email||'',own:!!email};}
 function normDate(s){if(!s)return null;s=String(s);if(isDateKey(s))return s;if(isMonthKey(s))return s+'-01';return null;}
 const normRate=r=>{const x=Number(r);return x>0?x:null;};
 const normTg=v=>{let t=String(v||'').trim().replace(/^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\//i,'').replace(/^@+/,'').replace(/[\/?#].*$/,'');if(/^\+?[\d\s\-()]+$/.test(t)&&digits(t).length>=7)t=digits(t);return t;};
@@ -783,7 +824,7 @@ function normalizeUser(b,id){
   for(const s of b.subscriptions||[]){
     const kind=s.kind==='one-time'?'one-time':'monthly';const start=normDate(s.start)||u.joinDate;const cur=normCur(s.currency);
     const sub={id:s.id||newId('s'),kind,name:String(s.name||'').trim()||(kind==='one-time'?'Item':''),currency:cur,packageId:String(s.packageId||'').trim()||null,payments:[]};
-    if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;{const ov=Number(s.prorationDaysOverride);sub.prorationDaysOverride=Number.isInteger(ov)&&ov>0?ov:null;const ro=Number(s.prorationRateOverride);sub.prorationRateOverride=isFinite(ro)&&ro>0?ro:null;const ao=s.prorationAmountOverride;sub.prorationAmountOverride=ao!=null&&ao!==''&&isFinite(Number(ao))&&Number(ao)>=0?Number(ao):null;sub.prorationBasis=rawBasis(s.prorationBasis);sub.discount=normDiscount(s.discount);}sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
+    if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;{const ov=Number(s.prorationDaysOverride);sub.prorationDaysOverride=Number.isInteger(ov)&&ov>0?ov:null;const ro=Number(s.prorationRateOverride);sub.prorationRateOverride=isFinite(ro)&&ro>0?ro:null;const ao=s.prorationAmountOverride;sub.prorationAmountOverride=ao!=null&&ao!==''&&isFinite(Number(ao))&&Number(ao)>=0?Number(ao):null;sub.prorationBasis=rawBasis(s.prorationBasis);sub.discount=normDiscount(s.discount);sub.tierHistory=normTierHistory(s.tierHistory,cur);}sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
     else{sub.total=Number(s.total)||0;sub.due=normDate(s.due);}
     for(const p of s.payments||[]){const d=normDate(p.date);if(!d)continue;sub.payments.push({id:p.id||newId('p'),date:d,amount:Number(p.amount)||0,currency:p.currency?normCur(p.currency):cur,rate:normRate(p.rate),note:String(p.note||'')});}
     sub.payments.sort((a,b)=>a.date.localeCompare(b.date));
@@ -796,7 +837,7 @@ function normalizeCost(b,id){return {id,date:normDate(b.date)||todayISO(),descri
 function cleanCost(c){const n=normalizeCost(c,c.id);delete n.id;n.createdAt=n.createdAt||new Date().toISOString();return n;}
 
 /* ---------- billing analysis ---------- */
-function priceAt(s,date){const ps=(s.prices||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));let p=ps.length?ps[0].price:0;for(const x of ps){if(x.from<=date)p=x.price;else break;}return p;}
+function priceAt(s,date){const ps=(s.prices||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));let p=ps.length?ps[0].price:0,pf='';for(const x of ps){if(x.from<=date){p=x.price;pf=x.from;}else break;}const t=tierAt(s,date);return t&&t.from>=pf?t.price:p;}
 function periodIndexAt(s,date){if(date<s.start)return -1;let k=0;while(pStart(s,k+1)<=date){k++;if(k>2400)break;}return k;}
 function paidInPlanCur(s){let t=0,unconv=0;for(const p of s.payments||[]){const v=toCur(p.amount,p.currency||s.currency,s.currency,p.rate);if(v==null)unconv++;else t+=v;}return {t,unconv};}
 function analyzeMonthly(s,today){
@@ -812,7 +853,7 @@ function analyzeMonthly(s,today){
     else if(credit+1e-9>=pr){stt='paid';covered=pr;credit-=pr;kPaid=k+1;}
     else if(credit>0){stt=st<=today?'partial':'upcoming';covered=credit;credit=0;}
     else{stt=st<=today?'unpaid':'upcoming';covered=0;}
-    periods.push({k,st,en,es,pr,full,prorated:prorated&&!waived,waived,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0});
+    periods.push({k,st,en,es,pr,full,pkgId:pkgIdAt(s,es),prorated:prorated&&!waived,waived,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0});
     if(stt!=='paid'&&stt!=='waived'&&k>curIdx)break;
     if(stt==='paid'&&pr<=0&&k>curIdx+1)break;
     k++;
@@ -832,7 +873,7 @@ function analyzeMonthly(s,today){
   else status='overdue';
   if(s.dueBy&&(status==='overdue'||status==='due-today')&&overdueAmount>0)status=today>s.dueBy?'overdue':'open';
   const curP=periods[Math.max(0,Math.min(curIdx,periods.length-1))]||null;
-  return {kind:'monthly',cycle:subCycle(s),paid,unconv:pc.unconv,paidThrough,nextDue,nextAmount,nextCredit,cycleDue,cyclePaid,periods,overdue:overdue.length,amountDue,overdueAmount,status,price:effPrice(s,nextDue||today),listPrice:priceAt(s,nextDue||today),cur:s.currency,curIdx,kPaid,curP};
+  return {kind:'monthly',cycle:subCycle(s),paid,unconv:pc.unconv,paidThrough,nextDue,nextAmount,nextCredit,cycleDue,cyclePaid,periods,overdue:overdue.length,amountDue,overdueAmount,status,price:effPrice(s,nextDue||today),listPrice:priceAt(s,nextDue||today),cur:s.currency,curIdx,kPaid,curP,tiered:tierEntries(s).length>0,curPkgId:pkgIdAt(s,today),curPrice:effPrice(s,today),curListPrice:priceAt(s,today)};
 }
 function analyzeOneTime(s,today){
   const pc=paidInPlanCur(s);const paid=pc.t;const remaining=Math.max(0,(Number(s.total)||0)-paid);
@@ -850,16 +891,17 @@ function analyze(u,today){
   const mainSub=subs.find(s=>s.kind==='monthly'&&subCycle(s)==='monthly'&&(!s.end||s.end>=today))||subs.find(s=>s.kind==='monthly'&&(!s.end||s.end>=today))||subs[0];const mainCur=mainSub?mainSub.currency:'PKR';
   for(const s of subs){
     const a=s.kind==='one-time'?analyzeOneTime(s,today):analyzeMonthly(s,today);sa[s.id]=a;
+    const pid=pkgIdAt(s,today);const tm=a.kind==='monthly'?tierMarkHTML(s,today):'';const shown=a.kind==='monthly'&&a.tiered?a.curPrice:a.price;
     for(const p of s.payments||[])sumAdd(totals,p.amount,p.currency||s.currency,p.rate);
     if(a.kind==='monthly'){if(a.overdueAmount>0)sumAdd(balance,a.overdueAmount,s.currency,null);if(a.cycleDue>0)sumAdd(cycleDue,a.cycleDue,s.currency,null);if(a.cyclePaid)cyclePaid=true;}else if(a.remaining>0)sumAdd(balance,a.remaining,s.currency,null);
     const r=RANK[a.status];if(r<rank){rank=r;status=a.status;}
     if(a.kind==='monthly'){
-      if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&a.kPaid>0&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),price:a.price,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id,note:u.cancel&&s.end?'until '+fmtD(s.end):(s.discount?discountLabel(s):undefined)});if(s.packageId)pkgIds.add(s.packageId);else pkgIds.add('');}
-      else if(a.status==='upcoming'){planParts.push({name:planLabel(s),price:a.price,cur:s.currency,per:perOf(s),note:'starts '+fmtD(s.start),noPkg:!s.packageId,subId:s.id});pkgIds.add(s.packageId||'');}
-      else if(u.cancel&&s.end){planParts.push({name:planLabel(s),price:priceAt(s,s.end),cur:s.currency,per:perOf(s),note:'until '+fmtD(s.end),subId:s.id});if(s.packageId)pkgIds.add(s.packageId);}
-    }else if(a.remaining>0){planParts.push({name:planLabel(s),price:a.remaining,cur:s.currency,per:'',note:'left of '+fmtAmt(s.total,s.currency)});if(s.packageId)pkgIds.add(s.packageId);}
+      if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&a.kPaid>0&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),tier:tm,price:shown,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id,note:u.cancel&&s.end?'until '+fmtD(s.end):(s.discount?discountLabel(s):undefined)});pkgIds.add(pid||'');}
+      else if(a.status==='upcoming'){planParts.push({name:planLabel(s),tier:tm,price:shown,cur:s.currency,per:perOf(s),note:'starts '+fmtD(s.start),noPkg:!s.packageId,subId:s.id});pkgIds.add(pid||'');}
+      else if(u.cancel&&s.end){planParts.push({name:planLabel(s,s.end),tier:tm,price:priceAt(s,s.end),cur:s.currency,per:perOf(s),note:'until '+fmtD(s.end),subId:s.id});if(pid)pkgIds.add(pid);}
+    }else if(a.remaining>0){planParts.push({name:planLabel(s),price:a.remaining,cur:s.currency,per:'',note:'left of '+fmtAmt(s.total,s.currency)});if(pid)pkgIds.add(pid);}
     if(a.nextDue&&!['ended','paid','upcoming'].includes(a.status)){if(!nextDue||a.nextDue<nextDue)nextDue=a.nextDue;}
-    if(['overdue','due-today','due-soon'].includes(a.status)){sumAdd(due,a.amountDue,s.currency,null);duePlans.push(planLabel(s));if(s.packageId)duePkgs.push(pkgName(s.packageId));overdue+=a.overdue;}
+    if(['overdue','due-today','due-soon'].includes(a.status)){sumAdd(due,a.amountDue,s.currency,null);duePlans.push(planLabel(s));if(pid)duePkgs.push(pkgName(pid));overdue+=a.overdue;}
   }
   if(!subs.length)status='nosub';
   if(u.cancel){status='cancelled';nextDue=null;const cd=newSum();return {sa,totals,balance,due:balance,cycleDue:cd,cyclePaid:false,mainCur,status,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:u.cancel,unpaid:balance.n>0,needsReminder:false};}
@@ -924,7 +966,7 @@ function emailControl(u,a,today,label,mode,x){
 }
 const tgLink=u=>{const t=normTg(u.telegram);if(!t)return '';const d=digits(t);return /^\+?[\d\s\-()]+$/.test(t)&&d.length>=7?'https://t.me/+'+d:'https://t.me/'+encodeURIComponent(t);};
 function telegramControl(u,label){const href=tgLink(u);if(!href)return `<button class="btn sm" type="button" disabled title="Add a Telegram handle in Edit user">add Telegram</button>`;return `<a class="btn sm" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Opens the Telegram chat; the message is not prefilled">${label||'Telegram'}</a>`;}
-function cyclePkgs(u,a){const out=[];for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.cycleDue>0){const n=pkgName(s.packageId);if(n&&!out.includes(n))out.push(n);}}return out;}
+function cyclePkgs(u,a){const out=[];const nc=nextCycleStart(todayISO());for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.cycleDue>0){const n=pkgName(pkgIdAt(s,nc));if(n&&!out.includes(n))out.push(n);}}return out;}
 function remBadge(u,key){const r=remState(u,key);if(r.confirmed)return `<span class="rem-badge" data-k="confirmed">✓ confirmed ${esc(fmtD(r.confirmed))}</span>`;if(r.reminded)return `<span class="rem-badge" data-k="reminded">✓ reminded ${esc(fmtD(r.reminded))}</span>`;return '';}
 
 /* ---------- seed + migration ---------- */
@@ -1192,7 +1234,7 @@ function renderBreakdown(rb){
   const rows={};const mk=(key,label)=>rows[key]||(rows[key]={label,users:new Set(),col:newSum(),out:newSum()});
   for(const p of packages())mk(p.id,p.name);
   for(const id of ids){const u=state.users[id];const a=analyze(u,today);
-    for(const s of u.subscriptions||[]){const key=(s.packageId&&pkgById(s.packageId))?s.packageId:(s.kind==='one-time'?'__one':'__none');const r=mk(key,key==='__one'?'One-time items':key==='__none'?'Package not set':pkgName(key));
+    for(const s of u.subscriptions||[]){const pid=pkgIdAt(s,today);const key=(pid&&pkgById(pid))?pid:(s.kind==='one-time'?'__one':'__none');const r=mk(key,key==='__one'?'One-time items':key==='__none'?'Package not set':pkgName(key));
       const sa=a.sa[s.id];if(!u.cancel&&(s.kind==='monthly'?sa.status!=='ended':sa.remaining>0))r.users.add(id);
       for(const pay of s.payments||[])if(inRange(pay.date,rb))sumAdd(r.col,pay.amount,pay.currency||s.currency,pay.rate);
       if(s.kind==='monthly'){if(sa.overdueAmount>0)sumAdd(r.out,sa.overdueAmount,s.currency,null);}else if(sa.remaining>0)sumAdd(r.out,sa.remaining,s.currency,null);}}
@@ -1271,7 +1313,7 @@ function visibleRows(today){
 }
 function planCell(a){
   if(!a.planParts.length)return '<span class="muted">—</span>';
-  const line=p=>p.noPkg?`<span class="pill warnp" title="Pick a package for this plan">Package not set</span> <span class="muted">${esc(fmtAmt(p.price,p.cur))}${p.per}</span><span class="l2"><select class="pkg-quick" data-sub="${esc(p.subId)}" aria-label="Set package">${pkgOptions('','Set package…')}</select></span>`:`${esc(p.name)} · ${esc(fmtAmt(p.price,p.cur))}${p.per}${p.note?` <span class="muted">(${esc(p.note)})</span>`:''}`;
+  const line=p=>p.noPkg?`<span class="pill warnp" title="Pick a package for this plan">Package not set</span> <span class="muted">${esc(fmtAmt(p.price,p.cur))}${p.per}</span><span class="l2"><select class="pkg-quick" data-sub="${esc(p.subId)}" aria-label="Set package">${pkgOptions('','Set package…')}</select></span>`:`${esc(p.name)}${p.tier||''} · ${esc(fmtAmt(p.price,p.cur))}${p.per}${p.note?` <span class="muted">(${esc(p.note)})</span>`:''}`;
   return line(a.planParts[0])+(a.planParts.length>1?`<span class="l2">${a.planParts.slice(1).map(line).join(' / ')}</span>`:'');
 }
 function renderTable(){
@@ -1348,6 +1390,30 @@ function uptoForm(id,s,sa,today,open){
     <div class="upto-plan" data-role="plan"></div>
   </form>`;
 }
+/* the account strip at the top of a plan box: "Account · email", "Account 2 · email", "ChatGPT · email" */
+function acctLine(u,s){const ac=acctParts(u,s);return `<div class="sub-acct">${/^account\b/i.test(ac.label)?'':'<span class="acct-cap">Account</span>'}${ac.label?`<span class="acct-lbl">${esc(ac.label)}</span>`:''}${ac.email?`<span class="acct-em">${esc(ac.email)}</span>`:`<span class="acct-lbl">${esc(displayName(u))}</span>`}</div>`;}
+/* Change tier: target package of the same cycle, the cycle it starts from (default: next), an editable price prefilled from the package, a note; existing entries can be removed */
+function tierForm(id,s,sa,today,open){
+  const cyc=subCycle(s);const opts=packages().filter(p=>p.cycle===cyc);if(!opts.length)return '';
+  const cycles=[];for(let k=0;k<=Math.max(0,sa.curIdx)+6;k++){const st=pStart(s,k);if(s.end&&st>s.end)break;cycles.push({k,st,en:addDays(pStart(s,k+1),-1)});}
+  const defK=Math.min(Math.max(0,sa.curIdx+1),cycles.length-1);const from0=cycles[defK].st;
+  const prev=pkgIdAt(s,addDays(from0,-1));const ex=tierEntries(s).find(t=>t.from===from0);
+  const target0=ex?ex.packageId:(opts.find(p=>p.id!==prev)||opts[0]).id;const pk0=pkgById(target0);
+  const price0=ex?ex.price:(pk0&&pk0.price!=null&&(!pk0.currency||pk0.currency===s.currency)?pk0.price:priceAt(s,from0));
+  const tl=tierEntries(s);
+  return `<form class="tier-form" data-id="${id}" data-sub="${s.id}" ${open?'':'hidden'} novalidate>
+    <h4>Change tier</h4>
+    <div class="pay-row">
+      <label class="f">Starting from (cycle)<select id="tf-from-${s.id}" name="from">${cycles.map(c=>`<option value="${c.st}"${c.k===defK?' selected':''}>${esc(fmtD(c.st))} – ${esc(fmtD(c.en))}${c.k===sa.curIdx?' (current cycle)':c.k===sa.curIdx+1?' (next cycle)':''}</option>`).join('')}</select></label>
+      <label class="f">Change to<select id="tf-pkg-${s.id}" name="packageId">${opts.map(p=>`<option value="${esc(p.id)}"${p.id===target0?' selected':''}${p.id===prev?' disabled':''}>${esc(p.name)}${p.id===prev?' (current)':''}</option>`).join('')}</select></label>
+      <label class="f">Price per ${cyc==='yearly'?'year':'month'} (${s.currency})<input id="tf-price-${s.id}" name="price" type="number" min="0" step="0.01" required value="${price0}" data-auto="${ex?'0':'1'}"></label>
+      <label class="f">Note <span class="muted">(optional)</span><input id="tf-note-${s.id}" name="note" type="text" maxlength="140" value="${ex?esc(ex.note||''):''}" placeholder="e.g. asked on WhatsApp"></label>
+      <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save tier change</button><button class="link" type="button" data-act="toggle" data-key="tier:${s.id}">Cancel</button></span>
+    </div>
+    <p class="small muted" style="margin-top:6px" data-role="tier-hint"></p>
+    ${tl.length?`<div class="tier-list">${tl.map(t=>{const d=tierDesc(s,t,today);return `<span><b>${esc(d.text)}</b> · ${esc(fmtAmt(t.price,s.currency))}${perOf(s)}${t.note?` · ${esc(t.note)}`:''} <button class="link sm danger" type="button" data-act="tier-remove" data-sub="${s.id}" data-from="${t.from}">remove</button></span>`;}).join('')}</div>`:''}
+  </form>`;
+}
 function detailHTML(id,u,a,today){
   const open=ui.open[id]||{};const subs=u.subscriptions||[];
   let subsHtml='';
@@ -1361,24 +1427,33 @@ function detailHTML(id,u,a,today){
       const yearFacts=yearly&&cp?`<span>This year (${esc(fmtD(cp.st,true))} – ${esc(fmtD(cp.en,true))}): paid <b>${esc(fmtAmt(cp.covered,s.currency))}</b> of ${esc(fmtAmt(cp.pr,s.currency))} · remaining <b>${esc(fmtAmt(Math.max(0,cp.pr-cp.covered),s.currency))}</b></span>`:'';
       const dueByFact=s.dueBy?`<span>Remaining due by <b>${esc(fmtD(s.dueBy,true))}</b></span>`:'';
       const lastPaid=sa.periods.filter(p=>p.state==='paid').pop();
+      const tierTag=p=>sa.tiered&&p.pkgId?` <span class="tag tier">${esc(pkgName(p.pkgId))}</span>`:'';
       const cells=sa.periods.map(p=>{const pro=p.prorated?`<span class="d">${p.daysCharged} day${p.daysCharged===1?'':'s'} × ${esc(fmtAmt(p.rate,s.currency))} = ${esc(fmtAmt(p.computed,s.currency))}${p.amtOverride?` → charged ${esc(fmtAmt(p.pr,s.currency))}`:''}${p.discounted?' <span class="tag">discounted</span>':''}</span><span class="d muted">${p.basisDays===30?'30-day month':p.total+'-day cycle'}${p.override?` · days set by hand (actual ${p.days})`:''}${p.rateOverride?' · rate set by hand':''} · <button class="link sm" type="button" data-act="toggle" data-key="days:${s.id}">edit days / rate</button></span>`:'';let a;
         let extra='';if(p.state==='waived'){a='Waived · '+esc(fmtD(p.es))+' – '+esc(fmtD(p.en));extra=`<span class="d">${p.days} stub day${p.days===1?'':'s'} free · billing starts ${esc(fmtD(addDays(p.en,1)))}</span>`;}else if(p.state==='paid'){a=esc(fmtAmt(p.pr,s.currency));if(p===lastPaid&&p.creditAfter>0&&sa.nextDue)extra=`<span class="d">paid ${esc(fmtAmt(p.pr+p.creditAfter,s.currency))} · credit ${esc(fmtAmt(p.creditAfter,s.currency))} carried</span>`;}
         else if(p.state==='partial')a=esc(fmtAmt(p.covered,s.currency))+' of '+esc(fmtAmt(p.pr,s.currency));
         else if(p.state==='unpaid')a='Unpaid · '+esc(fmtAmt(p.pr,s.currency));
         else{a='Upcoming · '+esc(fmtAmt(p.pr-p.covered,s.currency));if(p.covered>0)extra=`<span class="d">${esc(fmtAmt(p.pr,s.currency))} less ${esc(fmtAmt(p.covered,s.currency))} credit</span>`;}
-        return `<div class="cell" data-state="${p.state}"><span class="m">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}${p.prorated?' <span class="tag">prorated</span>':''}</span><span class="a">${a}</span>${pro}${extra}</div>`;}).join('');
+        return `<div class="cell" data-state="${p.state}"><span class="m">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}${p.prorated?' <span class="tag">prorated</span>':''}${tierTag(p)}</span><span class="a">${a}</span>${pro}${extra}</div>`;}).join('');
       const nextPr=sa.nextDue?sa.nextAmount:sa.price;
       const pe=(ui.priceEdit||{})[s.id]||null;const pePrice=pe?(hist.find(x=>x.from===pe)||{}).price:null;
       const defFrom=pe||sa.nextDue||pStart(s,Math.max(0,sa.curIdx));
       const payEditId=(ui.payEdit||{})[s.id]||null;const payEdit=payEditId?(s.payments||[]).find(x=>x.id===payEditId):null;
+      const tierPkgs=packages().filter(p=>p.cycle===subCycle(s));const canTier=tierPkgs.some(p=>p.id!==sa.curPkgId);
+      const shownPrice=sa.tiered?sa.curPrice:sa.price,shownList=sa.tiered?sa.curListPrice:sa.listPrice;
+      const tl=tierEntries(s);const tierHist=tl.length?`<div class="hist">Tier history: ${tl.map(t=>`${esc(pkgName(t.packageId)||'?')} at ${esc(fmtAmt(t.price,s.currency))}${perOf(s)} from ${esc(fmtD(t.from,true))}${t.note?` (${esc(t.note)})`:''} <button class="link sm danger" type="button" data-act="tier-remove" data-sub="${s.id}" data-from="${t.from}">undo</button>`).join(' → ')}</div>`:'';
       subsHtml+=`<div class="sub" data-sub="${s.id}">
-        <div class="sub-line"><span class="name">${esc(planLabel(s))}</span><span class="kind">${subCycle(s)} · ${s.currency}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="num">${s.discount?`${esc(fmtAmt(sa.listPrice,s.currency))}<span class="muted">${perOf(s)}</span> · ${esc(discountLabel(s))} = <b>${esc(fmtAmt(sa.price,s.currency))}</b>`:`${esc(fmtAmt(sa.price,s.currency))}<span class="muted">${perOf(s)}</span>`}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span><span class="spacer"></span>
-          <button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>
+        <div class="sub-head">
+          ${acctLine(u,s)}
+          <div class="sub-line"><span class="pkg-badge" title="Package / tier">${esc(pkgName(sa.curPkgId)||planLabel(s))}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="kind">${subCycle(s)} · ${s.currency}</span><span class="num">${s.discount?`${esc(fmtAmt(shownList,s.currency))}<span class="muted">${perOf(s)}</span> · ${esc(discountLabel(s))} = <b>${esc(fmtAmt(shownPrice,s.currency))}</b>`:`${esc(fmtAmt(shownPrice,s.currency))}<span class="muted">${perOf(s)}</span>`}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>${tierBadgeHTML(s,today)}
+          <span class="sub-acts"><button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>
           <button class="btn sm" type="button" data-act="toggle" data-key="upto:${s.id}" title="Record payment for every period up to a chosen cycle or date">Paid up to…</button>
           <button class="btn sm" type="button" data-act="toggle" data-key="price:${s.id}">Change price</button>
-          <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></div>
+          ${canTier?`<button class="btn sm" type="button" data-act="toggle" data-key="tier:${s.id}" title="Move this plan to another tier with the same billing cycle (for example C ↔ C Max) from a chosen cycle">Change tier</button>`:''}
+          <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
+        </div>
+        <div class="sub-body">
         <div class="sub-facts"><span>Started <b>${esc(fmtD(s.start,true))}</b></span>${s.end?`<span>Ends <b>${esc(fmtD(s.end,true))}</b></span>`:''}<span>Paid through <b>${sa.kPaid?esc(fmtD(sa.paidThrough,true)):'nothing yet'}</b></span>${sa.nextDue?(sa.nextDue>today?`<span>Next due <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}${sa.nextCredit>0?` <span class="muted">(after ${esc(fmtAmt(sa.nextCredit,s.currency))} credit)</span>`:''}</span>`:sa.nextCredit>0?`<span>Remaining on the current period <b>${esc(fmtAmt(nextPr,s.currency))}</b></span>`:`<span>Unpaid since <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}</span>`):''}<span>Total paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>${yearFacts}${dueByFact}${s.waiveFirst?'<span>First partial period <b>waived</b></span>':s.prorate===false?'<span>First period <b>not prorated</b></span>':''}${unconvNote}</div>
-        ${histTxt?`<div class="hist">Price history: ${histTxt}</div>`:''}
+        ${histTxt?`<div class="hist">Price history: ${histTxt}</div>`:''}${tierHist}
         <div class="periods">${cells}</div>
         ${payForm(id,s,sa,today,nextPr,payOpen,payEdit)}
         ${uptoForm(id,s,sa,today,open['upto:'+s.id])}
@@ -1418,13 +1493,19 @@ function detailHTML(id,u,a,today){
           <p class="small muted" style="margin-top:6px">Periods follow the shared billing cycle (${esc(ordinal(cycleDay()))} to ${cycleDay()===1?'end of month':esc(ordinal(cycleDay()-1))}, set in Settings); the start date picks the first period. With proration on, that first period is charged by days (on the basis chosen here, or the Settings default); with the waiver on, the days before the next cycle are free and billing starts at that cycle. A discount applies to every period of this plan and shows in the header, dues, reminders and totals. Changing the currency changes what the price and existing payments are read as; it does not convert them. "Remaining due by" turns an unpaid part of the current period into an open balance until that date instead of overdue.</p>
           <div class="form-actions"><button class="btn primary sm" type="submit">Save plan</button><button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Cancel</button><span style="flex:1"></span><span class="del-wrap"><button class="link danger" type="button" data-act="sub-remove" data-sub="${s.id}">Remove plan and its payments</button></span></div>
         </form>
+        ${canTier?tierForm(id,s,sa,today,open['tier:'+s.id]):''}
         ${payRows(s)}
+        </div>
       </div>`;
     }else{
       subsHtml+=`<div class="sub" data-sub="${s.id}">
-        <div class="sub-line"><span class="name">${esc(s.name)}</span><span class="kind">one-time · ${s.currency}</span><span class="num">${esc(fmtAmt(s.total,s.currency))}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span><span class="spacer"></span>
-          ${sa.remaining>0?`<button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>`:''}
-          <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></div>
+        <div class="sub-head">
+          ${acctLine(u,s)}
+          <div class="sub-line"><span class="pkg-badge" title="Package / product">${esc(pkgName(s.packageId)||'One-time')}</span><span class="name">${esc(s.name)}</span><span class="kind">one-time · ${s.currency}</span><span class="num">${esc(fmtAmt(s.total,s.currency))}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>
+          <span class="sub-acts">${sa.remaining>0?`<button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>`:''}
+          <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
+        </div>
+        <div class="sub-body">
         <div class="sub-facts"><span>Paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span><span>Remaining <b>${esc(fmtAmt(sa.remaining,s.currency))}</b></span><span>Due <b>${s.due?esc(fmtD(s.due,true)):'no date'}</b></span>${unconvNote}</div>
         ${payForm(id,s,sa,today,sa.remaining,payOpen,(ui.payEdit||{})[s.id]?(s.payments||[]).find(x=>x.id===ui.payEdit[s.id]):null)}
         <form class="subedit-form" data-id="${id}" data-sub="${s.id}" ${open['edit:'+s.id]?'':'hidden'} novalidate>
@@ -1438,6 +1519,7 @@ function detailHTML(id,u,a,today){
           <div class="form-actions"><button class="btn primary sm" type="submit">Save item</button><button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Cancel</button><span style="flex:1"></span><span class="del-wrap"><button class="link danger" type="button" data-act="sub-remove" data-sub="${s.id}">Remove item and its payments</button></span></div>
         </form>
         ${payRows(s)}
+        </div>
       </div>`;
     }
   }
@@ -1534,6 +1616,21 @@ function wireDetail(id,today){
     amt.addEventListener('input',()=>{auto=false;compute();});
     form.querySelector('[name=date]').addEventListener('change',compute);
     compute();
+  });
+  det.querySelectorAll('.tier-form').forEach(form=>{
+    const s=(u.subscriptions||[]).find(x=>x.id===form.dataset.sub);if(!s||s.kind!=='monthly')return;
+    const fromEl=form.querySelector('[name=from]'),pkgEl=form.querySelector('[name=packageId]'),priceEl=form.querySelector('[name=price]'),noteEl=form.querySelector('[name=note]'),hint=form.querySelector('[data-role=tier-hint]');
+    const defPrice=(pid,from)=>{const p=pkgById(pid);return p&&p.price!=null&&(!p.currency||p.currency===s.currency)?p.price:priceAt(s,from);};
+    const sync=fromChanged=>{const from=fromEl.value;const prev=pkgIdAt(s,addDays(from,-1));const ex=tierEntries(s).find(t=>t.from===from);
+      [...pkgEl.options].forEach(o=>{o.disabled=o.value===prev;o.textContent=(pkgName(o.value)||o.value)+(o.disabled?' (current)':'');});
+      if(fromChanged){if(ex){pkgEl.value=ex.packageId;priceEl.value=ex.price;priceEl.dataset.auto='0';noteEl.value=ex.note||'';}else if(pkgEl.selectedOptions[0]&&pkgEl.selectedOptions[0].disabled){const o=[...pkgEl.options].find(x=>!x.disabled);if(o)pkgEl.value=o.value;}}
+      if(priceEl.dataset.auto==='1')priceEl.value=String(ex&&ex.packageId===pkgEl.value?ex.price:defPrice(pkgEl.value,from));
+      const tp=pkgName(pkgEl.value)||'the new tier';
+      hint.textContent=`From ${fmtD(from,true)} this plan bills as ${tp} at ${fmtAmt(Number(priceEl.value)||0,s.currency)}${perOf(s)}${prev?` (before that: ${pkgName(prev)} at ${fmtAmt(priceAt(s,addDays(from,-1)),s.currency)}${perOf(s)})`:''}. Earlier periods keep their tier and price; a prorated first period and any discount apply to the new price; payments keep filling periods in order.${ex?' Saving replaces the change already recorded for this cycle.':''}`;};
+    fromEl.addEventListener('change',()=>{priceEl.dataset.auto='1';sync(true);});
+    pkgEl.addEventListener('change',()=>{priceEl.dataset.auto='1';sync(false);});
+    priceEl.addEventListener('input',()=>{priceEl.dataset.auto='0';sync(false);});
+    sync(false);
   });
   const add=det.querySelector('.addsub-form');
   if(add){const kind=add.querySelector('[name=kind]');const pkgSel=add.querySelector('[name=packageId]');pkgSel.addEventListener('change',()=>{if(pkgSel.value==='__new'){pkgSel.value='';newPackageFlow();return;}const p=pkgById(pkgSel.value);const pr=add.querySelector('[name=price]');if(p){kind.value=p.cycle;kind.dispatchEvent(new Event('change'));}if(p&&p.price!=null&&(pr.value===''||pr.value===(pkgSel.dataset.prefilled||''))){pr.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency)add.querySelector('[name=currency]').value=p.currency;}});const upd=()=>{const ot=kind.value==='one-time';add.querySelector('[data-role=dueby-wrap]').hidden=ot;add.querySelector('[data-role=prorate-wrap]').hidden=ot;add.querySelector('[data-role=waive-wrap]').hidden=ot;add.querySelector('[data-role=name-label]').textContent=ot?'Item name':'Label (optional)';add.querySelector('[data-role=amt-label]').textContent=ot?'Total amount':(kind.value==='yearly'?'Yearly price':'Monthly price');add.querySelector('[data-role=date-label]').textContent=ot?'Due date (optional)':'Start date';const d=add.querySelector('[name=date]');d.required=!ot;if(ot&&d.value===u.joinDate)d.value='';if(!ot&&!d.value)d.value=u.joinDate;};kind.addEventListener('change',upd);upd();}
@@ -1677,6 +1774,7 @@ function bind(){
     else if(A==='pay-edit-cancel'){if(ui.payEdit)delete ui.payEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['pay:'+sid]:false});renderTable();}
     else if(A==='price-edit'){ui.priceEdit=ui.priceEdit||{};ui.priceEdit[sid]=act.dataset.from;ui.open[id]=Object.assign({},ui.open[id],{['price:'+sid]:true});renderTable();}
     else if(A==='days-reset'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;s.prorationDaysOverride=null;s.prorationRateOverride=null;s.prorationAmountOverride=null;ui.open[id]=Object.assign({},ui.open[id],{['days:'+sid]:false});const ok=await persistUser(id,u);if(ok)toast('First period back to actual days.');}
+    else if(A==='tier-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const t=(s.tierHistory||[]).find(x=>x.from===act.dataset.from);s.tierHistory=(s.tierHistory||[]).filter(x=>x.from!==act.dataset.from);const ok=await persistUser(id,u);if(ok)toast(t?`Undone: ${displayName(u)} no longer moves to ${pkgName(t.packageId)||'that tier'} from ${fmtD(t.from,true)}.`:'Tier change removed.');}
     else if(A==='price-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;if((s.prices||[]).length<=1){toast('A plan needs at least one price. Edit it instead.');return;}s.prices=s.prices.filter(p=>p.from!==act.dataset.from);const ok=await persistUser(id,u);if(ok)toast('Price entry removed.');}
     else if(A==='pay-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const p=s.payments.find(x=>x.id===act.dataset.pay);s.payments=s.payments.filter(x=>x.id!==act.dataset.pay);const ok=await persistUser(id,u);if(ok&&p)toast(`Removed the ${fmtAmt(p.amount,p.currency||s.currency)} payment dated ${p.date}.`);}
     else if(A==='sub-remove'){act.parentElement.innerHTML=`<span class="small" style="margin-right:8px">Remove this plan and all of its payments?</span><button class="btn sm danger" type="button" data-act="sub-remove-yes" data-sub="${sid}">Yes, remove</button> <button class="btn sm" type="button" data-act="sub-remove-no">Cancel</button>`;}
@@ -1720,6 +1818,16 @@ function bind(){
       if(!isDateKey(from)){toast('Pick the date the price starts.');return;}
       s.prices=(s.prices||[]).filter(p=>p.from!==from&&p.from!==replaceFrom);s.prices.push({from,price:Number(priceRaw)});if(ui.priceEdit)delete ui.priceEdit[s.id];closeKey('price:'+s.id);
       const ok=await persistUser(id,u);if(ok)toast(`${s.name}: ${fmtAmt(Number(priceRaw),s.currency)}/mo from ${fmtD(from,true)}.`);
+    }else if(form.classList.contains('tier-form')){
+      const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s||s.kind!=='monthly')return;const from=val('from'),pid=val('packageId'),priceRaw=val('price'),note=val('note').trim().slice(0,140);
+      const p=pkgById(pid);if(!p||p.cycle!==subCycle(s)){toast('Choose a tier with the same billing cycle.');return;}
+      if(!isDateKey(from)){toast('Pick the cycle the change starts from.');return;}
+      if(!validAmt(priceRaw)){toast('Enter the price for the new tier (0 is allowed).');return;}
+      const prev=pkgIdAt(s,addDays(from,-1));const rest=tierEntries(s).filter(t=>t.from!==from);
+      if(pid===prev){if(rest.length!==tierEntries(s).length){s.tierHistory=rest;closeKey('tier:'+s.id);const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: the tier change on ${fmtD(from,true)} was removed; the plan stays on ${pkgName(prev)}.`);}else toast(`Already on ${pkgName(prev)} before ${fmtD(from,true)}; pick a different tier.`);return;}
+      rest.push({from,packageId:pid,price:Number(priceRaw),currency:s.currency,note});s.tierHistory=rest.sort((a,b)=>a.from.localeCompare(b.from));closeKey('tier:'+s.id);
+      const d=tierDesc(s,s.tierHistory.find(t=>t.from===from),todayISO());
+      const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: ${d.dir==='up'?'account upgraded to':'moved to'} ${d.name} at ${fmtAmt(Number(priceRaw),s.currency)}${perOf(s)} from ${fmtD(from,true)}.`);
     }else if(form.classList.contains('subedit-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const name=s.kind==='monthly'?val('name').trim():(val('name').trim()||s.name);const cur=normCur(val('currency'));
       if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}s.packageId=pkg;s.cycle=val('cycle')==='yearly'?'yearly':'monthly';s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;const dt=val('discType'),dv=Number(val('discValue'));if(dt&&!(dv>0)){toast('Enter the discount value (above zero), or set Discount to None.');return;}if(dt==='percent'&&dv>100){toast('A percent discount cannot exceed 100.');return;}s.discount=dt&&dv>0?{type:dt,value:dv}:null;s.prorationBasis=rawBasis(val('basis'));if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start){toast('The end date must not be before the start date.');return;}
@@ -2059,7 +2167,7 @@ function buildUsersCSV(){
   const lines=[USERS_HEAD.join(',')];
   for(const id of ids){const u=state.users[id];const base=[u.name,u.email,fmtPhone(u.phone),u.telegram?(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram):'',u.joinDate,u.notes,u.cancel?'cancelled':'active',u.cancel?u.cancel.lastDay:''];
     if(!(u.subscriptions||[]).length)lines.push([...base,...Array(15).fill('')].map(csvCell).join(','));
-    for(const s of u.subscriptions||[]){const lbl=/^standard$/i.test(s.name||'')&&s.packageId?'':s.name;const sb=s.kind==='monthly'?[pkgName(s.packageId),lbl,subCycle(s),s.currency,priceAt(s,todayISO()),s.start,s.end||'',s.dueBy||'',s.prorate===false?'no':'yes',s.discount?(s.discount.type==='percent'?s.discount.value+'%':s.discount.value):'']:[pkgName(s.packageId),lbl,'one-time',s.currency,s.total,'',s.due||'','','',''];
+    for(const s of u.subscriptions||[]){const lbl=/^standard$/i.test(s.name||'')&&s.packageId?'':s.name;const sb=s.kind==='monthly'?[pkgName(pkgIdAt(s,todayISO())),lbl,subCycle(s),s.currency,priceAt(s,todayISO()),s.start,s.end||'',s.dueBy||'',s.prorate===false?'no':'yes',s.discount?(s.discount.type==='percent'?s.discount.value+'%':s.discount.value):'']:[pkgName(s.packageId),lbl,'one-time',s.currency,s.total,'',s.due||'','','',''];
       const pays=(s.payments||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
       if(!pays.length)lines.push([...base,...sb,'','','','',''].map(csvCell).join(','));
       for(const p of pays)lines.push([...base,...sb,p.date,p.amount,p.currency||s.currency,p.rate||'',p.note||''].map(csvCell).join(','));}}
