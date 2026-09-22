@@ -1,0 +1,44 @@
+{% extends "_base.html" %}
+{% block title %}{{ app_name }} · {% if missing %}Link not active{% else %}Confirm your payment{% endif %}{% endblock %}
+{% block body %}
+<main class="card">
+{% if missing %}
+  <h1>This link is not active</h1>
+  <p class="lead" style="font-size:15px;color:var(--ink-2)">It may have been replaced with a newer one. Please reply to the message you received instead.</p>
+{% else %}
+  {% if nothing_due %}
+  <h1>Hi {{ name }},</h1>
+  <p class="lead">you are all set for <b>{{ period }}</b>{% if package %} on <b>{{ package }}</b>{% endif %}. Nothing to confirm right now.</p>
+  <p class="hint">This page updates when your next payment comes due.</p>
+  {% elif recorded %}
+  <h1>Thanks, {{ name }}.</h1>
+  <p class="lead">{% if done %}Your answer is recorded.{% else %}You already answered for the period starting {{ due_date }}.{% endif %}</p>
+  <div class="status" data-answer="{{ recorded.answer }}" role="status">
+    <span aria-hidden="true">{% if recorded.answer == 'yes' %}✓{% else %}✗{% endif %}</span>
+    <span><b>{% if recorded.answer == 'yes' %}YES — continuing and paying by {{ reply_by }}{% else %}NO — not continuing{% endif %}</b>{% if recorded.note %}<br>“{{ recorded.note }}”{% endif %}<span class="when">recorded {{ recorded.at[:16].replace('T', ' ') }} UTC</span></span>
+  </div>
+  <p class="hint">Changed your mind? <a class="btn sm" href="{{ url_for('confirm', token=token, change=1) }}" style="margin-left:6px">Change my answer</a></p>
+  {% else %}
+  <h1>Hi {{ name }},</h1>
+  <p class="lead">your <b>{{ package }}</b> payment of <b>{{ amount }}</b> for <b>{{ period }}</b> is due on <b>{{ due_date }}</b>.</p>
+  <dl class="facts">
+    <dt>Package</dt><dd>{{ package }}</dd>
+    <dt>Amount</dt><dd class="num">{{ amount }}</dd>
+    <dt>Period</dt><dd>{{ period }}</dd>
+    <dt>Due on</dt><dd>{{ due_date }}</dd>
+    <dt>Reply by</dt><dd>{{ reply_by }}</dd>
+  </dl>
+  <form method="post">
+    <p class="q">Will you continue and pay by {{ reply_by }}?</p>
+    <div class="btns">
+      <button class="btn yes" type="submit" name="answer" value="yes">YES</button>
+      <button class="btn no" type="submit" name="answer" value="no">NO</button>
+    </div>
+    <label class="f">Note <span style="font-weight:400;color:var(--muted)">(optional — e.g. “paid via NayaPay”, or when you will pay)</span><textarea name="note" maxlength="500"></textarea></label>
+  </form>
+  <p class="hint">Your answer goes only to the person who runs your subscription. Nothing is charged from this page.</p>
+  {% endif %}
+{% endif %}
+</main>
+<p class="foot">{{ app_name }} · {{ tagline }}</p>
+{% endblock %}
