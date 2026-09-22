@@ -101,7 +101,10 @@ td.r .m2{align-items:flex-end}
 .btn .cnt{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--crit);color:#fff;font-size:11px;font-weight:600;font-family:var(--mono)}
 .banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between;background:var(--warn-bg);border:1px solid var(--warn);border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--ink)}
 .banner b{font-weight:600}
+.remind-pair{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
 .rem-badge{display:block;font-size:11px;margin-top:2px;white-space:nowrap}
+.cancel-note{font-size:12px;color:var(--ink-2);background:var(--surface-2);border-radius:4px;padding:8px 10px;margin-bottom:10px}
+.cancel-note b{color:var(--ink)}
 .rem-badge[data-k="confirmed"]{color:var(--good)}
 .rem-badge[data-k="reminded"]{color:var(--ink-2)}
 .rr-sec{margin-top:12px}
@@ -188,7 +191,8 @@ td.late .num{color:var(--crit);font-weight:500}
 .pill[data-status="current"],.pill[data-status="paid"]{color:var(--good);background:var(--good-bg)}
 .pill[data-status="due-soon"],.pill[data-status="due-today"],.pill[data-status="open"]{color:var(--warn);background:var(--warn-bg)}
 .pill[data-status="overdue"]{color:var(--crit);background:var(--crit-bg)}
-.pill[data-status="upcoming"],.pill[data-status="ended"],.pill[data-status="nosub"]{color:var(--ink-2);background:var(--surface-2)}
+.pill[data-status="upcoming"],.pill[data-status="ended"],.pill[data-status="nosub"],.pill[data-status="cancelled"]{color:var(--ink-2);background:var(--surface-2)}
+tr.row[data-cancelled="1"] td.who .nm{color:var(--ink-2)}
 tr.detail td{background:var(--surface);padding:14px 16px 16px;white-space:normal;border-bottom:1px solid var(--line-strong)}
 .detail-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline;margin-bottom:12px}
 .detail-head .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
@@ -386,6 +390,7 @@ table.costs td.cat{color:var(--ink-2)}
     <input class="search" id="search" type="search" placeholder="Search name, email, plan or notes" aria-label="Search users">
     <button class="btn" type="button" id="btn-filter" aria-pressed="false">Hasn't paid</button>
     <select id="pkgFilter" aria-label="Filter by package"><option value="all">Package: all</option></select>
+    <select id="statusFilter" aria-label="Filter by status"><option value="active">Status: active</option><option value="cancelled">Status: cancelled</option><option value="all">Status: all</option></select>
     <select id="sort" aria-label="Sort by">
       <option value="status">Sort: status (overdue first)</option>
       <option value="due">Sort: due next cycle</option>
@@ -447,7 +452,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="io-grid">
       <div>
         <h3 class="small" style="margin-bottom:6px">Users and payments</h3>
-        <p class="small muted">One row per payment (or per plan with no payment yet). Columns: <code>name</code> and/or <code>email</code>, <code>join_date</code>; optional <code>phone</code>, <code>notes</code>, <code>package</code>, <code>plan</code> (label), <code>prorate</code> (yes/no), <code>kind</code> (monthly or one-time), <code>currency</code> (USD or PKR), <code>price</code>, <code>kind</code> may also be yearly, <code>plan_start</code>, <code>plan_end</code> (or due date), <code>due_by</code>, <code>payment_date</code>, <code>payment_amount</code>, <code>payment_currency</code>, <code>payment_rate</code>, <code>payment_note</code>. Existing users (by email, then name) and plans (by name) are updated; a payment on an existing date replaces it.</p>
+        <p class="small muted">One row per payment (or per plan with no payment yet). Columns: <code>name</code> and/or <code>email</code>, <code>join_date</code>; optional <code>phone</code>, <code>notes</code>, <code>package</code>, <code>plan</code> (label), <code>prorate</code> (yes/no), <code>status</code> (active or cancelled) with <code>last_day</code>, <code>kind</code> (monthly or one-time), <code>currency</code> (USD or PKR), <code>price</code>, <code>kind</code> may also be yearly, <code>plan_start</code>, <code>plan_end</code> (or due date), <code>due_by</code>, <code>payment_date</code>, <code>payment_amount</code>, <code>payment_currency</code>, <code>payment_rate</code>, <code>payment_note</code>. Existing users (by email, then name) and plans (by name) are updated; a payment on an existing date replaces it.</p>
         <pre class="sample">name,email,join_date,package,kind,currency,price,payment_date,payment_amount,payment_currency,payment_rate
 Eren,erenkumcuoglu@gmail.com,2026-07-24,C,monthly,USD,14,2026-09-24,14,USD,280
 Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PKR,</pre>
@@ -613,7 +618,7 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 const newId=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 
 const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY},mode:'connecting',loaded:false,costsLoaded:false};
-const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null};
+const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null};
 let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,migrateChecked=false;
 
 /* ---------- money: two currencies, per-entry rate ---------- */
@@ -669,7 +674,8 @@ function pkgUsage(id){let n=0;for(const uid in state.users)for(const s of state.
 function normDate(s){if(!s)return null;s=String(s);if(isDateKey(s))return s;if(isMonthKey(s))return s+'-01';return null;}
 const normRate=r=>{const x=Number(r);return x>0?x:null;};
 function normalizeUser(b,id){
-  const u={id,name:String(b.name||'').trim(),email:String(b.email||'').trim(),phone:digits(b.phone),joinDate:normDate(b.joinDate)||todayISO(),notes:String(b.notes||'').trim(),createdAt:b.createdAt||'',subscriptions:[],reminders:{}};
+  const u={id,name:String(b.name||'').trim(),email:String(b.email||'').trim(),phone:digits(b.phone),joinDate:normDate(b.joinDate)||todayISO(),notes:String(b.notes||'').trim(),createdAt:b.createdAt||'',subscriptions:[],reminders:{},cancel:null};
+  if(b.cancel&&typeof b.cancel==='object'&&normDate(b.cancel.lastDay))u.cancel={lastDay:normDate(b.cancel.lastDay),reason:String(b.cancel.reason||'').trim(),note:String(b.cancel.note||'').trim(),at:normDate(b.cancel.at)||''};
   const rm=b.reminders&&typeof b.reminders==='object'?b.reminders:{};for(const k in rm){if(!isDateKey(k))continue;const v=rm[k]||{};const r={reminded:normDate(v.reminded),confirmed:normDate(v.confirmed)};if(r.reminded||r.confirmed)u.reminders[k]=r;}
   for(const s of b.subscriptions||[]){
     const kind=s.kind==='one-time'?'one-time':'monthly';const start=normDate(s.start)||u.joinDate;const cur=normCur(s.currency);
@@ -682,7 +688,7 @@ function normalizeUser(b,id){
   }
   return u;
 }
-function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{}};}
+function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{},cancel:n.cancel||null};}
 function normalizeCost(b,id){return {id,date:normDate(b.date)||todayISO(),description:String(b.description||'').trim(),category:String(b.category||'').trim(),currency:normCur(b.currency),cost:Number(b.cost)||0,tax:Number(b.tax)||0,rate:normRate(b.rate),source:String(b.source||''),receipt:String(b.receipt||''),createdAt:b.createdAt||''};}
 function cleanCost(c){const n=normalizeCost(c,c.id);delete n.id;n.createdAt=n.createdAt||new Date().toISOString();return n;}
 
@@ -730,7 +736,7 @@ function analyzeOneTime(s,today){
   if(remaining<=0)status='paid';else if(s.due&&s.due<today)status='overdue';else if(s.due&&s.due===today)status='due-today';else if(s.due&&dayDiff(today,s.due)<=7)status='due-soon';else status='open';
   return {kind:'one-time',paid,unconv:pc.unconv,remaining,nextDue:remaining>0?s.due||null:null,amountDue:remaining,status,cur:s.currency,overdue:status==='overdue'?1:0};
 }
-const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,paid:5,ended:5,nosub:6};
+const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,paid:5,ended:5,cancelled:5,nosub:6};
 function analyze(u,today){
   const subs=u.subscriptions||[];const sa={};const totals=newSum(),balance=newSum(),due=newSum(),cycleDue=newSum();let cyclePaid=false;
   let status='nosub',rank=99,paidThrough=null,nextDue=null,overdue=0;const planParts=[],duePlans=[],duePkgs=[];const pkgIds=new Set();
@@ -741,22 +747,24 @@ function analyze(u,today){
     if(a.kind==='monthly'){if(a.overdueAmount>0)sumAdd(balance,a.overdueAmount,s.currency,null);if(a.cycleDue>0)sumAdd(cycleDue,a.cycleDue,s.currency,null);if(a.cyclePaid)cyclePaid=true;}else if(a.remaining>0)sumAdd(balance,a.remaining,s.currency,null);
     const r=RANK[a.status];if(r<rank){rank=r;status=a.status;}
     if(a.kind==='monthly'){
-      if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),price:a.price,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id});if(s.packageId)pkgIds.add(s.packageId);else pkgIds.add('');}
+      if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),price:a.price,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id,note:u.cancel&&s.end?'until '+fmtD(s.end):undefined});if(s.packageId)pkgIds.add(s.packageId);else pkgIds.add('');}
       else if(a.status==='upcoming'){planParts.push({name:planLabel(s),price:a.price,cur:s.currency,per:perOf(s),note:'starts '+fmtD(s.start),noPkg:!s.packageId,subId:s.id});pkgIds.add(s.packageId||'');}
+      else if(u.cancel&&s.end){planParts.push({name:planLabel(s),price:priceAt(s,s.end),cur:s.currency,per:perOf(s),note:'until '+fmtD(s.end),subId:s.id});if(s.packageId)pkgIds.add(s.packageId);}
     }else if(a.remaining>0){planParts.push({name:planLabel(s),price:a.remaining,cur:s.currency,per:'',note:'left of '+fmtAmt(s.total,s.currency)});if(s.packageId)pkgIds.add(s.packageId);}
     if(a.nextDue&&!['ended','paid','upcoming'].includes(a.status)){if(!nextDue||a.nextDue<nextDue)nextDue=a.nextDue;}
     if(['overdue','due-today','due-soon'].includes(a.status)){sumAdd(due,a.amountDue,s.currency,null);duePlans.push(planLabel(s));if(s.packageId)duePkgs.push(pkgName(s.packageId));overdue+=a.overdue;}
   }
   if(!subs.length)status='nosub';
+  if(u.cancel){status='cancelled';nextDue=null;const cd=newSum();return {sa,totals,balance,due:balance,cycleDue:cd,cyclePaid:false,mainCur,status,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:u.cancel,unpaid:balance.n>0,needsReminder:false};}
   if(!due.n){for(const s of subs){const a=sa[s.id];if(a.kind==='monthly'&&a.status!=='ended')sumAdd(due,a.amountDue,s.currency,null);}}
-  return {sa,totals,balance,due,cycleDue,cyclePaid,mainCur,status,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,unpaid:status==='overdue'||status==='due-today',needsReminder:['overdue','due-today','due-soon'].includes(status)||cycleDue.n>0};
+  return {sa,totals,balance,due,cycleDue,cyclePaid,mainCur,status,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:null,unpaid:status==='overdue'||status==='due-today',needsReminder:['overdue','due-today','due-soon'].includes(status)||cycleDue.n>0};
 }
-function statusLabel(a){switch(a.status){case 'overdue':return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';case 'due-today':return 'Due today';case 'due-soon':return 'Due soon';case 'current':return 'Current';case 'open':return 'Open balance';case 'upcoming':return 'Starts later';case 'ended':return 'Ended';case 'paid':return 'Paid';default:return 'No plan';}}
+function statusLabel(a){switch(a.status){case 'cancelled':return a.balance&&a.balance.n?'Cancelled · owes':'Cancelled · settled';case 'overdue':return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';case 'due-today':return 'Due today';case 'due-soon':return 'Due soon';case 'current':return 'Current';case 'open':return 'Open balance';case 'upcoming':return 'Starts later';case 'ended':return 'Ended';case 'paid':return 'Paid';default:return 'No plan';}}
 const displayName=u=>u.name||u.email||'(unnamed)';
 
 /* ---------- reminders ---------- */
-function reminderText(u,a,today,mode){
-  const tpl=tplOf(state.settings.template);const w=reminderWindow(today);mode=mode||(a.unpaid?'overdue':'cycle');
+function reminderText(u,a,today,mode,tplOverride){
+  const tpl=tplOverride||tplOf(state.settings.template);const w=reminderWindow(today);mode=mode||(a.unpaid?'overdue':'cycle');
   const plans=(a.duePlans.length?a.duePlans:(u.subscriptions||[]).map(s=>planLabel(s))).filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'subscription';
   let amount,period,dueDate;
   if(mode==='overdue'){amount=ownText(a.balance.n?a.balance:a.due,a.mainCur);let st=null,en=null;for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly')continue;for(const p of sa.periods)if((p.state==='unpaid'||p.state==='partial')&&p.st<=today){if(!st||p.st<st)st=p.st;if(!en||p.en>en)en=p.en;}}period=st?fmtD(st)+' – '+fmtD(en):'the current period';dueDate=a.nextDue?fmtD(a.nextDue,true):'now';}
@@ -768,6 +776,12 @@ const waLink=(u,text)=>'https://wa.me/'+u.phone+'?text='+encodeURIComponent(text
 function remindControl(u,a,today,label,mode){
   if(!u.phone)return `<button class="btn sm" type="button" disabled title="Add a WhatsApp number in Edit user">add phone</button>`;
   return `<a class="btn sm wa" href="${esc(waLink(u,reminderText(u,a,today,mode)))}" target="_blank" rel="noopener noreferrer" title="Opens WhatsApp with the reminder prefilled">${label||'Remind'}</a>`;
+}
+const mailLink=(u,subject,body)=>'mailto:'+encodeURIComponent(u.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+function emailControl(u,a,today,label,mode){
+  if(!u.email)return `<button class="btn sm" type="button" disabled title="Add an email in Edit user">add email</button>`;
+  const subject='Payment reminder: '+reminderText(u,a,today,mode,'{package} {period}');
+  return `<a class="btn sm" href="${esc(mailLink(u,subject,reminderText(u,a,today,mode)))}" title="Opens your mail app with the reminder prefilled">${label||'Email'}</a>`;
 }
 function cyclePkgs(u,a){const out=[];for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.cycleDue>0){const n=pkgName(s.packageId);if(n&&!out.includes(n))out.push(n);}}return out;}
 function remBadge(u,key){const r=remState(u,key);if(r.confirmed)return `<span class="rem-badge" data-k="confirmed">✓ confirmed ${esc(fmtD(r.confirmed))}</span>`;if(r.reminded)return `<span class="rem-badge" data-k="reminded">✓ reminded ${esc(fmtD(r.reminded))}</span>`;return '';}
@@ -896,7 +910,7 @@ function renderSync(){
   $('#foot').innerHTML=(state.mode==='shared'?'<span>Everyone who opens this page sees and edits the same data.</span>':state.mode==='local'?'<span>Shared storage is not available in this view, so entries are kept in this browser only. Export CSV to move them.</span>':'')
     +'<span>Everyone bills on the same cycle, anchored in Settings (Jul 24 → Jul 24–Aug 23, Aug 24–Sep 23, …; yearly plans Jul 24–Jul 23). A plan\'s first period is the cycle period containing its start date and is charged by days unless proration is off; payments fill periods in order and any extra carries into the next as credit. <b>Current</b> = the current period is covered; <b>Overdue</b> = a period that has started is not fully paid. <b>Balance due</b> = unpaid started periods plus what is left on one-time items. Conversions use each entry\'s own rate, or the default rate from Settings.</span>';
 }
-function reminderRows(today){const w=reminderWindow(today);const all=Object.keys(state.users).map(id=>({id,u:state.users[id],a:analyze(state.users[id],today)}));const byName=(x,y)=>displayName(x.u).localeCompare(displayName(y.u));
+function reminderRows(today){const w=reminderWindow(today);const all=Object.keys(state.users).filter(id=>!state.users[id].cancel).map(id=>({id,u:state.users[id],a:analyze(state.users[id],today)}));const byName=(x,y)=>displayName(x.u).localeCompare(displayName(y.u));
   const overdue=all.filter(r=>r.a.unpaid).sort((x,y)=>(sortVal(y.a.balance)-sortVal(x.a.balance))||byName(x,y));
   const cycle=all.filter(r=>!r.a.unpaid&&r.a.cycleDue.n>0).sort(byName);
   const covered=all.filter(r=>!r.a.unpaid&&!r.a.cycleDue.n&&r.a.cyclePaid).sort(byName);
@@ -916,7 +930,7 @@ function renderRemindRun(){
   const tog=(r,f,label)=>{const st=remState(r.u,key);const v=st[f];return `<label class="chk f"><input type="checkbox" data-act="rem" data-user="${esc(r.id)}" data-f="${f}"${v?' checked':''}>${label}${v?` <span class="when">${esc(fmtD(v))}</span>`:''}</label>`;};
   const row=(r,mode)=>{const a=r.a,u=r.u;const pk=(mode==='overdue'?(a.duePkgs.length?a.duePkgs:[...a.pkgIds].map(pkgName)):cyclePkgs(u,a)).filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'package not set';const st=remState(u,key);
     const due=mode==='overdue'?`<b>${esc(ownText(a.balance.n?a.balance:a.due,a.mainCur))}</b> overdue${a.nextDue?` since ${esc(fmtD(a.nextDue))}`:''}${a.cycleDue.n?` · plus ${esc(ownText(a.cycleDue,a.mainCur))} on ${esc(fmtD(w.nc))}`:''}`:`<b>${esc(ownText(a.cycleDue,a.mainCur))}</b> due ${esc(fmtD(w.nc))}${creditNote(r)}`;
-    return `<div class="rr-row" data-user="${esc(r.id)}" data-done="${st.confirmed?'1':'0'}"><span class="who" title="${esc(displayName(u))}">${esc(displayName(u))}</span><span class="due">${esc(pk)} · ${due}</span>${tog(r,'reminded','Reminded')}${tog(r,'confirmed','Confirmed')}${remindControl(u,a,today,'Open WhatsApp',mode)}</div>`;};
+    return `<div class="rr-row" data-user="${esc(r.id)}" data-done="${st.confirmed?'1':'0'}"><span class="who" title="${esc(displayName(u))}">${esc(displayName(u))}</span><span class="due">${esc(pk)} · ${due}</span>${tog(r,'reminded','Reminded')}${tog(r,'confirmed','Confirmed')}<span class="remind-pair">${remindControl(u,a,today,'Open WhatsApp',mode)}${emailControl(u,a,today,'Email',mode)}</span></div>`;};
   const creditNote=r=>{let c=[];for(const s of r.u.subscriptions||[]){const sa=r.a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.nextDue===w.nc&&sa.nextCredit>0)c.push(fmtAmt(sa.nextCredit,s.currency));}return c.length?` <span class="muted">(after ${esc(c.join(' + '))} credit)</span>`:'';};
   let html='';
   if(R.overdue.length)html+=`<div class="rr-sec"><h4>Overdue from earlier cycles · ${R.overdue.length}</h4>${R.overdue.map(r=>row(r,'overdue')).join('')}</div>`;
@@ -936,7 +950,7 @@ function renderBreakdown(rb){
   for(const p of packages())mk(p.id,p.name);
   for(const id of ids){const u=state.users[id];const a=analyze(u,today);
     for(const s of u.subscriptions||[]){const key=(s.packageId&&pkgById(s.packageId))?s.packageId:(s.kind==='one-time'?'__one':'__none');const r=mk(key,key==='__one'?'One-time items':key==='__none'?'Package not set':pkgName(key));
-      const sa=a.sa[s.id];if(s.kind==='monthly'?sa.status!=='ended':sa.remaining>0)r.users.add(id);
+      const sa=a.sa[s.id];if(!u.cancel&&(s.kind==='monthly'?sa.status!=='ended':sa.remaining>0))r.users.add(id);
       for(const pay of s.payments||[])if(inRange(pay.date,rb))sumAdd(r.col,pay.amount,pay.currency||s.currency,pay.rate);
       if(s.kind==='monthly'){if(sa.overdueAmount>0)sumAdd(r.out,sa.overdueAmount,s.currency,null);}else if(sa.remaining>0)sumAdd(r.out,sa.remaining,s.currency,null);}}
   const order=[...packages().map(p=>p.id),'__none','__one'].filter(k=>rows[k]&&(rows[k].users.size||rows[k].col.n||rows[k].out.n||!k.startsWith('__')));
@@ -953,13 +967,14 @@ function renderTiles(){
   const col=newSum(),cost=newSum();let out=newSum(),unpaid=0,overdueUsers=0,soon=0,withBal=0,ncost=0,npay=0;
   for(const p of allPayments())if(inRange(p.date,rb)){sumAdd(col,p.amount,p.currency,p.rate);npay++;}
   for(const id in state.costs){const c=state.costs[id];if(inRange(c.date,rb)){sumAdd(cost,costTotal(c),c.currency,c.rate);ncost++;}}
-  for(const id of ids){const a=analyze(state.users[id],today);out=sumMerge(out,a.balance);if(a.balance.n)withBal++;if(a.unpaid)unpaid++;if(a.status==='overdue')overdueUsers++;if(a.status==='due-soon')soon++;}
+  let cancOwe=newSum(),cancN=0,activeN=0;
+  for(const id of ids){const u=state.users[id];const a=analyze(u,today);out=sumMerge(out,a.balance);if(a.balance.n)withBal++;if(a.unpaid)unpaid++;if(a.status==='overdue'||(a.status==='cancelled'&&a.unpaid))overdueUsers++;if(a.status==='due-soon')soon++;if(u.cancel){if(a.balance.n){cancOwe=sumMerge(cancOwe,a.balance);cancN++;}}else activeN++;}
   const net=sumMerge(col,cost,-1);net.n=col.n+cost.n;
   setTile('t-col',col,'PKR');$('#t-col-sub').textContent=`${npay} payment${npay===1?'':'s'} · ${rb.label}`;
   setTile('t-cost',cost,'PKR');$('#t-cost-sub').textContent=`${ncost} cost entr${ncost===1?'y':'ies'} · ${rb.label}`;
   setTile('t-net',net,'PKR');$('#tile-net').dataset.alert=net.n&&(net.missing?net.pkr+net.usd<0:net.pkr<0)?'1':'0';$('#tile-net').dataset.good=net.n&&!net.missing&&net.pkr>0?'1':'0';
-  setTile('t-out',out,'PKR');$('#t-out-sub').textContent=withBal?`owed by ${withBal} user${withBal===1?'':'s'}`:(ids.length?'nothing outstanding':' ');$('#tile-out').dataset.alert=withBal?'1':'0';
-  $('#t-unpaid').textContent=unpaid;$('#t-unpaid-sub').textContent=`of ${ids.length} user${ids.length===1?'':'s'}`+(unpaid?` · ${overdueUsers} overdue · tap to list`:(soon?` · ${soon} due soon`:''));$('#tile-unpaid').dataset.alert=unpaid?'1':'0';
+  setTile('t-out',out,'PKR');$('#t-out-sub').textContent=withBal?`owed by ${withBal} user${withBal===1?'':'s'}`+(cancN?` · incl. ${ownText(cancOwe,'PKR')} from ${cancN} cancelled`:''):(ids.length?'nothing outstanding':' ');$('#tile-out').dataset.alert=withBal?'1':'0';
+  $('#t-unpaid').textContent=unpaid;$('#t-unpaid-sub').textContent=`of ${activeN} active user${activeN===1?'':'s'}`+(cancN?` · ${cancN} cancelled still owe${cancN===1?'s':''}`:'')+(unpaid?` · ${overdueUsers} overdue · tap to list`:(soon?` · ${soon} due soon`:''));$('#tile-unpaid').dataset.alert=unpaid?'1':'0';
   $('#range').value=ui.range;
   const nc=nextCycleStart(today);const dn=dayDiff(today,nc);$('#cycle-note').innerHTML=`Next cycle starts <b>${esc(fmtD(nc,true))}</b> · ${dn===0?'today':dn===1?'tomorrow':'in '+dn+' days'} · billing runs ${ordinal(cycleDay())} to ${cycleDay()===1?'end of month':ordinal(cycleDay()-1)}`;
   renderBreakdown(rb);
@@ -998,7 +1013,8 @@ function visibleRows(today){
   const rows=Object.keys(state.users).map(id=>({id,u:state.users[id],a:analyze(state.users[id],today)}))
     .filter(r=>!q||[r.u.name,r.u.email,r.u.notes,...(r.u.subscriptions||[]).map(s=>planLabel(s))].some(x=>(x||'').toLowerCase().includes(q)))
     .filter(r=>!ui.filterUnpaid||r.a.unpaid)
-    .filter(r=>ui.pkgFilter==='all'||(ui.pkgFilter==='none'?r.a.pkgIds.has(''):r.a.pkgIds.has(ui.pkgFilter)));
+    .filter(r=>ui.pkgFilter==='all'||(ui.pkgFilter==='none'?r.a.pkgIds.has(''):r.a.pkgIds.has(ui.pkgFilter)))
+    .filter(r=>ui.statusFilter==='all'||(ui.statusFilter==='cancelled'?!!r.u.cancel:!r.u.cancel));
   const byName=(x,y)=>displayName(x.u).localeCompare(displayName(y.u));
   const cmp={
     status:(x,y)=>(RANK[x.a.status]-RANK[y.a.status])||(y.a.overdue-x.a.overdue)||byName(x,y),
@@ -1019,19 +1035,19 @@ function renderTable(){
   const today=todayISO();const ids=Object.keys(state.users);
   const loading=state.mode==='connecting'||(state.mode==='shared'&&!state.loaded);
   $('#loading').hidden=!loading;$('#empty').hidden=loading||ids.length>0;$('#tableWrap').hidden=loading||ids.length===0;$('#costsSec').hidden=loading;
-  $('#sort').value=ui.sort;$('#btn-filter').setAttribute('aria-pressed',String(ui.filterUnpaid));
+  $('#sort').value=ui.sort;$('#statusFilter').value=ui.statusFilter;$('#btn-filter').setAttribute('aria-pressed',String(ui.filterUnpaid));
   document.querySelectorAll('#table thead th[data-sort]').forEach(th=>{th.querySelector('.arrow').textContent=th.dataset.sort===ui.sort?(ui.dir===1?'▾':'▴'):'';});
   $('#th-due').firstChild.textContent='Due '+fmtD(nextCycleStart(today))+' ';
   const rows=ids.length?visibleRows(today):[];
   renderRemindAll(rows,today);
   if(!ids.length)return;
-  const nores=$('#nores');nores.hidden=rows.length>0;nores.textContent=ui.filterUnpaid?(ui.search?'No unpaid users match that search.':'Nobody is overdue or due today.'):'No users match that search.';
+  const nores=$('#nores');nores.hidden=rows.length>0;nores.textContent=ui.filterUnpaid?(ui.search?'No unpaid users match that search.':'Nobody is overdue or due today.'):(ui.statusFilter==='cancelled'?'No cancelled users.':ui.statusFilter==='active'&&!ui.search?'No active users. Switch Status to All to see cancelled ones.':'No users match that search.');
   let html='';
   for(const r of rows){
     const {u,a,id}=r;const exp=ui.expanded===id;const late=a.status==='overdue';
     const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):'—';
     const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?'<span class="muted">paid</span>':'<span class="muted">—</span>');
-    html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}">
+    html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}">
       <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}</td>
       <td class="plan">${planCell(a)}</td>
       <td title="${esc(u.joinDate)}">${esc(fmtD(u.joinDate))}</td>
@@ -1040,7 +1056,7 @@ function renderTable(){
       <td class="r">${ownHTML(a.totals,a.mainCur,fmtAmt(0,a.mainCur))}</td>
       <td class="r${a.balance.n?' late':''}">${ownHTML(a.balance,a.mainCur)}</td>
       <td><span class="pill" data-status="${a.status}">${statusLabel(a)}</span></td>
-      <td>${a.needsReminder?remindControl(u,a,today):'<span class="muted">—</span>'}${remBadge(u,nextCycleStart(today))}</td>
+      <td>${a.needsReminder?`<span class="remind-pair">${remindControl(u,a,today)}${emailControl(u,a,today)}</span>`:'<span class="muted">—</span>'}${remBadge(u,nextCycleStart(today))}</td>
       <td><span class="chev">›</span></td>
     </tr>`;
     if(exp)html+=`<tr class="detail" data-id="${id}"><td colspan="10">${detailHTML(id,u,a,today)}</td></tr>`;
@@ -1051,7 +1067,7 @@ function renderTable(){
 function renderRemindAll(rows,today){
   const panel=$('#remindPanel');const list=rows.filter(r=>r.a.unpaid);
   panel.hidden=!(ui.filterUnpaid&&list.length>0);if(panel.hidden)return;
-  $('#remindList').innerHTML=list.map(r=>`<div class="remind-row"><span class="who" title="${esc(displayName(r.u))}">${esc(displayName(r.u))}</span><span class="due">${esc(r.a.duePlans.join(' + ')||'—')} · balance <span class="num">${esc(ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur))}</span>${r.a.nextDue?` · since ${esc(fmtD(r.a.nextDue))}`:''}</span>${remindControl(r.u,r.a,today,'Open WhatsApp')}</div>`).join('');
+  $('#remindList').innerHTML=list.map(r=>`<div class="remind-row"><span class="who" title="${esc(displayName(r.u))}">${esc(displayName(r.u))}</span><span class="due">${esc(r.a.duePlans.join(' + ')||'—')} · balance <span class="num">${esc(ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur))}</span>${r.a.nextDue?` · since ${esc(fmtD(r.a.nextDue))}`:''}</span><span class="remind-pair">${remindControl(r.u,r.a,today,'Open WhatsApp')}${emailControl(r.u,r.a,today,'Email')}</span></div>`).join('');
 }
 const curSelect=(id,name,val)=>`<select id="${id}" name="${name}"><option value="PKR"${val==='PKR'?' selected':''}>PKR (Rs)</option><option value="USD"${val==='USD'?' selected':''}>USD ($)</option></select>`;
 function payRows(s){
@@ -1153,9 +1169,28 @@ function detailHTML(id,u,a,today){
     }
   }
   return `<div class="detail-head">
-      <div class="meta"><span>Joined <b>${esc(fmtD(u.joinDate,true))}</b></span>${u.email&&u.name?`<span>Email <b class="num">${esc(u.email)}</b></span>`:''}<span>WhatsApp <b>${u.phone?esc(fmtPhone(u.phone)):'not set'}</b></span><span>Method / notes <b>${u.notes?esc(u.notes):'—'}</b></span><span>Total paid <b>${esc(ownText(a.totals,a.mainCur))}</b></span></div>
-      <span style="display:flex;gap:12px;align-items:center">${a.needsReminder?remindControl(u,a,today,'Remind on WhatsApp'):''}<button class="link" type="button" data-act="toggle" data-key="edit">Edit user</button></span>
+      <div class="meta"><span>Joined <b>${esc(fmtD(u.joinDate,true))}</b></span>${u.cancel?`<span>Last day <b>${esc(fmtD(u.cancel.lastDay,true))}</b></span>`:''}${u.email&&u.name?`<span>Email <b class="num">${esc(u.email)}</b></span>`:''}<span>WhatsApp <b>${u.phone?esc(fmtPhone(u.phone)):'not set'}</b></span><span>Method / notes <b>${u.notes?esc(u.notes):'—'}</b></span><span>Total paid <b>${esc(ownText(a.totals,a.mainCur))}</b></span></div>
+      <span style="display:flex;gap:12px;align-items:center">${a.needsReminder?remindControl(u,a,today,'Remind on WhatsApp')+emailControl(u,a,today,'Email'):''}<button class="link" type="button" data-act="toggle" data-key="edit">Edit user</button>${u.cancel?`<button class="btn sm primary" type="button" data-act="toggle" data-key="react">Reactivate</button>`:`<button class="link danger" type="button" data-act="toggle" data-key="cancel">Cancel subscription</button>`}</span>
     </div>
+    ${u.cancel?`<p class="cancel-note"><b>Cancelled</b> · last day ${esc(fmtD(u.cancel.lastDay,true))}${u.cancel.reason?` · ${esc(u.cancel.reason)}`:''}${u.cancel.note?` · ${esc(u.cancel.note)}`:''} · ${a.balance.n?'still owes '+esc(ownText(a.balance,a.mainCur))+' for periods before the last day':'settled, nothing owed'}. No further periods or reminders.</p>`:''}
+    <form class="block cancel-form" data-id="${id}" ${open.cancel&&!u.cancel?'':'hidden'} novalidate>
+      <h3 style="margin-bottom:8px">Cancel subscription</h3>
+      <div class="form-grid">
+        <label class="f">Last day<input id="cx-last-${id}" name="lastDay" type="date" required value="${esc(a.paidThrough&&a.paidThrough>=today?a.paidThrough:today)}"></label>
+        <label class="f">Reason <span class="muted">(optional)</span><input id="cx-reason-${id}" name="reason" type="text" placeholder="e.g. moving to another tool"></label>
+        <label class="f">Refund note <span class="muted">(optional)</span><input id="cx-note-${id}" name="note" type="text" placeholder="e.g. Rs 677 credit refunded via NayaPay"></label>
+      </div>
+      <p class="small muted" style="margin-top:6px">All of this user's plans end on the last day. Periods that already started stay due; nothing is billed or reminded after it. Recorded payments stay as history.</p>
+      <div class="form-actions"><button class="btn danger" type="submit">Confirm cancellation</button><button class="link" type="button" data-act="toggle" data-key="cancel">Keep subscription</button><span class="err" data-role="cancel-err"></span></div>
+    </form>
+    <form class="block react-form" data-id="${id}" ${open.react&&u.cancel?'':'hidden'} novalidate>
+      <h3 style="margin-bottom:8px">Reactivate</h3>
+      <div class="form-grid">
+        <label class="f">New start date<input id="rx-start-${id}" name="start" type="date" required value="${today}"></label>
+      </div>
+      <p class="small muted" style="margin-top:6px">If the last day was yesterday or later, the old plans simply continue. Otherwise a fresh plan starts on this date for each package the user had (same price and currency), prorated from then; the old plans and payments stay as history.</p>
+      <div class="form-actions"><button class="btn primary" type="submit">Reactivate</button><button class="link" type="button" data-act="toggle" data-key="react">Cancel</button><span class="err" data-role="react-err"></span></div>
+    </form>
     <div class="block-head"><h3>Plans and payments</h3><div class="legend"><span class="k-paid">Paid</span><span class="k-partial">Partial</span><span class="k-unpaid">Unpaid</span><span class="k-upcoming">Upcoming</span></div><button class="btn sm" type="button" data-act="toggle" data-key="addsub">Add plan or one-time item</button></div>
     <div class="subs">${subsHtml||'<p class="small muted">No plan yet. Add a monthly plan to start tracking billing periods, or a one-time item for a single amount.</p>'}</div>
     <form class="addsub-form sub" data-id="${id}" ${open.addsub?'':'hidden'} novalidate style="margin-top:8px">
@@ -1184,6 +1219,7 @@ function detailHTML(id,u,a,today){
         <button class="btn primary" type="submit">Save changes</button>
         <button class="link" type="button" data-act="toggle" data-key="edit">Cancel</button>
         <span style="flex:1"></span>
+        ${u.cancel?'':'<button class="link danger" type="button" data-act="toggle" data-key="cancel">Cancel subscription</button>'}
         <span class="del-wrap"><button class="btn sm danger" type="button" data-act="del">Delete user</button></span>
         <span class="err" data-role="edit-err"></span>
       </div>
@@ -1293,10 +1329,11 @@ function bind(){
   $('#sort').addEventListener('change',e=>{ui.sort=e.target.value;ui.dir=1;savePrefs();renderTable();});
   const toggleFilter=()=>{ui.filterUnpaid=!ui.filterUnpaid;renderTable();};
   $('#btn-filter').addEventListener('click',toggleFilter);
-  $('#tile-unpaid').addEventListener('click',()=>{if(!ui.filterUnpaid)toggleFilter();$('#tableWrap').scrollIntoView({behavior:'smooth',block:'start'});});
+  $('#tile-unpaid').addEventListener('click',()=>{if(Object.values(state.users).some(u=>u.cancel&&analyze(u,todayISO()).unpaid))ui.statusFilter='all';if(!ui.filterUnpaid)toggleFilter();$('#tableWrap').scrollIntoView({behavior:'smooth',block:'start'});});
   document.querySelector('#table thead').addEventListener('click',e=>{const th=e.target.closest('th[data-sort]');if(!th)return;if(ui.sort===th.dataset.sort)ui.dir=-ui.dir;else{ui.sort=th.dataset.sort;ui.dir=1;}savePrefs();renderTable();});
 
   $('#pkgFilter').addEventListener('change',e=>{ui.pkgFilter=e.target.value;renderTable();});
+  $('#statusFilter').addEventListener('change',e=>{ui.statusFilter=e.target.value;renderTable();});
   $('#tbody').addEventListener('change',async e=>{
     const sel=e.target.closest('select.pkg-quick');if(!sel||!sel.value)return;const row=sel.closest('tr.row');if(!row)return;
     const u=clone(state.users[row.dataset.id]);const s=(u.subscriptions||[]).find(x=>x.id===sel.dataset.sub);if(!s)return;
@@ -1376,6 +1413,21 @@ function bind(){
       if(kind==='monthly'){if(!isDateKey(date)){setErr('addsub-err','Pick the start date.');return;}u.subscriptions.push({id:newId('s'),kind,cycle:cy,name,packageId:pkg,currency:cur,start:date,end:null,prorate:!!(form.querySelector('[name=prorate]')||{}).checked,dueBy:isDateKey(dueBy)?dueBy:null,prices:[{from:date,price:Number(priceRaw)}],payments:[]});}
       else u.subscriptions.push({id:newId('s'),kind,name,packageId:pkg,currency:cur,total:Number(priceRaw),due:isDateKey(date)?date:null,payments:[]});
       closeKey('addsub');const ok=await persistUser(id,u);if(ok)toast('Added '+(name||pkgName(pkg))+'.');
+    }else if(form.classList.contains('cancel-form')){
+      setErr('cancel-err','');const lastDay=val('lastDay'),reason=val('reason').trim(),note=val('note').trim();
+      if(!isDateKey(lastDay)){setErr('cancel-err','Pick the last day.');return;}
+      for(const s of u.subscriptions){if(s.kind!=='monthly')continue;if(!s.end||s.end>lastDay)s.end=lastDay;}
+      u.cancel={lastDay,reason,note,at:todayISO()};closeKey('cancel');
+      const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} cancelled · last day ${fmtD(lastDay,true)}.`);
+    }else if(form.classList.contains('react-form')){
+      setErr('react-err','');const start=val('start');if(!isDateKey(start)){setErr('react-err','Pick the new start date.');return;}
+      const seen={};const fresh=[];let resumed=0;
+      for(const s of u.subscriptions){if(s.kind==='monthly'&&s.end&&addDays(s.end,1)>=start){s.end=null;resumed++;const key=s.packageId||('label:'+(s.name||''));seen[key]=1;}}
+      for(const s of u.subscriptions.slice().reverse()){if(s.kind!=='monthly'||!s.end)continue;const key=s.packageId||('label:'+(s.name||''));if(seen[key])continue;seen[key]=1;
+        fresh.push({id:newId('s'),kind:'monthly',cycle:subCycle(s)==='yearly'?'yearly':'monthly',name:s.name||'',packageId:s.packageId||null,currency:s.currency,start,end:null,prorate:true,dueBy:null,prices:[{from:start,price:priceAt(s,s.end)}],payments:[]});}
+      if(!fresh.length&&!resumed){const p=defaultPkg();fresh.push({id:newId('s'),kind:'monthly',cycle:p&&p.cycle==='yearly'?'yearly':'monthly',name:'',packageId:p?p.id:null,currency:p&&p.currency?p.currency:'PKR',start,end:null,prorate:true,dueBy:null,prices:[{from:start,price:p&&p.price!=null?p.price:0}],payments:[]});}
+      u.subscriptions.push(...fresh.reverse());u.cancel=null;closeKey('react');
+      const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} reactivated from ${fmtD(start,true)}.`);
     }else if(form.classList.contains('edit-form')){
       setErr('edit-err','');const name=val('name').trim(),email=val('email').trim(),join=val('joinDate'),phone=val('phone'),notes=val('notes').trim();
       if(!name&&!email){setErr('edit-err','Enter a name or an email.');return;}
@@ -1672,11 +1724,11 @@ function bindShot(){
 
 /* ---------- CSV ---------- */
 const csvCell=v=>{v=String(v==null?'':v);return /[",\n\t]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
-const USERS_HEAD=['name','email','phone','join_date','notes','package','plan','kind','currency','price','plan_start','plan_end','due_by','prorate','payment_date','payment_amount','payment_currency','payment_rate','payment_note'];
+const USERS_HEAD=['name','email','phone','join_date','notes','status','last_day','package','plan','kind','currency','price','plan_start','plan_end','due_by','prorate','payment_date','payment_amount','payment_currency','payment_rate','payment_note'];
 function buildUsersCSV(){
   const ids=Object.keys(state.users).sort((a,b)=>(state.users[a].joinDate||'').localeCompare(state.users[b].joinDate||'')||displayName(state.users[a]).localeCompare(displayName(state.users[b])));
   const lines=[USERS_HEAD.join(',')];
-  for(const id of ids){const u=state.users[id];const base=[u.name,u.email,fmtPhone(u.phone),u.joinDate,u.notes];
+  for(const id of ids){const u=state.users[id];const base=[u.name,u.email,fmtPhone(u.phone),u.joinDate,u.notes,u.cancel?'cancelled':'active',u.cancel?u.cancel.lastDay:''];
     if(!(u.subscriptions||[]).length)lines.push([...base,...Array(14).fill('')].map(csvCell).join(','));
     for(const s of u.subscriptions||[]){const lbl=/^standard$/i.test(s.name||'')&&s.packageId?'':s.name;const sb=s.kind==='monthly'?[pkgName(s.packageId),lbl,subCycle(s),s.currency,priceAt(s,todayISO()),s.start,s.end||'',s.dueBy||'',s.prorate===false?'no':'yes']:[pkgName(s.packageId),lbl,'one-time',s.currency,s.total,'',s.due||'','',''];
       const pays=(s.payments||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
@@ -1701,7 +1753,7 @@ async function importUsersCSV(){
   if(!parsed){msg.textContent='Paste some rows first.';return;}const {header,rows}=parsed;
   const monthCols=[];header.forEach((h,i)=>{const k=monthHeader(h);if(k)monthCols.push([i,k]);});
   const isMonthCol=i=>monthCols.some(c=>c[0]===i);const find=re=>header.findIndex((h,i)=>!isMonthCol(i)&&re.test(h));
-  const col={name:find(/^(full ?)?name$|customer|contact/),email:find(/mail/),phone:find(/phone|whatsapp|mobile/),join:find(/join|signed|^date$|^joined/),notes:find(/^notes?$|method|comment/),pkg:find(/package|tier/),plan:find(/^plan(_| )?name$|^plan$|subscription|item|label/),kind:find(/kind|type/),cur:find(/^currency$|^plan_currency$|pays/),price:find(/price|^total|monthly/),pstart:find(/plan_start|^start/),pend:find(/plan_end|^end|^due(_date)?$/),dueby:find(/due_by|dueby|remaining/),prorate:find(/prorat/),pdate:find(/payment_date|paid_on|paid on|pay date/),pamt:find(/payment_amount|paid_amount|^payment$|^amount$/),pcur:find(/payment_currency|paid_in/),prate:find(/payment_rate|^rate/),pnote:find(/payment_note|pay note|reference/)};
+  const col={name:find(/^(full ?)?name$|customer|contact/),email:find(/mail/),phone:find(/phone|whatsapp|mobile/),join:find(/join|signed|^date$|^joined/),notes:find(/^notes?$|method|comment/),pkg:find(/package|tier/),plan:find(/^plan(_| )?name$|^plan$|subscription|item|label/),kind:find(/kind|type/),cur:find(/^currency$|^plan_currency$|pays/),price:find(/price|^total|monthly/),pstart:find(/plan_start|^start/),pend:find(/plan_end|^end|^due(_date)?$/),dueby:find(/due_by|dueby|remaining/),prorate:find(/prorat/),status:find(/^status$/),lastday:find(/last_day|lastday|cancel/),pdate:find(/payment_date|paid_on|paid on|pay date/),pamt:find(/payment_amount|paid_amount|^payment$|^amount$/),pcur:find(/payment_currency|paid_in/),prate:find(/payment_rate|^rate/),pnote:find(/payment_note|pay note|reference/)};
   if(col.price===col.pamt&&col.price>=0)col.pamt=-1;
   if(col.name<0&&col.email<0){msg.textContent='Could not find a name or email column in the header row.';return;}
   const get=(r,k)=>col[k]>=0?(r[col[k]]||'').trim():'';
@@ -1713,6 +1765,7 @@ async function importUsersCSV(){
     const u=entry.u;const join=parseDate(get(r,'join'));if(join)u.joinDate=join;if(!u.joinDate){skipped++;continue;}
     if(name&&!u.name)u.name=name;if(email&&!u.email)u.email=email;
     const ph=get(r,'phone');if(ph&&validPhone(ph))u.phone=digits(ph);const nt=get(r,'notes');if(nt)u.notes=nt;
+    const stTxt=get(r,'status');if(stTxt){if(/cancel/i.test(stTxt)){const ld=parseDate(get(r,'lastday'))||(u.cancel&&u.cancel.lastDay)||todayISO();u.cancel={lastDay:ld,reason:'',note:'',at:todayISO()};for(const s of u.subscriptions||[]){if(s.kind==='monthly'&&(!s.end||s.end>ld))s.end=ld;}}else if(/active/i.test(stTxt))u.cancel=null;}
     u.subscriptions=u.subscriptions||[];
     const plan=get(r,'plan'),price=parseAmount(get(r,'price')),curTxt=get(r,'cur'),pkgTxt=get(r,'pkg');const kindTxt=get(r,'kind');const cy=/one|once|single/i.test(kindTxt)?'one-time':(/year|annual/i.test(kindTxt)?'yearly':'monthly');const kind=cy==='one-time'?'one-time':'monthly';const dueByTxt=parseDate(get(r,'dueby'));const proTxt=get(r,'prorate');const pro=proTxt?!/^(no|n|false|0|off)$/i.test(proTxt):null;
     let pkgId=null;if(pkgTxt){let p=packages().find(x=>x.name.toLowerCase()===pkgTxt.toLowerCase());if(!p){p={id:newId('pkg'),name:pkgTxt,price:null,currency:'',description:''};state.settings.packages=packages().concat([p]);newPkgs++;}pkgId=p.id;}

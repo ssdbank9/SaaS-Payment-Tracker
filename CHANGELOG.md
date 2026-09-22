@@ -2,6 +2,14 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v9 - 2026-09-22
+
+- Email one-tap: a mailto link carrying the reminder template sits beside every WhatsApp control.
+- Cancel subscription flow: record the last day, reason and a refund note; cancelling ends the user's plans, keeps any owed balance, and removes them from reminders and the active list.
+- Status filter: active, cancelled or all users.
+- Reactivate: resume the previous plan or start a fresh prorated plan.
+- CSV export gains status and last_day columns.
+
 ## v8 - 2026-09-22
 
 - Removed the Uqba seed record via a guarded migration (runs once per data store, never re-adds).
