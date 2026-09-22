@@ -238,6 +238,21 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .costs-sec{margin-top:24px}
 .costs-head .acts{display:flex;gap:8px;flex-wrap:wrap}
 .pill.warnp{color:var(--warn);background:var(--warn-bg)}
+details.more{margin-top:10px}
+details.more summary{cursor:pointer;font-size:12px;color:var(--accent-ink);font-weight:500}
+.qa-help{font-size:12px;color:var(--ink-2);margin-top:6px}
+.qa-help code{white-space:nowrap}
+table.qa{min-width:900px}
+table.qa td{padding:4px 6px}
+table.qa input,table.qa select{min-height:30px;padding:4px 6px;font-size:13px}
+table.qa input.nm{width:130px}
+table.qa input.em{width:170px;font-family:var(--mono);font-size:12px}
+table.qa input.ph{width:130px;font-family:var(--mono);font-size:12px}
+table.qa input.dt{width:140px}
+table.qa input.amt{width:90px;text-align:right;font-family:var(--mono)}
+table.qa tr[data-dup="1"] td{opacity:.6}
+table.qa tr[data-dup="1"] td.flag{opacity:1}
+table.qa td.flag{font-size:12px;color:var(--warn);white-space:nowrap}
 select.pkg-quick{min-height:24px;padding:1px 4px;font-size:12px;margin-top:2px;width:150px;border-color:var(--warn);color:var(--warn);background:var(--surface)}
 .pkg-break{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 14px 4px;margin-bottom:12px}
 .pkg-break .bh{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
@@ -381,25 +396,44 @@ table.costs td.cat{color:var(--ink-2)}
     </select>
     <span class="grow"></span>
     <button class="btn" id="btn-io" type="button">Import / export</button>
+    <button class="btn" id="btn-quick" type="button" title="Type or paste one line per user">Quick add</button>
     <button class="btn primary" id="btn-add" type="button">Add user</button>
   </div>
+
+  <section class="panel" id="quickPanel" hidden aria-label="Quick add users">
+    <div class="panel-head"><div><h3>Quick add</h3><p class="small muted">One line per user, in any order. Name is the only must; everything else has a default.</p></div><button class="link" type="button" id="quick-close">Close</button></div>
+    <textarea id="qa-text" rows="4" placeholder="Ali Khan, ali@mail.com, +92 300 1234567, joined Sep 25, C&#10;Sara, sara@x.com, C Max, 4200&#10;Bilal +923001112222 G 50000 joined 2026-10-01 paid" aria-label="Users to add, one per line" autocapitalize="sentences"></textarea>
+    <p class="qa-help" id="qa-help">Recognised: an email, a WhatsApp number, <code>joined &lt;date&gt;</code> (default today), a package name (default C), a price (default the package price), <code>$</code>/<code>USD</code> or <code>Rs</code>, and <code>paid</code> or <code>paid 4200</code> to record the first payment.</p>
+    <div class="form-actions"><button class="btn primary" type="button" id="qa-parse">Review lines</button><span class="small muted" id="qa-msg"></span><span class="err" id="qa-err"></span></div>
+    <div id="qa-review" hidden style="margin-top:12px">
+      <div class="table-wrap"><table class="qa" aria-label="Users to add">
+        <thead><tr><th><input type="checkbox" id="qa-all" aria-label="Select all" checked></th><th>Name</th><th>Email</th><th>WhatsApp</th><th>Joined</th><th>Package</th><th class="r">Price</th><th>Pays in</th><th class="r">Paid now</th><th></th></tr></thead>
+        <tbody id="qa-body"></tbody></table></div>
+      <div class="form-actions"><button class="btn primary" type="button" id="qa-save">Add 0 users</button><button class="link" type="button" id="qa-clear">Clear</button><span class="small muted" id="qa-save-msg"></span></div>
+    </div>
+  </section>
 
   <section class="panel" id="addPanel" hidden aria-label="Add user">
     <div class="panel-head"><h3>Add a user</h3><button class="link" type="button" id="add-close">Close</button></div>
     <form id="addForm" novalidate>
       <div class="form-grid">
-        <label class="f">Name<input id="a-name" type="text" autocomplete="off" placeholder="Name or email is required"></label>
-        <label class="f">Email<input id="a-email" type="email" placeholder="name@company.com" autocomplete="off"></label>
-        <label class="f">Joined on <span class="muted">(required)</span><input id="a-join" type="date" required></label>
-        <label class="f">Package / product <span class="muted">(required)</span><select id="a-pkg" required></select></label>
-        <label class="f">Billing<span id="a-cycle-wrap"></span></label>
-        <label class="f">Plan label <span class="muted">(optional)</span><input id="a-plan" type="text" placeholder="only if it differs from the package"></label>
-        <label class="f">Pays in <span class="muted">(required)</span><select id="a-cur" required><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
-        <label class="f"><span id="a-price-lbl">Monthly price (Rs)</span><input id="a-price" type="number" min="0" step="0.01" required placeholder="4200"></label>
-        <label class="f">WhatsApp number <span class="muted">(with country code)</span><input id="a-phone" type="tel" placeholder="+92 300 1234567" autocomplete="off"></label>
-        <label class="f">Payment method / notes<input id="a-notes" type="text" placeholder="e.g. NayaPay Noor, USDT (Binance)"></label>
-        <label class="f chk" id="a-prorate-wrap"><input id="a-prorate" type="checkbox" checked>Prorate first period <span class="muted">(charge the join period by days)</span></label>
+        <label class="f">Name<input id="a-name" type="text" autocomplete="off" placeholder="Name or email is required" autocapitalize="words"></label>
+        <label class="f">Email<input id="a-email" type="email" placeholder="name@company.com" autocomplete="off" inputmode="email"></label>
+        <label class="f">WhatsApp number<input id="a-phone" type="tel" placeholder="+92 300 1234567" autocomplete="off" inputmode="tel"></label>
+        <label class="f">Joined on<input id="a-join" type="date" required></label>
+        <label class="f">Package / product<select id="a-pkg" required></select></label>
+        <label class="f"><span id="a-price-lbl">Monthly price (Rs)</span><input id="a-price" type="number" min="0" step="0.01" required placeholder="4200" inputmode="decimal"></label>
+        <label class="f">Pays in<select id="a-cur" required><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
       </div>
+      <details class="more" id="a-more">
+        <summary>More options: billing cycle, plan label, notes, proration</summary>
+        <div class="form-grid" style="margin-top:8px">
+          <label class="f">Billing<span id="a-cycle-wrap"></span></label>
+          <label class="f">Plan label <span class="muted">(optional)</span><input id="a-plan" type="text" placeholder="only if it differs from the package"></label>
+          <label class="f">Payment method / notes<input id="a-notes" type="text" placeholder="e.g. NayaPay Noor, USDT (Binance)"></label>
+          <label class="f chk" id="a-prorate-wrap"><input id="a-prorate" type="checkbox" checked>Prorate first period <span class="muted">(charge the join period by days)</span></label>
+        </div>
+      </details>
       <div class="form-actions">
         <button class="btn primary" type="submit">Add user</button>
         <span class="small muted" id="a-conv">The first billing period starts on the join date. One-time items and more plans can be added from the user's row.</span>
@@ -455,7 +489,7 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
       <div class="step"><span class="n">1</span><p><b>Add a user</b> with their name or email, the day they joined, their package or product, the currency they pay in and the price. The first billing period starts on the join date.</p></div>
       <div class="step"><span class="n">2</span><p><b>Record payments</b> from the user's row. Each full payment covers one billing period; the table shows how far each user is paid through.</p></div>
     </div>
-    <button class="btn primary" type="button" id="empty-add">Add your first user</button>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn primary" type="button" id="empty-add">Add your first user</button><button class="btn" type="button" id="empty-quick">Quick add several</button></div>
   </section>
 
   <section class="table-wrap" id="tableWrap" hidden>
@@ -553,7 +587,7 @@ const DEFAULT_TPL='Hi {name_or_email}, your {package} payment of {amount_due} fo
 const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
-const SCHEMA=5;
+const SCHEMA=6;
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
@@ -748,10 +782,11 @@ function seedUsers(){
     U('u_ataullah','Ataullah','atabinfazl@gmail.com','2026-09-01','NayaPay Noor',[std('s_ataullah_std','2026-09-01',[['2026-09-01',4200]],'PKR',4200)]),
     U('u_mohib','Mohib','mohibkazmi@yahoo.com','2026-09-01','NayaPay Noor',[std('s_mohib_std','2026-09-01',[['2026-09-01',4200]],'PKR',4200)]),
     U('u_tabraiz','Tabraiz','','2026-09-03','',[std('s_tabraiz_std','2026-09-03',[],'PKR',4200)]),
-    U('u_uqba','Uqba','','2026-09-04','',[std('s_uqba_std','2026-09-04',[],'PKR',4200)]),
     U('u_eren','Eren','erenkumcuoglu@gmail.com','2026-07-24','USDT (Binance)',[std('s_eren_std','2026-07-24',[['2026-07-24',14],['2026-08-24',14],['2026-09-24',14,"recorded from 'paid till Oct 24'"]],'USD',14)])
   ];
 }
+/* v6: Uqba never joined. Remove only the untouched seed record: named Uqba, no email, no phone, no payments. */
+function isUntouchedSeedUqba(b){if(!b||String(b.name||'').trim().toLowerCase()!=='uqba')return false;if(String(b.email||'').trim()||digits(b.phone))return false;return (b.subscriptions||[]).every(s=>!(s.payments||[]).length);}
 function migrateUserV2(raw){
   const u=clone(raw);let changed=false;
   for(const s of u.subscriptions||[]){const cur=normCur(s.currency);if(s.currency!==cur){s.currency=cur;changed=true;}
@@ -800,7 +835,8 @@ async function maybeMigrateShared(rawDocs){
     const sch=await db.doc('meta/schema').get();if(sch.exists&&Number((sch.data()||{}).version)>=SCHEMA)return;
     const lease=await db.doc('meta/schema').acquire({holder:'mig_'+Math.random().toString(36).slice(2),ttlMs:60000});if(!lease.acquired)return;
     const again=await db.doc('meta/schema').get();if(again.exists&&Number((again.data()||{}).version)>=SCHEMA)return;
-    let n=0;for(const d of rawDocs){const body=d.data();if(!body)continue;const m=migrateUserV2(body);if(m){await db.collection('users').doc(d.id).set(cleanUser(Object.assign({id:d.id},m)));n++;}}
+    let n=0,removed=0;for(const d of rawDocs){const body=d.data();if(!body)continue;if(isUntouchedSeedUqba(body)){await db.collection('users').doc(d.id).delete();removed++;continue;}const m=migrateUserV2(body);if(m){await db.collection('users').doc(d.id).set(cleanUser(Object.assign({id:d.id},m)));n++;}}
+    if(removed)toast('Removed Uqba (never joined).');
     await db.doc('meta/schema').set({version:SCHEMA,at:new Date().toISOString(),migrated:n});
     await ensureDefaultRateShared();
     await ensurePackageCycles();if(n)toast('Updated '+n+' user record'+(n===1?'':'s')+' to the current format.');
@@ -818,7 +854,7 @@ function maybeSeedLocal(){
 function maybeMigrateLocal(){
   let v=0;try{v=Number(localStorage.getItem('pt-schema')||0);}catch(e){}
   if(v>=SCHEMA)return;
-  for(const id in state.users){const m=migrateUserV2(state.users[id]);if(m)state.users[id]=normalizeUser(m,id);}
+  for(const id in state.users){if(isUntouchedSeedUqba(state.users[id])){delete state.users[id];continue;}const m=migrateUserV2(state.users[id]);if(m)state.users[id]=normalizeUser(m,id);}
   if(!normRate(state.settings.rate))state.settings.rate=DEFAULT_RATE;
   if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;
   state.settings.template=tplOf(state.settings.template);
@@ -1201,10 +1237,11 @@ function updCostConv(){const cur=$('#c-cur').value;const t=(Number($('#c-cost').
 
 /* ---------- events ---------- */
 function toast(msg,ms){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms||3400);}
-function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun'])$('#'+p).hidden=p!==id;}
+function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel'])$('#'+p).hidden=p!==id;}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
 function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
-function openAdd(){showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();$('#a-pkg').innerHTML=pkgOptions('','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle','monthly',true);updAddConv();$('#a-name').focus();}
+function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
+function openAdd(){showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
 function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';}
 function updAddConv(){const cur=$('#a-cur').value;const cyEl=$('#a-cycle');const cy=cyEl?cyEl.value:'monthly';$('#a-price-lbl').textContent=`${cy==='one-time'?'Total amount':cy==='yearly'?'Yearly price':'Monthly price'} (${cur==='USD'?'$':'Rs'})`;const n=Number($('#a-price').value)||0;const c=conv(n,cur,null);$('#a-conv').textContent=n?`${fmtAmt(n,cur)}${CYCLES[cy].per}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`:' (set an exchange rate in Settings to see the other currency)'):'The first billing period starts on the join date. One-time items and more plans can be added from the user\'s row.';}
 function toggleOpen(id,key){ui.open[id]=ui.open[id]||{};ui.open[id][key]=!ui.open[id][key];if(!ui.open[id][key]){const sid=key.split(':')[1];if(sid&&ui.priceEdit)delete ui.priceEdit[sid];if(sid&&ui.payEdit)delete ui.payEdit[sid];}renderTable();}
@@ -1215,6 +1252,19 @@ function bind(){
   document.addEventListener('click',e=>{const b=e.target.closest('[data-act="open-settings"]');if(b){e.preventDefault();e.stopPropagation();openSettings();}},true);
   $('#btn-add').addEventListener('click',()=>{$('#addPanel').hidden?openAdd():($('#addPanel').hidden=true);});
   $('#empty-add').addEventListener('click',openAdd);
+  $('#btn-quick').addEventListener('click',()=>{$('#quickPanel').hidden?openQuick():($('#quickPanel').hidden=true);});
+  $('#empty-quick').addEventListener('click',openQuick);
+  $('#quick-close').addEventListener('click',()=>{$('#quickPanel').hidden=true;});
+  $('#qa-parse').addEventListener('click',quickParse);
+  $('#qa-text').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();quickParse();}});
+  $('#qa-clear').addEventListener('click',()=>{qa.rows=[];$('#qa-text').value='';$('#qa-msg').textContent='';renderQuick();});
+  $('#qa-all').addEventListener('change',e=>{qa.rows.forEach(r=>{if(!r.dup)r.sel=e.target.checked;});renderQuick();});
+  $('#qa-body').addEventListener('input',e=>{const el=e.target.closest('[data-f]');if(!el)return;const tr=el.closest('tr');const r=qa.rows.find(x=>x.id===tr.dataset.id);if(!r)return;const f=el.dataset.f;
+    if(f==='sel')r.sel=el.checked;else if(f==='price'||f==='paid')r[f]=el.value===''?null:Number(el.value);else r[f]=el.value;
+    if(f==='name'||f==='email'||f==='phone'){r.dup=quickDup(r);if(r.dup)r.sel=false;}
+    if(f==='pkg'){const p=pkgById(r.pkg);if(p&&p.price!=null&&(r.price==null||r.price===r.pkgPrice)){r.price=p.price;r.pkgPrice=p.price;if(p.currency)r.cur=p.currency;}}
+    if(f==='name'||f==='email'||f==='phone'||f==='pkg'||f==='sel')renderQuick();else{const n=qa.rows.filter(x=>x.sel&&!x.dup).length;$('#qa-save').textContent=`Add ${n} user${n===1?'':'s'}`;}});
+  $('#qa-save').addEventListener('click',quickSave);
   $('#add-close').addEventListener('click',()=>{$('#addPanel').hidden=true;});
   $('#a-cur').addEventListener('change',updAddConv);$('#a-price').addEventListener('input',updAddConv);
   $('#btn-io').addEventListener('click',()=>{$('#ioPanel').hidden?showPanel('ioPanel'):($('#ioPanel').hidden=true);});
@@ -1367,6 +1417,90 @@ function bind(){
   $('#btn-import').addEventListener('click',importUsersCSV);
   $('#btn-import-costs').addEventListener('click',importCostsCSV);
   let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(renderChart,120);});
+}
+
+/* ---------- quick add: one free-form line per user ---------- */
+const qa={rows:[],busy:false};
+function openQuick(){showPanel('quickPanel');$('#qa-err').textContent='';renderQuick();$('#quickPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#qa-text').focus();}
+function quickPrompt(){return `You are reading lines typed by a small SaaS owner in Pakistan, one user per line, to add subscribers to a payments tracker. Extract each line into JSON.
+Reply with only a JSON array, one element per non-empty line, in order: {"name":"text","email":"a@b.c" or null,"phone":"digits with country code" or null,"joined":"YYYY-MM-DD" or null,"package":"one of the package names below" or null,"price":number or null,"currency":"PKR" or "USD" or null,"paid":number or true or null}.
+Packages: ${packages().map(p=>p.name).join(', ')}. Match package names case-insensitively (a lone "C" means package C). "joined", "start", "from" or "since" introduce the join date; infer the year ${todayISO().slice(0,4)} when missing. A number with 7 or more digits or starting with + is a phone number, not a price. "paid" alone means paid the full price (true); "paid 4200" means paid 4200. Do not invent values: use null for anything not present.`;}
+function quickParseLine(line){
+  let t=' '+line.replace(/\t/g,' ').trim()+' ';const out={name:'',email:null,phone:null,joined:null,package:null,price:null,currency:null,paid:null};
+  let m;
+  if((m=t.match(/[^\s,;]+@[^\s,;]+\.[^\s,;]+/))){out.email=m[0].replace(/[.,;]+$/,'');t=t.replace(m[0],' ');}
+  if((m=t.match(/(\+\d[\d\s\-().]{6,}\d)|(?<![\d.])(0\d{9,11}|\d{10,15})(?![\d.])/))){const d=digits(m[0]);if(d.length>=7&&d.length<=15){out.phone=d;t=t.replace(m[0],' ');}}
+  const DATE='(\\d{4}-\\d{1,2}-\\d{1,2}|\\d{1,2}[\\/.-]\\d{1,2}(?:[\\/.-]\\d{2,4})?|(?:'+MONTH_RE+')[a-z]*\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?,?(?:\\s+\\d{4})?|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:'+MONTH_RE+')[a-z]*\\.?,?(?:\\s+\\d{4})?)';
+  if((m=t.match(new RegExp('\\b(?:joined|joins|joining|join|started|starts|start|from|since|on)\\s*[:=]?\\s*'+DATE,'i')))){out.joined=parseLooseDate(m[1]);t=t.replace(m[0],' ');}
+  else if((m=t.match(new RegExp('(?:^|[\\s,])'+DATE+'(?=[\\s,]|$)','i')))&&!/^\d{1,2}[\/.-]\d{1,2}$/.test(m[1].trim())){const d=parseLooseDate(m[1]);if(d){out.joined=d;t=t.replace(m[1],' ');}}
+  if((m=t.match(/\bpaid\b\s*(?:rs\.?|pkr|\$|usd)?\s*(\d[\d,]*(?:\.\d+)?)?/i))){out.paid=m[1]?parseAmount(m[1]):true;t=t.replace(m[0],' ');}
+  if(/\$|\busd\b|\bdollars?\b/i.test(t)){out.currency='USD';t=t.replace(/\$|\busd\b|\bdollars?\b/gi,' ');}
+  else if(/\brs\.?(?=\s|\d)|\bpkr\b|\brupees?\b/i.test(t)){out.currency='PKR';t=t.replace(/\brs\.?(?=\s|\d)|\bpkr\b|\brupees?\b/gi,' ');}
+  for(const p of packages().slice().sort((a,b)=>b.name.length-a.name.length)){const re=new RegExp('(^|[\\s,;])'+p.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?=[\\s,;]|$)','i');if(re.test(t)){out.package=p.name;t=t.replace(re,'$1 ');break;}}
+  if((m=t.match(/(?<![\w.])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(?![\w.])/))){const n=parseAmount(m[1]);if(n!=null&&n>0){out.price=n;t=t.replace(m[0],' ');}}
+  out.name=t.replace(/[,;|]+/g,' ').replace(/\b(?:joined|joins|join|started|start|since|from|on|package|plan)\b/gi,' ').replace(/\s{2,}/g,' ').trim();
+  return out;
+}
+function quickNormalize(o,line){
+  const r={id:newId('q'),line,sel:true,name:String(o.name||'').trim(),email:String(o.email||'').trim(),phone:digits(o.phone),joined:normDate(o.joined)||parseLooseDate(String(o.joined||''))||todayISO(),pkg:null,pkgPrice:null,price:null,cur:'PKR',paid:null,dup:false,warn:''};
+  if(r.email&&!EMAIL_RE.test(r.email)){r.warn='email looks wrong';}
+  if(r.phone&&!validPhone(r.phone))r.phone='';
+  const pn=String(o.package||'').trim().toLowerCase();let p=pn?packages().find(x=>x.name.toLowerCase()===pn):null;if(!p)p=defaultPkg();
+  r.pkg=p?p.id:'';r.pkgPrice=p&&p.price!=null?p.price:null;
+  const pr=o.price==null?null:Number(o.price);r.price=pr!=null&&isFinite(pr)&&pr>=0?pr:r.pkgPrice;
+  r.cur=o.currency==='USD'||o.currency==='PKR'?o.currency:(p&&p.currency?p.currency:'PKR');
+  if(o.paid===true)r.paid=r.price;else if(o.paid!=null){const n=Number(o.paid);r.paid=isFinite(n)&&n>0?n:null;}
+  if(!r.name&&!r.email){r.warn='no name or email';r.sel=false;}
+  r.dup=quickDup(r);if(r.dup)r.sel=false;
+  return r;
+}
+function quickDup(r){const byUser=findUser(r.email,r.name);if(byUser)return true;if(r.phone&&Object.values(state.users).some(u=>u.phone===r.phone))return true;return qa.rows.some(x=>x!==r&&x.id!==r.id&&((r.email&&x.email.toLowerCase()===r.email.toLowerCase())||(r.phone&&x.phone===r.phone)));}
+async function quickParse(){
+  const lines=$('#qa-text').value.split('\n').map(l=>l.trim()).filter(Boolean);const msg=$('#qa-msg'),err=$('#qa-err');err.textContent='';
+  if(!lines.length){err.textContent='Type at least one line.';return;}
+  qa.busy=true;msg.textContent=sample?'Reading…':'';$('#qa-parse').disabled=true;
+  let parsed=null;
+  if(sample){try{const data=await sample.json(quickPrompt()+'\n\nLines:\n'+lines.join('\n'),{modelTier:'quick'});if(Array.isArray(data)&&data.length===lines.length)parsed=data.map((o,i)=>o&&typeof o==='object'?o:quickParseLine(lines[i]));}catch(e){parsed=null;}}
+  if(!parsed)parsed=lines.map(quickParseLine);
+  const fresh=parsed.map((o,i)=>quickNormalize(o,lines[i]));
+  qa.rows=qa.rows.concat(fresh);qa.rows.forEach(r=>{r.dup=quickDup(r);if(r.dup)r.sel=false;});
+  qa.busy=false;$('#qa-parse').disabled=false;$('#qa-text').value='';
+  const d=fresh.filter(r=>r.dup).length;msg.textContent=`${fresh.length} line${fresh.length===1?'':'s'} read${d?`, ${d} already tracked`:''}. Check the rows, then add.`;
+  renderQuick();
+}
+function renderQuick(){
+  const rows=qa.rows;$('#qa-review').hidden=!rows.length;if(!rows.length){$('#qa-save').textContent='Add 0 users';return;}
+  $('#qa-body').innerHTML=rows.map(r=>`<tr data-id="${r.id}" data-dup="${r.dup?1:0}">
+    <td><input type="checkbox" data-f="sel" ${r.sel?'checked':''} ${r.dup?'disabled':''} aria-label="Include row"></td>
+    <td><input class="nm" type="text" data-f="name" value="${esc(r.name)}" placeholder="Name"></td>
+    <td><input class="em" type="email" data-f="email" value="${esc(r.email)}" placeholder="email"></td>
+    <td><input class="ph" type="tel" data-f="phone" value="${esc(fmtPhone(r.phone))}" placeholder="+92…"></td>
+    <td><input class="dt" type="date" data-f="joined" value="${esc(r.joined)}"></td>
+    <td><select data-f="pkg" aria-label="Package">${pkgOptions(r.pkg,'Choose…')}</select></td>
+    <td class="r"><input class="amt" type="number" min="0" step="0.01" data-f="price" value="${r.price==null?'':r.price}" placeholder="price"></td>
+    <td><select data-f="cur" aria-label="Currency"><option value="PKR"${r.cur==='PKR'?' selected':''}>PKR</option><option value="USD"${r.cur==='USD'?' selected':''}>USD</option></select></td>
+    <td class="r"><input class="amt" type="number" min="0" step="0.01" data-f="paid" value="${r.paid==null?'':r.paid}" placeholder="—"></td>
+    <td class="flag">${r.dup?'already tracked':esc(r.warn)}</td>
+  </tr>`).join('');
+  const n=rows.filter(r=>r.sel&&!r.dup).length;$('#qa-save').textContent=`Add ${n} user${n===1?'':'s'}`;$('#qa-save').disabled=!n||qa.busy;
+  $('#qa-all').checked=n>0&&rows.filter(r=>!r.dup).every(r=>r.sel);
+}
+async function quickSave(){
+  const sel=qa.rows.filter(r=>r.sel&&!r.dup);if(!sel.length)return;const msg=$('#qa-save-msg');
+  for(const r of sel){r.name=r.name.trim();r.email=r.email.trim();r.phone=digits(r.phone);if(!r.name&&!r.email){r.warn='no name or email';r.sel=false;}else if(r.email&&!EMAIL_RE.test(r.email)){r.warn='email looks wrong';r.sel=false;}else if(!isDateKey(r.joined)){r.warn='pick a join date';r.sel=false;}else if(!pkgById(r.pkg)){r.warn='choose a package';r.sel=false;}else if(r.price==null||!(r.price>=0)){r.warn='enter a price';r.sel=false;}else r.warn='';}
+  const ok=qa.rows.filter(r=>r.sel&&!r.dup);const bad=sel.length-ok.length;
+  if(!ok.length){renderQuick();msg.textContent='Fix the flagged rows first.';return;}
+  qa.busy=true;renderQuick();msg.textContent='Adding…';let added=0,failed=0,pays=0;
+  for(const r of ok){
+    const p=pkgById(r.pkg);const sub={id:newId('s'),kind:'monthly',cycle:p.cycle==='yearly'?'yearly':'monthly',name:'',packageId:p.id,currency:r.cur,start:r.joined,end:null,prorate:true,dueBy:null,prices:[{from:r.joined,price:Number(r.price)}],payments:[]};
+    if(r.paid!=null&&r.paid>0){sub.payments.push({id:newId('p'),date:r.joined,amount:Number(r.paid),currency:r.cur,rate:null,note:'quick add'});pays++;}
+    const u={name:r.name,email:r.email,phone:r.phone,joinDate:r.joined,notes:'',subscriptions:[sub]};
+    const done=await persistUser(newId('u'),u);if(done){added++;r.done=true;}else failed++;
+  }
+  qa.busy=false;qa.rows=qa.rows.filter(r=>!r.done);renderQuick();
+  msg.textContent=`Added ${added} user${added===1?'':'s'}${pays?` with ${pays} payment${pays===1?'':'s'}`:''}${bad?`, ${bad} row${bad===1?'':'s'} need fixing`:''}${failed?`, ${failed} failed`:''}.`;
+  toast(`Added ${added} user${added===1?'':'s'}.`);
+  if(!qa.rows.length&&!bad)$('#qa-review').hidden=true;
 }
 
 /* ---------- import costs from a screenshot ---------- */

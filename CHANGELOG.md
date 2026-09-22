@@ -2,6 +2,12 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v8 - 2026-09-22
+
+- Removed the Uqba seed record via a guarded migration (runs once per data store, never re-adds).
+- Quick add for users: paste free-form text (names, numbers, packages) and review the parsed rows in a table before saving. Parsing uses Claude with a regex fallback, flags duplicates against existing users, and can record an optional first payment.
+- Compact two-tap Add user form, with a "More options" section for the less common fields.
+
 ## v7 - 2026-09-22
 
 - Package billing cycles: monthly, yearly and one-time. C and C Max bill monthly; G bills yearly (Haroon is on the G yearly plan alongside C).
