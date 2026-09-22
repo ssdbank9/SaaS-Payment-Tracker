@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="Wasool" id="meta-app-title">
 <meta name="application-name" content="Wasool" id="meta-app-name">
 <meta name="description" content="Know who's paid." id="meta-desc">
-<meta name="theme-color" content="#0f6e56">
+<meta name="theme-color" content="#1f6b4e">
 <link rel="icon" type="image/svg+xml" id="link-icon" href="">
 <link rel="apple-touch-icon" id="link-touch" href="">
 <link rel="manifest" id="link-manifest" href="">
@@ -19,13 +19,14 @@
   --bg:#f3f5f3; --surface:#ffffff; --surface-2:#eaeeeb; --surface-3:#dfe5e0;
   --ink:#161a17; --ink-2:#4a534d; --muted:#76817b;
   --line:#d8ded9; --line-strong:#b3bcb6;
-  --accent:#0f6e56; --accent-ink:#0b5a46; --accent-soft:#dcefe8; --accent-line:#8fc9b5;
+  --accent:#1f6b4e; --accent-ink:#175a41; --accent-soft:#dcefe8; --accent-line:#8fc9b5; --accent-tint:#f4f9f6;
+  --shadow:0 6px 18px rgba(22,26,23,.10), 0 1px 3px rgba(22,26,23,.08);
   --series-2:#eb6834;
   --good:#166534; --good-bg:#e1f3e6;
   --warn:#8a5a0d; --warn-bg:#faefd6;
   --crit:#a12b22; --crit-bg:#fae3df;
   --wa:#128c5e;
-  --focus:#0f6e56;
+  --focus:#1f6b4e;
   --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   color-scheme:light;
@@ -35,7 +36,8 @@
     --bg:#111412; --surface:#191d1a; --surface-2:#212723; --surface-3:#2b322d;
     --ink:#edf1ee; --ink-2:#b4bdb7; --muted:#838d87;
     --line:#2b322d; --line-strong:#3e4841;
-    --accent:#3fb391; --accent-ink:#78d4b8; --accent-soft:#1a3a31; --accent-line:#2b6e5a;
+    --accent:#3fb391; --accent-ink:#78d4b8; --accent-soft:#1a3a31; --accent-line:#2b6e5a; --accent-tint:#151f1a;
+    --shadow:0 6px 18px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.4);
     --series-2:#d95926;
     --good:#7fd89a; --good-bg:#17311f;
     --warn:#e3b95e; --warn-bg:#3a2d12;
@@ -49,7 +51,8 @@
   --bg:#111412; --surface:#191d1a; --surface-2:#212723; --surface-3:#2b322d;
   --ink:#edf1ee; --ink-2:#b4bdb7; --muted:#838d87;
   --line:#2b322d; --line-strong:#3e4841;
-  --accent:#3fb391; --accent-ink:#78d4b8; --accent-soft:#1a3a31; --accent-line:#2b6e5a;
+  --accent:#3fb391; --accent-ink:#78d4b8; --accent-soft:#1a3a31; --accent-line:#2b6e5a; --accent-tint:#151f1a;
+  --shadow:0 6px 18px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.4);
   --series-2:#d95926;
   --good:#7fd89a; --good-bg:#17311f;
   --warn:#e3b95e; --warn-bg:#3a2d12;
@@ -80,6 +83,8 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--in
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--surface);border:1px solid var(--line-strong);border-radius:4px;padding:6px 12px;min-height:34px;cursor:pointer;font-weight:500;white-space:nowrap;text-decoration:none;color:inherit}
 .btn:hover{background:var(--surface-2)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#0d1a14}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.primary{color:#0d1a14}}
 .btn.primary:hover{filter:brightness(1.08)}
 .btn.danger{color:var(--crit);border-color:var(--crit)}
 .btn.sm{padding:3px 9px;min-height:26px;font-size:12px}
@@ -107,6 +112,7 @@ td.r .m2{align-items:flex-end}
 .sync[data-mode="local"]::before{background:var(--warn)}
 .sync[data-mode="error"]::before{background:var(--crit)}
 .rate-badge{font-size:12px;color:var(--ink-2)}
+.btn .glyph{font-size:15px;line-height:1;margin-top:-1px}
 .btn .cnt{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--crit);color:#fff;font-size:11px;font-weight:600;font-family:var(--mono)}
 .banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between;background:var(--warn-bg);border:1px solid var(--warn);border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--ink)}
 .banner b{font-weight:600}
@@ -224,10 +230,14 @@ th.r,td.r{text-align:right}
 tbody td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;font-size:13px}
 tr.row{cursor:pointer}
 tr.row:hover td{background:var(--surface-2)}
-tr.row[aria-expanded="true"] td{background:var(--accent-soft)}
+tr.row[aria-expanded="true"] td{background:var(--accent-soft);border-bottom:0;box-shadow:inset 0 2px 0 var(--accent)}
+tr.row[aria-expanded="true"] td:first-child{box-shadow:inset 0 2px 0 var(--accent),inset 2px 0 0 var(--accent)}
+tr.row[aria-expanded="true"] td:last-child{box-shadow:inset 0 2px 0 var(--accent),inset -2px 0 0 var(--accent)}
+tr.row[aria-expanded="true"]:hover td{background:var(--accent-soft)}
 td.who{max-width:230px;overflow:hidden;text-overflow:ellipsis}
 td.who .nm{font-weight:500;font-size:14px}
 td.who .em{display:block;font-family:var(--mono);font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+td.who .ct{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);white-space:normal;line-height:1.35;margin-top:1px}
 td.plan{max-width:250px;overflow:hidden;text-overflow:ellipsis}
 td.plan .l2{display:block;font-size:12px;color:var(--muted)}
 td .chev{display:inline-block;transition:transform .15s;color:var(--muted)}
@@ -241,12 +251,16 @@ td.late .num{color:var(--crit);font-weight:500}
 .pill[data-status="overdue"]{color:var(--crit);background:var(--crit-bg)}
 .pill[data-status="upcoming"],.pill[data-status="ended"],.pill[data-status="nosub"],.pill[data-status="cancelled"]{color:var(--ink-2);background:var(--surface-2)}
 tr.row[data-cancelled="1"] td.who .nm{color:var(--ink-2)}
-tr.detail td{background:var(--surface);padding:14px 16px 16px;white-space:normal;border-bottom:1px solid var(--line-strong)}
+tr.detail>td{background:var(--accent-soft);padding:0 10px 12px;white-space:normal;border-bottom:1px solid var(--line-strong);box-shadow:inset 2px 0 0 var(--accent),inset -2px 0 0 var(--accent),inset 0 -2px 0 var(--accent)}
+.detail-card{position:relative;background:var(--accent-tint);border:2px solid var(--accent);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px 16px 20px;overflow:hidden}
+.detail-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent)}
+@media (max-width:760px){tr.detail>td{padding:0 6px 8px}.detail-card{padding:12px 12px 14px 16px;border-radius:10px}}
 .detail-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline;margin-bottom:12px}
 .detail-head .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
 .detail-head .meta b{color:var(--ink);font-weight:500}
-.block{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.block{border-top:1px solid var(--accent-line);padding-top:12px;margin-top:12px}
 .block-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.block-head h3,.detail-card form.block>h3{font-size:12px;font-weight:600;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.06em}
 .subs{display:flex;flex-direction:column;gap:8px}
 .sub{border:1px solid var(--line);border-radius:4px;padding:10px 12px;background:var(--surface)}
 .sub-line{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -271,7 +285,7 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .cell[data-state="partial"] .a{color:var(--warn)}
 .cell[data-state="unpaid"]{background:var(--crit-bg);border-color:var(--crit)}
 .cell[data-state="unpaid"] .a{color:var(--crit)}
-.cell[data-state="upcoming"],.cell[data-state="waived"]{background:var(--surface-2)}
+.cell[data-state="upcoming"],.cell[data-state="waived"]{background:var(--surface-2);border-color:var(--line-strong)}
 .cell[data-state="waived"] .a{color:var(--ink-2)}
 .cell[data-state="upcoming"] .a{color:var(--muted)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
@@ -282,7 +296,7 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .legend .k-upcoming::before{background:var(--surface-2)}
 .pays{margin-top:10px;font-size:12px;width:100%;border-collapse:collapse;min-width:0}
 .pays td,.pays th{padding:4px 8px 4px 0;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;vertical-align:top}
-.pays th{font-weight:500;color:var(--muted);font-size:11px}
+.pays th{font-weight:600;color:var(--accent-ink);font-size:11px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--accent-line)}
 .pays td.note{white-space:normal;color:var(--ink-2)}
 .pays tr:last-child td{border-bottom:0}
 .pay-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;align-items:end}
@@ -377,8 +391,9 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
+      <span class="small muted num" id="app-ver" title="App version">v17</span>
       <button class="btn" type="button" id="btn-reminders">Run reminders<span class="cnt" id="rem-cnt" hidden></span></button>
-      <button class="btn" type="button" id="btn-settings">Settings</button>
+      <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
     </div>
   </header>
 
@@ -667,6 +682,7 @@ const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
 const SCHEMA=10;
+const APP_VERSION='17';
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
@@ -687,6 +703,8 @@ function fmtD(iso,full){if(!isDateKey(iso))return iso||'—';const p=iso.split('
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const digits=s=>String(s||'').replace(/\D/g,'');
 const fmtPhone=p=>p?'+'+p:'';
+const tgText=t=>t?(/^\d+$/.test(t)?'+'+t:'@'+t):'';
+const contactLine=u=>{const parts=[];if(u.phone)parts.push(fmtPhone(u.phone));if(u.telegram)parts.push(tgText(u.telegram));return parts.length?`<span class="ct">${esc(parts.join(' · '))}</span>`:'';};
 const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const clone=o=>JSON.parse(JSON.stringify(o));
 const TOKEN_RE=/^[A-Za-z0-9_-]{16,64}$/;
@@ -1275,7 +1293,7 @@ function renderTable(){
     const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):(a.planParts.length&&!u.cancel?'nothing yet':'—');
     const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?'<span class="muted">paid</span>':'<span class="muted">—</span>');
     html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}">
-      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}</td>
+      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${contactLine(u)}</td>
       <td class="plan">${planCell(a)}</td>
       <td title="${esc(u.joinDate)}">${esc(fmtD(u.joinDate))}</td>
       <td class="${late?'late':''}">${ptTxt}</td>
@@ -1286,7 +1304,7 @@ function renderTable(){
       <td>${a.needsReminder?`<span class="remind-pair">${remindControl(u,a,today)}${emailControl(u,a,today)}${u.telegram?telegramControl(u):''}</span>`:'<span class="muted">—</span>'}${remBadge(u,nextCycleStart(today))}</td>
       <td><span class="chev">›</span></td>
     </tr>`;
-    if(exp)html+=`<tr class="detail" data-id="${id}"><td colspan="10">${detailHTML(id,u,a,today)}</td></tr>`;
+    if(exp)html+=`<tr class="detail" data-id="${id}"><td colspan="10"><div class="detail-card">${detailHTML(id,u,a,today)}</div></td></tr>`;
   }
   $('#tbody').innerHTML=html;
   if(ui.expanded&&state.users[ui.expanded])wireDetail(ui.expanded,today);
@@ -1552,7 +1570,9 @@ function updCostConv(){const cur=$('#c-cur').value;const t=(Number($('#c-cost').
 
 /* ---------- events ---------- */
 function toast(msg,ms){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms||3400);}
-function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel'])$('#'+p).hidden=p!==id;}
+function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel'])$('#'+p).hidden=p!==id;syncSettingsBtn();}
+function syncSettingsBtn(){const open=!$('#settingsPanel').hidden;const b=$('#btn-settings');b.innerHTML=open?'<span class="glyph" aria-hidden="true">‹</span>Home':'Settings';b.setAttribute('aria-expanded',String(open));b.title=open?'Back to the user list':'Open settings';}
+function closeSettings(){$('#settingsPanel').hidden=true;syncSettingsBtn();window.scrollTo({top:0,behavior:'smooth'});}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
 function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);if(state.backend==='api')$('#s-base-url').placeholder=location.origin;ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
 function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
@@ -1584,7 +1604,7 @@ function bind(){
   $('#a-cur').addEventListener('change',updAddConv);$('#a-price').addEventListener('input',updAddConv);
   $('#btn-io').addEventListener('click',()=>{$('#ioPanel').hidden?showPanel('ioPanel'):($('#ioPanel').hidden=true);});
   $('#io-close').addEventListener('click',()=>{$('#ioPanel').hidden=true;});
-  $('#btn-settings').addEventListener('click',()=>{$('#settingsPanel').hidden?openSettings():($('#settingsPanel').hidden=true);});
+  $('#btn-settings').addEventListener('click',()=>{$('#settingsPanel').hidden?openSettings():closeSettings();});
   $('#btn-reminders').addEventListener('click',()=>{if($('#remindRun').hidden){const w=reminderWindow(todayISO());ui.rrTab=todayISO()>=w.replyBy&&todayISO()<w.nc?'final':'run';openRemindRun();}else $('#remindRun').hidden=true;});
   $('#remindBannerBtn').addEventListener('click',()=>{ui.rrTab=$('#remindBanner').dataset.kind==='final'?'final':'run';openRemindRun();});
   $('#rr-tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;ui.rrTab=b.dataset.tab;renderRemindRun();});
@@ -1601,7 +1621,7 @@ function bind(){
     r[f]=cb.checked?todayISO():null;if(r.reminded||r.confirmed||r.final||r.skipped)u.reminders[key]=r;else delete u.reminders[key];
     cb.disabled=true;const ok=await persistUser(id,u);if(!ok){cb.disabled=false;cb.checked=!cb.checked;}else if(db)renderRemindRun();
   });
-  $('#settings-close').addEventListener('click',()=>{$('#settingsPanel').hidden=true;});
+  $('#settings-close').addEventListener('click',closeSettings);
   $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.appName=rawAppName($('#s-app-name').value);state.settings.tagline=rawTagline($('#s-tagline').value);state.settings.readModel=normModel($('#s-model').value);state.settings.publicBaseUrl=pubBaseRaw($('#s-base-url').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
   $('#reset-wrap').addEventListener('click',async e=>{
     const b=e.target.closest('button');if(!b)return;

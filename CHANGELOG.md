@@ -2,6 +2,12 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v17 - 2026-09-22
+
+- Each user row now shows the WhatsApp number and Telegram handle under the name and email, so contact details are visible without opening the row.
+- The header Settings button reads "Home" while Settings is open and takes you back to the user list.
+- An expanded user reads as a distinct card: green 2px border, rounded corners, soft shadow, a left accent bar and a tinted background, with the summary row framed in the same green. The palette is tightened around a deep green primary and applied to section headings, the payments sub-table header, period cards and primary buttons, in light and dark mode.
+
 ## v15 - 2026-09-22
 
 - The app is now called **Wasool** ("Know who's paid."), with an editable name and tagline in Settings, a home-screen icon and web-app manifest, and a Reading model setting (Quick or Default) that drives Claude's screenshot, statement-text and Quick add reading.
