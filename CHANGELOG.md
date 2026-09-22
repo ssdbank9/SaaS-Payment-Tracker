@@ -2,6 +2,18 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v14 - 2026-09-22
+
+- Proration basis setting: fixed 30-day month or actual days in the month, with a per-plan override.
+- Each prorated period's days charged, daily rate or amount charged can be edited; an edited period carries a "discounted" tag.
+- Per-plan Discount, as a percentage or a fixed amount.
+- Data migrations recording Eren's and Tabraiz's payments.
+
+## v13 - 2026-09-22
+
+- "Paid up to" action: records one payment per period up to a chosen billing cycle, so reminders resume only after that cycle. A Months helper counts the periods.
+- Run reminders with an Except list: skip or unskip a user for the current cycle; skipped users are left out of the run and of the Final notice step.
+
 ## v12 - 2026-09-22
 
 - Final notice step for users who have not confirmed by the reply-by day: a not-confirmed list with email addresses, a copy button and CSV export of the deactivation list, a final-notice message template with one-tap WhatsApp, Telegram and email sends, a per-cycle "Final notice sent" tick, a Deactivate action that opens the cancel flow, and a reply-by-day banner.

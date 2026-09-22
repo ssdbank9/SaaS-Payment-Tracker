@@ -138,6 +138,18 @@ table.fn label.chk .when{color:var(--muted);font-family:var(--mono);font-size:11
 table.fn tr[data-deact="1"] td{opacity:.65}
 table.fn tr[data-deact="1"] td.st,table.fn tr[data-deact="1"] td.who{opacity:1}
 .banner[data-kind="final"]{background:var(--crit-bg);border-color:var(--crit)}
+details.except{position:relative}
+details.except summary{cursor:pointer;font-size:12px;font-weight:500;color:var(--accent-ink);padding:5px 10px;border:1px solid var(--line-strong);border-radius:4px;background:var(--surface);list-style:none;white-space:nowrap}
+details.except summary::-webkit-details-marker{display:none}
+details.except[open] summary{background:var(--accent-soft)}
+.except-list{position:absolute;right:0;top:calc(100% + 4px);z-index:3;min-width:280px;max-height:320px;overflow:auto;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;padding:8px 10px;box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:6px}
+.except-list label.chk{display:flex;align-items:center;gap:8px;font-size:13px;min-height:0;white-space:nowrap}
+.except-list label.chk input{width:15px;height:15px;margin:0}
+.except-list label.chk .when{color:var(--muted);font-family:var(--mono);font-size:11px;margin-left:auto}
+.except-list .hint{font-size:11px;color:var(--muted);white-space:normal}
+.skipped-note{font-size:12px;color:var(--ink-2);margin:0 0 6px}
+.upto-plan{font-size:12px;color:var(--ink-2);margin-top:6px;min-height:1.2em}
+.upto-plan b{color:var(--ink)}
 
 .sum-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
 .sum-head label{margin-left:auto}
@@ -349,7 +361,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <button class="btn" type="button" id="btn-reminders">Reminders<span class="cnt" id="rem-cnt" hidden></span></button>
+      <button class="btn" type="button" id="btn-reminders">Run reminders<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-settings">Settings</button>
     </div>
   </header>
@@ -391,6 +403,8 @@ table.costs td.cat{color:var(--ink-2)}
         <span class="small muted" style="align-self:center">From this day until the reply-by day the page flags a reminder run: everyone with an amount due for the next cycle gets a WhatsApp nudge, and you tick who was reminded and who confirmed.</span>
         <label class="f">Reply-by day <span class="muted">(of the month)</span><input id="s-reply-day" type="number" min="1" max="31" step="1" class="num" placeholder="23"></label>
         <span class="small muted" style="align-self:center">The day people should confirm or pay by, before the cycle starts on the anchor day. Used for <code>{reply_by}</code> in the message.</span>
+        <label class="f">Proration basis<select id="s-basis"><option value="actual">Actual days in the cycle</option><option value="fixed30">Fixed 30-day month</option></select></label>
+        <span class="small muted" style="align-self:center">How a mid-cycle first period is charged. <b>Actual days</b>: price × days ÷ days in that cycle (31 for Aug 24 – Sep 23). <b>Fixed 30-day month</b>: a daily rate of price ÷ 30, capped at the full price (Rs 4,200 → Rs 140 a day; 22 days = Rs 3,080). The days charged can also be edited on each plan's first period.</span>
         <span class="small muted" style="align-self:center" id="s-anchor-help">Every plan bills on the same cycle: monthly periods run from this day of the month to the day before the next one, and yearly periods from this date each year. Someone who joins mid-period pays a prorated share of that first period (by days), unless proration is turned off on their plan.</span>
       </div>
       <div style="margin-top:14px">
@@ -433,7 +447,7 @@ table.costs td.cat{color:var(--ink-2)}
   <section class="panel" id="quickPanel" hidden aria-label="Quick add users">
     <div class="panel-head"><div><h3>Quick add</h3><p class="small muted">One line per user, in any order. Name is the only must; everything else has a default.</p></div><button class="link" type="button" id="quick-close">Close</button></div>
     <textarea id="qa-text" rows="4" placeholder="Ali Khan, ali@mail.com, +92 300 1234567, joined Sep 25, C&#10;Sara, sara@x.com, C Max, 4200&#10;Bilal +923001112222 G 50000 joined 2026-10-01 paid" aria-label="Users to add, one per line" autocapitalize="sentences"></textarea>
-    <p class="qa-help" id="qa-help">Recognised: an email, a WhatsApp number, <code>@telegram</code> or <code>tg:handle</code>, <code>joined &lt;date&gt;</code> (default today), a package name (default C), a price (default the package price), <code>$</code>/<code>USD</code> or <code>Rs</code>, and <code>paid</code> or <code>paid 4200</code> to record the first payment.</p>
+    <p class="qa-help" id="qa-help">Recognised: an email, a WhatsApp number, <code>@telegram</code> or <code>tg:handle</code>, <code>joined &lt;date&gt;</code> (default today), a package name (default C), a price (default the package price), <code>$</code>/<code>USD</code> or <code>Rs</code>, and <code>paid</code>, <code>paid 4200</code> or <code>paid 3 months</code> to record the first payment.</p>
     <div class="form-actions"><button class="btn primary" type="button" id="qa-parse">Review lines</button><span class="small muted" id="qa-msg"></span><span class="err" id="qa-err"></span></div>
     <div id="qa-review" hidden style="margin-top:12px">
       <div class="table-wrap"><table class="qa" aria-label="Users to add">
@@ -479,7 +493,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="io-grid">
       <div>
         <h3 class="small" style="margin-bottom:6px">Users and payments</h3>
-        <p class="small muted">One row per payment (or per plan with no payment yet). Columns: <code>name</code> and/or <code>email</code>, <code>join_date</code>; optional <code>phone</code>, <code>telegram</code>, <code>notes</code>, <code>package</code>, <code>plan</code> (label), <code>prorate</code> (yes/no), <code>status</code> (active or cancelled) with <code>last_day</code>, <code>kind</code> (monthly or one-time), <code>currency</code> (USD or PKR), <code>price</code>, <code>kind</code> may also be yearly, <code>plan_start</code>, <code>plan_end</code> (or due date), <code>due_by</code>, <code>payment_date</code>, <code>payment_amount</code>, <code>payment_currency</code>, <code>payment_rate</code>, <code>payment_note</code>. Existing users (by email, then name) and plans (by name) are updated; a payment on an existing date replaces it.</p>
+        <p class="small muted">One row per payment (or per plan with no payment yet). Columns: <code>name</code> and/or <code>email</code>, <code>join_date</code>; optional <code>phone</code>, <code>telegram</code>, <code>notes</code>, <code>package</code>, <code>plan</code> (label), <code>prorate</code> (yes/no), <code>discount</code> (e.g. 10% or 500 per period), <code>status</code> (active or cancelled) with <code>last_day</code>, <code>kind</code> (monthly or one-time), <code>currency</code> (USD or PKR), <code>price</code>, <code>kind</code> may also be yearly, <code>plan_start</code>, <code>plan_end</code> (or due date), <code>due_by</code>, <code>payment_date</code>, <code>payment_amount</code>, <code>payment_currency</code>, <code>payment_rate</code>, <code>payment_note</code>. Existing users (by email, then name) and plans (by name) are updated; a payment on an existing date replaces it.</p>
         <pre class="sample">name,email,join_date,package,kind,currency,price,payment_date,payment_amount,payment_currency,payment_rate
 Eren,erenkumcuoglu@gmail.com,2026-07-24,C,monthly,USD,14,2026-09-24,14,USD,280
 Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PKR,</pre>
@@ -618,10 +632,11 @@ const OLD_TPL='Hi {name_or_email}, this is a reminder that your {plan} balance o
 const DEFAULT_TPL='Hi {name_or_email}, your {package} payment of {amount_due} for {period} is due on {due_date}. Please confirm or pay by {reply_by}. Thanks!';
 const DEFAULT_FINAL_TPL='Hi {name_or_email}, we have not received your {package} payment of {amount_due} for {period}. Your account will be deactivated tomorrow ({due_date}) unless payment is confirmed today. Thanks!';
 const finalTplOf=t=>String(t||'').trim()||DEFAULT_FINAL_TPL;
+const normBasis=v=>v==='fixed30'?'fixed30':'actual';const rawBasis=v=>v==='fixed30'||v==='actual'?v:'';
 const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
-const SCHEMA=8;
+const SCHEMA=10;
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
@@ -646,7 +661,7 @@ const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const clone=o=>JSON.parse(JSON.stringify(o));
 const newId=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 
-const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY},mode:'connecting',loaded:false,costsLoaded:false};
+const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY},mode:'connecting',loaded:false,costsLoaded:false};
 const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'run',cancelPre:{}};
 let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,migrateChecked=false;
 
@@ -679,12 +694,19 @@ const DEFAULT_RATE=280;
 /* ---------- normalisation ---------- */
 function normalizePackages(arr){if(!Array.isArray(arr))return [];const seen={};const out=[];for(const p of arr){if(!p||typeof p!=='object')continue;const id=String(p.id||'').trim()||newId('pkg');const name=String(p.name||'').trim();if(!name||seen[id])continue;seen[id]=1;const pr=Number(p.price);out.push({id,name,cycle:normCycle(p.cycle),price:isFinite(pr)&&pr>0?pr:null,currency:p.currency?normCur(p.currency):'',description:String(p.description||'').trim()});}return out;}
 const packages=()=>state.settings.packages||[];
-const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY});
+const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY});
+const basis=()=>normBasis(state.settings.prorationBasis);
+const normDiscount=d=>{if(!d||typeof d!=='object')return null;const t=d.type==='percent'?'percent':d.type==='fixed'?'fixed':null;const v=Number(d.value);return t&&isFinite(v)&&v>0?{type:t,value:t==='percent'?Math.min(100,v):v}:null;};
+const discountLabel=s=>{const d=s&&s.discount;if(!d)return '';return d.type==='percent'?`${d.value}% off`:`${fmtAmt(d.value,s.currency)} off`;};
+function applyDiscount(s,price){const d=s&&s.discount;if(!d)return price;return d.type==='percent'?Math.round(price*(1-d.value/100)):Math.max(0,price-d.value);}
+const effPrice=(s,date)=>applyDiscount(s,priceAt(s,date));
+const planBasis=s=>rawBasis(s&&s.prorationBasis)||basis();
+function prorateCalc(s,full,days,total){const ov=Number(s.prorationDaysOverride);const has=Number.isInteger(ov)&&ov>0;const d=has?ov:days;const b=planBasis(s)==='fixed30'?30:total;const ro=Number(s.prorationRateOverride);const hasRate=isFinite(ro)&&ro>0;const rate=hasRate?ro:full/b;const computed=Math.min(full,Math.round(rate*d));const ao=s.prorationAmountOverride;const hasAmt=ao!=null&&isFinite(Number(ao))&&Number(ao)>=0;const amt=hasAmt?Number(ao):computed;return {days:d,basis:b,rate,computed,amt,override:has,rateOverride:hasRate,amtOverride:hasAmt,discounted:amt<Math.min(full,Math.round((full/b)*d))};}
 const remindDay=()=>clampDay(state.settings.remindDay,DEFAULT_REMIND_DAY);const replyDay=()=>clampDay(state.settings.replyDay,DEFAULT_REPLY_DAY);
 function dayOnOrBefore(iso,day){let y=+iso.slice(0,4),m=+iso.slice(5,7)-1;for(let g=0;g<3;g++){const d=toISO(new Date(y,m,Math.min(day,daysIn(y,m))));if(d<=iso)return d;m--;if(m<0){m=11;y--;}}return iso;}
 /* reminder window for the upcoming cycle: remind from the reminder day, replies due by the reply-by day, both before the cycle starts */
 function reminderWindow(today){const nc=nextCycleStart(today);const replyBy=dayOnOrBefore(addDays(nc,-1),replyDay());const start=dayOnOrBefore(replyBy,remindDay());return {nc,start,replyBy,open:today>=start&&today<=replyBy,periodEnd:addDays(nextCycleStart(nc),-1)};}
-function remState(u,key){const r=(u.reminders||{})[key];return Object.assign({reminded:null,confirmed:null,final:null},r||{});}
+function remState(u,key){const r=(u.reminders||{})[key];return Object.assign({reminded:null,confirmed:null,final:null,skipped:null},r||{});}
 const pkgById=id=>packages().find(p=>p.id===id)||null;
 const pkgName=id=>{const p=pkgById(id);return p?p.name:'';};
 function planLabel(s){const pn=pkgName(s.packageId);const extra=(s.name||'').trim();if(!pn)return extra||(s.kind==='one-time'?'Item':'Plan');return extra&&extra.toLowerCase()!=='standard'&&extra.toLowerCase()!==pn.toLowerCase()?pn+' · '+extra:pn;}
@@ -706,11 +728,11 @@ const normTg=v=>{let t=String(v||'').trim().replace(/^(?:https?:\/\/)?(?:www\.)?
 function normalizeUser(b,id){
   const u={id,name:String(b.name||'').trim(),email:String(b.email||'').trim(),phone:digits(b.phone),telegram:normTg(b.telegram),joinDate:normDate(b.joinDate)||todayISO(),notes:String(b.notes||'').trim(),createdAt:b.createdAt||'',subscriptions:[],reminders:{},cancel:null};
   if(b.cancel&&typeof b.cancel==='object'&&normDate(b.cancel.lastDay))u.cancel={lastDay:normDate(b.cancel.lastDay),reason:String(b.cancel.reason||'').trim(),note:String(b.cancel.note||'').trim(),at:normDate(b.cancel.at)||''};
-  const rm=b.reminders&&typeof b.reminders==='object'?b.reminders:{};for(const k in rm){if(!isDateKey(k))continue;const v=rm[k]||{};const r={reminded:normDate(v.reminded),confirmed:normDate(v.confirmed),final:normDate(v.final)};if(r.reminded||r.confirmed||r.final)u.reminders[k]=r;}
+  const rm=b.reminders&&typeof b.reminders==='object'?b.reminders:{};for(const k in rm){if(!isDateKey(k))continue;const v=rm[k]||{};const r={reminded:normDate(v.reminded),confirmed:normDate(v.confirmed),final:normDate(v.final),skipped:normDate(v.skipped)};if(r.reminded||r.confirmed||r.final||r.skipped)u.reminders[k]=r;}
   for(const s of b.subscriptions||[]){
     const kind=s.kind==='one-time'?'one-time':'monthly';const start=normDate(s.start)||u.joinDate;const cur=normCur(s.currency);
     const sub={id:s.id||newId('s'),kind,name:String(s.name||'').trim()||(kind==='one-time'?'Item':''),currency:cur,packageId:String(s.packageId||'').trim()||null,payments:[]};
-    if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
+    if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;{const ov=Number(s.prorationDaysOverride);sub.prorationDaysOverride=Number.isInteger(ov)&&ov>0?ov:null;const ro=Number(s.prorationRateOverride);sub.prorationRateOverride=isFinite(ro)&&ro>0?ro:null;const ao=s.prorationAmountOverride;sub.prorationAmountOverride=ao!=null&&ao!==''&&isFinite(Number(ao))&&Number(ao)>=0?Number(ao):null;sub.prorationBasis=rawBasis(s.prorationBasis);sub.discount=normDiscount(s.discount);}sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
     else{sub.total=Number(s.total)||0;sub.due=normDate(s.due);}
     for(const p of s.payments||[]){const d=normDate(p.date);if(!d)continue;sub.payments.push({id:p.id||newId('p'),date:d,amount:Number(p.amount)||0,currency:p.currency?normCur(p.currency):cur,rate:normRate(p.rate),note:String(p.note||'')});}
     sub.payments.sort((a,b)=>a.date.localeCompare(b.date));
@@ -731,15 +753,15 @@ function analyzeMonthly(s,today){
   const curIdx=periodIndexAt(s,today);
   const periods=[];let credit=paid,k=0,kPaid=0;
   while(active(k)&&k<2400){
-    const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=priceAt(s,es);
+    const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=effPrice(s,es);
     const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;
-    const waived=k===0&&s.waiveFirst===true&&es>st;const pr=waived?0:(prorated?Math.round(full*days/total):full);
+    const waived=k===0&&s.waiveFirst===true&&es>st;const pa=prorateCalc(s,full,days,total);const pr=waived?0:(prorated?pa.amt:full);
     let stt,covered;
     if(waived){stt='waived';covered=0;kPaid=k+1;}
     else if(credit+1e-9>=pr){stt='paid';covered=pr;credit-=pr;kPaid=k+1;}
     else if(credit>0){stt=st<=today?'partial':'upcoming';covered=credit;credit=0;}
     else{stt=st<=today?'unpaid':'upcoming';covered=0;}
-    periods.push({k,st,en,es,pr,full,prorated:prorated&&!waived,waived,days,total,state:stt,covered,creditAfter:stt==='paid'?credit:0});
+    periods.push({k,st,en,es,pr,full,prorated:prorated&&!waived,waived,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0});
     if(stt!=='paid'&&stt!=='waived'&&k>curIdx)break;
     if(stt==='paid'&&pr<=0&&k>curIdx+1)break;
     k++;
@@ -748,7 +770,7 @@ function analyzeMonthly(s,today){
   const nextDue=active(kPaid)?pStart(s,kPaid):null;
   const overdue=periods.filter(p=>(p.state==='unpaid'||p.state==='partial')&&p.st<=today);
   let amountDue=0;for(const p of overdue)amountDue+=p.pr-p.covered;const overdueAmount=amountDue;
-  const np=nextDue?periods.find(p=>p.st===nextDue):null;const nextAmount=np?np.pr-np.covered:(nextDue?priceAt(s,nextDue):0);const nextCredit=np?np.covered:0;
+  const np=nextDue?periods.find(p=>p.st===nextDue):null;const nextAmount=np?np.pr-np.covered:(nextDue?effPrice(s,nextDue):0);const nextCredit=np?np.covered:0;
   if(!amountDue&&nextDue)amountDue=nextAmount;
   const nc=nextCycleStart(today);const cp=periods.find(p=>p.st===nc);const cycleDue=cp?cp.pr-cp.covered:0;const cyclePaid=!!cp&&cp.state==='paid';
   let status;
@@ -759,7 +781,7 @@ function analyzeMonthly(s,today){
   else status='overdue';
   if(s.dueBy&&(status==='overdue'||status==='due-today')&&overdueAmount>0)status=today>s.dueBy?'overdue':'open';
   const curP=periods[Math.max(0,Math.min(curIdx,periods.length-1))]||null;
-  return {kind:'monthly',cycle:subCycle(s),paid,unconv:pc.unconv,paidThrough,nextDue,nextAmount,nextCredit,cycleDue,cyclePaid,periods,overdue:overdue.length,amountDue,overdueAmount,status,price:priceAt(s,nextDue||today),cur:s.currency,curIdx,kPaid,curP};
+  return {kind:'monthly',cycle:subCycle(s),paid,unconv:pc.unconv,paidThrough,nextDue,nextAmount,nextCredit,cycleDue,cyclePaid,periods,overdue:overdue.length,amountDue,overdueAmount,status,price:effPrice(s,nextDue||today),listPrice:priceAt(s,nextDue||today),cur:s.currency,curIdx,kPaid,curP};
 }
 function analyzeOneTime(s,today){
   const pc=paidInPlanCur(s);const paid=pc.t;const remaining=Math.max(0,(Number(s.total)||0)-paid);
@@ -767,6 +789,9 @@ function analyzeOneTime(s,today){
   if(remaining<=0)status='paid';else if(s.due&&s.due<today)status='overdue';else if(s.due&&s.due===today)status='due-today';else if(s.due&&dayDiff(today,s.due)<=7)status='due-soon';else status='open';
   return {kind:'one-time',paid,unconv:pc.unconv,remaining,nextDue:remaining>0?s.due||null:null,amountDue:remaining,status,cur:s.currency,overdue:status==='overdue'?1:0};
 }
+/* amount of one cycle period of a plan (first period may be prorated or waived), and what is still owed per period from the first unpaid one up to a target period */
+function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=effPrice(s,es);const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;return {k,st,en,es,pr:waived?0:(prorated?prorateCalc(s,full,days,total).amt:full)};}
+function coverPlan(s,sa,targetK){const out=[];for(let k=sa.kPaid;k<=targetK&&k<sa.kPaid+240;k++){const p=periodAmt(s,k);const ex=(sa.periods||[]).find(x=>x.k===k);const cov=ex?ex.covered:0;out.push({k,st:p.st,en:p.en,pr:p.pr,credit:cov,due:Math.max(0,p.pr-cov)});}return out;}
 const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,paid:5,ended:5,cancelled:5,nosub:6};
 function analyze(u,today){
   const subs=u.subscriptions||[];const sa={};const totals=newSum(),balance=newSum(),due=newSum(),cycleDue=newSum();let cyclePaid=false;
@@ -778,7 +803,7 @@ function analyze(u,today){
     if(a.kind==='monthly'){if(a.overdueAmount>0)sumAdd(balance,a.overdueAmount,s.currency,null);if(a.cycleDue>0)sumAdd(cycleDue,a.cycleDue,s.currency,null);if(a.cyclePaid)cyclePaid=true;}else if(a.remaining>0)sumAdd(balance,a.remaining,s.currency,null);
     const r=RANK[a.status];if(r<rank){rank=r;status=a.status;}
     if(a.kind==='monthly'){
-      if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&a.kPaid>0&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),price:a.price,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id,note:u.cancel&&s.end?'until '+fmtD(s.end):undefined});if(s.packageId)pkgIds.add(s.packageId);else pkgIds.add('');}
+      if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&a.kPaid>0&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),price:a.price,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id,note:u.cancel&&s.end?'until '+fmtD(s.end):(s.discount?discountLabel(s):undefined)});if(s.packageId)pkgIds.add(s.packageId);else pkgIds.add('');}
       else if(a.status==='upcoming'){planParts.push({name:planLabel(s),price:a.price,cur:s.currency,per:perOf(s),note:'starts '+fmtD(s.start),noPkg:!s.packageId,subId:s.id});pkgIds.add(s.packageId||'');}
       else if(u.cancel&&s.end){planParts.push({name:planLabel(s),price:priceAt(s,s.end),cur:s.currency,per:perOf(s),note:'until '+fmtD(s.end),subId:s.id});if(s.packageId)pkgIds.add(s.packageId);}
     }else if(a.remaining>0){planParts.push({name:planLabel(s),price:a.remaining,cur:s.currency,per:'',note:'left of '+fmtAmt(s.total,s.currency)});if(s.packageId)pkgIds.add(s.packageId);}
@@ -832,8 +857,8 @@ function seedUsers(){
     U('u_faizan','Faizan','faizaneilahi9774@gmail.com','2026-08-31','$15 on BOA account',[std('s_faizan_std','2026-08-31',[['2026-08-31',15]],'USD',15)]),
     U('u_ataullah','Ataullah','atabinfazl@gmail.com','2026-09-01','NayaPay Noor',[std('s_ataullah_std','2026-09-01',[['2026-09-01',4200]],'PKR',4200)]),
     U('u_mohib','Mohib Haider Kazmi','maggdoto@gmail.com','2026-09-01','NayaPay Noor · Contact email: mohibkazmi@yahoo.com',[std('s_mohib_std','2026-09-01',[['2026-09-01',4200]],'PKR',4200)]),
-    U('u_tabraiz','Tabraiz','tabraiz@smwcmanagement.com','2026-09-03','',[std('s_tabraiz_std','2026-09-03',[],'PKR',4200)]),
-    U('u_eren','Eren','erenkumcuoglu@gmail.com','2026-07-24','Pays in USDT (Binance); contact via Telegram',[std('s_eren_std','2026-07-24',[['2026-07-24',14],['2026-08-24',14],['2026-09-24',14,"recorded from 'paid till Oct 24'"]],'USD',14)])
+    U('u_tabraiz','Tabraiz','tabraiz@smwcmanagement.com','2026-09-03','',[Object.assign(std('s_tabraiz_std','2026-09-03',[['2026-09-22',4200,'per Aly, 22 Sep']],'PKR',4200),{prorationDaysOverride:24})]),
+    U('u_eren','Eren','erenkumcuoglu@gmail.com','2026-07-24','Pays in USDT (Binance); contact via Telegram',[std('s_eren_std','2026-07-24',[['2026-07-24',14],['2026-08-24',14],['2026-09-24',14,"recorded from 'paid till Oct 24'"],['2026-09-22',14,'paid up to Nov 24 (per Aly)']],'USD',14)])
   ];
 }
 /* v6: Uqba never joined. Remove only the untouched seed record: named Uqba, no email, no phone, no payments. */
@@ -888,6 +913,10 @@ function migrateUserV2(raw){
   else if(em==='tabraiz@smwcmanagement.com'&&!digits(u.phone)){u.phone='923313508833';changed=true;}
   if(em==='atabinfazl@gmail.com'&&!digits(u.phone)){u.phone='923465298200';changed=true;}
   if(em==='erenkumcuoglu@gmail.com'&&!/telegram/i.test(u.notes||'')){u.notes='Pays in USDT (Binance); contact via Telegram';changed=true;}
+  /* v9/v10 (Sep 22, 2026): Eren has paid up to Nov 24; Tabraiz has paid Rs 4,200 and is charged 24 days for his first period (v9 had 22) */
+  const em2=(u.email||'').toLowerCase();
+  if(em2==='erenkumcuoglu@gmail.com'){const s=(u.subscriptions||[]).find(x=>x.kind!=='one-time'&&x.cycle!=='yearly');if(s&&!(s.payments||[]).some(p=>/paid up to nov 24/i.test(p.note||''))){s.payments=s.payments||[];s.payments.push({id:'s_eren_std_p4',date:'2026-09-22',amount:14,currency:'USD',rate:null,note:'paid up to Nov 24 (per Aly)'});changed=true;}}
+  if(em2==='tabraiz@smwcmanagement.com'){const s=(u.subscriptions||[]).find(x=>x.kind!=='one-time'&&x.cycle!=='yearly'&&(x.packageId==='pkg_c'||!x.packageId))||(u.subscriptions||[]).find(x=>x.kind!=='one-time');if(s&&!(s.payments||[]).some(p=>/per aly, 22 sep/i.test(p.note||''))){s.payments=s.payments||[];s.payments.push({id:'s_tabraiz_std_p1',date:'2026-09-22',amount:4200,currency:'PKR',rate:null,note:'per Aly, 22 Sep'});changed=true;}if(s&&(s.prorationDaysOverride==null||s.prorationDaysOverride===22)){s.prorationDaysOverride=24;changed=true;}}
   return changed?u:null;
 }
 async function maybeSeedShared(){
@@ -900,12 +929,14 @@ async function maybeSeedShared(){
     for(const [id,u] of seedUsers())await db.collection('users').doc(id).set(cleanUser(Object.assign({id},u)));
     await db.doc('meta/seed').set({done:true,at:new Date().toISOString()});
     await db.doc('meta/schema').set({version:SCHEMA,at:new Date().toISOString()});
+    await setBasisShared('fixed30');
     await ensureDefaultRateShared();
     toast('Loaded the initial user list. Edit anything that is off.');
   }catch(e){}
 }
-async function ensureDefaultRateShared(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const pk=normalizePackages(b.packages);const needRate=!normRate(b.rate),needPk=!pk.length,needAnchor=!isDateKey(b.anchor),needTpl=tplOf(b.template)!==b.template,needDays=!b.remindDay||!b.replyDay;if(needRate||needPk||needAnchor||needTpl||needDays)await db.doc('settings/main').set({rate:needRate?DEFAULT_RATE:normRate(b.rate),template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),packages:needPk?clone(DEFAULT_PACKAGES):pk,anchor:needAnchor?DEFAULT_ANCHOR:b.anchor,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
-async function ensurePackageCycles(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};let pk=normalizePackages(b.packages);let changed=false;if(!pk.length){pk=clone(DEFAULT_PACKAGES);changed=true;}for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(p&&!(b.packages||[]).find(x=>x&&x.id===d.id&&x.cycle)){p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}changed=true;}}if(changed)await db.doc('settings/main').set({rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
+async function ensureDefaultRateShared(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const pk=normalizePackages(b.packages);const needRate=!normRate(b.rate),needPk=!pk.length,needAnchor=!isDateKey(b.anchor),needTpl=tplOf(b.template)!==b.template,needDays=!b.remindDay||!b.replyDay;if(needRate||needPk||needAnchor||needTpl||needDays)await db.doc('settings/main').set({rate:needRate?DEFAULT_RATE:normRate(b.rate),template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:rawBasis(b.prorationBasis),packages:needPk?clone(DEFAULT_PACKAGES):pk,anchor:needAnchor?DEFAULT_ANCHOR:b.anchor,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
+async function setBasisShared(v){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};if(rawBasis(b.prorationBasis))return;const pk=normalizePackages(b.packages);await db.doc('settings/main').set({rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:v,packages:pk.length?pk:clone(DEFAULT_PACKAGES),anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
+async function ensurePackageCycles(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};let pk=normalizePackages(b.packages);let changed=false;if(!pk.length){pk=clone(DEFAULT_PACKAGES);changed=true;}for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(p&&!(b.packages||[]).find(x=>x&&x.id===d.id&&x.cycle)){p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}changed=true;}}if(changed)await db.doc('settings/main').set({rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:rawBasis(b.prorationBasis),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
 async function maybeMigrateShared(rawDocs){
   if(migrateChecked)return;migrateChecked=true;
   try{
@@ -915,6 +946,7 @@ async function maybeMigrateShared(rawDocs){
     let n=0,removed=0;for(const d of rawDocs){const body=d.data();if(!body)continue;if(isUntouchedSeedUqba(body)){await db.collection('users').doc(d.id).delete();removed++;continue;}const m=migrateUserV2(body);if(m){await db.collection('users').doc(d.id).set(cleanUser(Object.assign({id:d.id},m)));n++;}}
     if(removed)toast('Removed Uqba (never joined).');
     await db.doc('meta/schema').set({version:SCHEMA,at:new Date().toISOString(),migrated:n});
+    await setBasisShared('fixed30');
     await ensureDefaultRateShared();
     await ensurePackageCycles();if(n)toast('Updated '+n+' user record'+(n===1?'':'s')+' to the current format.');
   }catch(e){}
@@ -923,6 +955,7 @@ function maybeSeedLocal(){
   let flag=null;try{flag=localStorage.getItem('pt-seeded');}catch(e){}
   if(flag||Object.keys(state.users).length)return;
   for(const [id,u] of seedUsers())state.users[id]=normalizeUser(u,id);
+  if(!rawBasis(state.settings.prorationBasis))state.settings.prorationBasis='fixed30';
   if(!normRate(state.settings.rate))state.settings.rate=DEFAULT_RATE;
   if(!packages().length)state.settings.packages=clone(DEFAULT_PACKAGES);
   if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;
@@ -932,6 +965,7 @@ function maybeMigrateLocal(){
   let v=0;try{v=Number(localStorage.getItem('pt-schema')||0);}catch(e){}
   if(v>=SCHEMA)return;
   for(const id in state.users){if(isUntouchedSeedUqba(state.users[id])){delete state.users[id];continue;}const m=migrateUserV2(state.users[id]);if(m)state.users[id]=normalizeUser(m,id);}
+  if(v<10&&!rawBasis(state.settings.prorationBasis))state.settings.prorationBasis='fixed30';
   if(!normRate(state.settings.rate))state.settings.rate=DEFAULT_RATE;
   if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;
   state.settings.template=tplOf(state.settings.template);
@@ -946,7 +980,7 @@ async function resetData(){
 }
 
 /* ---------- persistence ---------- */
-function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();}}catch(e){}}
+function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.prorationBasis=rawBasis(state.settings.prorationBasis);state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();}}catch(e){}}
 function saveLocal(){try{localStorage.setItem('pt-data',JSON.stringify({users:state.users,costs:state.costs,settings:state.settings}));}catch(e){}}
 function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;}catch(e){}}
 function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur}));}catch(e){}}
@@ -955,7 +989,7 @@ async function persistUser(id,u){const body=cleanUser(Object.assign({},u,{id}));
 async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.users[id];saveLocal();render();}return true;}
 async function persistCost(id,c){const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}else{state.costs[id]=normalizeCost(body,id);saveLocal();render();}return true;}
 async function removeCost(id){if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.costs[id];saveLocal();render();}return true;}
-async function persistSettings(){if(db){try{await db.doc('settings/main').set({rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),packages:state.settings.packages||[],anchor:anchor(),remindDay:remindDay(),replyDay:replyDay()});}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
+async function persistSettings(){if(db){try{await db.doc('settings/main').set({rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),packages:state.settings.packages||[],anchor:anchor(),remindDay:remindDay(),replyDay:replyDay()});}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
 function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||'').trim().toLowerCase();const ids=Object.keys(state.users);if(e){const hit=ids.find(id=>(state.users[id].email||'').toLowerCase()===e);if(hit)return hit;}if(n&&!e){const hit=ids.find(id=>(state.users[id].name||'').toLowerCase()===n);if(hit)return hit;}return null;}
 
 /* ---------- ranges ---------- */
@@ -965,20 +999,23 @@ function allPayments(){const out=[];for(const id in state.users)for(const s of s
 const costTotal=c=>(Number(c.cost)||0)+(Number(c.tax)||0);
 
 /* ---------- rendering ---------- */
-function render(){renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);}}
+function render(){renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
   el.textContent=state.mode==='shared'?'Shared with your team, saves live':state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
   const r=defaultRate();$('#rate-badge').innerHTML=r?`1 USD = Rs ${r.toLocaleString(undefined,{maximumFractionDigits:2})}`:`<button class="link" type="button" data-act="open-settings">Set exchange rate</button>`;
   $('#foot').innerHTML=(state.mode==='shared'?'<span>Everyone who opens this page sees and edits the same data.</span>':state.mode==='local'?'<span>Shared storage is not available in this view, so entries are kept in this browser only. Export CSV to move them.</span>':'')
-    +'<span>Everyone bills on the same cycle, anchored in Settings (Jul 24 → Jul 24–Aug 23, Aug 24–Sep 23, …; yearly plans Jul 24–Jul 23). A plan\'s first period is the cycle period containing its start date and is charged by days unless proration is off; payments fill periods in order and any extra carries into the next as credit. <b>Current</b> = the current period is covered; <b>Overdue</b> = a period that has started is not fully paid. <b>Balance due</b> = unpaid started periods plus what is left on one-time items. Conversions use each entry\'s own rate, or the default rate from Settings.</span>';
+    +'<span>Everyone bills on the same cycle, anchored in Settings (Jul 24 → Jul 24–Aug 23, Aug 24–Sep 23, …; yearly plans Jul 24–Jul 23). A plan\'s first period is the cycle period containing its start date and is charged by days (actual days in the cycle or a fixed 30-day month, set in Settings) unless proration is off; payments fill periods in order and any extra carries into the next as credit. <b>Current</b> = the current period is covered; <b>Overdue</b> = a period that has started is not fully paid. <b>Balance due</b> = unpaid started periods plus what is left on one-time items. Conversions use each entry\'s own rate, or the default rate from Settings.</span>';
 }
 function reminderRows(today){const w=reminderWindow(today);const all=Object.keys(state.users).filter(id=>!state.users[id].cancel).map(id=>({id,u:state.users[id],a:analyze(state.users[id],today)}));const byName=(x,y)=>displayName(x.u).localeCompare(displayName(y.u));
-  const overdue=all.filter(r=>r.a.unpaid).sort((x,y)=>(sortVal(y.a.balance)-sortVal(x.a.balance))||byName(x,y));
-  const cycle=all.filter(r=>!r.a.unpaid&&r.a.cycleDue.n>0).sort(byName);
+  const isSk=r=>!!remState(r.u,w.nc).skipped;
+  const due=all.filter(r=>r.a.unpaid||r.a.cycleDue.n>0).sort((x,y)=>((y.a.unpaid?1:0)-(x.a.unpaid?1:0))||byName(x,y));
+  const skipped=due.filter(isSk);
+  const overdue=all.filter(r=>r.a.unpaid&&!isSk(r)).sort((x,y)=>(sortVal(y.a.balance)-sortVal(x.a.balance))||byName(x,y));
+  const cycle=all.filter(r=>!r.a.unpaid&&r.a.cycleDue.n>0&&!isSk(r)).sort(byName);
   const covered=all.filter(r=>!r.a.unpaid&&!r.a.cycleDue.n&&r.a.cyclePaid).sort(byName);
   const todo=[...overdue,...cycle].filter(r=>{const st=remState(r.u,w.nc);return !st.reminded&&!st.confirmed;});
-  return {w,overdue,cycle,covered,todo,all};}
+  return {w,overdue,cycle,covered,todo,all,due,skipped};}
 function renderReminderBits(){
   const today=todayISO();const ids=Object.keys(state.users);const ban=$('#remindBanner'),cnt=$('#rem-cnt');
   if(!ids.length||!state.loaded){ban.hidden=true;cnt.hidden=true;return;}
@@ -989,7 +1026,7 @@ function renderReminderBits(){
   ban.dataset.kind='window';$('#remindBannerBtn').textContent='Open reminder run';
   cnt.hidden=!(w.open&&R.todo.length);cnt.textContent=R.todo.length;
   ban.hidden=!w.open;
-  if(w.open)$('#remindBannerText').innerHTML=`<b>Reminder window open</b> (${esc(fmtD(w.start))} – ${esc(fmtD(w.replyBy))}): <b>${R.todo.length}</b> of ${n} user${n===1?'':'s'} still to remind for the cycle starting <b>${esc(fmtD(w.nc,true))}</b>${R.overdue.length?` · ${R.overdue.length} overdue from earlier`:''} · replies by ${esc(fmtD(w.replyBy))}.`;
+  if(w.open)$('#remindBannerText').innerHTML=`<b>Reminder window open</b> (${esc(fmtD(w.start))} – ${esc(fmtD(w.replyBy))}): <b>${R.todo.length}</b> of ${n} user${n===1?'':'s'} still to remind for the cycle starting <b>${esc(fmtD(w.nc,true))}</b>${R.overdue.length?` · ${R.overdue.length} overdue from earlier`:''}${R.skipped.length?` · ${R.skipped.length} skipped`:''} · replies by ${esc(fmtD(w.replyBy))}.`;
 }
 function renderRemindRun(){
   document.querySelectorAll('#rr-tabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===ui.rrTab)));
@@ -1002,7 +1039,10 @@ function renderRemindRun(){
     const due=mode==='overdue'?`<b>${esc(ownText(a.balance.n?a.balance:a.due,a.mainCur))}</b> overdue${a.nextDue?` since ${esc(fmtD(a.nextDue))}`:''}${a.cycleDue.n?` · plus ${esc(ownText(a.cycleDue,a.mainCur))} on ${esc(fmtD(w.nc))}`:''}`:`<b>${esc(ownText(a.cycleDue,a.mainCur))}</b> due ${esc(fmtD(w.nc))}${creditNote(r)}`;
     return `<div class="rr-row" data-user="${esc(r.id)}" data-done="${st.confirmed?'1':'0'}"><span class="who" title="${esc(displayName(u))}">${esc(displayName(u))}</span><span class="due">${esc(pk)} · ${due}</span>${tog(r,'reminded','Reminded')}${tog(r,'confirmed','Confirmed')}<span class="remind-pair">${remindControl(u,a,today,'Open WhatsApp',mode)}${emailControl(u,a,today,'Email',mode)}${telegramControl(u,'Telegram')}</span></div>`;};
   const creditNote=r=>{let c=[];for(const s of r.u.subscriptions||[]){const sa=r.a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.nextDue===w.nc&&sa.nextCredit>0)c.push(fmtAmt(sa.nextCredit,s.currency));}return c.length?` <span class="muted">(after ${esc(c.join(' + '))} credit)</span>`:'';};
-  let html='';
+  const dueTxt=r=>r.a.unpaid?ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur)+' overdue':ownText(r.a.cycleDue,r.a.mainCur);
+  const ticked=R.overdue.length+R.cycle.length-R.todo.length;
+  let html=`<div class="fn-bar"><span class="lead"><b>${R.todo.length}</b> to remind · <b>${R.skipped.length}</b> skipped${ticked?` · ${ticked} already reminded or confirmed`:''}</span><details class="except"${ui.exceptOpen?' open':''}><summary>Except… ${R.skipped.length?`(${R.skipped.length})`:''}</summary><div class="except-list"><span class="hint">Tick anyone to leave out of this run (for example, someone who has paid ahead or told you separately). Saved for this cycle only.</span>${R.due.length?R.due.map(r=>`<label class="chk"><input type="checkbox" data-act="skip" data-user="${esc(r.id)}"${remState(r.u,key).skipped?' checked':''}>${esc(displayName(r.u))}<span class="when">${esc(dueTxt(r))}</span></label>`).join(''):'<span class="hint">Nobody is due this cycle.</span>'}</div></details></div>`;
+  if(R.skipped.length)html+=`<p class="skipped-note">Skipped this cycle: ${R.skipped.map(r=>`<b>${esc(displayName(r.u))}</b> <button class="link sm" type="button" data-act="unskip" data-user="${esc(r.id)}">undo</button>`).join(' · ')}. They are also left out of the Final notice list unless overdue from earlier.</p>`;
   if(R.overdue.length)html+=`<div class="rr-sec"><h4>Overdue from earlier cycles · ${R.overdue.length}</h4>${R.overdue.map(r=>row(r,'overdue')).join('')}</div>`;
   html+=`<div class="rr-sec"><h4>Due for the cycle starting ${esc(fmtD(w.nc))} · ${R.cycle.length}</h4>${R.cycle.length?R.cycle.map(r=>row(r,'cycle')).join(''):'<p class="small muted">Nobody else has an amount due for this cycle.</p>'}</div>`;
   if(R.covered.length)html+=`<p class="small muted" style="margin-top:10px">Already covered for ${esc(fmtD(w.nc))} – ${esc(fmtD(w.periodEnd))}, no reminder needed: ${esc(R.covered.map(r=>displayName(r.u)).join(', '))}.</p>`;
@@ -1015,7 +1055,7 @@ function finalRows(today){
   const w=reminderWindow(today);const nc=w.nc;const dayBefore=addDays(nc,-1);const rows=[];
   for(const id in state.users){const u=state.users[id];const a=analyze(u,today);const st=remState(u,nc);
     if(u.cancel){const c=u.cancel;if(c.lastDay===dayBefore||(c.at&&c.at>=w.start&&c.at<=nc))rows.push({id,u,a,st,deact:true});continue;}
-    const cyc=a.cycleDue.n>0,over=a.unpaid;if(!cyc&&!over)continue;if(st.confirmed&&!over)continue;
+    const cyc=a.cycleDue.n>0,over=a.unpaid;if(!cyc&&!over)continue;if((st.confirmed||st.skipped)&&!over)continue;
     rows.push({id,u,a,st,deact:false});}
   rows.sort((x,y)=>(x.deact-y.deact)||((y.a.unpaid?1:0)-(x.a.unpaid?1:0))||displayName(x.u).localeCompare(displayName(y.u)));
   return {w,rows,pending:rows.filter(r=>!r.deact&&!r.st.confirmed).length};
@@ -1199,9 +1239,24 @@ function payForm(id,s,sa,today,defAmt,open,edit){
       <label class="f">Amount<input id="pf-amount-${s.id}" name="amount" type="number" min="0" step="0.01" required value="${e?e.amount:defAmt}"></label>
       <label class="f">Rate <span class="muted">(blank = default${defaultRate()?' '+defaultRate().toLocaleString():''})</span><input id="pf-rate-${s.id}" name="rate" type="number" min="0" step="0.0001" class="num" value="${e&&e.rate?e.rate:''}" placeholder="${defaultRate()?defaultRate():'set in Settings'}"></label>
       <label class="f">Note <span class="muted">(optional)</span><input id="pf-note-${s.id}" name="note" type="text" value="${e?esc(e.note||''):''}" placeholder="e.g. NayaPay ref, USDT tx"></label>
+      ${s.kind==='monthly'&&!e?`<label class="f">Months <span class="muted">(fills the amount)</span><input id="pf-months-${s.id}" name="months" type="number" min="1" max="60" step="1" placeholder="e.g. 2" inputmode="numeric"></label>`:''}
       <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">${e?'Save changes':'Save payment'}</button><button class="link" type="button" data-act="${e?'pay-edit-cancel':'toggle'}" data-sub="${s.id}" data-key="pay:${s.id}">Cancel</button></span>
     </div>
     <div class="cover" data-role="cover"></div>
+  </form>`;
+}
+function uptoForm(id,s,sa,today,open){
+  if(!sa.nextDue)return '';
+  const opts=[];for(let k=sa.kPaid;k<sa.kPaid+12;k++){const p=periodAmt(s,k);if(s.end&&p.st>s.end)break;opts.push(`<option value="${k}">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}</option>`);}
+  return `<form class="upto-form" data-id="${id}" data-sub="${s.id}" ${open?'':'hidden'} novalidate>
+    <div class="pay-row">
+      <label class="f">Paid up to (cycle)<select id="up-target-${s.id}" name="target">${opts.join('')}</select></label>
+      <label class="f">or a date<input id="up-date-${s.id}" name="upToDate" type="date" min="${esc(s.start)}"></label>
+      <label class="f">Payment date<input id="up-when-${s.id}" name="date" type="date" required value="${today}"></label>
+      <label class="f">Total (${s.currency})<input id="up-amount-${s.id}" name="amount" type="number" min="0" step="0.01" required></label>
+      <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button><button class="link" type="button" data-act="toggle" data-key="upto:${s.id}">Cancel</button></span>
+    </div>
+    <div class="upto-plan" data-role="plan"></div>
   </form>`;
 }
 function detailHTML(id,u,a,today){
@@ -1217,7 +1272,7 @@ function detailHTML(id,u,a,today){
       const yearFacts=yearly&&cp?`<span>This year (${esc(fmtD(cp.st,true))} – ${esc(fmtD(cp.en,true))}): paid <b>${esc(fmtAmt(cp.covered,s.currency))}</b> of ${esc(fmtAmt(cp.pr,s.currency))} · remaining <b>${esc(fmtAmt(Math.max(0,cp.pr-cp.covered),s.currency))}</b></span>`:'';
       const dueByFact=s.dueBy?`<span>Remaining due by <b>${esc(fmtD(s.dueBy,true))}</b></span>`:'';
       const lastPaid=sa.periods.filter(p=>p.state==='paid').pop();
-      const cells=sa.periods.map(p=>{const pro=p.prorated?`<span class="d">${p.days} of ${p.total} days · ${esc(fmtAmt(p.pr,s.currency))}</span>`:'';let a;
+      const cells=sa.periods.map(p=>{const pro=p.prorated?`<span class="d">${p.daysCharged} day${p.daysCharged===1?'':'s'} × ${esc(fmtAmt(p.rate,s.currency))} = ${esc(fmtAmt(p.computed,s.currency))}${p.amtOverride?` → charged ${esc(fmtAmt(p.pr,s.currency))}`:''}${p.discounted?' <span class="tag">discounted</span>':''}</span><span class="d muted">${p.basisDays===30?'30-day month':p.total+'-day cycle'}${p.override?` · days set by hand (actual ${p.days})`:''}${p.rateOverride?' · rate set by hand':''} · <button class="link sm" type="button" data-act="toggle" data-key="days:${s.id}">edit days / rate</button></span>`:'';let a;
         let extra='';if(p.state==='waived'){a='Waived · '+esc(fmtD(p.es))+' – '+esc(fmtD(p.en));extra=`<span class="d">${p.days} stub day${p.days===1?'':'s'} free · billing starts ${esc(fmtD(addDays(p.en,1)))}</span>`;}else if(p.state==='paid'){a=esc(fmtAmt(p.pr,s.currency));if(p===lastPaid&&p.creditAfter>0&&sa.nextDue)extra=`<span class="d">paid ${esc(fmtAmt(p.pr+p.creditAfter,s.currency))} · credit ${esc(fmtAmt(p.creditAfter,s.currency))} carried</span>`;}
         else if(p.state==='partial')a=esc(fmtAmt(p.covered,s.currency))+' of '+esc(fmtAmt(p.pr,s.currency));
         else if(p.state==='unpaid')a='Unpaid · '+esc(fmtAmt(p.pr,s.currency));
@@ -1228,18 +1283,29 @@ function detailHTML(id,u,a,today){
       const defFrom=pe||sa.nextDue||pStart(s,Math.max(0,sa.curIdx));
       const payEditId=(ui.payEdit||{})[s.id]||null;const payEdit=payEditId?(s.payments||[]).find(x=>x.id===payEditId):null;
       subsHtml+=`<div class="sub" data-sub="${s.id}">
-        <div class="sub-line"><span class="name">${esc(planLabel(s))}</span><span class="kind">${subCycle(s)} · ${s.currency}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="num">${esc(fmtAmt(sa.price,s.currency))}<span class="muted">${perOf(s)}</span></span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span><span class="spacer"></span>
+        <div class="sub-line"><span class="name">${esc(planLabel(s))}</span><span class="kind">${subCycle(s)} · ${s.currency}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="num">${s.discount?`${esc(fmtAmt(sa.listPrice,s.currency))}<span class="muted">${perOf(s)}</span> · ${esc(discountLabel(s))} = <b>${esc(fmtAmt(sa.price,s.currency))}</b>`:`${esc(fmtAmt(sa.price,s.currency))}<span class="muted">${perOf(s)}</span>`}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span><span class="spacer"></span>
           <button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>
+          <button class="btn sm" type="button" data-act="toggle" data-key="upto:${s.id}" title="Record payment for every period up to a chosen cycle or date">Paid up to…</button>
           <button class="btn sm" type="button" data-act="toggle" data-key="price:${s.id}">Change price</button>
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></div>
         <div class="sub-facts"><span>Started <b>${esc(fmtD(s.start,true))}</b></span>${s.end?`<span>Ends <b>${esc(fmtD(s.end,true))}</b></span>`:''}<span>Paid through <b>${sa.kPaid?esc(fmtD(sa.paidThrough,true)):'nothing yet'}</b></span>${sa.nextDue?(sa.nextDue>today?`<span>Next due <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}${sa.nextCredit>0?` <span class="muted">(after ${esc(fmtAmt(sa.nextCredit,s.currency))} credit)</span>`:''}</span>`:sa.nextCredit>0?`<span>Remaining on the current period <b>${esc(fmtAmt(nextPr,s.currency))}</b></span>`:`<span>Unpaid since <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}</span>`):''}<span>Total paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>${yearFacts}${dueByFact}${s.waiveFirst?'<span>First partial period <b>waived</b></span>':s.prorate===false?'<span>First period <b>not prorated</b></span>':''}${unconvNote}</div>
         ${histTxt?`<div class="hist">Price history: ${histTxt}</div>`:''}
         <div class="periods">${cells}</div>
         ${payForm(id,s,sa,today,nextPr,payOpen,payEdit)}
+        ${uptoForm(id,s,sa,today,open['upto:'+s.id])}
+        ${sa.periods[0]&&sa.periods[0].prorated?`<form class="days-form" data-id="${id}" data-sub="${s.id}" ${open['days:'+s.id]?'':'hidden'} novalidate>
+          <div class="pay-row">
+            <label class="f">Days charged for ${esc(fmtD(sa.periods[0].es))} – ${esc(fmtD(sa.periods[0].en))}<input id="dy-days-${s.id}" name="days" type="number" min="1" max="366" step="1" required value="${sa.periods[0].daysCharged}"></label>
+            <label class="f">Daily rate (${s.currency}) <span class="muted">(blank = price ÷ ${sa.periods[0].basisDays})</span><input id="dy-rate-${s.id}" name="rate" type="number" min="0" step="0.01" value="${s.prorationRateOverride!=null?s.prorationRateOverride:''}" placeholder="${esc(fmtAmt(sa.periods[0].rate,s.currency))}"></label>
+            <label class="f">Amount charged (${s.currency}) <span class="muted">(blank = days × rate)</span><input id="dy-amt-${s.id}" name="amount" type="number" min="0" step="0.01" value="${s.prorationAmountOverride!=null?s.prorationAmountOverride:''}" placeholder="${esc(fmtAmt(sa.periods[0].computed,s.currency))}"></label>
+            <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button><button class="link" type="button" data-act="days-reset" data-sub="${s.id}">Reset to actual (${sa.periods[0].days} days, standard rate)</button><button class="link" type="button" data-act="toggle" data-key="days:${s.id}">Cancel</button></span>
+          </div>
+          <p class="small muted" style="margin-top:6px">Standard daily rate ${esc(fmtAmt(effPrice(s,sa.periods[0].es)/sa.periods[0].basisDays,s.currency))} (${sa.periods[0].basisDays===30?'fixed 30-day month':'actual '+sa.periods[0].total+'-day cycle'}${rawBasis(s.prorationBasis)?', set on this plan':', from Settings'}). The first period is charged days × rate, capped at the full price; a set amount wins over both and is marked "discounted" when lower.</p>
+        </form>`:''}
         <form class="price-form" data-id="${id}" data-sub="${s.id}" ${open['price:'+s.id]?'':'hidden'} novalidate>
           <input type="hidden" name="replaceFrom" value="${esc(pe||'')}">
           <div class="pay-row">
-            <label class="f">${pe?'Price':'New price'} per ${subCycle(s)==='yearly'?'year':'month'} (${s.currency})<input id="pr-price-${s.id}" name="price" type="number" min="0" step="0.01" required value="${pePrice!=null?pePrice:sa.price}"></label>
+            <label class="f">${pe?'Price':'New price'} per ${subCycle(s)==='yearly'?'year':'month'} (${s.currency})<input id="pr-price-${s.id}" name="price" type="number" min="0" step="0.01" required value="${pePrice!=null?pePrice:priceAt(s,today)}"></label>
             <label class="f">Effective from<input id="pr-from-${s.id}" name="from" type="date" required value="${esc(defFrom)}"></label>
             <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">${pe?'Save change':'Save price'}</button><button class="link" type="button" data-act="toggle" data-key="price:${s.id}">Cancel</button></span>
           </div>
@@ -1256,8 +1322,11 @@ function detailHTML(id,u,a,today){
             <label class="f">Remaining due by <span class="muted">(optional)</span><input id="se-dueby-${s.id}" name="dueBy" type="date" value="${esc(s.dueBy||'')}"></label>
             <label class="f chk"><input id="se-prorate-${s.id}" name="prorate" type="checkbox"${s.prorate===false?'':' checked'}>Prorate first period</label>
             <label class="f chk"><input id="se-waive-${s.id}" name="waiveFirst" type="checkbox"${s.waiveFirst?' checked':''}>Waive first partial period</label>
+            <label class="f">Discount<select id="se-disc-${s.id}" name="discType"><option value=""${s.discount?'':' selected'}>None</option><option value="percent"${s.discount&&s.discount.type==='percent'?' selected':''}>% off every period</option><option value="fixed"${s.discount&&s.discount.type==='fixed'?' selected':''}>Amount off every period</option></select></label>
+            <label class="f">Discount value<input id="se-discv-${s.id}" name="discValue" type="number" min="0" step="0.01" value="${s.discount?s.discount.value:''}" placeholder="e.g. 10"></label>
+            <label class="f">Proration basis<select id="se-basis-${s.id}" name="basis"><option value=""${rawBasis(s.prorationBasis)?'':' selected'}>Default (Settings)</option><option value="actual"${s.prorationBasis==='actual'?' selected':''}>Actual days in cycle</option><option value="fixed30"${s.prorationBasis==='fixed30'?' selected':''}>Fixed 30-day month</option></select></label>
           </div>
-          <p class="small muted" style="margin-top:6px">Periods follow the shared billing cycle (${esc(ordinal(cycleDay()))} to ${cycleDay()===1?'end of month':esc(ordinal(cycleDay()-1))}, set in Settings); the start date picks the first period. With proration on, that first period is charged by days; with the waiver on, the days before the next cycle are free and billing starts at that cycle. Changing the currency changes what the price and existing payments are read as; it does not convert them. "Remaining due by" turns an unpaid part of the current period into an open balance until that date instead of overdue.</p>
+          <p class="small muted" style="margin-top:6px">Periods follow the shared billing cycle (${esc(ordinal(cycleDay()))} to ${cycleDay()===1?'end of month':esc(ordinal(cycleDay()-1))}, set in Settings); the start date picks the first period. With proration on, that first period is charged by days (on the basis chosen here, or the Settings default); with the waiver on, the days before the next cycle are free and billing starts at that cycle. A discount applies to every period of this plan and shows in the header, dues, reminders and totals. Changing the currency changes what the price and existing payments are read as; it does not convert them. "Remaining due by" turns an unpaid part of the current period into an open balance until that date instead of overdue.</p>
           <div class="form-actions"><button class="btn primary sm" type="submit">Save plan</button><button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Cancel</button><span style="flex:1"></span><span class="del-wrap"><button class="link danger" type="button" data-act="sub-remove" data-sub="${s.id}">Remove plan and its payments</button></span></div>
         </form>
         ${payRows(s)}
@@ -1351,11 +1420,31 @@ function wireDetail(id,today){
       const c=conv(n,pc,rate);let txt=fmtAmt(n,pc)+(c.ok?' ≈ '+fmtAmt(pc==='USD'?c.pkr:c.usd,other(pc))+(rate?' at '+rate.toLocaleString():' at default '+c.r.toLocaleString()):' (no exchange rate: set one to convert)');
       const inPlan=toCur(n,pc,s.currency,rate);
       if(s.kind==='monthly'){if(inPlan==null){txt+='. This payment cannot count toward the plan until a rate is set.';}else{const editId=(form.querySelector('[name=payId]')||{}).value;const base=clone(s);if(editId)base.payments=base.payments.filter(x=>x.id!==editId);const before=analyzeMonthly(base,today);const sim=clone(base);sim.payments.push({date:today,amount:n,currency:pc,rate});const after=analyzeMonthly(sim,today);
-        if(after.kPaid>before.kPaid){const from=before.periods[before.kPaid]?before.periods[before.kPaid].st:s.start;txt+=`. Covers ${fmtD(from,true)} – ${fmtD(after.paidThrough,true)}`+(after.periods.some(p=>p.state==='partial')?' plus a partial amount toward the next period':'')+'.';}
+        if(after.kPaid>before.kPaid){const from=before.periods[before.kPaid]?before.periods[before.kPaid].st:s.start;const np=after.kPaid-before.kPaid;txt+=`. Covers ${fmtD(from,true)} – ${fmtD(after.paidThrough,true)} (${np} period${np===1?'':'s'})`+(after.periods.some(p=>p.state==='partial')?' plus a partial amount toward the next period':'')+'.';}
         else{const p=after.periods.find(x=>x.state==='partial');txt+=p?`. Partial: ${fmtAmt(p.covered,s.currency)} of ${fmtAmt(p.pr,s.currency)} toward ${fmtD(p.st,true)} – ${fmtD(p.en,true)}.`:'.';}}}
       else if(inPlan!=null)txt+=`. Counts as ${fmtAmt(inPlan,s.currency)} toward ${s.name}.`;
       cover.textContent=txt;};
     [amt,curEl,rateEl].forEach(el=>el.addEventListener('input',upd));upd();
+    const monthsEl=form.querySelector('[name=months]');
+    if(monthsEl&&s.kind==='monthly'){monthsEl.addEventListener('input',()=>{const n=Math.floor(Number(monthsEl.value));if(!(n>=1))return;const sa=analyzeMonthly(s,today);const plan=coverPlan(s,sa,sa.kPaid+n-1);const total=plan.reduce((t,p)=>t+p.due,0);curEl.value=s.currency;amt.value=String(total);const noteEl=form.querySelector('[name=note]');if(noteEl&&!noteEl.value)noteEl.value='paid '+n+' month'+(n===1?'':'s')+' · up to '+fmtD(plan[plan.length-1].en,true);upd();});}
+  });
+  det.querySelectorAll('.upto-form').forEach(form=>{
+    const s=(u.subscriptions||[]).find(x=>x.id===form.dataset.sub);if(!s||s.kind!=='monthly')return;
+    const sa=analyzeMonthly(s,today);const sel=form.querySelector('[name=target]'),dateEl=form.querySelector('[name=upToDate]'),amt=form.querySelector('[name=amount]'),plan=form.querySelector('[data-role=plan]');
+    let auto=true;
+    const compute=()=>{const k=Number(sel.value);const cov=coverPlan(s,sa,k);const total=cov.reduce((t,p)=>t+p.due,0);const n=cov.filter(p=>p.due>0).length;form.dataset.total=String(total);form.dataset.k=String(k);
+      if(auto)amt.value=String(total);
+      const last=cov[cov.length-1];const credit=cov.find(p=>p.credit>0);
+      const parts=cov.filter(p=>p.due>0).map(p=>fmtAmt(p.due,s.currency));
+      let txt=n?`Records <b>${n} payment${n===1?'':'s'}</b> (${parts.join(' + ')} = <b>${fmtAmt(total,s.currency)}</b>) dated ${fmtD(form.querySelector('[name=date]').value||today,true)}, covering ${fmtD(cov[0].st,true)} – ${fmtD(last.en,true)}.`:`Already paid through ${fmtD(last.en,true)}; nothing to record.`;
+      if(credit)txt+=` The ${fmtAmt(credit.credit,s.currency)} credit already carried reduces the first period only.`;
+      if(Number(amt.value)!==total&&Number(amt.value)>0)txt+=` <span class="muted">Different total: one payment of ${fmtAmt(Number(amt.value),s.currency)} will be recorded with the note "paid up to ${fmtD(last.en,true)}"; periods fill in order and any extra carries as credit.</span>`;
+      plan.innerHTML=txt;};
+    sel.addEventListener('change',()=>{auto=true;compute();});
+    dateEl.addEventListener('change',()=>{const d=dateEl.value;if(!isDateKey(d))return;let k=periodIndexAt(s,d);if(k<sa.kPaid){k=sa.kPaid;}const has=[...sel.options].some(o=>Number(o.value)===k);if(!has){const p=periodAmt(s,k);sel.insertAdjacentHTML('beforeend',`<option value="${k}">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}</option>`);}sel.value=String(k);auto=true;compute();});
+    amt.addEventListener('input',()=>{auto=false;compute();});
+    form.querySelector('[name=date]').addEventListener('change',compute);
+    compute();
   });
   const add=det.querySelector('.addsub-form');
   if(add){const kind=add.querySelector('[name=kind]');const pkgSel=add.querySelector('[name=packageId]');pkgSel.addEventListener('change',()=>{if(pkgSel.value==='__new'){pkgSel.value='';newPackageFlow();return;}const p=pkgById(pkgSel.value);const pr=add.querySelector('[name=price]');if(p){kind.value=p.cycle;kind.dispatchEvent(new Event('change'));}if(p&&p.price!=null&&(pr.value===''||pr.value===(pkgSel.dataset.prefilled||''))){pr.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency)add.querySelector('[name=currency]').value=p.currency;}});const upd=()=>{const ot=kind.value==='one-time';add.querySelector('[data-role=dueby-wrap]').hidden=ot;add.querySelector('[data-role=prorate-wrap]').hidden=ot;add.querySelector('[data-role=waive-wrap]').hidden=ot;add.querySelector('[data-role=name-label]').textContent=ot?'Item name':'Label (optional)';add.querySelector('[data-role=amt-label]').textContent=ot?'Total amount':(kind.value==='yearly'?'Yearly price':'Monthly price');add.querySelector('[data-role=date-label]').textContent=ot?'Due date (optional)':'Start date';const d=add.querySelector('[name=date]');d.required=!ot;if(ot&&d.value===u.joinDate)d.value='';if(!ot&&!d.value)d.value=u.joinDate;};kind.addEventListener('change',upd);upd();}
@@ -1392,7 +1481,7 @@ function updCostConv(){const cur=$('#c-cur').value;const t=(Number($('#c-cost').
 function toast(msg,ms){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms||3400);}
 function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel'])$('#'+p).hidden=p!==id;}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
-function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
+function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
 function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
 function openAdd(){showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
 function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';}
@@ -1426,18 +1515,20 @@ function bind(){
   $('#btn-reminders').addEventListener('click',()=>{if($('#remindRun').hidden){const w=reminderWindow(todayISO());ui.rrTab=todayISO()>=w.replyBy&&todayISO()<w.nc?'final':'run';openRemindRun();}else $('#remindRun').hidden=true;});
   $('#remindBannerBtn').addEventListener('click',()=>{ui.rrTab=$('#remindBanner').dataset.kind==='final'?'final':'run';openRemindRun();});
   $('#rr-tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;ui.rrTab=b.dataset.tab;renderRemindRun();});
-  $('#rr-body').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(!b)return;if(b.dataset.act==='fn-copy')copyFinalList();else if(b.dataset.act==='fn-csv'){const F=finalRows(todayISO());exportCSV(fnCSV(F),'deactivation-list-'+F.w.nc,'fn-msg','fn-text');}});
+  $('#rr-body').addEventListener('toggle',e=>{if(e.target&&e.target.matches&&e.target.matches('details.except'))ui.exceptOpen=e.target.open;},true);
+  $('#rr-body').addEventListener('click',async e=>{const b=e.target.closest('button[data-act]');if(!b)return;if(b.dataset.act==='unskip'){const id=b.dataset.user;if(!state.users[id])return;const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[key]||{});r.skipped=null;if(r.reminded||r.confirmed||r.final)u.reminders[key]=r;else delete u.reminders[key];b.disabled=true;const ok=await persistUser(id,u);if(ok&&db)renderRemindRun();return;}if(b.dataset.act==='fn-copy')copyFinalList();else if(b.dataset.act==='fn-csv'){const F=finalRows(todayISO());exportCSV(fnCSV(F),'deactivation-list-'+F.w.nc,'fn-msg','fn-text');}});
   $('#rr-close').addEventListener('click',()=>{$('#remindRun').hidden=true;});
   $('#rr-body').addEventListener('change',async e=>{
     const dc=e.target.closest('input[data-act="deact"]');
     if(dc){const id=dc.dataset.user;if(!state.users[id]||state.users[id].cancel)return;const nc=nextCycleStart(todayISO());ui.cancelPre[id]={lastDay:addDays(nc,-1),reason:'Not confirmed for the cycle starting '+fmtD(nc,true)};ui.expanded=id;ui.open[id]=Object.assign({},ui.open[id],{cancel:true});renderTable();const det=document.querySelector(`tr.detail[data-id="${id}"]`);if(det){det.scrollIntoView({behavior:'smooth',block:'start'});const f=det.querySelector('.cancel-form [name=lastDay]');if(f)f.focus();}dc.checked=false;return;}
-    const cb=e.target.closest('input[data-act="rem"]');if(!cb)return;const id=cb.dataset.user;if(!state.users[id])return;
-    const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null},u.reminders[key]||{});
-    r[cb.dataset.f]=cb.checked?todayISO():null;if(r.reminded||r.confirmed||r.final)u.reminders[key]=r;else delete u.reminders[key];
+    const cb=e.target.closest('input[data-act="rem"],input[data-act="skip"]');if(!cb)return;const id=cb.dataset.user;if(!state.users[id])return;
+    const f=cb.dataset.act==='skip'?'skipped':cb.dataset.f;
+    const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[key]||{});
+    r[f]=cb.checked?todayISO():null;if(r.reminded||r.confirmed||r.final||r.skipped)u.reminders[key]=r;else delete u.reminders[key];
     cb.disabled=true;const ok=await persistUser(id,u);if(!ok){cb.disabled=false;cb.checked=!cb.checked;}else if(db)renderRemindRun();
   });
   $('#settings-close').addEventListener('click',()=>{$('#settingsPanel').hidden=true;});
-  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
+  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
   $('#reset-wrap').addEventListener('click',async e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.id==='btn-reset'){$('#reset-wrap').innerHTML=`<span class="small" style="margin-right:8px">Remove every user, payment and cost? This cannot be undone.</span><button class="btn sm danger" type="button" data-act="reset-yes">Yes, reset</button> <button class="btn sm" type="button" data-act="reset-no">Cancel</button>`;}
@@ -1493,6 +1584,7 @@ function bind(){
     else if(A==='pay-edit'){ui.payEdit=ui.payEdit||{};ui.payEdit[sid]=act.dataset.pay;renderTable();}
     else if(A==='pay-edit-cancel'){if(ui.payEdit)delete ui.payEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['pay:'+sid]:false});renderTable();}
     else if(A==='price-edit'){ui.priceEdit=ui.priceEdit||{};ui.priceEdit[sid]=act.dataset.from;ui.open[id]=Object.assign({},ui.open[id],{['price:'+sid]:true});renderTable();}
+    else if(A==='days-reset'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;s.prorationDaysOverride=null;s.prorationRateOverride=null;s.prorationAmountOverride=null;ui.open[id]=Object.assign({},ui.open[id],{['days:'+sid]:false});const ok=await persistUser(id,u);if(ok)toast('First period back to actual days.');}
     else if(A==='price-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;if((s.prices||[]).length<=1){toast('A plan needs at least one price. Edit it instead.');return;}s.prices=s.prices.filter(p=>p.from!==act.dataset.from);const ok=await persistUser(id,u);if(ok)toast('Price entry removed.');}
     else if(A==='pay-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const p=s.payments.find(x=>x.id===act.dataset.pay);s.payments=s.payments.filter(x=>x.id!==act.dataset.pay);const ok=await persistUser(id,u);if(ok&&p)toast(`Removed the ${fmtAmt(p.amount,p.currency||s.currency)} payment dated ${p.date}.`);}
     else if(A==='sub-remove'){act.parentElement.innerHTML=`<span class="small" style="margin-right:8px">Remove this plan and all of its payments?</span><button class="btn sm danger" type="button" data-act="sub-remove-yes" data-sub="${sid}">Yes, remove</button> <button class="btn sm" type="button" data-act="sub-remove-no">Cancel</button>`;}
@@ -1514,6 +1606,22 @@ function bind(){
       if(!validAmt(amtRaw)||Number(amtRaw)<=0){toast('Enter the amount paid.');return;}
       const payId=val('payId');s.payments=(s.payments||[]).filter(p=>p.id!==payId&&p.date!==date);s.payments.push({id:payId||newId('p'),date,amount:Number(amtRaw),currency:pc,rate,note});if(ui.payEdit)delete ui.payEdit[s.id];closeKey('pay:'+s.id);
       const ok=await persistUser(id,u);if(ok)toast(`${fmtAmt(Number(amtRaw),pc)} on ${fmtD(date,true)} saved for ${displayName(u)}.`);
+    }else if(form.classList.contains('upto-form')){
+      const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s||s.kind!=='monthly')return;const date=val('date'),amtRaw=val('amount');const k=Number(val('target'));
+      if(!isDateKey(date)){toast('Pick the payment date.');return;}
+      if(!validAmt(amtRaw)||Number(amtRaw)<=0){toast('Enter the total paid.');return;}
+      const sa=analyzeMonthly(s,todayISO());const cov=coverPlan(s,sa,k);const total=cov.reduce((t,p)=>t+p.due,0);const last=cov[cov.length-1];const upto=fmtD(last.en,true);
+      s.payments=s.payments||[];let n=0;
+      if(Math.abs(Number(amtRaw)-total)<0.005){const parts=cov.filter(p=>p.due>0);parts.forEach((p,i)=>{s.payments.push({id:newId('p'),date,amount:p.due,currency:s.currency,rate:null,note:'paid up to '+upto+(parts.length>1?` (${i+1} of ${parts.length}: ${fmtD(p.st)} – ${fmtD(p.en)})`:'')});n++;});}
+      else{s.payments.push({id:newId('p'),date,amount:Number(amtRaw),currency:s.currency,rate:null,note:'paid up to '+upto});n=1;}
+      if(!n){toast('Nothing to record: already paid through '+upto+'.');return;}
+      closeKey('upto:'+s.id);const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: paid up to ${upto} (${n} payment${n===1?'':'s'}, ${fmtAmt(Number(amtRaw),s.currency)}).`);
+    }else if(form.classList.contains('days-form')){
+      const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const d=Math.floor(Number(val('days')));const rt=val('rate'),am=val('amount');
+      if(!(d>=1&&d<=366)){toast('Enter the number of days charged (1–366).');return;}
+      if(rt!==''&&!(Number(rt)>0)){toast('The daily rate must be above zero, or blank for the standard rate.');return;}
+      if(am!==''&&!(Number(am)>=0)){toast('The amount charged must be zero or more, or blank.');return;}
+      s.prorationDaysOverride=d;s.prorationRateOverride=rt===''?null:Number(rt);s.prorationAmountOverride=am===''?null:Number(am);closeKey('days:'+s.id);const ok=await persistUser(id,u);if(ok)toast(`${planLabel(s)}: first period set (${d} day${d===1?'':'s'}${rt!==''?', rate '+fmtAmt(Number(rt),s.currency):''}${am!==''?', charged '+fmtAmt(Number(am),s.currency):''}).`);
     }else if(form.classList.contains('price-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const priceRaw=val('price'),from=val('from'),replaceFrom=val('replaceFrom');
       if(!validAmt(priceRaw)){toast('Enter a valid price.');return;}
@@ -1522,7 +1630,7 @@ function bind(){
       const ok=await persistUser(id,u);if(ok)toast(`${s.name}: ${fmtAmt(Number(priceRaw),s.currency)}/mo from ${fmtD(from,true)}.`);
     }else if(form.classList.contains('subedit-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const name=s.kind==='monthly'?val('name').trim():(val('name').trim()||s.name);const cur=normCur(val('currency'));
-      if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}s.packageId=pkg;s.cycle=val('cycle')==='yearly'?'yearly':'monthly';s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start){toast('The end date must not be before the start date.');return;}
+      if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}s.packageId=pkg;s.cycle=val('cycle')==='yearly'?'yearly':'monthly';s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;const dt=val('discType'),dv=Number(val('discValue'));if(dt&&!(dv>0)){toast('Enter the discount value (above zero), or set Discount to None.');return;}if(dt==='percent'&&dv>100){toast('A percent discount cannot exceed 100.');return;}s.discount=dt&&dv>0?{type:dt,value:dv}:null;s.prorationBasis=rawBasis(val('basis'));if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start){toast('The end date must not be before the start date.');return;}
         if(start!==s.start){s.prices=(s.prices||[]).map(p=>p.from<start?Object.assign({},p,{from:start}):p);const seen={};s.prices=s.prices.filter(p=>{if(seen[p.from])return false;seen[p.from]=true;return true;});}
         Object.assign(s,{name,start,end:end||null,currency:cur});}
       else{const total=val('total'),due=val('due');if(!validAmt(total)){toast('Enter the total amount.');return;}const pk=val('packageId');Object.assign(s,{name,total:Number(total),due:isDateKey(due)?due:null,currency:cur,packageId:pkgById(pk)?pk:null});}
@@ -1596,8 +1704,8 @@ function bind(){
 const qa={rows:[],busy:false};
 function openQuick(){showPanel('quickPanel');$('#qa-err').textContent='';renderQuick();$('#quickPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#qa-text').focus();}
 function quickPrompt(){return `You are reading lines typed by a small SaaS owner in Pakistan, one user per line, to add subscribers to a payments tracker. Extract each line into JSON.
-Reply with only a JSON array, one element per non-empty line, in order: {"name":"text","email":"a@b.c" or null,"phone":"digits with country code" or null,"telegram":"handle without @" or null,"joined":"YYYY-MM-DD" or null,"package":"one of the package names below" or null,"price":number or null,"currency":"PKR" or "USD" or null,"paid":number or true or null}.
-Packages: ${packages().map(p=>p.name).join(', ')}. Match package names case-insensitively (a lone "C" means package C). "joined", "start", "from" or "since" introduce the join date; infer the year ${todayISO().slice(0,4)} when missing. A number with 7 or more digits or starting with + is a phone number, not a price. "tg:name", "telegram name" or a lone "@name" is the Telegram handle. "paid" alone means paid the full price (true); "paid 4200" means paid 4200. Do not invent values: use null for anything not present.`;}
+Reply with only a JSON array, one element per non-empty line, in order: {"name":"text","email":"a@b.c" or null,"phone":"digits with country code" or null,"telegram":"handle without @" or null,"joined":"YYYY-MM-DD" or null,"package":"one of the package names below" or null,"price":number or null,"currency":"PKR" or "USD" or null,"paid":number or true or "N months" or null}.
+Packages: ${packages().map(p=>p.name).join(', ')}. Match package names case-insensitively (a lone "C" means package C). "joined", "start", "from" or "since" introduce the join date; infer the year ${todayISO().slice(0,4)} when missing. A number with 7 or more digits or starting with + is a phone number, not a price. "tg:name", "telegram name" or a lone "@name" is the Telegram handle. "paid" alone means paid the full price (true); "paid 4200" means paid 4200; "paid 3 months" means "3 months". Do not invent values: use null for anything not present.`;}
 function quickParseLine(line){
   let t=' '+line.replace(/\t/g,' ').trim()+' ';const out={name:'',email:null,phone:null,telegram:null,joined:null,package:null,price:null,currency:null,paid:null};
   let m;
@@ -1607,7 +1715,8 @@ function quickParseLine(line){
   const DATE='(\\d{4}-\\d{1,2}-\\d{1,2}|\\d{1,2}[\\/.-]\\d{1,2}(?:[\\/.-]\\d{2,4})?|(?:'+MONTH_RE+')[a-z]*\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?,?(?:\\s+\\d{4})?|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:'+MONTH_RE+')[a-z]*\\.?,?(?:\\s+\\d{4})?)';
   if((m=t.match(new RegExp('\\b(?:joined|joins|joining|join|started|starts|start|from|since|on)\\s*[:=]?\\s*'+DATE,'i')))){out.joined=parseLooseDate(m[1]);t=t.replace(m[0],' ');}
   else if((m=t.match(new RegExp('(?:^|[\\s,])'+DATE+'(?=[\\s,]|$)','i')))&&!/^\d{1,2}[\/.-]\d{1,2}$/.test(m[1].trim())){const d=parseLooseDate(m[1]);if(d){out.joined=d;t=t.replace(m[1],' ');}}
-  if((m=t.match(/\bpaid\b\s*(?:rs\.?|pkr|\$|usd)?\s*(\d[\d,]*(?:\.\d+)?)?/i))){out.paid=m[1]?parseAmount(m[1]):true;t=t.replace(m[0],' ');}
+  if((m=t.match(/\bpaid\b\s*(?:for\s*)?(\d{1,2})\s*(?:months?|mos?|periods?|cycles?)\b/i))){out.paid=m[1]+' months';t=t.replace(m[0],' ');}
+  else if((m=t.match(/\bpaid\b\s*(?:rs\.?|pkr|\$|usd)?\s*(\d[\d,]*(?:\.\d+)?)?/i))){out.paid=m[1]?parseAmount(m[1]):true;t=t.replace(m[0],' ');}
   if(/\$|\busd\b|\bdollars?\b/i.test(t)){out.currency='USD';t=t.replace(/\$|\busd\b|\bdollars?\b/gi,' ');}
   else if(/\brs\.?(?=\s|\d)|\bpkr\b|\brupees?\b/i.test(t)){out.currency='PKR';t=t.replace(/\brs\.?(?=\s|\d)|\bpkr\b|\brupees?\b/gi,' ');}
   for(const p of packages().slice().sort((a,b)=>b.name.length-a.name.length)){const re=new RegExp('(^|[\\s,;])'+p.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?=[\\s,;]|$)','i');if(re.test(t)){out.package=p.name;t=t.replace(re,'$1 ');break;}}
@@ -1623,7 +1732,9 @@ function quickNormalize(o,line){
   r.pkg=p?p.id:'';r.pkgPrice=p&&p.price!=null?p.price:null;
   const pr=o.price==null?null:Number(o.price);r.price=pr!=null&&isFinite(pr)&&pr>=0?pr:r.pkgPrice;
   r.cur=o.currency==='USD'||o.currency==='PKR'?o.currency:(p&&p.currency?p.currency:'PKR');
-  if(o.paid===true)r.paid=r.price;else if(o.paid!=null){const n=Number(o.paid);r.paid=isFinite(n)&&n>0?n:null;}
+  r.months=null;const mm=typeof o.paid==='string'?o.paid.match(/^\s*(\d{1,2})\s*months?\s*$/i):null;
+  if(mm){const n=+mm[1];r.months=n;if(r.price!=null&&p){const tmp={kind:'monthly',cycle:p.cycle==='yearly'?'yearly':'monthly',start:r.joined,prorate:true,waiveFirst:false,prices:[{from:r.joined,price:Number(r.price)}]};let tot=0;for(let k=0;k<n;k++)tot+=periodAmt(tmp,k).pr;r.paid=tot;}}
+  else if(o.paid===true)r.paid=r.price;else if(o.paid!=null){const n=Number(o.paid);r.paid=isFinite(n)&&n>0?n:null;}
   if(!r.name&&!r.email){r.warn='no name or email';r.sel=false;}
   r.dup=quickDup(r);if(r.dup)r.sel=false;
   return r;
@@ -1668,7 +1779,7 @@ async function quickSave(){
   qa.busy=true;renderQuick();msg.textContent='Adding…';let added=0,failed=0,pays=0;
   for(const r of ok){
     const p=pkgById(r.pkg);const sub={id:newId('s'),kind:'monthly',cycle:p.cycle==='yearly'?'yearly':'monthly',name:'',packageId:p.id,currency:r.cur,start:r.joined,end:null,prorate:true,dueBy:null,prices:[{from:r.joined,price:Number(r.price)}],payments:[]};
-    if(r.paid!=null&&r.paid>0){sub.payments.push({id:newId('p'),date:r.joined,amount:Number(r.paid),currency:r.cur,rate:null,note:'quick add'});pays++;}
+    if(r.paid!=null&&r.paid>0){sub.payments.push({id:newId('p'),date:r.joined,amount:Number(r.paid),currency:r.cur,rate:null,note:r.months?`quick add · paid ${r.months} month${r.months===1?'':'s'}`:'quick add'});pays++;}
     const u={name:r.name,email:r.email,phone:r.phone,telegram:normTg(r.telegram),joinDate:r.joined,notes:'',subscriptions:[sub]};
     const done=await persistUser(newId('u'),u);if(done){added++;r.done=true;}else failed++;
   }
@@ -1847,13 +1958,13 @@ function bindShot(){
 
 /* ---------- CSV ---------- */
 const csvCell=v=>{v=String(v==null?'':v);return /[",\n\t]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
-const USERS_HEAD=['name','email','phone','telegram','join_date','notes','status','last_day','package','plan','kind','currency','price','plan_start','plan_end','due_by','prorate','payment_date','payment_amount','payment_currency','payment_rate','payment_note'];
+const USERS_HEAD=['name','email','phone','telegram','join_date','notes','status','last_day','package','plan','kind','currency','price','plan_start','plan_end','due_by','prorate','discount','payment_date','payment_amount','payment_currency','payment_rate','payment_note'];
 function buildUsersCSV(){
   const ids=Object.keys(state.users).sort((a,b)=>(state.users[a].joinDate||'').localeCompare(state.users[b].joinDate||'')||displayName(state.users[a]).localeCompare(displayName(state.users[b])));
   const lines=[USERS_HEAD.join(',')];
   for(const id of ids){const u=state.users[id];const base=[u.name,u.email,fmtPhone(u.phone),u.telegram?(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram):'',u.joinDate,u.notes,u.cancel?'cancelled':'active',u.cancel?u.cancel.lastDay:''];
-    if(!(u.subscriptions||[]).length)lines.push([...base,...Array(14).fill('')].map(csvCell).join(','));
-    for(const s of u.subscriptions||[]){const lbl=/^standard$/i.test(s.name||'')&&s.packageId?'':s.name;const sb=s.kind==='monthly'?[pkgName(s.packageId),lbl,subCycle(s),s.currency,priceAt(s,todayISO()),s.start,s.end||'',s.dueBy||'',s.prorate===false?'no':'yes']:[pkgName(s.packageId),lbl,'one-time',s.currency,s.total,'',s.due||'','',''];
+    if(!(u.subscriptions||[]).length)lines.push([...base,...Array(15).fill('')].map(csvCell).join(','));
+    for(const s of u.subscriptions||[]){const lbl=/^standard$/i.test(s.name||'')&&s.packageId?'':s.name;const sb=s.kind==='monthly'?[pkgName(s.packageId),lbl,subCycle(s),s.currency,priceAt(s,todayISO()),s.start,s.end||'',s.dueBy||'',s.prorate===false?'no':'yes',s.discount?(s.discount.type==='percent'?s.discount.value+'%':s.discount.value):'']:[pkgName(s.packageId),lbl,'one-time',s.currency,s.total,'',s.due||'','','',''];
       const pays=(s.payments||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
       if(!pays.length)lines.push([...base,...sb,'','','','',''].map(csvCell).join(','));
       for(const p of pays)lines.push([...base,...sb,p.date,p.amount,p.currency||s.currency,p.rate||'',p.note||''].map(csvCell).join(','));}}
@@ -1876,7 +1987,7 @@ async function importUsersCSV(){
   if(!parsed){msg.textContent='Paste some rows first.';return;}const {header,rows}=parsed;
   const monthCols=[];header.forEach((h,i)=>{const k=monthHeader(h);if(k)monthCols.push([i,k]);});
   const isMonthCol=i=>monthCols.some(c=>c[0]===i);const find=re=>header.findIndex((h,i)=>!isMonthCol(i)&&re.test(h));
-  const col={name:find(/^(full ?)?name$|customer|contact/),email:find(/mail/),phone:find(/phone|whatsapp|mobile/),tg:find(/telegram|^tg$/),join:find(/join|signed|^date$|^joined/),notes:find(/^notes?$|method|comment/),pkg:find(/package|tier/),plan:find(/^plan(_| )?name$|^plan$|subscription|item|label/),kind:find(/kind|type/),cur:find(/^currency$|^plan_currency$|pays/),price:find(/price|^total|monthly/),pstart:find(/plan_start|^start/),pend:find(/plan_end|^end|^due(_date)?$/),dueby:find(/due_by|dueby|remaining/),prorate:find(/prorat/),status:find(/^status$/),lastday:find(/last_day|lastday|cancel/),pdate:find(/payment_date|paid_on|paid on|pay date/),pamt:find(/payment_amount|paid_amount|^payment$|^amount$/),pcur:find(/payment_currency|paid_in/),prate:find(/payment_rate|^rate/),pnote:find(/payment_note|pay note|reference/)};
+  const col={name:find(/^(full ?)?name$|customer|contact/),email:find(/mail/),phone:find(/phone|whatsapp|mobile/),tg:find(/telegram|^tg$/),join:find(/join|signed|^date$|^joined/),notes:find(/^notes?$|method|comment/),pkg:find(/package|tier/),plan:find(/^plan(_| )?name$|^plan$|subscription|item|label/),kind:find(/kind|type/),cur:find(/^currency$|^plan_currency$|pays/),price:find(/price|^total|monthly/),pstart:find(/plan_start|^start/),pend:find(/plan_end|^end|^due(_date)?$/),dueby:find(/due_by|dueby|remaining/),prorate:find(/prorat/),disc:find(/^discount$/),status:find(/^status$/),lastday:find(/last_day|lastday|cancel/),pdate:find(/payment_date|paid_on|paid on|pay date/),pamt:find(/payment_amount|paid_amount|^payment$|^amount$/),pcur:find(/payment_currency|paid_in/),prate:find(/payment_rate|^rate/),pnote:find(/payment_note|pay note|reference/)};
   if(col.price===col.pamt&&col.price>=0)col.pamt=-1;
   if(col.name<0&&col.email<0){msg.textContent='Could not find a name or email column in the header row.';return;}
   const get=(r,k)=>col[k]>=0?(r[col[k]]||'').trim():'';
@@ -1899,7 +2010,7 @@ async function importUsersCSV(){
       if(!s&&pkgId)s=monthlies.find(x=>x.packageId===pkgId)||monthlies.find(x=>!x.packageId)||(monthlies.length===1?monthlies[0]:null);
       if(!s&&!plan&&!pkgId)s=monthlies[0]||u.subscriptions[0]||null;
       if(!s){const start=parseDate(get(r,'pstart'))||u.joinDate;const cur=curFromText(curTxt,'PKR');s=kind==='monthly'?{id:newId('s'),kind,cycle:cy,name:plan||'',packageId:pkgId,currency:cur,start,end:parseDate(get(r,'pend')),dueBy:dueByTxt,prorate:pro!==false,prices:[{from:start,price:price==null?0:price}],payments:[]}:{id:newId('s'),kind,name:plan||'Item',packageId:pkgId,currency:cur,total:price==null?0:price,due:parseDate(get(r,'pend')),payments:[]};u.subscriptions.push(s);}
-      else{if(curTxt)s.currency=normCur(curTxt);if(pkgId)s.packageId=pkgId;if(s.kind==='monthly'&&kindTxt)s.cycle=cy==='yearly'?'yearly':'monthly';if(s.kind==='monthly'&&dueByTxt)s.dueBy=dueByTxt;if(s.kind==='monthly'&&pro!=null)s.prorate=pro;if(price!=null){if(s.kind==='monthly'){if((s.prices||[]).length<=1)s.prices=[{from:s.start,price}];}else s.total=price;}}
+      else{if(curTxt)s.currency=normCur(curTxt);if(pkgId)s.packageId=pkgId;if(s.kind==='monthly'&&kindTxt)s.cycle=cy==='yearly'?'yearly':'monthly';if(s.kind==='monthly'&&dueByTxt)s.dueBy=dueByTxt;if(s.kind==='monthly'&&pro!=null)s.prorate=pro;{const dtx=get(r,'disc');if(dtx&&s.kind==='monthly'){const m=dtx.match(/^([\d.]+)\s*(%)?$/);if(m)s.discount=m[2]?{type:'percent',value:Number(m[1])}:{type:'fixed',value:Number(m[1])};}}if(price!=null){if(s.kind==='monthly'){if((s.prices||[]).length<=1)s.prices=[{from:s.start,price}];}else s.total=price;}}
     }
     if(s){const pd=parseDate(get(r,'pdate')),pa=parseAmount(get(r,'pamt'));
       if(pd&&pa!=null&&pa>0){s.payments=(s.payments||[]).filter(p=>p.date!==pd);s.payments.push({id:newId('p'),date:pd,amount:pa,currency:curFromText(get(r,'pcur'),s.currency),rate:normRate(get(r,'prate')),note:get(r,'pnote')});pays++;}
@@ -1935,7 +2046,7 @@ function subscribe(){
     if(!snap.metadata.fromCache){if(snap.empty)maybeSeedShared();else maybeMigrateShared(snap.docs);}
   },e=>{state.mode='error';state.loaded=true;toast('Live data unavailable ('+(e&&e.code||'unknown')+'). Reload to reconnect.');render();});
   db.collection('costs').onSnapshot(snap=>{const costs={};snap.docs.forEach(d=>{const b=d.data();if(b)costs[d.id]=normalizeCost(b,d.id);});state.costs=costs;state.costsLoaded=true;render();},()=>{});
-  db.doc('settings/main').onSnapshot(snap=>{if(snap.exists){const b=snap.data()||{};state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);render();}},()=>{});
+  db.doc('settings/main').onSnapshot(snap=>{if(snap.exists){const b=snap.data()||{};state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);render();}},()=>{});
 }
 async function init(){
   loadPrefs();bind();render();
