@@ -3,7 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Payments Tracker</title>
+<title>Wasool · Know who's paid</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Wasool" id="meta-app-title">
+<meta name="application-name" content="Wasool" id="meta-app-name">
+<meta name="description" content="Know who's paid." id="meta-desc">
+<meta name="theme-color" content="#0f6e56">
+<link rel="icon" type="image/svg+xml" id="link-icon" href="">
+<link rel="apple-touch-icon" id="link-touch" href="">
+<link rel="manifest" id="link-manifest" href="">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -55,6 +63,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans);-
 .wrap{max-width:1360px;margin:0 auto;padding:20px 16px 56px}
 h1,h2,h3{margin:0;text-wrap:balance}
 h1{font-size:22px;font-weight:600;letter-spacing:-.01em}
+h1 .tagline{display:inline-block;margin-left:8px;font-size:14px;font-weight:500;letter-spacing:0;color:var(--accent-ink);vertical-align:2px}
 h2{font-size:13px;font-weight:600;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em}
 h3{font-size:14px;font-weight:600}
 p{margin:0}
@@ -355,7 +364,7 @@ table.costs td.cat{color:var(--ink-2)}
 <div class="wrap">
   <header class="top">
     <div>
-      <h1>Payments Tracker</h1>
+      <h1 id="app-title">Wasool <span class="tagline" id="app-tagline">Know who's paid.</span></h1>
       <p class="muted small">Who is paid up, who is overdue, what each user has paid, what it costs to run, and what is left. Rows in their own currency; totals in PKR and USD.</p>
     </div>
     <div class="top-right">
@@ -396,6 +405,12 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="panel-head"><h3>Settings</h3><button class="link" type="button" id="settings-close">Close</button></div>
     <form id="settingsForm" novalidate>
       <div class="form-grid" style="grid-template-columns:minmax(160px,220px) 1fr">
+        <label class="f">App name<input id="s-app-name" type="text" maxlength="40" placeholder="Wasool" autocomplete="off"></label>
+        <span class="small muted" style="align-self:center">Shown in the header, the browser tab and the home-screen icon (a monogram of the first letter). Leave blank for <b>Wasool</b>.</span>
+        <label class="f">Tagline<input id="s-tagline" type="text" maxlength="60" placeholder="Know who's paid." autocomplete="off"></label>
+        <span class="small muted" style="align-self:center">Shown next to the name in the header and in the browser tab title. Leave blank for <b>Know who's paid.</b></span>
+        <label class="f">Reading model<select id="s-model"><option value="quick">Quick (cheapest, fastest)</option><option value="default">Default (more careful)</option></select></label>
+        <span class="small muted" style="align-self:center">The Claude model that reads statement screenshots, pasted statement text and Quick add lines. <b>Quick</b> is the cheapest and fastest and is enough for clean screenshots; switch to <b>Default</b> if it misreads amounts or dates.</span>
         <label class="f">Default exchange rate (PKR per 1 USD)<input id="s-rate" type="number" min="0" step="0.01" class="num" placeholder="280"></label>
         <span class="small muted" style="align-self:center">Payments and costs saved without their own rate use this default, so changing it here re-values all of them in the summary tiles and chart. An entry with its own rate keeps it. Rows in the tables always show each entry's own currency; the tiles amalgamate into PKR and USD.</span>
         <label class="f">Billing cycle anchor<input id="s-anchor" type="date" required></label>
@@ -694,7 +709,8 @@ const DEFAULT_RATE=280;
 /* ---------- normalisation ---------- */
 function normalizePackages(arr){if(!Array.isArray(arr))return [];const seen={};const out=[];for(const p of arr){if(!p||typeof p!=='object')continue;const id=String(p.id||'').trim()||newId('pkg');const name=String(p.name||'').trim();if(!name||seen[id])continue;seen[id]=1;const pr=Number(p.price);out.push({id,name,cycle:normCycle(p.cycle),price:isFinite(pr)&&pr>0?pr:null,currency:p.currency?normCur(p.currency):'',description:String(p.description||'').trim()});}return out;}
 const packages=()=>state.settings.packages||[];
-const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY});
+const DEFAULT_APP_NAME='Wasool';const DEFAULT_TAGLINE='Know who\'s paid.';const appNameOf=v=>String(v==null?'':v).trim().slice(0,40)||DEFAULT_APP_NAME;const rawAppName=v=>{const t=String(v==null?'':v).trim().slice(0,40);return t===DEFAULT_APP_NAME?'':t;};const taglineOf=v=>String(v==null?'':v).trim().slice(0,60)||DEFAULT_TAGLINE;const rawTagline=v=>{const t=String(v==null?'':v).trim().slice(0,60);return t===DEFAULT_TAGLINE?'':t;};const tagline=()=>taglineOf(state.settings.tagline);const normModel=v=>v==='default'?'default':'quick';const readModel=()=>normModel(state.settings.readModel);const appName=()=>appNameOf(state.settings.appName);
+const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,appName:'',tagline:'',readModel:'quick'});
 const basis=()=>normBasis(state.settings.prorationBasis);
 const normDiscount=d=>{if(!d||typeof d!=='object')return null;const t=d.type==='percent'?'percent':d.type==='fixed'?'fixed':null;const v=Number(d.value);return t&&isFinite(v)&&v>0?{type:t,value:t==='percent'?Math.min(100,v):v}:null;};
 const discountLabel=s=>{const d=s&&s.discount;if(!d)return '';return d.type==='percent'?`${d.value}% off`:`${fmtAmt(d.value,s.currency)} off`;};
@@ -934,9 +950,9 @@ async function maybeSeedShared(){
     toast('Loaded the initial user list. Edit anything that is off.');
   }catch(e){}
 }
-async function ensureDefaultRateShared(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const pk=normalizePackages(b.packages);const needRate=!normRate(b.rate),needPk=!pk.length,needAnchor=!isDateKey(b.anchor),needTpl=tplOf(b.template)!==b.template,needDays=!b.remindDay||!b.replyDay;if(needRate||needPk||needAnchor||needTpl||needDays)await db.doc('settings/main').set({rate:needRate?DEFAULT_RATE:normRate(b.rate),template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:rawBasis(b.prorationBasis),packages:needPk?clone(DEFAULT_PACKAGES):pk,anchor:needAnchor?DEFAULT_ANCHOR:b.anchor,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
-async function setBasisShared(v){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};if(rawBasis(b.prorationBasis))return;const pk=normalizePackages(b.packages);await db.doc('settings/main').set({rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:v,packages:pk.length?pk:clone(DEFAULT_PACKAGES),anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
-async function ensurePackageCycles(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};let pk=normalizePackages(b.packages);let changed=false;if(!pk.length){pk=clone(DEFAULT_PACKAGES);changed=true;}for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(p&&!(b.packages||[]).find(x=>x&&x.id===d.id&&x.cycle)){p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}changed=true;}}if(changed)await db.doc('settings/main').set({rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:rawBasis(b.prorationBasis),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
+async function ensureDefaultRateShared(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const pk=normalizePackages(b.packages);const needRate=!normRate(b.rate),needPk=!pk.length,needAnchor=!isDateKey(b.anchor),needTpl=tplOf(b.template)!==b.template,needDays=!b.remindDay||!b.replyDay;if(needRate||needPk||needAnchor||needTpl||needDays)await db.doc('settings/main').set({rate:needRate?DEFAULT_RATE:normRate(b.rate),template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:rawBasis(b.prorationBasis),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),packages:needPk?clone(DEFAULT_PACKAGES):pk,anchor:needAnchor?DEFAULT_ANCHOR:b.anchor,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
+async function setBasisShared(v){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};if(rawBasis(b.prorationBasis))return;const pk=normalizePackages(b.packages);await db.doc('settings/main').set({rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:v,appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),packages:pk.length?pk:clone(DEFAULT_PACKAGES),anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
+async function ensurePackageCycles(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};let pk=normalizePackages(b.packages);let changed=false;if(!pk.length){pk=clone(DEFAULT_PACKAGES);changed=true;}for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(p&&!(b.packages||[]).find(x=>x&&x.id===d.id&&x.cycle)){p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}changed=true;}}if(changed)await db.doc('settings/main').set({rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:rawBasis(b.prorationBasis),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
 async function maybeMigrateShared(rawDocs){
   if(migrateChecked)return;migrateChecked=true;
   try{
@@ -980,7 +996,7 @@ async function resetData(){
 }
 
 /* ---------- persistence ---------- */
-function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.prorationBasis=rawBasis(state.settings.prorationBasis);state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();}}catch(e){}}
+function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.prorationBasis=rawBasis(state.settings.prorationBasis);state.settings.appName=rawAppName(state.settings.appName);state.settings.tagline=rawTagline(state.settings.tagline);state.settings.readModel=normModel(state.settings.readModel);state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();}}catch(e){}}
 function saveLocal(){try{localStorage.setItem('pt-data',JSON.stringify({users:state.users,costs:state.costs,settings:state.settings}));}catch(e){}}
 function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;}catch(e){}}
 function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur}));}catch(e){}}
@@ -989,7 +1005,7 @@ async function persistUser(id,u){const body=cleanUser(Object.assign({},u,{id}));
 async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.users[id];saveLocal();render();}return true;}
 async function persistCost(id,c){const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}else{state.costs[id]=normalizeCost(body,id);saveLocal();render();}return true;}
 async function removeCost(id){if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.costs[id];saveLocal();render();}return true;}
-async function persistSettings(){if(db){try{await db.doc('settings/main').set({rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),packages:state.settings.packages||[],anchor:anchor(),remindDay:remindDay(),replyDay:replyDay()});}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
+async function persistSettings(){if(db){try{await db.doc('settings/main').set({rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),packages:state.settings.packages||[],anchor:anchor(),remindDay:remindDay(),replyDay:replyDay()});}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
 function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||'').trim().toLowerCase();const ids=Object.keys(state.users);if(e){const hit=ids.find(id=>(state.users[id].email||'').toLowerCase()===e);if(hit)return hit;}if(n&&!e){const hit=ids.find(id=>(state.users[id].name||'').toLowerCase()===n);if(hit)return hit;}return null;}
 
 /* ---------- ranges ---------- */
@@ -999,7 +1015,17 @@ function allPayments(){const out=[];for(const id in state.users)for(const s of s
 const costTotal=c=>(Number(c.cost)||0)+(Number(c.tax)||0);
 
 /* ---------- rendering ---------- */
-function render(){renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();}}
+const brand={key:null};
+function iconSVG(letter,size){return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}"><rect width="${size}" height="${size}" rx="${Math.round(size*0.22)}" fill="#0f6e56"/><text x="50%" y="50%" dy="0.36em" text-anchor="middle" font-family="IBM Plex Sans, Segoe UI, Helvetica, Arial, sans-serif" font-weight="600" font-size="${Math.round(size*0.58)}" fill="#ffffff">${letter}</text></svg>`;}
+function iconPNG(letter,size){try{const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');if(!g)return '';const r=Math.round(size*0.22);g.fillStyle='#0f6e56';g.beginPath();g.moveTo(r,0);g.arcTo(size,0,size,size,r);g.arcTo(size,size,0,size,r);g.arcTo(0,size,0,0,r);g.arcTo(0,0,size,0,r);g.closePath();g.fill();g.fillStyle='#fff';g.font='600 '+Math.round(size*0.58)+'px "IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(letter,size/2,size/2+size*0.03);return c.toDataURL('image/png');}catch(e){return '';}}
+function applyBranding(){const name=appName();const tag=tagline();const letter=(name.match(/[A-Za-z0-9\u0600-\u06FF]/)||[name.charAt(0)])[0].toUpperCase();const key=name+'|'+tag+'|'+letter;if(brand.key===key)return;brand.key=key;
+  document.title=name+' · '+tag.replace(/[.!]+$/,'');const h=$('#app-title');if(h){h.textContent=name+' ';const sp=document.createElement('span');sp.className='tagline';sp.id='app-tagline';sp.textContent=tag;h.appendChild(sp);}const mt=$('#meta-app-title');if(mt)mt.content=name;const mn=$('#meta-app-name');if(mn)mn.content=name;const md=$('#meta-desc');if(md)md.content=tag;
+  const svg='data:image/svg+xml,'+encodeURIComponent(iconSVG(letter,64));const ic=$('#link-icon');if(ic)ic.href=svg;
+  const png=iconPNG(letter,180);const tc=$('#link-touch');if(tc)tc.href=png||'data:image/svg+xml,'+encodeURIComponent(iconSVG(letter,180));
+  const big=iconPNG(letter,512);const icons=[{src:svg,sizes:'any',type:'image/svg+xml',purpose:'any'}];if(big)icons.push({src:big,sizes:'512x512',type:'image/png',purpose:'any maskable'});if(png)icons.push({src:png,sizes:'180x180',type:'image/png'});
+  const man={name:name,short_name:name.length>12?name.split(/\s+/)[0].slice(0,12):name,description:tag,start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f3f5f3',theme_color:'#0f6e56',icons:icons};
+  const lm=$('#link-manifest');if(lm)lm.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));}
+function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
   el.textContent=state.mode==='shared'?'Shared with your team, saves live':state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
@@ -1481,7 +1507,7 @@ function updCostConv(){const cur=$('#c-cur').value;const t=(Number($('#c-cost').
 function toast(msg,ms){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms||3400);}
 function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel'])$('#'+p).hidden=p!==id;}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
-function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
+function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
 function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
 function openAdd(){showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
 function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';}
@@ -1528,7 +1554,7 @@ function bind(){
     cb.disabled=true;const ok=await persistUser(id,u);if(!ok){cb.disabled=false;cb.checked=!cb.checked;}else if(db)renderRemindRun();
   });
   $('#settings-close').addEventListener('click',()=>{$('#settingsPanel').hidden=true;});
-  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
+  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.appName=rawAppName($('#s-app-name').value);state.settings.tagline=rawTagline($('#s-tagline').value);state.settings.readModel=normModel($('#s-model').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
   $('#reset-wrap').addEventListener('click',async e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.id==='btn-reset'){$('#reset-wrap').innerHTML=`<span class="small" style="margin-right:8px">Remove every user, payment and cost? This cannot be undone.</span><button class="btn sm danger" type="button" data-act="reset-yes">Yes, reset</button> <button class="btn sm" type="button" data-act="reset-no">Cancel</button>`;}
@@ -1745,7 +1771,7 @@ async function quickParse(){
   if(!lines.length){err.textContent='Type at least one line.';return;}
   qa.busy=true;msg.textContent=sample?'Reading…':'';$('#qa-parse').disabled=true;
   let parsed=null;
-  if(sample){try{const data=await sample.json(quickPrompt()+'\n\nLines:\n'+lines.join('\n'),{modelTier:'quick'});if(Array.isArray(data)&&data.length===lines.length)parsed=data.map((o,i)=>o&&typeof o==='object'?o:quickParseLine(lines[i]));}catch(e){parsed=null;}}
+  if(sample){try{const data=await sample.json(quickPrompt()+'\n\nLines:\n'+lines.join('\n'),{modelTier:readModel()});if(Array.isArray(data)&&data.length===lines.length)parsed=data.map((o,i)=>o&&typeof o==='object'?o:quickParseLine(lines[i]));}catch(e){parsed=null;}}
   if(!parsed)parsed=lines.map(quickParseLine);
   const fresh=parsed.map((o,i)=>quickNormalize(o,lines[i]));
   qa.rows=qa.rows.concat(fresh);qa.rows.forEach(r=>{r.dup=quickDup(r);if(r.dup)r.sel=false;});
@@ -1846,7 +1872,7 @@ async function extractImage(idx){
   const im=shot.images[idx];if(!im)return;im.status='reading';im.err='';renderThumbs();
   try{
     if(!(sample&&canImage))throw {code:'images_unavailable'};
-    const data=await sample.json(extractPrompt(),{images:[im.file],modelTier:'default'});
+    const data=await sample.json(extractPrompt(),{images:[im.file],modelTier:readModel()});
     const n=addRows(data,idx,false);im.status='done';if(!n)im.err='No transactions found';
   }catch(e){
     im.status='error';const c=e&&e.code;
@@ -1868,7 +1894,7 @@ async function extractText(){
   msg.textContent=sample?'Reading…':'';$('#review').hidden=false;
   let n=0;
   try{
-    if(sample){const data=await sample.json(extractPrompt()+'\n\nStatement text:\n'+text.slice(0,40000),{modelTier:'quick'});n=addRows(data,-1,true);}
+    if(sample){const data=await sample.json(extractPrompt()+'\n\nStatement text:\n'+text.slice(0,40000),{modelTier:readModel()});n=addRows(data,-1,true);}
     else n=addRows(regexParse(text),-1,true);
   }catch(e){
     if(e&&e.code==='invalid_json'&&e.text){$('#shot-raw').hidden=false;$('#shot-raw').textContent='Claude replied but it could not be parsed:\n\n'+e.text;}
@@ -2046,7 +2072,7 @@ function subscribe(){
     if(!snap.metadata.fromCache){if(snap.empty)maybeSeedShared();else maybeMigrateShared(snap.docs);}
   },e=>{state.mode='error';state.loaded=true;toast('Live data unavailable ('+(e&&e.code||'unknown')+'). Reload to reconnect.');render();});
   db.collection('costs').onSnapshot(snap=>{const costs={};snap.docs.forEach(d=>{const b=d.data();if(b)costs[d.id]=normalizeCost(b,d.id);});state.costs=costs;state.costsLoaded=true;render();},()=>{});
-  db.doc('settings/main').onSnapshot(snap=>{if(snap.exists){const b=snap.data()||{};state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);render();}},()=>{});
+  db.doc('settings/main').onSnapshot(snap=>{if(snap.exists){const b=snap.data()||{};state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.appName=rawAppName(b.appName);state.settings.tagline=rawTagline(b.tagline);state.settings.readModel=normModel(b.readModel);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);render();}},()=>{});
 }
 async function init(){
   loadPrefs();bind();render();
@@ -2062,5 +2088,6 @@ async function init(){
 init();
 })();
 </script>
+
 </body>
 </html>
