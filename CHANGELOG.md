@@ -2,6 +2,15 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v15 - 2026-09-22
+
+- The app is now called **Wasool** ("Know who's paid."), with an editable name and tagline in Settings, a home-screen icon and web-app manifest, and a Reading model setting (Quick or Default) that drives Claude's screenshot, statement-text and Quick add reading.
+- Self-hosting: a Python server (`server/`, Flask + SQLite, pinned requirements) that serves the same `index.html`, a passcode login, a JSON document store at `/api/docs` mirroring the artifact `db` API, receipt uploads, JSON export/import of everything, and optional screenshot reading through the Claude API (`claude-haiku-4-5-20251001`) when `ANTHROPIC_API_KEY` is set.
+- The frontend detects its backend: claude.ai artifact, own server (`window.__PT_SERVER__` or `/healthz`) or browser-local. On a server, CSV exports download as files and the sync badge reads "Saved on your server".
+- Confirmation links: each user gets a private `/c/<token>` page with the reminder's amount, period and dates and YES / NO buttons plus a note. `{confirm_link}` placeholder, Copy link buttons and recorded answers in the reminder run and Final notice; answers via `GET /api/confirmations?cycle=`.
+- Settings: Public base URL (auto-filled on the server) and a "Your data" block with Export everything (JSON) and Import everything (JSON).
+- Deploy: `deploy/setup.sh` one-command installer for Oracle Cloud Always Free (Ubuntu arm64) with Caddy HTTPS, iptables rules, systemd service, a 5-minute GitHub auto-update timer and a nightly SQLite backup timer. README gains a "Self-hosting on Oracle Cloud (free)" section.
+
 ## v14 - 2026-09-22
 
 - Proration basis setting: fixed 30-day month or actual days in the month, with a per-plan override.
