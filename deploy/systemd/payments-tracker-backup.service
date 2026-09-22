@@ -1,0 +1,9 @@
+[Unit]
+Description=Wasool (Payments Tracker) - nightly SQLite backup
+
+[Service]
+Type=oneshot
+User=payments-tracker
+Group=payments-tracker
+EnvironmentFile=/etc/payments-tracker.env
+ExecStart=/opt/payments-tracker/deploy/backup.sh

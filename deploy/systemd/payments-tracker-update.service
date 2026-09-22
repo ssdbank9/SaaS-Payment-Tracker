@@ -1,0 +1,8 @@
+[Unit]
+Description=Wasool (Payments Tracker) - pull the latest main from GitHub and restart if it changed
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/payments-tracker/deploy/update.sh

@@ -1,0 +1,11 @@
+[Unit]
+Description=Wasool (Payments Tracker) - check GitHub for updates every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+RandomizedDelaySec=30s
+Unit=payments-tracker-update.service
+
+[Install]
+WantedBy=timers.target

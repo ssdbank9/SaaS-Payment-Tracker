@@ -1,0 +1,10 @@
+[Unit]
+Description=Wasool (Payments Tracker) - run the backup every night at 03:15
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+Persistent=true
+Unit=payments-tracker-backup.service
+
+[Install]
+WantedBy=timers.target
