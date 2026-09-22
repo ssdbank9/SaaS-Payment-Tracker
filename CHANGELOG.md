@@ -2,6 +2,20 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v12 - 2026-09-22
+
+- Final notice step for users who have not confirmed by the reply-by day: a not-confirmed list with email addresses, a copy button and CSV export of the deactivation list, a final-notice message template with one-tap WhatsApp, Telegram and email sends, a per-cycle "Final notice sent" tick, a Deactivate action that opens the cancel flow, and a reply-by-day banner.
+
+## v11 - 2026-09-22
+
+- A user can hold a second monthly plan (for example two C accounts); reminder text lists every plan and its amount.
+- "Waive first partial period" plan option, for users whose first prorated stretch should not be charged.
+
+## v10 - 2026-09-22
+
+- Telegram contact field with one-tap send, alongside WhatsApp and email.
+- Contact and data migrations that fill in phone numbers, emails, joining dates and plans for the seeded users.
+
 ## v9 - 2026-09-22
 
 - Email one-tap: a mailto link carrying the reminder template sits beside every WhatsApp control.

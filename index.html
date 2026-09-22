@@ -118,6 +118,26 @@ td.r .m2{align-items:flex-end}
 .rr-row label.chk .when{color:var(--muted);font-family:var(--mono);font-size:11px}
 .rr-row[data-done="1"] .who{color:var(--ink-2)}
 @media (max-width:760px){.rr-row{grid-template-columns:1fr 1fr}}
+.rr-tabs{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.fn-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.fn-bar .lead{font-size:13px;color:var(--ink-2);flex:1 1 240px}
+.fn-bar .lead b{color:var(--ink)}
+table.fn{min-width:900px}
+table.fn td{vertical-align:top;white-space:normal}
+table.fn td.who .nm{font-weight:500;font-size:14px}
+table.fn td.who .em{display:block;font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+table.fn td.ct{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+table.fn td.amt{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+table.fn td.st{font-size:12px}
+table.fn td.st .k{display:block;white-space:nowrap}
+table.fn td.st .k[data-on="1"]{color:var(--good)}
+table.fn td.st .k[data-on="0"]{color:var(--crit)}
+table.fn label.chk{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap;min-height:0}
+table.fn label.chk input{width:15px;height:15px;margin:0}
+table.fn label.chk .when{color:var(--muted);font-family:var(--mono);font-size:11px}
+table.fn tr[data-deact="1"] td{opacity:.65}
+table.fn tr[data-deact="1"] td.st,table.fn tr[data-deact="1"] td.who{opacity:1}
+.banner[data-kind="final"]{background:var(--crit-bg);border-color:var(--crit)}
 
 .sum-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
 .sum-head label{margin-left:auto}
@@ -223,7 +243,8 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .cell[data-state="partial"] .a{color:var(--warn)}
 .cell[data-state="unpaid"]{background:var(--crit-bg);border-color:var(--crit)}
 .cell[data-state="unpaid"] .a{color:var(--crit)}
-.cell[data-state="upcoming"]{background:var(--surface-2)}
+.cell[data-state="upcoming"],.cell[data-state="waived"]{background:var(--surface-2)}
+.cell[data-state="waived"] .a{color:var(--ink-2)}
 .cell[data-state="upcoming"] .a{color:var(--muted)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
 .legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px;border:1px solid var(--line-strong)}
@@ -335,7 +356,7 @@ table.costs td.cat{color:var(--ink-2)}
 
   <div class="banner" id="remindBanner" hidden role="status"><span id="remindBannerText"></span><button class="btn sm primary" type="button" id="remindBannerBtn">Open reminder run</button></div>
   <section class="panel" id="remindRun" hidden aria-label="Reminder run">
-    <div class="panel-head"><div><h3>Reminder run</h3><p class="small muted" id="rr-sub"></p></div><button class="link" type="button" id="rr-close">Close</button></div>
+    <div class="panel-head"><div><div class="rr-tabs"><h3 id="rr-title">Reminder run</h3><span class="seg" id="rr-tabs"><button type="button" data-tab="run" aria-pressed="true">Reminder run</button><button type="button" data-tab="final" aria-pressed="false">Final notice</button></span></div><p class="small muted" id="rr-sub"></p></div><button class="link" type="button" id="rr-close">Close</button></div>
     <div id="rr-body"></div>
   </section>
 
@@ -382,6 +403,10 @@ table.costs td.cat{color:var(--ink-2)}
         <textarea id="s-template" rows="3"></textarea>
       </label>
       <p class="small muted" style="margin-top:6px">Placeholders: <code>{name_or_email}</code> <code>{package}</code> <code>{plan}</code> <code>{amount_due}</code> (next cycle, after credit) <code>{period}</code> (e.g. Sep 24 – Oct 23) <code>{due_date}</code> <code>{reply_by}</code> <code>{balance_due}</code> <code>{periods_missing}</code>. For someone who is overdue, <code>{amount_due}</code>, <code>{period}</code> and <code>{due_date}</code> describe the unpaid period instead. Reminders open WhatsApp with this text prefilled; nothing is sent automatically.</p>
+      <label class="f" style="margin-top:12px">Final notice message <span class="muted">(reply-by day, for people who have not confirmed)</span>
+        <textarea id="s-final-template" rows="3"></textarea>
+      </label>
+      <p class="small muted" style="margin-top:6px">Same placeholders. In the final notice <code>{due_date}</code> is the day the new cycle starts (the deactivation day), and <code>{amount_due}</code> and <code>{period}</code> describe the unpaid amount for someone who is overdue.</p>
       <div class="form-actions"><button class="btn primary" type="submit">Save settings</button><span class="small muted" id="s-msg"></span><span style="flex:1"></span><span id="reset-wrap"><button class="btn sm danger" type="button" id="btn-reset">Reset data</button></span></div>
     </form>
   </section>
@@ -408,11 +433,11 @@ table.costs td.cat{color:var(--ink-2)}
   <section class="panel" id="quickPanel" hidden aria-label="Quick add users">
     <div class="panel-head"><div><h3>Quick add</h3><p class="small muted">One line per user, in any order. Name is the only must; everything else has a default.</p></div><button class="link" type="button" id="quick-close">Close</button></div>
     <textarea id="qa-text" rows="4" placeholder="Ali Khan, ali@mail.com, +92 300 1234567, joined Sep 25, C&#10;Sara, sara@x.com, C Max, 4200&#10;Bilal +923001112222 G 50000 joined 2026-10-01 paid" aria-label="Users to add, one per line" autocapitalize="sentences"></textarea>
-    <p class="qa-help" id="qa-help">Recognised: an email, a WhatsApp number, <code>joined &lt;date&gt;</code> (default today), a package name (default C), a price (default the package price), <code>$</code>/<code>USD</code> or <code>Rs</code>, and <code>paid</code> or <code>paid 4200</code> to record the first payment.</p>
+    <p class="qa-help" id="qa-help">Recognised: an email, a WhatsApp number, <code>@telegram</code> or <code>tg:handle</code>, <code>joined &lt;date&gt;</code> (default today), a package name (default C), a price (default the package price), <code>$</code>/<code>USD</code> or <code>Rs</code>, and <code>paid</code> or <code>paid 4200</code> to record the first payment.</p>
     <div class="form-actions"><button class="btn primary" type="button" id="qa-parse">Review lines</button><span class="small muted" id="qa-msg"></span><span class="err" id="qa-err"></span></div>
     <div id="qa-review" hidden style="margin-top:12px">
       <div class="table-wrap"><table class="qa" aria-label="Users to add">
-        <thead><tr><th><input type="checkbox" id="qa-all" aria-label="Select all" checked></th><th>Name</th><th>Email</th><th>WhatsApp</th><th>Joined</th><th>Package</th><th class="r">Price</th><th>Pays in</th><th class="r">Paid now</th><th></th></tr></thead>
+        <thead><tr><th><input type="checkbox" id="qa-all" aria-label="Select all" checked></th><th>Name</th><th>Email</th><th>WhatsApp</th><th>Telegram</th><th>Joined</th><th>Package</th><th class="r">Price</th><th>Pays in</th><th class="r">Paid now</th><th></th></tr></thead>
         <tbody id="qa-body"></tbody></table></div>
       <div class="form-actions"><button class="btn primary" type="button" id="qa-save">Add 0 users</button><button class="link" type="button" id="qa-clear">Clear</button><span class="small muted" id="qa-save-msg"></span></div>
     </div>
@@ -436,7 +461,9 @@ table.costs td.cat{color:var(--ink-2)}
           <label class="f">Billing<span id="a-cycle-wrap"></span></label>
           <label class="f">Plan label <span class="muted">(optional)</span><input id="a-plan" type="text" placeholder="only if it differs from the package"></label>
           <label class="f">Payment method / notes<input id="a-notes" type="text" placeholder="e.g. NayaPay Noor, USDT (Binance)"></label>
+          <label class="f">Telegram <span class="muted">(handle or phone, optional)</span><input id="a-tg" type="text" placeholder="@handle or +92…" autocomplete="off"></label>
           <label class="f chk" id="a-prorate-wrap"><input id="a-prorate" type="checkbox" checked>Prorate first period <span class="muted">(charge the join period by days)</span></label>
+          <label class="f chk"><input id="a-waive" type="checkbox">Waive first partial period <span class="muted">(stub days free, billing starts next cycle)</span></label>
         </div>
       </details>
       <div class="form-actions">
@@ -452,7 +479,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="io-grid">
       <div>
         <h3 class="small" style="margin-bottom:6px">Users and payments</h3>
-        <p class="small muted">One row per payment (or per plan with no payment yet). Columns: <code>name</code> and/or <code>email</code>, <code>join_date</code>; optional <code>phone</code>, <code>notes</code>, <code>package</code>, <code>plan</code> (label), <code>prorate</code> (yes/no), <code>status</code> (active or cancelled) with <code>last_day</code>, <code>kind</code> (monthly or one-time), <code>currency</code> (USD or PKR), <code>price</code>, <code>kind</code> may also be yearly, <code>plan_start</code>, <code>plan_end</code> (or due date), <code>due_by</code>, <code>payment_date</code>, <code>payment_amount</code>, <code>payment_currency</code>, <code>payment_rate</code>, <code>payment_note</code>. Existing users (by email, then name) and plans (by name) are updated; a payment on an existing date replaces it.</p>
+        <p class="small muted">One row per payment (or per plan with no payment yet). Columns: <code>name</code> and/or <code>email</code>, <code>join_date</code>; optional <code>phone</code>, <code>telegram</code>, <code>notes</code>, <code>package</code>, <code>plan</code> (label), <code>prorate</code> (yes/no), <code>status</code> (active or cancelled) with <code>last_day</code>, <code>kind</code> (monthly or one-time), <code>currency</code> (USD or PKR), <code>price</code>, <code>kind</code> may also be yearly, <code>plan_start</code>, <code>plan_end</code> (or due date), <code>due_by</code>, <code>payment_date</code>, <code>payment_amount</code>, <code>payment_currency</code>, <code>payment_rate</code>, <code>payment_note</code>. Existing users (by email, then name) and plans (by name) are updated; a payment on an existing date replaces it.</p>
         <pre class="sample">name,email,join_date,package,kind,currency,price,payment_date,payment_amount,payment_currency,payment_rate
 Eren,erenkumcuoglu@gmail.com,2026-07-24,C,monthly,USD,14,2026-09-24,14,USD,280
 Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PKR,</pre>
@@ -589,17 +616,19 @@ const $=s=>document.querySelector(s);
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const OLD_TPL='Hi {name_or_email}, this is a reminder that your {plan} balance of {balance_due} is due on {due_date}. Please pay when you can. Thanks!';
 const DEFAULT_TPL='Hi {name_or_email}, your {package} payment of {amount_due} for {period} is due on {due_date}. Please confirm or pay by {reply_by}. Thanks!';
+const DEFAULT_FINAL_TPL='Hi {name_or_email}, we have not received your {package} payment of {amount_due} for {period}. Your account will be deactivated tomorrow ({due_date}) unless payment is confirmed today. Thanks!';
+const finalTplOf=t=>String(t||'').trim()||DEFAULT_FINAL_TPL;
 const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
-const SCHEMA=6;
+const SCHEMA=8;
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
 const normCycle=c=>CYCLES[c]?c:'monthly';
 const pad=n=>String(n).padStart(2,'0');
 const toISO=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-const todayISO=()=>toISO(new Date());
+const todayISO=()=>{try{const o=localStorage.getItem('pt-today');if(o&&/^\d{4}-\d{2}-\d{2}$/.test(o))return o;}catch(e){}return toISO(new Date());};
 const parseD=s=>{const p=s.split('-').map(Number);return new Date(p[0],p[1]-1,p[2]);};
 const isDateKey=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||'');
 const isMonthKey=k=>/^\d{4}-(0[1-9]|1[0-2])$/.test(k||'');
@@ -617,8 +646,8 @@ const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const clone=o=>JSON.parse(JSON.stringify(o));
 const newId=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 
-const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY},mode:'connecting',loaded:false,costsLoaded:false};
-const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null};
+const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY},mode:'connecting',loaded:false,costsLoaded:false};
+const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'run',cancelPre:{}};
 let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,migrateChecked=false;
 
 /* ---------- money: two currencies, per-entry rate ---------- */
@@ -650,12 +679,12 @@ const DEFAULT_RATE=280;
 /* ---------- normalisation ---------- */
 function normalizePackages(arr){if(!Array.isArray(arr))return [];const seen={};const out=[];for(const p of arr){if(!p||typeof p!=='object')continue;const id=String(p.id||'').trim()||newId('pkg');const name=String(p.name||'').trim();if(!name||seen[id])continue;seen[id]=1;const pr=Number(p.price);out.push({id,name,cycle:normCycle(p.cycle),price:isFinite(pr)&&pr>0?pr:null,currency:p.currency?normCur(p.currency):'',description:String(p.description||'').trim()});}return out;}
 const packages=()=>state.settings.packages||[];
-const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY});
+const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY});
 const remindDay=()=>clampDay(state.settings.remindDay,DEFAULT_REMIND_DAY);const replyDay=()=>clampDay(state.settings.replyDay,DEFAULT_REPLY_DAY);
 function dayOnOrBefore(iso,day){let y=+iso.slice(0,4),m=+iso.slice(5,7)-1;for(let g=0;g<3;g++){const d=toISO(new Date(y,m,Math.min(day,daysIn(y,m))));if(d<=iso)return d;m--;if(m<0){m=11;y--;}}return iso;}
 /* reminder window for the upcoming cycle: remind from the reminder day, replies due by the reply-by day, both before the cycle starts */
 function reminderWindow(today){const nc=nextCycleStart(today);const replyBy=dayOnOrBefore(addDays(nc,-1),replyDay());const start=dayOnOrBefore(replyBy,remindDay());return {nc,start,replyBy,open:today>=start&&today<=replyBy,periodEnd:addDays(nextCycleStart(nc),-1)};}
-function remState(u,key){const r=(u.reminders||{})[key];return r||{reminded:null,confirmed:null};}
+function remState(u,key){const r=(u.reminders||{})[key];return Object.assign({reminded:null,confirmed:null,final:null},r||{});}
 const pkgById=id=>packages().find(p=>p.id===id)||null;
 const pkgName=id=>{const p=pkgById(id);return p?p.name:'';};
 function planLabel(s){const pn=pkgName(s.packageId);const extra=(s.name||'').trim();if(!pn)return extra||(s.kind==='one-time'?'Item':'Plan');return extra&&extra.toLowerCase()!=='standard'&&extra.toLowerCase()!==pn.toLowerCase()?pn+' · '+extra:pn;}
@@ -673,14 +702,15 @@ const perOf=s=>CYCLES[subCycle(s)].per;
 function pkgUsage(id){let n=0;for(const uid in state.users)for(const s of state.users[uid].subscriptions||[])if(s.packageId===id)n++;return n;}
 function normDate(s){if(!s)return null;s=String(s);if(isDateKey(s))return s;if(isMonthKey(s))return s+'-01';return null;}
 const normRate=r=>{const x=Number(r);return x>0?x:null;};
+const normTg=v=>{let t=String(v||'').trim().replace(/^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\//i,'').replace(/^@+/,'').replace(/[\/?#].*$/,'');if(/^\+?[\d\s\-()]+$/.test(t)&&digits(t).length>=7)t=digits(t);return t;};
 function normalizeUser(b,id){
-  const u={id,name:String(b.name||'').trim(),email:String(b.email||'').trim(),phone:digits(b.phone),joinDate:normDate(b.joinDate)||todayISO(),notes:String(b.notes||'').trim(),createdAt:b.createdAt||'',subscriptions:[],reminders:{},cancel:null};
+  const u={id,name:String(b.name||'').trim(),email:String(b.email||'').trim(),phone:digits(b.phone),telegram:normTg(b.telegram),joinDate:normDate(b.joinDate)||todayISO(),notes:String(b.notes||'').trim(),createdAt:b.createdAt||'',subscriptions:[],reminders:{},cancel:null};
   if(b.cancel&&typeof b.cancel==='object'&&normDate(b.cancel.lastDay))u.cancel={lastDay:normDate(b.cancel.lastDay),reason:String(b.cancel.reason||'').trim(),note:String(b.cancel.note||'').trim(),at:normDate(b.cancel.at)||''};
-  const rm=b.reminders&&typeof b.reminders==='object'?b.reminders:{};for(const k in rm){if(!isDateKey(k))continue;const v=rm[k]||{};const r={reminded:normDate(v.reminded),confirmed:normDate(v.confirmed)};if(r.reminded||r.confirmed)u.reminders[k]=r;}
+  const rm=b.reminders&&typeof b.reminders==='object'?b.reminders:{};for(const k in rm){if(!isDateKey(k))continue;const v=rm[k]||{};const r={reminded:normDate(v.reminded),confirmed:normDate(v.confirmed),final:normDate(v.final)};if(r.reminded||r.confirmed||r.final)u.reminders[k]=r;}
   for(const s of b.subscriptions||[]){
     const kind=s.kind==='one-time'?'one-time':'monthly';const start=normDate(s.start)||u.joinDate;const cur=normCur(s.currency);
     const sub={id:s.id||newId('s'),kind,name:String(s.name||'').trim()||(kind==='one-time'?'Item':''),currency:cur,packageId:String(s.packageId||'').trim()||null,payments:[]};
-    if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
+    if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
     else{sub.total=Number(s.total)||0;sub.due=normDate(s.due);}
     for(const p of s.payments||[]){const d=normDate(p.date);if(!d)continue;sub.payments.push({id:p.id||newId('p'),date:d,amount:Number(p.amount)||0,currency:p.currency?normCur(p.currency):cur,rate:normRate(p.rate),note:String(p.note||'')});}
     sub.payments.sort((a,b)=>a.date.localeCompare(b.date));
@@ -688,7 +718,7 @@ function normalizeUser(b,id){
   }
   return u;
 }
-function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{},cancel:n.cancel||null};}
+function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,telegram:n.telegram||'',joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{},cancel:n.cancel||null};}
 function normalizeCost(b,id){return {id,date:normDate(b.date)||todayISO(),description:String(b.description||'').trim(),category:String(b.category||'').trim(),currency:normCur(b.currency),cost:Number(b.cost)||0,tax:Number(b.tax)||0,rate:normRate(b.rate),source:String(b.source||''),receipt:String(b.receipt||''),createdAt:b.createdAt||''};}
 function cleanCost(c){const n=normalizeCost(c,c.id);delete n.id;n.createdAt=n.createdAt||new Date().toISOString();return n;}
 
@@ -703,13 +733,14 @@ function analyzeMonthly(s,today){
   while(active(k)&&k<2400){
     const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=priceAt(s,es);
     const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;
-    const pr=prorated?Math.round(full*days/total):full;
+    const waived=k===0&&s.waiveFirst===true&&es>st;const pr=waived?0:(prorated?Math.round(full*days/total):full);
     let stt,covered;
-    if(credit+1e-9>=pr){stt='paid';covered=pr;credit-=pr;kPaid=k+1;}
+    if(waived){stt='waived';covered=0;kPaid=k+1;}
+    else if(credit+1e-9>=pr){stt='paid';covered=pr;credit-=pr;kPaid=k+1;}
     else if(credit>0){stt=st<=today?'partial':'upcoming';covered=credit;credit=0;}
     else{stt=st<=today?'unpaid':'upcoming';covered=0;}
-    periods.push({k,st,en,es,pr,full,prorated,days,total,state:stt,covered,creditAfter:stt==='paid'?credit:0});
-    if(stt!=='paid'&&k>curIdx)break;
+    periods.push({k,st,en,es,pr,full,prorated:prorated&&!waived,waived,days,total,state:stt,covered,creditAfter:stt==='paid'?credit:0});
+    if(stt!=='paid'&&stt!=='waived'&&k>curIdx)break;
     if(stt==='paid'&&pr<=0&&k>curIdx+1)break;
     k++;
   }
@@ -747,7 +778,7 @@ function analyze(u,today){
     if(a.kind==='monthly'){if(a.overdueAmount>0)sumAdd(balance,a.overdueAmount,s.currency,null);if(a.cycleDue>0)sumAdd(cycleDue,a.cycleDue,s.currency,null);if(a.cyclePaid)cyclePaid=true;}else if(a.remaining>0)sumAdd(balance,a.remaining,s.currency,null);
     const r=RANK[a.status];if(r<rank){rank=r;status=a.status;}
     if(a.kind==='monthly'){
-      if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),price:a.price,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id,note:u.cancel&&s.end?'until '+fmtD(s.end):undefined});if(s.packageId)pkgIds.add(s.packageId);else pkgIds.add('');}
+      if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&a.kPaid>0&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),price:a.price,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id,note:u.cancel&&s.end?'until '+fmtD(s.end):undefined});if(s.packageId)pkgIds.add(s.packageId);else pkgIds.add('');}
       else if(a.status==='upcoming'){planParts.push({name:planLabel(s),price:a.price,cur:s.currency,per:perOf(s),note:'starts '+fmtD(s.start),noPkg:!s.packageId,subId:s.id});pkgIds.add(s.packageId||'');}
       else if(u.cancel&&s.end){planParts.push({name:planLabel(s),price:priceAt(s,s.end),cur:s.currency,per:perOf(s),note:'until '+fmtD(s.end),subId:s.id});if(s.packageId)pkgIds.add(s.packageId);}
     }else if(a.remaining>0){planParts.push({name:planLabel(s),price:a.remaining,cur:s.currency,per:'',note:'left of '+fmtAmt(s.total,s.currency)});if(s.packageId)pkgIds.add(s.packageId);}
@@ -763,40 +794,46 @@ function statusLabel(a){switch(a.status){case 'cancelled':return a.balance&&a.ba
 const displayName=u=>u.name||u.email||'(unnamed)';
 
 /* ---------- reminders ---------- */
-function reminderText(u,a,today,mode,tplOverride){
-  const tpl=tplOverride||tplOf(state.settings.template);const w=reminderWindow(today);mode=mode||(a.unpaid?'overdue':'cycle');
+function reminderText(u,a,today,mode,tplOverride,x){
+  const tpl=tplOverride||(x&&x.tpl)||tplOf(state.settings.template);const w=reminderWindow(today);mode=mode||(a.unpaid?'overdue':'cycle');
   const plans=(a.duePlans.length?a.duePlans:(u.subscriptions||[]).map(s=>planLabel(s))).filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'subscription';
   let amount,period,dueDate;
-  if(mode==='overdue'){amount=ownText(a.balance.n?a.balance:a.due,a.mainCur);let st=null,en=null;for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly')continue;for(const p of sa.periods)if((p.state==='unpaid'||p.state==='partial')&&p.st<=today){if(!st||p.st<st)st=p.st;if(!en||p.en>en)en=p.en;}}period=st?fmtD(st)+' – '+fmtD(en):'the current period';dueDate=a.nextDue?fmtD(a.nextDue,true):'now';}
-  else{amount=ownText(a.cycleDue.n?a.cycleDue:a.due,a.mainCur);period=fmtD(w.nc)+' – '+fmtD(w.periodEnd);dueDate=fmtD(w.nc,true);}
+  const parts=[];
+  if(mode==='overdue'){const S=a.due.n?a.due:a.balance;amount=ownText(S,a.mainCur);let st=null,en=null;for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly'||!['overdue','due-today'].includes(sa.status))continue;if(sa.overdueAmount>0)parts.push(fmtAmt(sa.overdueAmount,s.currency)+' for '+planLabel(s));for(const p of sa.periods)if((p.state==='unpaid'||p.state==='partial')&&p.st<=today){if(!st||p.st<st)st=p.st;if(!en||p.en>en)en=p.en;}}period=st?fmtD(st)+' – '+fmtD(en):'the current period';dueDate=st?fmtD(st,true):(a.nextDue?fmtD(a.nextDue,true):'now');}
+  else{amount=ownText(a.cycleDue.n?a.cycleDue:a.due,a.mainCur);for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.cycleDue>0)parts.push(fmtAmt(sa.cycleDue,s.currency)+' for '+planLabel(s));}period=fmtD(w.nc)+' – '+fmtD(w.periodEnd);dueDate=fmtD(w.nc,true);}
+  if(parts.length>1)amount+=' in total ('+parts.join(' + ')+')';
+  if(x&&x.dueDate)dueDate=x.dueDate;
   const pkgs=mode==='overdue'?(a.duePkgs.length?a.duePkgs:[...a.pkgIds].map(pkgName)):(cyclePkgs(u,a).length?cyclePkgs(u,a):[...a.pkgIds].map(pkgName));
   return tpl.replace(/\{name_or_email\}/g,displayName(u)).replace(/\{plan\}/g,plans).replace(/\{package\}/g,pkgs.filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'package not set').replace(/\{balance_due\}/g,ownText(a.balance,a.mainCur)).replace(/\{amount_due\}/g,amount).replace(/\{period\}/g,period).replace(/\{reply_by\}/g,fmtD(w.replyBy)).replace(/\{due_date\}/g,dueDate).replace(/\{periods_missing\}/g,String(a.overdue)).replace(/\{month\}/g,mLabel(monthKey(today)));
 }
 const waLink=(u,text)=>'https://wa.me/'+u.phone+'?text='+encodeURIComponent(text);
-function remindControl(u,a,today,label,mode){
+function remindControl(u,a,today,label,mode,x){
   if(!u.phone)return `<button class="btn sm" type="button" disabled title="Add a WhatsApp number in Edit user">add phone</button>`;
-  return `<a class="btn sm wa" href="${esc(waLink(u,reminderText(u,a,today,mode)))}" target="_blank" rel="noopener noreferrer" title="Opens WhatsApp with the reminder prefilled">${label||'Remind'}</a>`;
+  return `<a class="btn sm wa" href="${esc(waLink(u,reminderText(u,a,today,mode,null,x)))}" target="_blank" rel="noopener noreferrer" title="Opens WhatsApp with the ${x&&x.tpl?'final notice':'reminder'} prefilled">${label||'Remind'}</a>`;
 }
 const mailLink=(u,subject,body)=>'mailto:'+encodeURIComponent(u.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
-function emailControl(u,a,today,label,mode){
+function emailControl(u,a,today,label,mode,x){
   if(!u.email)return `<button class="btn sm" type="button" disabled title="Add an email in Edit user">add email</button>`;
-  const subject='Payment reminder: '+reminderText(u,a,today,mode,'{package} {period}');
-  return `<a class="btn sm" href="${esc(mailLink(u,subject,reminderText(u,a,today,mode)))}" title="Opens your mail app with the reminder prefilled">${label||'Email'}</a>`;
+  const subject=(x&&x.tpl?'Final notice: ':'Payment reminder: ')+reminderText(u,a,today,mode,'{package} {period}');
+  return `<a class="btn sm" href="${esc(mailLink(u,subject,reminderText(u,a,today,mode,null,x)))}" title="Opens your mail app with the ${x&&x.tpl?'final notice':'reminder'} prefilled">${label||'Email'}</a>`;
 }
+const tgLink=u=>{const t=normTg(u.telegram);if(!t)return '';const d=digits(t);return /^\+?[\d\s\-()]+$/.test(t)&&d.length>=7?'https://t.me/+'+d:'https://t.me/'+encodeURIComponent(t);};
+function telegramControl(u,label){const href=tgLink(u);if(!href)return `<button class="btn sm" type="button" disabled title="Add a Telegram handle in Edit user">add Telegram</button>`;return `<a class="btn sm" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Opens the Telegram chat; the message is not prefilled">${label||'Telegram'}</a>`;}
 function cyclePkgs(u,a){const out=[];for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.cycleDue>0){const n=pkgName(s.packageId);if(n&&!out.includes(n))out.push(n);}}return out;}
 function remBadge(u,key){const r=remState(u,key);if(r.confirmed)return `<span class="rem-badge" data-k="confirmed">✓ confirmed ${esc(fmtD(r.confirmed))}</span>`;if(r.reminded)return `<span class="rem-badge" data-k="reminded">✓ reminded ${esc(fmtD(r.reminded))}</span>`;return '';}
 
 /* ---------- seed + migration ---------- */
 function seedUsers(){
   const std=(id,start,pays,cur,price)=>({id,kind:'monthly',cycle:'monthly',packageId:'pkg_c',name:'',currency:cur,start,end:null,prorate:true,prices:[{from:start,price}],payments:pays.map((p,i)=>({id:id+'_p'+(i+1),date:p[0],amount:p[1],currency:cur,rate:null,note:p[2]||''}))});
-  const U=(id,name,email,joinDate,notes,subs)=>[id,{name,email,phone:'',joinDate,notes,createdAt:new Date().toISOString(),subscriptions:subs}];
+  const PH={u_haroon:'923009652718',u_faizan:'923212107772',u_ataullah:'923465298200',u_mohib:'923365558920',u_tabraiz:'923313508833'};const TG={u_eren:'ragefulspartan'};
+  const U=(id,name,email,joinDate,notes,subs)=>[id,{name,email,phone:PH[id]||'',telegram:TG[id]||'',joinDate,notes,createdAt:new Date().toISOString(),subscriptions:subs}];
   return [
-    U('u_haroon','Haroon','haroon.mansha@gmail.com','2026-08-29','',[std('s_haroon_std','2026-08-29',[['2026-08-29',4200]],'PKR',4200),{id:'s_haroon_gpt',kind:'monthly',cycle:'yearly',packageId:'pkg_g',name:'ChatGPT',currency:'PKR',start:'2026-08-30',end:null,prorate:false,dueBy:'2027-02-28',prices:[{from:'2026-08-30',price:50000}],payments:[{id:'s_haroon_gpt_p1',date:'2026-08-30',amount:25000,currency:'PKR',rate:null,note:''}]}]),
+    U('u_haroon','Haroon','haroon.mansha@gmail.com','2026-08-30','',[std('s_haroon_std','2026-08-30',[['2026-08-29',4200]],'PKR',4200),Object.assign(std('s_haroon_acc2','2026-09-20',[['2026-09-20',4200,'covers Sep 24 – Oct 23']],'PKR',4200),{name:'Account 2 · Developerabdullahsnetflix@gmail.com',waiveFirst:true}),{id:'s_haroon_gpt',kind:'monthly',cycle:'yearly',packageId:'pkg_g',name:'ChatGPT',currency:'PKR',start:'2026-08-30',end:null,prorate:false,dueBy:'2027-02-28',prices:[{from:'2026-08-30',price:50000}],payments:[{id:'s_haroon_gpt_p1',date:'2026-08-30',amount:25000,currency:'PKR',rate:null,note:''}]}]),
     U('u_faizan','Faizan','faizaneilahi9774@gmail.com','2026-08-31','$15 on BOA account',[std('s_faizan_std','2026-08-31',[['2026-08-31',15]],'USD',15)]),
     U('u_ataullah','Ataullah','atabinfazl@gmail.com','2026-09-01','NayaPay Noor',[std('s_ataullah_std','2026-09-01',[['2026-09-01',4200]],'PKR',4200)]),
-    U('u_mohib','Mohib','mohibkazmi@yahoo.com','2026-09-01','NayaPay Noor',[std('s_mohib_std','2026-09-01',[['2026-09-01',4200]],'PKR',4200)]),
-    U('u_tabraiz','Tabraiz','','2026-09-03','',[std('s_tabraiz_std','2026-09-03',[],'PKR',4200)]),
-    U('u_eren','Eren','erenkumcuoglu@gmail.com','2026-07-24','USDT (Binance)',[std('s_eren_std','2026-07-24',[['2026-07-24',14],['2026-08-24',14],['2026-09-24',14,"recorded from 'paid till Oct 24'"]],'USD',14)])
+    U('u_mohib','Mohib Haider Kazmi','maggdoto@gmail.com','2026-09-01','NayaPay Noor · Contact email: mohibkazmi@yahoo.com',[std('s_mohib_std','2026-09-01',[['2026-09-01',4200]],'PKR',4200)]),
+    U('u_tabraiz','Tabraiz','tabraiz@smwcmanagement.com','2026-09-03','',[std('s_tabraiz_std','2026-09-03',[],'PKR',4200)]),
+    U('u_eren','Eren','erenkumcuoglu@gmail.com','2026-07-24','Pays in USDT (Binance); contact via Telegram',[std('s_eren_std','2026-07-24',[['2026-07-24',14],['2026-08-24',14],['2026-09-24',14,"recorded from 'paid till Oct 24'"]],'USD',14)])
   ];
 }
 /* v6: Uqba never joined. Remove only the untouched seed record: named Uqba, no email, no phone, no payments. */
@@ -825,6 +862,32 @@ function migrateUserV2(raw){
     const isHaroonG=(u.email||'').toLowerCase()==='haroon.mansha@gmail.com'&&s.cycle==='yearly'&&(s.packageId==='pkg_g'||/chatgpt/i.test(s.name||''));
     const want=!isHaroonG;if(s.prorate!==want){s.prorate=want;changed=true;}
   }
+  /* v7: contact details and dates from Aly (Sep 22, 2026); matched by email, never creates users */
+  const em=(u.email||'').toLowerCase();
+  if(em==='haroon.mansha@gmail.com'){
+    if(!digits(u.phone)){u.phone='923009652718';changed=true;}
+    if(u.joinDate!=='2026-08-30'){u.joinDate='2026-08-30';changed=true;}
+    const c1=(u.subscriptions||[]).find(x=>x.kind!=='one-time'&&x.cycle!=='yearly'&&x.packageId==='pkg_c'&&!/account 2/i.test(x.name||''));
+    if(c1&&c1.start!=='2026-08-30'){c1.start='2026-08-30';c1.prices=(c1.prices||[]).map(p=>p.from<'2026-08-30'?Object.assign({},p,{from:'2026-08-30'}):p);const seen={};c1.prices=c1.prices.filter(p=>{if(seen[p.from])return false;seen[p.from]=true;return true;});changed=true;}
+    if(!(u.subscriptions||[]).some(x=>/account 2/i.test(x.name||'')||/developerabdullahsnetflix/i.test(x.name||''))){u.subscriptions=(u.subscriptions||[]);u.subscriptions.push({id:'s_haroon_acc2',kind:'monthly',cycle:'monthly',packageId:'pkg_c',name:'Account 2 · Developerabdullahsnetflix@gmail.com',currency:'PKR',start:'2026-09-20',end:null,prorate:true,waiveFirst:true,dueBy:null,prices:[{from:'2026-09-20',price:4200}],payments:[]});changed=true;}
+    const acc2=(u.subscriptions||[]).find(x=>/account 2/i.test(x.name||'')||/developerabdullahsnetflix/i.test(x.name||''));
+    if(acc2){if(acc2.waiveFirst!==true){acc2.waiveFirst=true;changed=true;}if(!(acc2.payments||[]).length){acc2.payments=[{id:'s_haroon_acc2_p1',date:'2026-09-20',amount:4200,currency:'PKR',rate:null,note:'covers Sep 24 – Oct 23'}];changed=true;}}
+  }
+  /* v8 (Sep 22, 2026): Mohib's account Gmail becomes his primary email; the Yahoo address moves to notes */
+  if(em==='mohibkazmi@yahoo.com'||em==='lkmaggdoto@gmail.com'||em==='ikmagdoto@gmail.com'||em==='maggdoto@gmail.com'){
+    if((u.name||'').trim().toLowerCase()==='mohib'){u.name='Mohib Haider Kazmi';changed=true;}
+    if(!digits(u.phone)){u.phone='923365558920';changed=true;}
+    if(u.email!=='maggdoto@gmail.com'){u.email='maggdoto@gmail.com';changed=true;}
+    let nt=String(u.notes||'').replace(/\s*·\s*Account email:\s*lkmaggdoto@gmail\.com/i,'').replace(/Account email:\s*lkmaggdoto@gmail\.com\s*(·\s*)?/i,'').trim();
+    if(!/mohibkazmi@yahoo\.com/i.test(nt))nt=(nt?nt+' · ':'')+'Contact email: mohibkazmi@yahoo.com';
+    if(nt!==(u.notes||'')){u.notes=nt;changed=true;}
+  }
+  if(em==='erenkumcuoglu@gmail.com'&&!normTg(u.telegram)){u.telegram='ragefulspartan';changed=true;}
+  if(em==='faizaneilahi9774@gmail.com'&&!digits(u.phone)){u.phone='923212107772';changed=true;}
+  if(!em&&(u.name||'').trim().toLowerCase()==='tabraiz'){u.email='tabraiz@smwcmanagement.com';changed=true;if(!digits(u.phone)){u.phone='923313508833';changed=true;}}
+  else if(em==='tabraiz@smwcmanagement.com'&&!digits(u.phone)){u.phone='923313508833';changed=true;}
+  if(em==='atabinfazl@gmail.com'&&!digits(u.phone)){u.phone='923465298200';changed=true;}
+  if(em==='erenkumcuoglu@gmail.com'&&!/telegram/i.test(u.notes||'')){u.notes='Pays in USDT (Binance); contact via Telegram';changed=true;}
   return changed?u:null;
 }
 async function maybeSeedShared(){
@@ -841,8 +904,8 @@ async function maybeSeedShared(){
     toast('Loaded the initial user list. Edit anything that is off.');
   }catch(e){}
 }
-async function ensureDefaultRateShared(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const pk=normalizePackages(b.packages);const needRate=!normRate(b.rate),needPk=!pk.length,needAnchor=!isDateKey(b.anchor),needTpl=tplOf(b.template)!==b.template,needDays=!b.remindDay||!b.replyDay;if(needRate||needPk||needAnchor||needTpl||needDays)await db.doc('settings/main').set({rate:needRate?DEFAULT_RATE:normRate(b.rate),template:tplOf(b.template),packages:needPk?clone(DEFAULT_PACKAGES):pk,anchor:needAnchor?DEFAULT_ANCHOR:b.anchor,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
-async function ensurePackageCycles(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};let pk=normalizePackages(b.packages);let changed=false;if(!pk.length){pk=clone(DEFAULT_PACKAGES);changed=true;}for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(p&&!(b.packages||[]).find(x=>x&&x.id===d.id&&x.cycle)){p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}changed=true;}}if(changed)await db.doc('settings/main').set({rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
+async function ensureDefaultRateShared(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const pk=normalizePackages(b.packages);const needRate=!normRate(b.rate),needPk=!pk.length,needAnchor=!isDateKey(b.anchor),needTpl=tplOf(b.template)!==b.template,needDays=!b.remindDay||!b.replyDay;if(needRate||needPk||needAnchor||needTpl||needDays)await db.doc('settings/main').set({rate:needRate?DEFAULT_RATE:normRate(b.rate),template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),packages:needPk?clone(DEFAULT_PACKAGES):pk,anchor:needAnchor?DEFAULT_ANCHOR:b.anchor,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
+async function ensurePackageCycles(){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};let pk=normalizePackages(b.packages);let changed=false;if(!pk.length){pk=clone(DEFAULT_PACKAGES);changed=true;}for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(p&&!(b.packages||[]).find(x=>x&&x.id===d.id&&x.cycle)){p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}changed=true;}}if(changed)await db.doc('settings/main').set({rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)});}catch(e){}}
 async function maybeMigrateShared(rawDocs){
   if(migrateChecked)return;migrateChecked=true;
   try{
@@ -883,7 +946,7 @@ async function resetData(){
 }
 
 /* ---------- persistence ---------- */
-function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();}}catch(e){}}
+function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();}}catch(e){}}
 function saveLocal(){try{localStorage.setItem('pt-data',JSON.stringify({users:state.users,costs:state.costs,settings:state.settings}));}catch(e){}}
 function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;}catch(e){}}
 function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur}));}catch(e){}}
@@ -892,7 +955,7 @@ async function persistUser(id,u){const body=cleanUser(Object.assign({},u,{id}));
 async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.users[id];saveLocal();render();}return true;}
 async function persistCost(id,c){const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}else{state.costs[id]=normalizeCost(body,id);saveLocal();render();}return true;}
 async function removeCost(id){if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.costs[id];saveLocal();render();}return true;}
-async function persistSettings(){if(db){try{await db.doc('settings/main').set({rate:state.settings.rate,template:tplOf(state.settings.template),packages:state.settings.packages||[],anchor:anchor(),remindDay:remindDay(),replyDay:replyDay()});}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
+async function persistSettings(){if(db){try{await db.doc('settings/main').set({rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),packages:state.settings.packages||[],anchor:anchor(),remindDay:remindDay(),replyDay:replyDay()});}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
 function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||'').trim().toLowerCase();const ids=Object.keys(state.users);if(e){const hit=ids.find(id=>(state.users[id].email||'').toLowerCase()===e);if(hit)return hit;}if(n&&!e){const hit=ids.find(id=>(state.users[id].name||'').toLowerCase()===n);if(hit)return hit;}return null;}
 
 /* ---------- ranges ---------- */
@@ -902,7 +965,7 @@ function allPayments(){const out=[];for(const id in state.users)for(const s of s
 const costTotal=c=>(Number(c.cost)||0)+(Number(c.tax)||0);
 
 /* ---------- rendering ---------- */
-function render(){renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);}}
+function render(){renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
   el.textContent=state.mode==='shared'?'Shared with your team, saves live':state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
@@ -920,17 +983,24 @@ function renderReminderBits(){
   const today=todayISO();const ids=Object.keys(state.users);const ban=$('#remindBanner'),cnt=$('#rem-cnt');
   if(!ids.length||!state.loaded){ban.hidden=true;cnt.hidden=true;return;}
   const R=reminderRows(today);const w=R.w;const n=R.overdue.length+R.cycle.length;
+  const finalDay=today>=w.replyBy&&today<w.nc;
+  if(finalDay){const F=finalRows(today);ban.hidden=false;ban.dataset.kind='final';cnt.hidden=!F.pending;cnt.textContent=F.pending;$('#remindBannerBtn').textContent='Open final notice';
+    $('#remindBannerText').innerHTML=`<b>Final notice day</b>: <b>${F.pending}</b> user${F.pending===1?'':'s'} not confirmed for the cycle starting <b>${esc(fmtD(w.nc,true))}</b>${F.rows.some(r=>r.deact)?` · ${F.rows.filter(r=>r.deact).length} already deactivated`:''}. Send the final notice and compile the deactivation list.`;return;}
+  ban.dataset.kind='window';$('#remindBannerBtn').textContent='Open reminder run';
   cnt.hidden=!(w.open&&R.todo.length);cnt.textContent=R.todo.length;
   ban.hidden=!w.open;
   if(w.open)$('#remindBannerText').innerHTML=`<b>Reminder window open</b> (${esc(fmtD(w.start))} – ${esc(fmtD(w.replyBy))}): <b>${R.todo.length}</b> of ${n} user${n===1?'':'s'} still to remind for the cycle starting <b>${esc(fmtD(w.nc,true))}</b>${R.overdue.length?` · ${R.overdue.length} overdue from earlier`:''} · replies by ${esc(fmtD(w.replyBy))}.`;
 }
 function renderRemindRun(){
+  document.querySelectorAll('#rr-tabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===ui.rrTab)));
+  $('#rr-title').textContent=ui.rrTab==='final'?'Final notice':'Reminder run';
+  if(ui.rrTab==='final'){renderFinalNotice();return;}
   const today=todayISO();const R=reminderRows(today);const w=R.w;const key=w.nc;
   $('#rr-sub').textContent=`Cycle starting ${fmtD(w.nc,true)} (${fmtD(w.nc)} – ${fmtD(w.periodEnd)}) · remind from ${fmtD(w.start)} · replies by ${fmtD(w.replyBy)} · ${w.open?'window open now':(today<w.start?'window opens '+fmtD(w.start):'window closed; cycle starts '+fmtD(w.nc))}. Ticks are saved per user for this cycle.`;
   const tog=(r,f,label)=>{const st=remState(r.u,key);const v=st[f];return `<label class="chk f"><input type="checkbox" data-act="rem" data-user="${esc(r.id)}" data-f="${f}"${v?' checked':''}>${label}${v?` <span class="when">${esc(fmtD(v))}</span>`:''}</label>`;};
   const row=(r,mode)=>{const a=r.a,u=r.u;const pk=(mode==='overdue'?(a.duePkgs.length?a.duePkgs:[...a.pkgIds].map(pkgName)):cyclePkgs(u,a)).filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'package not set';const st=remState(u,key);
     const due=mode==='overdue'?`<b>${esc(ownText(a.balance.n?a.balance:a.due,a.mainCur))}</b> overdue${a.nextDue?` since ${esc(fmtD(a.nextDue))}`:''}${a.cycleDue.n?` · plus ${esc(ownText(a.cycleDue,a.mainCur))} on ${esc(fmtD(w.nc))}`:''}`:`<b>${esc(ownText(a.cycleDue,a.mainCur))}</b> due ${esc(fmtD(w.nc))}${creditNote(r)}`;
-    return `<div class="rr-row" data-user="${esc(r.id)}" data-done="${st.confirmed?'1':'0'}"><span class="who" title="${esc(displayName(u))}">${esc(displayName(u))}</span><span class="due">${esc(pk)} · ${due}</span>${tog(r,'reminded','Reminded')}${tog(r,'confirmed','Confirmed')}<span class="remind-pair">${remindControl(u,a,today,'Open WhatsApp',mode)}${emailControl(u,a,today,'Email',mode)}</span></div>`;};
+    return `<div class="rr-row" data-user="${esc(r.id)}" data-done="${st.confirmed?'1':'0'}"><span class="who" title="${esc(displayName(u))}">${esc(displayName(u))}</span><span class="due">${esc(pk)} · ${due}</span>${tog(r,'reminded','Reminded')}${tog(r,'confirmed','Confirmed')}<span class="remind-pair">${remindControl(u,a,today,'Open WhatsApp',mode)}${emailControl(u,a,today,'Email',mode)}${telegramControl(u,'Telegram')}</span></div>`;};
   const creditNote=r=>{let c=[];for(const s of r.u.subscriptions||[]){const sa=r.a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.nextDue===w.nc&&sa.nextCredit>0)c.push(fmtAmt(sa.nextCredit,s.currency));}return c.length?` <span class="muted">(after ${esc(c.join(' + '))} credit)</span>`:'';};
   let html='';
   if(R.overdue.length)html+=`<div class="rr-sec"><h4>Overdue from earlier cycles · ${R.overdue.length}</h4>${R.overdue.map(r=>row(r,'overdue')).join('')}</div>`;
@@ -938,6 +1008,50 @@ function renderRemindRun(){
   if(R.covered.length)html+=`<p class="small muted" style="margin-top:10px">Already covered for ${esc(fmtD(w.nc))} – ${esc(fmtD(w.periodEnd))}, no reminder needed: ${esc(R.covered.map(r=>displayName(r.u)).join(', '))}.</p>`;
   if(!R.all.length)html='<p class="small muted">No users yet.</p>';
   $('#rr-body').innerHTML=html;
+}
+/* final notice: reply-by day onward, everyone with an amount due for the coming cycle who has not confirmed, plus anyone overdue */
+function userEmails(u){const out=[];const add=e=>{e=String(e||'').trim();if(e&&!out.some(x=>x.toLowerCase()===e.toLowerCase()))out.push(e);};add(u.email);for(const s of u.subscriptions||[]){const m=String(s.name||'').match(/[^\s@·,;()]+@[^\s@·,;()]+\.[^\s@·,;()]+/g);if(m)m.forEach(add);}return out;}
+function finalRows(today){
+  const w=reminderWindow(today);const nc=w.nc;const dayBefore=addDays(nc,-1);const rows=[];
+  for(const id in state.users){const u=state.users[id];const a=analyze(u,today);const st=remState(u,nc);
+    if(u.cancel){const c=u.cancel;if(c.lastDay===dayBefore||(c.at&&c.at>=w.start&&c.at<=nc))rows.push({id,u,a,st,deact:true});continue;}
+    const cyc=a.cycleDue.n>0,over=a.unpaid;if(!cyc&&!over)continue;if(st.confirmed&&!over)continue;
+    rows.push({id,u,a,st,deact:false});}
+  rows.sort((x,y)=>(x.deact-y.deact)||((y.a.unpaid?1:0)-(x.a.unpaid?1:0))||displayName(x.u).localeCompare(displayName(y.u)));
+  return {w,rows,pending:rows.filter(r=>!r.deact&&!r.st.confirmed).length};
+}
+function fnAmount(r,w){const a=r.a;const parts=[];if(a.unpaid||(r.deact&&a.balance.n))parts.push(ownText(a.balance.n?a.balance:a.due,a.mainCur)+' overdue');if(a.cycleDue.n)parts.push(ownText(a.cycleDue,a.mainCur)+' due '+fmtD(w.nc));return parts.join(' + ')||'—';}
+function fnStatus(r){const st=r.st;const p=[];if(r.deact)p.push('deactivated · last day '+fmtD(r.u.cancel.lastDay));p.push(st.confirmed?'confirmed '+fmtD(st.confirmed)+(r.a.unpaid?' but still overdue':''):'not confirmed');p.push(st.reminded?'reminded '+fmtD(st.reminded):'not reminded');if(st.final)p.push('final notice sent '+fmtD(st.final));return p.join(', ');}
+function fnPkgs(r){const a=r.a;const l=[...(a.duePkgs||[]),...cyclePkgs(r.u,a)];const out=l.filter((x,i,arr)=>x&&arr.indexOf(x)===i);return out.length?out.join(' + '):[...a.pkgIds].map(pkgName).filter(Boolean).join(' + ');}
+function fnLines(F){return F.rows.map(r=>`${displayName(r.u)} — ${userEmails(r.u).join(' / ')||'no email'} — ${fnAmount(r,F.w)} — ${fnStatus(r)}`);}
+function fnCSV(F){const head=['name','email','other_emails','phone','telegram','package','amount_due','status','cycle_start'];const lines=[head.join(',')];for(const r of F.rows){const em=userEmails(r.u);lines.push([displayName(r.u),em[0]||'',em.slice(1).join(' / '),fmtPhone(r.u.phone),r.u.telegram?(/^\d+$/.test(r.u.telegram)?'+'+r.u.telegram:'@'+r.u.telegram):'',fnPkgs(r),fnAmount(r,F.w),fnStatus(r),F.w.nc].map(csvCell).join(','));}return lines.join('\n');}
+function renderFinalNotice(){
+  const today=todayISO();const F=finalRows(today);const w=F.w;const key=w.nc;const x={tpl:finalTplOf(state.settings.finalTemplate),dueDate:fmtD(w.nc,true)};
+  const phase=today>=w.replyBy&&today<w.nc?'today is the reply-by day: send the final notice and compile the list':today<w.replyBy?'the reply-by day is '+fmtD(w.replyBy)+'; this is a preview of who would be listed today':'the cycle has started';
+  $('#rr-sub').textContent=`Cycle starting ${fmtD(w.nc,true)} · replies were due by ${fmtD(w.replyBy)} · ${phase}. Confirmed users are left out; anyone overdue from earlier stays listed. Ticks are saved per user for this cycle.`;
+  const tog=(r,f,label)=>{const v=r.st[f];return `<label class="chk"><input type="checkbox" data-act="rem" data-user="${esc(r.id)}" data-f="${f}"${v?' checked':''}${r.deact?' disabled':''}>${label}${v?` <span class="when">${esc(fmtD(v))}</span>`:''}</label>`;};
+  const deact=r=>r.deact?`<label class="chk"><input type="checkbox" checked disabled>Deactivated <span class="when">${esc(fmtD(r.u.cancel.lastDay))}</span></label>`:`<label class="chk" title="Opens Cancel subscription for this user with the last day set to ${esc(fmtD(addDays(w.nc,-1)))}"><input type="checkbox" data-act="deact" data-user="${esc(r.id)}">Deactivate</label>`;
+  const k=(on,label)=>`<span class="k" data-on="${on?'1':'0'}">${on?'✓':'✗'} ${label}</span>`;
+  const rows=F.rows.map(r=>{const u=r.u,a=r.a;const em=userEmails(u);const mode=a.unpaid?'overdue':'cycle';
+    return `<tr data-user="${esc(r.id)}" data-deact="${r.deact?1:0}">
+      <td class="who"><span class="nm">${esc(displayName(u))}</span>${em.map(e=>`<span class="em">${esc(e)}</span>`).join('')}${em.length?'':'<span class="em muted">no email</span>'}</td>
+      <td class="ct">${u.phone?esc(fmtPhone(u.phone)):'<span class="muted">no WhatsApp</span>'}<br>${u.telegram?esc(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram):'<span class="muted">no Telegram</span>'}</td>
+      <td>${esc(fnPkgs(r)||'—')}</td>
+      <td class="amt">${esc(fnAmount(r,w))}</td>
+      <td class="st">${k(!!r.st.reminded,r.st.reminded?'reminded '+esc(fmtD(r.st.reminded)):'not reminded')}${k(!!r.st.confirmed,r.st.confirmed?'confirmed '+esc(fmtD(r.st.confirmed))+(a.unpaid?' · still overdue':''):'not confirmed')}${r.deact?k(true,'deactivated'):''}</td>
+      <td>${tog(r,'final','Final notice sent')}</td>
+      <td>${deact(r)}</td>
+      <td>${r.deact?'<span class="muted">—</span>':`<span class="remind-pair">${remindControl(u,a,today,'WhatsApp',mode,x)}${emailControl(u,a,today,'Email',mode,x)}${telegramControl(u,'Telegram')}</span>`}</td>
+    </tr>`;}).join('');
+  $('#rr-body').innerHTML=`<div class="fn-bar"><span class="lead"><b>${F.pending}</b> not confirmed${F.rows.length-F.pending?` · ${F.rows.length-F.pending} more listed (confirmed but overdue, or already deactivated)`:''} · ${F.rows.length} line${F.rows.length===1?'':'s'} in the deactivation list</span><button class="btn sm primary" type="button" data-act="fn-copy"${F.rows.length?'':' disabled'}>Copy deactivation list</button><button class="btn sm" type="button" data-act="fn-csv"${F.rows.length?'':' disabled'}>Download CSV</button><span class="small muted" id="fn-msg"></span></div>
+    ${F.rows.length?`<div class="table-wrap"><table class="fn" aria-label="Final notice list"><thead><tr><th>User · account emails</th><th>Contact</th><th>Package</th><th class="r">Amount due</th><th>State</th><th>Final notice</th><th>Deactivate</th><th>Send final notice</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<p class="small muted">Nobody to list: everyone with an amount due for this cycle has confirmed, and nobody is overdue.</p>'}
+    <textarea id="fn-text" class="mono" hidden readonly aria-label="Deactivation list" style="margin-top:8px"></textarea>
+    <p class="small muted" style="margin-top:8px">The copied list has one line per user: name — email — amount due — status. "Deactivate" opens that user's Cancel subscription form with the last day set to ${esc(fmtD(addDays(w.nc,-1),true))}; the user then shows here as deactivated and stops being billed or reminded.</p>`;
+}
+async function copyFinalList(){
+  const F=finalRows(todayISO());const text=fnLines(F).join('\n');const msg=$('#fn-msg'),ta=$('#fn-text');
+  try{await navigator.clipboard.writeText(text);msg.textContent=`Copied ${F.rows.length} line${F.rows.length===1?'':'s'}.`;toast('Deactivation list copied.');}
+  catch(e){ta.hidden=false;ta.value=text;ta.focus();ta.select();msg.textContent='Clipboard blocked here: the list is selected below, press Ctrl+C / Cmd+C.';}
 }
 function pkgOptions(selected,blankLabel){return (blankLabel!==undefined?`<option value="">${esc(blankLabel)}</option>`:'')+packages().map(p=>`<option value="${esc(p.id)}" data-cycle="${p.cycle}"${p.id===selected?' selected':''}>${esc(p.name)} · ${CYCLES[p.cycle].label.toLowerCase()}</option>`).join('')+`<option value="__new">+ New package…</option>`;}
 const cycleSelect=(id,name,val,withOne)=>`<select id="${id}" name="${name}"><option value="monthly"${val==='monthly'?' selected':''}>Monthly</option><option value="yearly"${val==='yearly'?' selected':''}>Yearly</option>${withOne?`<option value="one-time"${val==='one-time'?' selected':''}>One-time</option>`:''}</select>`;
@@ -1045,7 +1159,7 @@ function renderTable(){
   let html='';
   for(const r of rows){
     const {u,a,id}=r;const exp=ui.expanded===id;const late=a.status==='overdue';
-    const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):'—';
+    const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):(a.planParts.length&&!u.cancel?'nothing yet':'—');
     const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?'<span class="muted">paid</span>':'<span class="muted">—</span>');
     html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}">
       <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}</td>
@@ -1056,7 +1170,7 @@ function renderTable(){
       <td class="r">${ownHTML(a.totals,a.mainCur,fmtAmt(0,a.mainCur))}</td>
       <td class="r${a.balance.n?' late':''}">${ownHTML(a.balance,a.mainCur)}</td>
       <td><span class="pill" data-status="${a.status}">${statusLabel(a)}</span></td>
-      <td>${a.needsReminder?`<span class="remind-pair">${remindControl(u,a,today)}${emailControl(u,a,today)}</span>`:'<span class="muted">—</span>'}${remBadge(u,nextCycleStart(today))}</td>
+      <td>${a.needsReminder?`<span class="remind-pair">${remindControl(u,a,today)}${emailControl(u,a,today)}${u.telegram?telegramControl(u):''}</span>`:'<span class="muted">—</span>'}${remBadge(u,nextCycleStart(today))}</td>
       <td><span class="chev">›</span></td>
     </tr>`;
     if(exp)html+=`<tr class="detail" data-id="${id}"><td colspan="10">${detailHTML(id,u,a,today)}</td></tr>`;
@@ -1067,7 +1181,7 @@ function renderTable(){
 function renderRemindAll(rows,today){
   const panel=$('#remindPanel');const list=rows.filter(r=>r.a.unpaid);
   panel.hidden=!(ui.filterUnpaid&&list.length>0);if(panel.hidden)return;
-  $('#remindList').innerHTML=list.map(r=>`<div class="remind-row"><span class="who" title="${esc(displayName(r.u))}">${esc(displayName(r.u))}</span><span class="due">${esc(r.a.duePlans.join(' + ')||'—')} · balance <span class="num">${esc(ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur))}</span>${r.a.nextDue?` · since ${esc(fmtD(r.a.nextDue))}`:''}</span><span class="remind-pair">${remindControl(r.u,r.a,today,'Open WhatsApp')}${emailControl(r.u,r.a,today,'Email')}</span></div>`).join('');
+  $('#remindList').innerHTML=list.map(r=>`<div class="remind-row"><span class="who" title="${esc(displayName(r.u))}">${esc(displayName(r.u))}</span><span class="due">${esc(r.a.duePlans.join(' + ')||'—')} · balance <span class="num">${esc(ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur))}</span>${r.a.nextDue?` · since ${esc(fmtD(r.a.nextDue))}`:''}</span><span class="remind-pair">${remindControl(r.u,r.a,today,'Open WhatsApp')}${emailControl(r.u,r.a,today,'Email')}${r.u.telegram?telegramControl(r.u,'Telegram'):''}</span></div>`).join('');
 }
 const curSelect=(id,name,val)=>`<select id="${id}" name="${name}"><option value="PKR"${val==='PKR'?' selected':''}>PKR (Rs)</option><option value="USD"${val==='USD'?' selected':''}>USD ($)</option></select>`;
 function payRows(s){
@@ -1104,7 +1218,7 @@ function detailHTML(id,u,a,today){
       const dueByFact=s.dueBy?`<span>Remaining due by <b>${esc(fmtD(s.dueBy,true))}</b></span>`:'';
       const lastPaid=sa.periods.filter(p=>p.state==='paid').pop();
       const cells=sa.periods.map(p=>{const pro=p.prorated?`<span class="d">${p.days} of ${p.total} days · ${esc(fmtAmt(p.pr,s.currency))}</span>`:'';let a;
-        let extra='';if(p.state==='paid'){a=esc(fmtAmt(p.pr,s.currency));if(p===lastPaid&&p.creditAfter>0&&sa.nextDue)extra=`<span class="d">paid ${esc(fmtAmt(p.pr+p.creditAfter,s.currency))} · credit ${esc(fmtAmt(p.creditAfter,s.currency))} carried</span>`;}
+        let extra='';if(p.state==='waived'){a='Waived · '+esc(fmtD(p.es))+' – '+esc(fmtD(p.en));extra=`<span class="d">${p.days} stub day${p.days===1?'':'s'} free · billing starts ${esc(fmtD(addDays(p.en,1)))}</span>`;}else if(p.state==='paid'){a=esc(fmtAmt(p.pr,s.currency));if(p===lastPaid&&p.creditAfter>0&&sa.nextDue)extra=`<span class="d">paid ${esc(fmtAmt(p.pr+p.creditAfter,s.currency))} · credit ${esc(fmtAmt(p.creditAfter,s.currency))} carried</span>`;}
         else if(p.state==='partial')a=esc(fmtAmt(p.covered,s.currency))+' of '+esc(fmtAmt(p.pr,s.currency));
         else if(p.state==='unpaid')a='Unpaid · '+esc(fmtAmt(p.pr,s.currency));
         else{a='Upcoming · '+esc(fmtAmt(p.pr-p.covered,s.currency));if(p.covered>0)extra=`<span class="d">${esc(fmtAmt(p.pr,s.currency))} less ${esc(fmtAmt(p.covered,s.currency))} credit</span>`;}
@@ -1118,7 +1232,7 @@ function detailHTML(id,u,a,today){
           <button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>
           <button class="btn sm" type="button" data-act="toggle" data-key="price:${s.id}">Change price</button>
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></div>
-        <div class="sub-facts"><span>Started <b>${esc(fmtD(s.start,true))}</b></span>${s.end?`<span>Ends <b>${esc(fmtD(s.end,true))}</b></span>`:''}<span>Paid through <b>${sa.kPaid?esc(fmtD(sa.paidThrough,true)):'nothing yet'}</b></span>${sa.nextDue?(sa.nextDue>today?`<span>Next due <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}${sa.nextCredit>0?` <span class="muted">(after ${esc(fmtAmt(sa.nextCredit,s.currency))} credit)</span>`:''}</span>`:sa.nextCredit>0?`<span>Remaining on the current period <b>${esc(fmtAmt(nextPr,s.currency))}</b></span>`:`<span>Unpaid since <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}</span>`):''}<span>Total paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>${yearFacts}${dueByFact}${s.prorate===false?'<span>First period <b>not prorated</b></span>':''}${unconvNote}</div>
+        <div class="sub-facts"><span>Started <b>${esc(fmtD(s.start,true))}</b></span>${s.end?`<span>Ends <b>${esc(fmtD(s.end,true))}</b></span>`:''}<span>Paid through <b>${sa.kPaid?esc(fmtD(sa.paidThrough,true)):'nothing yet'}</b></span>${sa.nextDue?(sa.nextDue>today?`<span>Next due <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}${sa.nextCredit>0?` <span class="muted">(after ${esc(fmtAmt(sa.nextCredit,s.currency))} credit)</span>`:''}</span>`:sa.nextCredit>0?`<span>Remaining on the current period <b>${esc(fmtAmt(nextPr,s.currency))}</b></span>`:`<span>Unpaid since <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}</span>`):''}<span>Total paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>${yearFacts}${dueByFact}${s.waiveFirst?'<span>First partial period <b>waived</b></span>':s.prorate===false?'<span>First period <b>not prorated</b></span>':''}${unconvNote}</div>
         ${histTxt?`<div class="hist">Price history: ${histTxt}</div>`:''}
         <div class="periods">${cells}</div>
         ${payForm(id,s,sa,today,nextPr,payOpen,payEdit)}
@@ -1141,8 +1255,9 @@ function detailHTML(id,u,a,today){
             <label class="f">End date <span class="muted">(optional)</span><input id="se-end-${s.id}" name="end" type="date" value="${esc(s.end||'')}"></label>
             <label class="f">Remaining due by <span class="muted">(optional)</span><input id="se-dueby-${s.id}" name="dueBy" type="date" value="${esc(s.dueBy||'')}"></label>
             <label class="f chk"><input id="se-prorate-${s.id}" name="prorate" type="checkbox"${s.prorate===false?'':' checked'}>Prorate first period</label>
+            <label class="f chk"><input id="se-waive-${s.id}" name="waiveFirst" type="checkbox"${s.waiveFirst?' checked':''}>Waive first partial period</label>
           </div>
-          <p class="small muted" style="margin-top:6px">Periods follow the shared billing cycle (${esc(ordinal(cycleDay()))} to ${cycleDay()===1?'end of month':esc(ordinal(cycleDay()-1))}, set in Settings); the start date picks the first period. With proration on, that first period is charged by days. Changing the currency changes what the price and existing payments are read as; it does not convert them. "Remaining due by" turns an unpaid part of the current period into an open balance until that date instead of overdue.</p>
+          <p class="small muted" style="margin-top:6px">Periods follow the shared billing cycle (${esc(ordinal(cycleDay()))} to ${cycleDay()===1?'end of month':esc(ordinal(cycleDay()-1))}, set in Settings); the start date picks the first period. With proration on, that first period is charged by days; with the waiver on, the days before the next cycle are free and billing starts at that cycle. Changing the currency changes what the price and existing payments are read as; it does not convert them. "Remaining due by" turns an unpaid part of the current period into an open balance until that date instead of overdue.</p>
           <div class="form-actions"><button class="btn primary sm" type="submit">Save plan</button><button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Cancel</button><span style="flex:1"></span><span class="del-wrap"><button class="link danger" type="button" data-act="sub-remove" data-sub="${s.id}">Remove plan and its payments</button></span></div>
         </form>
         ${payRows(s)}
@@ -1169,15 +1284,15 @@ function detailHTML(id,u,a,today){
     }
   }
   return `<div class="detail-head">
-      <div class="meta"><span>Joined <b>${esc(fmtD(u.joinDate,true))}</b></span>${u.cancel?`<span>Last day <b>${esc(fmtD(u.cancel.lastDay,true))}</b></span>`:''}${u.email&&u.name?`<span>Email <b class="num">${esc(u.email)}</b></span>`:''}<span>WhatsApp <b>${u.phone?esc(fmtPhone(u.phone)):'not set'}</b></span><span>Method / notes <b>${u.notes?esc(u.notes):'—'}</b></span><span>Total paid <b>${esc(ownText(a.totals,a.mainCur))}</b></span></div>
-      <span style="display:flex;gap:12px;align-items:center">${a.needsReminder?remindControl(u,a,today,'Remind on WhatsApp')+emailControl(u,a,today,'Email'):''}<button class="link" type="button" data-act="toggle" data-key="edit">Edit user</button>${u.cancel?`<button class="btn sm primary" type="button" data-act="toggle" data-key="react">Reactivate</button>`:`<button class="link danger" type="button" data-act="toggle" data-key="cancel">Cancel subscription</button>`}</span>
+      <div class="meta"><span>Joined <b>${esc(fmtD(u.joinDate,true))}</b></span>${u.cancel?`<span>Last day <b>${esc(fmtD(u.cancel.lastDay,true))}</b></span>`:''}${u.email&&u.name?`<span>Email <b class="num">${esc(u.email)}</b></span>`:''}<span>WhatsApp <b>${u.phone?esc(fmtPhone(u.phone)):'not set'}</b></span>${u.telegram?`<span>Telegram <b>${esc(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram)}</b></span>`:''}<span>Method / notes <b>${u.notes?esc(u.notes):'—'}</b></span><span>Total paid <b>${esc(ownText(a.totals,a.mainCur))}</b></span></div>
+      <span style="display:flex;gap:12px;align-items:center">${u.cancel?'':remindControl(u,a,today,'Remind on WhatsApp')+emailControl(u,a,today,'Email')+telegramControl(u,'Telegram')}<button class="link" type="button" data-act="toggle" data-key="edit">Edit user</button>${u.cancel?`<button class="btn sm primary" type="button" data-act="toggle" data-key="react">Reactivate</button>`:`<button class="link danger" type="button" data-act="toggle" data-key="cancel">Cancel subscription</button>`}</span>
     </div>
     ${u.cancel?`<p class="cancel-note"><b>Cancelled</b> · last day ${esc(fmtD(u.cancel.lastDay,true))}${u.cancel.reason?` · ${esc(u.cancel.reason)}`:''}${u.cancel.note?` · ${esc(u.cancel.note)}`:''} · ${a.balance.n?'still owes '+esc(ownText(a.balance,a.mainCur))+' for periods before the last day':'settled, nothing owed'}. No further periods or reminders.</p>`:''}
     <form class="block cancel-form" data-id="${id}" ${open.cancel&&!u.cancel?'':'hidden'} novalidate>
       <h3 style="margin-bottom:8px">Cancel subscription</h3>
       <div class="form-grid">
-        <label class="f">Last day<input id="cx-last-${id}" name="lastDay" type="date" required value="${esc(a.paidThrough&&a.paidThrough>=today?a.paidThrough:today)}"></label>
-        <label class="f">Reason <span class="muted">(optional)</span><input id="cx-reason-${id}" name="reason" type="text" placeholder="e.g. moving to another tool"></label>
+        <label class="f">Last day<input id="cx-last-${id}" name="lastDay" type="date" required value="${esc((ui.cancelPre[id]||{}).lastDay||(a.paidThrough&&a.paidThrough>=today?a.paidThrough:today))}"></label>
+        <label class="f">Reason <span class="muted">(optional)</span><input id="cx-reason-${id}" name="reason" type="text" placeholder="e.g. moving to another tool" value="${esc((ui.cancelPre[id]||{}).reason||'')}"></label>
         <label class="f">Refund note <span class="muted">(optional)</span><input id="cx-note-${id}" name="note" type="text" placeholder="e.g. Rs 677 credit refunded via NayaPay"></label>
       </div>
       <p class="small muted" style="margin-top:6px">All of this user's plans end on the last day. Periods that already started stay due; nothing is billed or reminded after it. Recorded payments stay as history.</p>
@@ -1203,6 +1318,7 @@ function detailHTML(id,u,a,today){
         <label class="f"><span data-role="date-label">Start date</span><input id="as-date-${id}" name="date" type="date" value="${u.joinDate}"></label>
         <label class="f" data-role="dueby-wrap">Remaining due by <span class="muted">(optional)</span><input id="as-dueby-${id}" name="dueBy" type="date"></label>
         <label class="f chk" data-role="prorate-wrap"><input id="as-prorate-${id}" name="prorate" type="checkbox" checked>Prorate first period</label>
+        <label class="f chk" data-role="waive-wrap"><input id="as-waive-${id}" name="waiveFirst" type="checkbox">Waive first partial period</label>
       </div>
       <div class="form-actions"><button class="btn primary sm" type="submit">Add</button><button class="link" type="button" data-act="toggle" data-key="addsub">Cancel</button><span class="err" data-role="addsub-err"></span></div>
     </form>
@@ -1213,6 +1329,7 @@ function detailHTML(id,u,a,today){
         <label class="f">Email<input id="e-email-${id}" name="email" type="email" value="${esc(u.email||'')}"></label>
         <label class="f">Joined on<input id="e-join-${id}" name="joinDate" type="date" required value="${esc(u.joinDate)}"></label>
         <label class="f">WhatsApp number <span class="muted">(with country code)</span><input id="e-phone-${id}" name="phone" type="tel" placeholder="+92 300 1234567" value="${esc(fmtPhone(u.phone))}"></label>
+        <label class="f">Telegram <span class="muted">(handle or phone, optional)</span><input id="e-tg-${id}" name="telegram" type="text" placeholder="@handle or +92…" value="${esc(u.telegram?(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram):'')}"></label>
         <label class="f">Payment method / notes<input id="e-notes-${id}" name="notes" type="text" value="${esc(u.notes||'')}"></label>
       </div>
       <div class="form-actions">
@@ -1241,7 +1358,7 @@ function wireDetail(id,today){
     [amt,curEl,rateEl].forEach(el=>el.addEventListener('input',upd));upd();
   });
   const add=det.querySelector('.addsub-form');
-  if(add){const kind=add.querySelector('[name=kind]');const pkgSel=add.querySelector('[name=packageId]');pkgSel.addEventListener('change',()=>{if(pkgSel.value==='__new'){pkgSel.value='';newPackageFlow();return;}const p=pkgById(pkgSel.value);const pr=add.querySelector('[name=price]');if(p){kind.value=p.cycle;kind.dispatchEvent(new Event('change'));}if(p&&p.price!=null&&(pr.value===''||pr.value===(pkgSel.dataset.prefilled||''))){pr.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency)add.querySelector('[name=currency]').value=p.currency;}});const upd=()=>{const ot=kind.value==='one-time';add.querySelector('[data-role=dueby-wrap]').hidden=ot;add.querySelector('[data-role=prorate-wrap]').hidden=ot;add.querySelector('[data-role=name-label]').textContent=ot?'Item name':'Label (optional)';add.querySelector('[data-role=amt-label]').textContent=ot?'Total amount':(kind.value==='yearly'?'Yearly price':'Monthly price');add.querySelector('[data-role=date-label]').textContent=ot?'Due date (optional)':'Start date';const d=add.querySelector('[name=date]');d.required=!ot;if(ot&&d.value===u.joinDate)d.value='';if(!ot&&!d.value)d.value=u.joinDate;};kind.addEventListener('change',upd);upd();}
+  if(add){const kind=add.querySelector('[name=kind]');const pkgSel=add.querySelector('[name=packageId]');pkgSel.addEventListener('change',()=>{if(pkgSel.value==='__new'){pkgSel.value='';newPackageFlow();return;}const p=pkgById(pkgSel.value);const pr=add.querySelector('[name=price]');if(p){kind.value=p.cycle;kind.dispatchEvent(new Event('change'));}if(p&&p.price!=null&&(pr.value===''||pr.value===(pkgSel.dataset.prefilled||''))){pr.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency)add.querySelector('[name=currency]').value=p.currency;}});const upd=()=>{const ot=kind.value==='one-time';add.querySelector('[data-role=dueby-wrap]').hidden=ot;add.querySelector('[data-role=prorate-wrap]').hidden=ot;add.querySelector('[data-role=waive-wrap]').hidden=ot;add.querySelector('[data-role=name-label]').textContent=ot?'Item name':'Label (optional)';add.querySelector('[data-role=amt-label]').textContent=ot?'Total amount':(kind.value==='yearly'?'Yearly price':'Monthly price');add.querySelector('[data-role=date-label]').textContent=ot?'Due date (optional)':'Start date';const d=add.querySelector('[name=date]');d.required=!ot;if(ot&&d.value===u.joinDate)d.value='';if(!ot&&!d.value)d.value=u.joinDate;};kind.addEventListener('change',upd);upd();}
   det.querySelectorAll('.subedit-form select[name=packageId]').forEach(sel=>sel.addEventListener('change',()=>{if(sel.value==='__new'){sel.value='';newPackageFlow();}}));
 }
 
@@ -1275,12 +1392,12 @@ function updCostConv(){const cur=$('#c-cur').value;const t=(Number($('#c-cost').
 function toast(msg,ms){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms||3400);}
 function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel'])$('#'+p).hidden=p!==id;}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
-function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
+function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
 function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
 function openAdd(){showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
 function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';}
 function updAddConv(){const cur=$('#a-cur').value;const cyEl=$('#a-cycle');const cy=cyEl?cyEl.value:'monthly';$('#a-price-lbl').textContent=`${cy==='one-time'?'Total amount':cy==='yearly'?'Yearly price':'Monthly price'} (${cur==='USD'?'$':'Rs'})`;const n=Number($('#a-price').value)||0;const c=conv(n,cur,null);$('#a-conv').textContent=n?`${fmtAmt(n,cur)}${CYCLES[cy].per}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`:' (set an exchange rate in Settings to see the other currency)'):'The first billing period starts on the join date. One-time items and more plans can be added from the user\'s row.';}
-function toggleOpen(id,key){ui.open[id]=ui.open[id]||{};ui.open[id][key]=!ui.open[id][key];if(!ui.open[id][key]){const sid=key.split(':')[1];if(sid&&ui.priceEdit)delete ui.priceEdit[sid];if(sid&&ui.payEdit)delete ui.payEdit[sid];}renderTable();}
+function toggleOpen(id,key){ui.open[id]=ui.open[id]||{};ui.open[id][key]=!ui.open[id][key];if(!ui.open[id][key]){if(key==='cancel')delete ui.cancelPre[id];const sid=key.split(':')[1];if(sid&&ui.priceEdit)delete ui.priceEdit[sid];if(sid&&ui.payEdit)delete ui.payEdit[sid];}renderTable();}
 const validPhone=raw=>{const d=digits(raw);return d===''||(d.length>=7&&d.length<=15);};
 const validAmt=v=>v!==''&&isFinite(Number(v))&&Number(v)>=0;
 
@@ -1306,17 +1423,21 @@ function bind(){
   $('#btn-io').addEventListener('click',()=>{$('#ioPanel').hidden?showPanel('ioPanel'):($('#ioPanel').hidden=true);});
   $('#io-close').addEventListener('click',()=>{$('#ioPanel').hidden=true;});
   $('#btn-settings').addEventListener('click',()=>{$('#settingsPanel').hidden?openSettings():($('#settingsPanel').hidden=true);});
-  $('#btn-reminders').addEventListener('click',()=>{$('#remindRun').hidden?openRemindRun():($('#remindRun').hidden=true);});
-  $('#remindBannerBtn').addEventListener('click',openRemindRun);
+  $('#btn-reminders').addEventListener('click',()=>{if($('#remindRun').hidden){const w=reminderWindow(todayISO());ui.rrTab=todayISO()>=w.replyBy&&todayISO()<w.nc?'final':'run';openRemindRun();}else $('#remindRun').hidden=true;});
+  $('#remindBannerBtn').addEventListener('click',()=>{ui.rrTab=$('#remindBanner').dataset.kind==='final'?'final':'run';openRemindRun();});
+  $('#rr-tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;ui.rrTab=b.dataset.tab;renderRemindRun();});
+  $('#rr-body').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(!b)return;if(b.dataset.act==='fn-copy')copyFinalList();else if(b.dataset.act==='fn-csv'){const F=finalRows(todayISO());exportCSV(fnCSV(F),'deactivation-list-'+F.w.nc,'fn-msg','fn-text');}});
   $('#rr-close').addEventListener('click',()=>{$('#remindRun').hidden=true;});
   $('#rr-body').addEventListener('change',async e=>{
+    const dc=e.target.closest('input[data-act="deact"]');
+    if(dc){const id=dc.dataset.user;if(!state.users[id]||state.users[id].cancel)return;const nc=nextCycleStart(todayISO());ui.cancelPre[id]={lastDay:addDays(nc,-1),reason:'Not confirmed for the cycle starting '+fmtD(nc,true)};ui.expanded=id;ui.open[id]=Object.assign({},ui.open[id],{cancel:true});renderTable();const det=document.querySelector(`tr.detail[data-id="${id}"]`);if(det){det.scrollIntoView({behavior:'smooth',block:'start'});const f=det.querySelector('.cancel-form [name=lastDay]');if(f)f.focus();}dc.checked=false;return;}
     const cb=e.target.closest('input[data-act="rem"]');if(!cb)return;const id=cb.dataset.user;if(!state.users[id])return;
-    const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null},u.reminders[key]||{});
-    r[cb.dataset.f]=cb.checked?todayISO():null;if(r.reminded||r.confirmed)u.reminders[key]=r;else delete u.reminders[key];
+    const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null},u.reminders[key]||{});
+    r[cb.dataset.f]=cb.checked?todayISO():null;if(r.reminded||r.confirmed||r.final)u.reminders[key]=r;else delete u.reminders[key];
     cb.disabled=true;const ok=await persistUser(id,u);if(!ok){cb.disabled=false;cb.checked=!cb.checked;}else if(db)renderRemindRun();
   });
   $('#settings-close').addEventListener('click',()=>{$('#settingsPanel').hidden=true;});
-  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
+  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
   $('#reset-wrap').addEventListener('click',async e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.id==='btn-reset'){$('#reset-wrap').innerHTML=`<span class="small" style="margin-right:8px">Remove every user, payment and cost? This cannot be undone.</span><button class="btn sm danger" type="button" data-act="reset-yes">Yes, reset</button> <button class="btn sm" type="button" data-act="reset-no">Cancel</button>`;}
@@ -1357,7 +1478,7 @@ function bind(){
     if(!validAmt(priceRaw)){err.textContent='Enter the monthly price (0 is allowed for a free plan).';return;}
     if(!validPhone(phone)){err.textContent='Phone number should have 7 to 15 digits including the country code.';return;}
     const id=newId('u');
-    const ok=await persistUser(id,{name,email,phone,joinDate:join,notes,subscriptions:[cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,total:Number(priceRaw),due:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start:join,end:null,prorate:$('#a-prorate').checked,dueBy:null,prices:[{from:join,price:Number(priceRaw)}],payments:[]}]});
+    const ok=await persistUser(id,{name,email,phone,telegram:normTg($('#a-tg').value),joinDate:join,notes,subscriptions:[cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,total:Number(priceRaw),due:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start:join,end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,dueBy:null,prices:[{from:join,price:Number(priceRaw)}],payments:[]}]});
     if(ok){$('#addForm').reset();$('#addPanel').hidden=true;ui.expanded=id;toast('Added '+(name||email)+'. Open the row to record payments.');if(!db)renderTable();}
   });
 
@@ -1401,7 +1522,7 @@ function bind(){
       const ok=await persistUser(id,u);if(ok)toast(`${s.name}: ${fmtAmt(Number(priceRaw),s.currency)}/mo from ${fmtD(from,true)}.`);
     }else if(form.classList.contains('subedit-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const name=s.kind==='monthly'?val('name').trim():(val('name').trim()||s.name);const cur=normCur(val('currency'));
-      if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}s.packageId=pkg;s.cycle=val('cycle')==='yearly'?'yearly':'monthly';s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start){toast('The end date must not be before the start date.');return;}
+      if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}s.packageId=pkg;s.cycle=val('cycle')==='yearly'?'yearly':'monthly';s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start){toast('The end date must not be before the start date.');return;}
         if(start!==s.start){s.prices=(s.prices||[]).map(p=>p.from<start?Object.assign({},p,{from:start}):p);const seen={};s.prices=s.prices.filter(p=>{if(seen[p.from])return false;seen[p.from]=true;return true;});}
         Object.assign(s,{name,start,end:end||null,currency:cur});}
       else{const total=val('total'),due=val('due');if(!validAmt(total)){toast('Enter the total amount.');return;}const pk=val('packageId');Object.assign(s,{name,total:Number(total),due:isDateKey(due)?due:null,currency:cur,packageId:pkgById(pk)?pk:null});}
@@ -1410,14 +1531,14 @@ function bind(){
       setErr('addsub-err','');const cy=normCycle(val('kind'));const kind=cy==='one-time'?'one-time':'monthly';const pkg=val('packageId');const name=val('name').trim()||(kind==='monthly'?'':(pkgName(pkg)||'Item'));const priceRaw=val('price'),date=val('date'),cur=normCur(val('currency')),dueBy=val('dueBy');
       if(!pkgById(pkg)){setErr('addsub-err','Choose a package or product.');return;}
       if(!validAmt(priceRaw)){setErr('addsub-err',kind==='monthly'?'Enter the monthly price.':'Enter the total amount.');return;}
-      if(kind==='monthly'){if(!isDateKey(date)){setErr('addsub-err','Pick the start date.');return;}u.subscriptions.push({id:newId('s'),kind,cycle:cy,name,packageId:pkg,currency:cur,start:date,end:null,prorate:!!(form.querySelector('[name=prorate]')||{}).checked,dueBy:isDateKey(dueBy)?dueBy:null,prices:[{from:date,price:Number(priceRaw)}],payments:[]});}
+      if(kind==='monthly'){if(!isDateKey(date)){setErr('addsub-err','Pick the start date.');return;}u.subscriptions.push({id:newId('s'),kind,cycle:cy,name,packageId:pkg,currency:cur,start:date,end:null,prorate:!!(form.querySelector('[name=prorate]')||{}).checked,waiveFirst:!!(form.querySelector('[name=waiveFirst]')||{}).checked,dueBy:isDateKey(dueBy)?dueBy:null,prices:[{from:date,price:Number(priceRaw)}],payments:[]});}
       else u.subscriptions.push({id:newId('s'),kind,name,packageId:pkg,currency:cur,total:Number(priceRaw),due:isDateKey(date)?date:null,payments:[]});
       closeKey('addsub');const ok=await persistUser(id,u);if(ok)toast('Added '+(name||pkgName(pkg))+'.');
     }else if(form.classList.contains('cancel-form')){
       setErr('cancel-err','');const lastDay=val('lastDay'),reason=val('reason').trim(),note=val('note').trim();
       if(!isDateKey(lastDay)){setErr('cancel-err','Pick the last day.');return;}
       for(const s of u.subscriptions){if(s.kind!=='monthly')continue;if(!s.end||s.end>lastDay)s.end=lastDay;}
-      u.cancel={lastDay,reason,note,at:todayISO()};closeKey('cancel');
+      u.cancel={lastDay,reason,note,at:todayISO()};closeKey('cancel');delete ui.cancelPre[id];
       const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} cancelled · last day ${fmtD(lastDay,true)}.`);
     }else if(form.classList.contains('react-form')){
       setErr('react-err','');const start=val('start');if(!isDateKey(start)){setErr('react-err','Pick the new start date.');return;}
@@ -1435,7 +1556,7 @@ function bind(){
       if(!isDateKey(join)){setErr('edit-err','Pick the join date.');return;}
       const dup=findUser(email,name);if(dup&&dup!==id){setErr('edit-err','Another user already has that email or name.');return;}
       if(!validPhone(phone)){setErr('edit-err','Phone number should have 7 to 15 digits including the country code.');return;}
-      Object.assign(u,{name,email,joinDate:join,phone:digits(phone),notes});closeKey('edit');
+      Object.assign(u,{name,email,joinDate:join,phone:digits(phone),notes,telegram:normTg(val('telegram'))});closeKey('edit');
       const ok=await persistUser(id,u);if(ok)toast('Saved changes for '+displayName(u)+'.');
     }
   });
@@ -1475,12 +1596,13 @@ function bind(){
 const qa={rows:[],busy:false};
 function openQuick(){showPanel('quickPanel');$('#qa-err').textContent='';renderQuick();$('#quickPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#qa-text').focus();}
 function quickPrompt(){return `You are reading lines typed by a small SaaS owner in Pakistan, one user per line, to add subscribers to a payments tracker. Extract each line into JSON.
-Reply with only a JSON array, one element per non-empty line, in order: {"name":"text","email":"a@b.c" or null,"phone":"digits with country code" or null,"joined":"YYYY-MM-DD" or null,"package":"one of the package names below" or null,"price":number or null,"currency":"PKR" or "USD" or null,"paid":number or true or null}.
-Packages: ${packages().map(p=>p.name).join(', ')}. Match package names case-insensitively (a lone "C" means package C). "joined", "start", "from" or "since" introduce the join date; infer the year ${todayISO().slice(0,4)} when missing. A number with 7 or more digits or starting with + is a phone number, not a price. "paid" alone means paid the full price (true); "paid 4200" means paid 4200. Do not invent values: use null for anything not present.`;}
+Reply with only a JSON array, one element per non-empty line, in order: {"name":"text","email":"a@b.c" or null,"phone":"digits with country code" or null,"telegram":"handle without @" or null,"joined":"YYYY-MM-DD" or null,"package":"one of the package names below" or null,"price":number or null,"currency":"PKR" or "USD" or null,"paid":number or true or null}.
+Packages: ${packages().map(p=>p.name).join(', ')}. Match package names case-insensitively (a lone "C" means package C). "joined", "start", "from" or "since" introduce the join date; infer the year ${todayISO().slice(0,4)} when missing. A number with 7 or more digits or starting with + is a phone number, not a price. "tg:name", "telegram name" or a lone "@name" is the Telegram handle. "paid" alone means paid the full price (true); "paid 4200" means paid 4200. Do not invent values: use null for anything not present.`;}
 function quickParseLine(line){
-  let t=' '+line.replace(/\t/g,' ').trim()+' ';const out={name:'',email:null,phone:null,joined:null,package:null,price:null,currency:null,paid:null};
+  let t=' '+line.replace(/\t/g,' ').trim()+' ';const out={name:'',email:null,phone:null,telegram:null,joined:null,package:null,price:null,currency:null,paid:null};
   let m;
   if((m=t.match(/[^\s,;]+@[^\s,;]+\.[^\s,;]+/))){out.email=m[0].replace(/[.,;]+$/,'');t=t.replace(m[0],' ');}
+  if((m=t.match(/(?:\btg\s*[:=]\s*|\btelegram\s*[:=]?\s*)@?([A-Za-z0-9_]{3,32})/i))||(m=t.match(/(?:^|[\s,;])@([A-Za-z][A-Za-z0-9_]{2,31})(?=[\s,;]|$)/))){out.telegram=m[1];t=t.replace(m[0],' ');}
   if((m=t.match(/(\+\d[\d\s\-().]{6,}\d)|(?<![\d.])(0\d{9,11}|\d{10,15})(?![\d.])/))){const d=digits(m[0]);if(d.length>=7&&d.length<=15){out.phone=d;t=t.replace(m[0],' ');}}
   const DATE='(\\d{4}-\\d{1,2}-\\d{1,2}|\\d{1,2}[\\/.-]\\d{1,2}(?:[\\/.-]\\d{2,4})?|(?:'+MONTH_RE+')[a-z]*\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?,?(?:\\s+\\d{4})?|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:'+MONTH_RE+')[a-z]*\\.?,?(?:\\s+\\d{4})?)';
   if((m=t.match(new RegExp('\\b(?:joined|joins|joining|join|started|starts|start|from|since|on)\\s*[:=]?\\s*'+DATE,'i')))){out.joined=parseLooseDate(m[1]);t=t.replace(m[0],' ');}
@@ -1494,7 +1616,7 @@ function quickParseLine(line){
   return out;
 }
 function quickNormalize(o,line){
-  const r={id:newId('q'),line,sel:true,name:String(o.name||'').trim(),email:String(o.email||'').trim(),phone:digits(o.phone),joined:normDate(o.joined)||parseLooseDate(String(o.joined||''))||todayISO(),pkg:null,pkgPrice:null,price:null,cur:'PKR',paid:null,dup:false,warn:''};
+  const r={id:newId('q'),line,sel:true,name:String(o.name||'').trim(),email:String(o.email||'').trim(),phone:digits(o.phone),telegram:normTg(o.telegram),joined:normDate(o.joined)||parseLooseDate(String(o.joined||''))||todayISO(),pkg:null,pkgPrice:null,price:null,cur:'PKR',paid:null,dup:false,warn:''};
   if(r.email&&!EMAIL_RE.test(r.email)){r.warn='email looks wrong';}
   if(r.phone&&!validPhone(r.phone))r.phone='';
   const pn=String(o.package||'').trim().toLowerCase();let p=pn?packages().find(x=>x.name.toLowerCase()===pn):null;if(!p)p=defaultPkg();
@@ -1527,6 +1649,7 @@ function renderQuick(){
     <td><input class="nm" type="text" data-f="name" value="${esc(r.name)}" placeholder="Name"></td>
     <td><input class="em" type="email" data-f="email" value="${esc(r.email)}" placeholder="email"></td>
     <td><input class="ph" type="tel" data-f="phone" value="${esc(fmtPhone(r.phone))}" placeholder="+92…"></td>
+    <td><input class="ph" type="text" data-f="telegram" value="${esc(r.telegram?'@'+r.telegram:'')}" placeholder="@tg"></td>
     <td><input class="dt" type="date" data-f="joined" value="${esc(r.joined)}"></td>
     <td><select data-f="pkg" aria-label="Package">${pkgOptions(r.pkg,'Choose…')}</select></td>
     <td class="r"><input class="amt" type="number" min="0" step="0.01" data-f="price" value="${r.price==null?'':r.price}" placeholder="price"></td>
@@ -1546,7 +1669,7 @@ async function quickSave(){
   for(const r of ok){
     const p=pkgById(r.pkg);const sub={id:newId('s'),kind:'monthly',cycle:p.cycle==='yearly'?'yearly':'monthly',name:'',packageId:p.id,currency:r.cur,start:r.joined,end:null,prorate:true,dueBy:null,prices:[{from:r.joined,price:Number(r.price)}],payments:[]};
     if(r.paid!=null&&r.paid>0){sub.payments.push({id:newId('p'),date:r.joined,amount:Number(r.paid),currency:r.cur,rate:null,note:'quick add'});pays++;}
-    const u={name:r.name,email:r.email,phone:r.phone,joinDate:r.joined,notes:'',subscriptions:[sub]};
+    const u={name:r.name,email:r.email,phone:r.phone,telegram:normTg(r.telegram),joinDate:r.joined,notes:'',subscriptions:[sub]};
     const done=await persistUser(newId('u'),u);if(done){added++;r.done=true;}else failed++;
   }
   qa.busy=false;qa.rows=qa.rows.filter(r=>!r.done);renderQuick();
@@ -1724,11 +1847,11 @@ function bindShot(){
 
 /* ---------- CSV ---------- */
 const csvCell=v=>{v=String(v==null?'':v);return /[",\n\t]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
-const USERS_HEAD=['name','email','phone','join_date','notes','status','last_day','package','plan','kind','currency','price','plan_start','plan_end','due_by','prorate','payment_date','payment_amount','payment_currency','payment_rate','payment_note'];
+const USERS_HEAD=['name','email','phone','telegram','join_date','notes','status','last_day','package','plan','kind','currency','price','plan_start','plan_end','due_by','prorate','payment_date','payment_amount','payment_currency','payment_rate','payment_note'];
 function buildUsersCSV(){
   const ids=Object.keys(state.users).sort((a,b)=>(state.users[a].joinDate||'').localeCompare(state.users[b].joinDate||'')||displayName(state.users[a]).localeCompare(displayName(state.users[b])));
   const lines=[USERS_HEAD.join(',')];
-  for(const id of ids){const u=state.users[id];const base=[u.name,u.email,fmtPhone(u.phone),u.joinDate,u.notes,u.cancel?'cancelled':'active',u.cancel?u.cancel.lastDay:''];
+  for(const id of ids){const u=state.users[id];const base=[u.name,u.email,fmtPhone(u.phone),u.telegram?(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram):'',u.joinDate,u.notes,u.cancel?'cancelled':'active',u.cancel?u.cancel.lastDay:''];
     if(!(u.subscriptions||[]).length)lines.push([...base,...Array(14).fill('')].map(csvCell).join(','));
     for(const s of u.subscriptions||[]){const lbl=/^standard$/i.test(s.name||'')&&s.packageId?'':s.name;const sb=s.kind==='monthly'?[pkgName(s.packageId),lbl,subCycle(s),s.currency,priceAt(s,todayISO()),s.start,s.end||'',s.dueBy||'',s.prorate===false?'no':'yes']:[pkgName(s.packageId),lbl,'one-time',s.currency,s.total,'',s.due||'','',''];
       const pays=(s.payments||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
@@ -1753,7 +1876,7 @@ async function importUsersCSV(){
   if(!parsed){msg.textContent='Paste some rows first.';return;}const {header,rows}=parsed;
   const monthCols=[];header.forEach((h,i)=>{const k=monthHeader(h);if(k)monthCols.push([i,k]);});
   const isMonthCol=i=>monthCols.some(c=>c[0]===i);const find=re=>header.findIndex((h,i)=>!isMonthCol(i)&&re.test(h));
-  const col={name:find(/^(full ?)?name$|customer|contact/),email:find(/mail/),phone:find(/phone|whatsapp|mobile/),join:find(/join|signed|^date$|^joined/),notes:find(/^notes?$|method|comment/),pkg:find(/package|tier/),plan:find(/^plan(_| )?name$|^plan$|subscription|item|label/),kind:find(/kind|type/),cur:find(/^currency$|^plan_currency$|pays/),price:find(/price|^total|monthly/),pstart:find(/plan_start|^start/),pend:find(/plan_end|^end|^due(_date)?$/),dueby:find(/due_by|dueby|remaining/),prorate:find(/prorat/),status:find(/^status$/),lastday:find(/last_day|lastday|cancel/),pdate:find(/payment_date|paid_on|paid on|pay date/),pamt:find(/payment_amount|paid_amount|^payment$|^amount$/),pcur:find(/payment_currency|paid_in/),prate:find(/payment_rate|^rate/),pnote:find(/payment_note|pay note|reference/)};
+  const col={name:find(/^(full ?)?name$|customer|contact/),email:find(/mail/),phone:find(/phone|whatsapp|mobile/),tg:find(/telegram|^tg$/),join:find(/join|signed|^date$|^joined/),notes:find(/^notes?$|method|comment/),pkg:find(/package|tier/),plan:find(/^plan(_| )?name$|^plan$|subscription|item|label/),kind:find(/kind|type/),cur:find(/^currency$|^plan_currency$|pays/),price:find(/price|^total|monthly/),pstart:find(/plan_start|^start/),pend:find(/plan_end|^end|^due(_date)?$/),dueby:find(/due_by|dueby|remaining/),prorate:find(/prorat/),status:find(/^status$/),lastday:find(/last_day|lastday|cancel/),pdate:find(/payment_date|paid_on|paid on|pay date/),pamt:find(/payment_amount|paid_amount|^payment$|^amount$/),pcur:find(/payment_currency|paid_in/),prate:find(/payment_rate|^rate/),pnote:find(/payment_note|pay note|reference/)};
   if(col.price===col.pamt&&col.price>=0)col.pamt=-1;
   if(col.name<0&&col.email<0){msg.textContent='Could not find a name or email column in the header row.';return;}
   const get=(r,k)=>col[k]>=0?(r[col[k]]||'').trim():'';
@@ -1761,10 +1884,10 @@ async function importUsersCSV(){
   for(const r of rows){
     const name=get(r,'name'),email=get(r,'email');if(!name&&!email){skipped++;continue;}if(email&&!EMAIL_RE.test(email)){skipped++;continue;}
     const key=(email||name).toLowerCase();let entry=ops.get(key);
-    if(!entry){const existingId=findUser(email,name);const u=existingId?clone(state.users[existingId]):{name,email,phone:'',joinDate:'',notes:'',subscriptions:[]};entry={id:existingId||newId('u'),u,isNew:!existingId};ops.set(key,entry);}
+    if(!entry){const existingId=findUser(email,name);const u=existingId?clone(state.users[existingId]):{name,email,phone:'',telegram:'',joinDate:'',notes:'',subscriptions:[]};entry={id:existingId||newId('u'),u,isNew:!existingId};ops.set(key,entry);}
     const u=entry.u;const join=parseDate(get(r,'join'));if(join)u.joinDate=join;if(!u.joinDate){skipped++;continue;}
     if(name&&!u.name)u.name=name;if(email&&!u.email)u.email=email;
-    const ph=get(r,'phone');if(ph&&validPhone(ph))u.phone=digits(ph);const nt=get(r,'notes');if(nt)u.notes=nt;
+    const ph=get(r,'phone');if(ph&&validPhone(ph))u.phone=digits(ph);const nt=get(r,'notes');if(nt)u.notes=nt;const tg=get(r,'tg');if(tg)u.telegram=normTg(tg);
     const stTxt=get(r,'status');if(stTxt){if(/cancel/i.test(stTxt)){const ld=parseDate(get(r,'lastday'))||(u.cancel&&u.cancel.lastDay)||todayISO();u.cancel={lastDay:ld,reason:'',note:'',at:todayISO()};for(const s of u.subscriptions||[]){if(s.kind==='monthly'&&(!s.end||s.end>ld))s.end=ld;}}else if(/active/i.test(stTxt))u.cancel=null;}
     u.subscriptions=u.subscriptions||[];
     const plan=get(r,'plan'),price=parseAmount(get(r,'price')),curTxt=get(r,'cur'),pkgTxt=get(r,'pkg');const kindTxt=get(r,'kind');const cy=/one|once|single/i.test(kindTxt)?'one-time':(/year|annual/i.test(kindTxt)?'yearly':'monthly');const kind=cy==='one-time'?'one-time':'monthly';const dueByTxt=parseDate(get(r,'dueby'));const proTxt=get(r,'prorate');const pro=proTxt?!/^(no|n|false|0|off)$/i.test(proTxt):null;
@@ -1812,7 +1935,7 @@ function subscribe(){
     if(!snap.metadata.fromCache){if(snap.empty)maybeSeedShared();else maybeMigrateShared(snap.docs);}
   },e=>{state.mode='error';state.loaded=true;toast('Live data unavailable ('+(e&&e.code||'unknown')+'). Reload to reconnect.');render();});
   db.collection('costs').onSnapshot(snap=>{const costs={};snap.docs.forEach(d=>{const b=d.data();if(b)costs[d.id]=normalizeCost(b,d.id);});state.costs=costs;state.costsLoaded=true;render();},()=>{});
-  db.doc('settings/main').onSnapshot(snap=>{if(snap.exists){const b=snap.data()||{};state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);render();}},()=>{});
+  db.doc('settings/main').onSnapshot(snap=>{if(snap.exists){const b=snap.data()||{};state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);render();}},()=>{});
 }
 async function init(){
   loadPrefs();bind();render();
