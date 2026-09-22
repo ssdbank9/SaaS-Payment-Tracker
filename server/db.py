@@ -173,7 +173,7 @@ def list_docs(prefix=""):
     con = connect()
     try:
         if prefix:
-            rows = con.execute("SELECT path, json, updated_at FROM docs WHERE path >= ? AND path < ? ORDER BY path", (prefix, prefix + "￿")).fetchall()
+            rows = con.execute("SELECT path, json, updated_at FROM docs WHERE path >= ? AND path < ? ORDER BY path", (prefix, prefix + "\uffff")).fetchall()
         else:
             rows = con.execute("SELECT path, json, updated_at FROM docs ORDER BY path").fetchall()
         return [_row_to_doc(r) for r in rows]
