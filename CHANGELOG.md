@@ -2,6 +2,11 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v22 - 2026-09-22
+
+- Editable amount per period: every current or upcoming period box in an expanded plan has **edit amount**, and every Queue row has **✎ edit amount** next to the figure that goes into the message; both open the same small inline form (amount prefilled with the computed one, a **Discount** shortcut that takes `10%` or `500` and fills the amount, a note such as "Eid discount" or "correction", Save, and **Reset to computed** once an amount is set). The entry is kept per plan as `periodOverrides[periodStart] = {amount, note, at}`; absent means the computed amount, so nothing changes for existing records. The first period's "Amount charged" field now writes the same entry, while an older `prorationAmountOverride` is still read.
+- The set amount is the period's amount everywhere: balance due and the outstanding tile, credit carried forward, per-user dues, the By product table, `{amount}` in the stage messages (shown at once in the Queue, less any credit that already applies, which the form spells out), the link-page document and therefore the public `/c/<token>` page and the `notify.py` emails. Boxes show a **custom** tag with the computed amount struck through and the note; recorded payments are untouched. Server VERSION and the badge are 22.
+
 ## v21 - 2026-09-22
 
 - Costs per product: every cost (Add cost, Edit, screenshot/text import rows, the costs CSV `product` column) can be tagged to a package or left **Shared / unassigned**; costs recorded before v21 stay shared. The Summary's "By package" table is now **By product**: for each package the users on it, what was collected in the chosen range (each payment counted for the tier of the periods it covers, so a C → C Max switch sends the later months' money to C Max), the costs tagged to it, the net and the outstanding balance, in PKR with USD equivalents at the default rate, plus a Shared row and a Total row that matches the tiles. Editing a cost no longer drops its receipt link or source.

@@ -23,7 +23,7 @@ import notify  # noqa: E402
 
 APP_NAME = "Wasool"
 TAGLINE = "Know who's paid."
-VERSION = "21"
+VERSION = "22"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")

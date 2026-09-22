@@ -339,6 +339,20 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .cell[data-state="upcoming"],.cell[data-state="waived"]{background:var(--surface-2);border-color:var(--line-strong)}
 .cell[data-state="waived"] .a{color:var(--ink-2)}
 .cell[data-state="upcoming"] .a{color:var(--muted)}
+/* v22: a period whose amount the owner set by hand (discount or correction) */
+.cell .tag.custom{color:var(--warn);border-color:var(--warn);background:var(--warn-bg);font-weight:600}
+.cell .custom-line s{color:var(--muted);text-decoration-thickness:1px}
+.cell .custom-line b{font-weight:600;color:var(--ink)}
+.cell.editing{grid-column:span 2}
+@media (max-width:480px){.cell.editing{grid-column:span 1}}
+.amt-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;align-items:end;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line-strong);text-align:left}
+.amt-form .form-actions,.amt-form .d,.amt-form .amt-plan{grid-column:1/-1}
+.amt-form .amt-plan{font-weight:600;font-size:12px;color:var(--ink)}
+.amt-form .d{font-family:var(--sans);font-size:11px;color:var(--ink-2)}
+.qamt-box{margin-top:8px;padding:0 10px 8px;border:1px dashed var(--line-strong);border-radius:4px;background:var(--surface-2)}
+.qamt-box .amt-form{border-top:0}
+.qamt-box .amt-form+.amt-form{border-top:1px dashed var(--line);margin-top:8px}
+.qhead .qamt{margin-left:2px;white-space:nowrap}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
 .legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px;border:1px solid var(--line-strong)}
 .legend .k-paid::before{background:var(--good-bg);border-color:var(--good)}
@@ -457,7 +471,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v21</span>
+      <span class="small muted num" id="app-ver" title="App version">v22</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
     </div>
@@ -797,7 +811,7 @@ const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
 const SCHEMA=11;
-const APP_VERSION='21';
+const APP_VERSION='22';
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
@@ -872,6 +886,15 @@ function applyDiscount(s,price){const d=s&&s.discount;if(!d)return price;return 
 const effPrice=(s,date)=>applyDiscount(s,priceAt(s,date));
 const planBasis=s=>rawBasis(s&&s.prorationBasis)||basis();
 function prorateCalc(s,full,days,total){const ov=Number(s.prorationDaysOverride);const has=Number.isInteger(ov)&&ov>0;const d=has?ov:days;const b=planBasis(s)==='fixed30'?30:total;const ro=Number(s.prorationRateOverride);const hasRate=isFinite(ro)&&ro>0;const rate=hasRate?ro:full/b;const computed=Math.min(full,Math.round(rate*d));const ao=s.prorationAmountOverride;const hasAmt=ao!=null&&isFinite(Number(ao))&&Number(ao)>=0;const amt=hasAmt?Number(ao):computed;return {days:d,basis:b,rate,computed,amt,override:has,rateOverride:hasRate,amtOverride:hasAmt,discounted:amt<Math.min(full,Math.round((full/b)*d))};}
+/* ---------- v22: an amount set by hand for one period (a discount or a correction), per plan, keyed by the period start:
+   periodOverrides: {'YYYY-MM-DD': {amount, note, at}}. Absent = the computed amount. It becomes the period's amount everywhere
+   (balance, credit carried, totals, the per-product table, {amount} in the messages, the link-page document and so the public page and the emails);
+   recorded payments are untouched. The first-period "Amount charged" field writes the same entry for the first period start. ---------- */
+function normPeriodOverrides(o){const out={};if(!o||typeof o!=='object'||Array.isArray(o))return out;for(const k in o){const v=o[k];if(!isDateKey(k)||!v||typeof v!=='object')continue;const a=Number(v.amount);if(!isFinite(a)||a<0)continue;out[k]={amount:Math.round(a*100)/100,note:String(v.note||'').trim().slice(0,140),at:String(v.at||'').slice(0,40)};}return out;}
+const periodOverride=(s,st)=>{const v=s&&s.periodOverrides&&s.periodOverrides[st];return v&&isFinite(Number(v.amount))&&Number(v.amount)>=0?v:null;};
+function setPeriodOverride(s,st,amount,note){s.periodOverrides=normPeriodOverrides(s.periodOverrides);if(amount==null)delete s.periodOverrides[st];else s.periodOverrides[st]={amount:Math.round(Number(amount)*100)/100,note:String(note||'').trim().slice(0,140),at:new Date().toISOString()};}
+/* "10%" = that much off the computed amount; a plain number = that much off; blank or nonsense = no change */
+function discountTo(txt,base){const t=String(txt||'').trim().replace(/,/g,'');if(!t)return null;const m=t.match(/^(\d+(?:\.\d+)?)\s*%$/);if(m)return Math.max(0,Math.round(base*(1-Math.min(100,Number(m[1]))/100)*100)/100);const n=Number(t);return isFinite(n)&&n>=0?Math.max(0,Math.round((base-n)*100)/100):null;}
 const remindDay=()=>clampDay(state.settings.remindDay,DEFAULT_REMIND_DAY);const replyDay=()=>clampDay(state.settings.replyDay,DEFAULT_REPLY_DAY);
 function dayOnOrBefore(iso,day){let y=+iso.slice(0,4),m=+iso.slice(5,7)-1;for(let g=0;g<3;g++){const d=toISO(new Date(y,m,Math.min(day,daysIn(y,m))));if(d<=iso)return d;m--;if(m<0){m=11;y--;}}return iso;}
 /* reminder window for the upcoming cycle: remind from the reminder day, replies due by the reply-by day, both before the cycle starts */
@@ -928,7 +951,7 @@ function normalizeUser(b,id){
   for(const s of b.subscriptions||[]){
     const kind=s.kind==='one-time'?'one-time':'monthly';const start=normDate(s.start)||u.joinDate;const cur=normCur(s.currency);
     const sub={id:s.id||newId('s'),kind,name:String(s.name||'').trim()||(kind==='one-time'?'Item':''),currency:cur,packageId:String(s.packageId||'').trim()||null,payments:[]};
-    if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;{const ov=Number(s.prorationDaysOverride);sub.prorationDaysOverride=Number.isInteger(ov)&&ov>0?ov:null;const ro=Number(s.prorationRateOverride);sub.prorationRateOverride=isFinite(ro)&&ro>0?ro:null;const ao=s.prorationAmountOverride;sub.prorationAmountOverride=ao!=null&&ao!==''&&isFinite(Number(ao))&&Number(ao)>=0?Number(ao):null;sub.prorationBasis=rawBasis(s.prorationBasis);sub.discount=normDiscount(s.discount);sub.tierHistory=normTierHistory(s.tierHistory,cur);}sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
+    if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;{const ov=Number(s.prorationDaysOverride);sub.prorationDaysOverride=Number.isInteger(ov)&&ov>0?ov:null;const ro=Number(s.prorationRateOverride);sub.prorationRateOverride=isFinite(ro)&&ro>0?ro:null;const ao=s.prorationAmountOverride;sub.prorationAmountOverride=ao!=null&&ao!==''&&isFinite(Number(ao))&&Number(ao)>=0?Number(ao):null;sub.prorationBasis=rawBasis(s.prorationBasis);sub.discount=normDiscount(s.discount);sub.tierHistory=normTierHistory(s.tierHistory,cur);sub.periodOverrides=normPeriodOverrides(s.periodOverrides);}sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
     else{sub.total=Number(s.total)||0;sub.due=normDate(s.due);}
     for(const p of s.payments||[]){const d=normDate(p.date);if(!d)continue;sub.payments.push({id:p.id||newId('p'),date:d,amount:Number(p.amount)||0,currency:p.currency?normCur(p.currency):cur,rate:normRate(p.rate),note:String(p.note||'')});}
     sub.payments.sort((a,b)=>a.date.localeCompare(b.date));
@@ -955,13 +978,13 @@ function analyzeMonthly(s,today){
   while(active(k)&&k<2400){
     const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=effPrice(s,es);
     const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;
-    const waived=k===0&&s.waiveFirst===true&&es>st;const pa=prorateCalc(s,full,days,total);const pr=waived?0:(prorated?pa.amt:full);
+    const waived=k===0&&s.waiveFirst===true&&es>st;const pa=prorateCalc(s,full,days,total);const listed=waived?0:(prorated?pa.amt:full);const ov=periodOverride(s,st);const pr=ov?ov.amount:listed;
     let stt,covered;
     if(waived){stt='waived';covered=0;kPaid=k+1;}
     else if(credit+1e-9>=pr){stt='paid';covered=pr;credit-=pr;kPaid=k+1;}
     else if(credit>0){stt=st<=today?'partial':'upcoming';covered=credit;credit=0;}
     else{stt=st<=today?'unpaid':'upcoming';covered=0;}
-    periods.push({k,st,en,es,pr,full,pkgId:pkgIdAt(s,es),prorated:prorated&&!waived,waived,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0});
+    periods.push({k,st,en,es,pr,full,pkgId:pkgIdAt(s,es),prorated:prorated&&!waived,waived,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0,listed,custom:!!ov,note:ov?ov.note:''});
     if(stt!=='paid'&&stt!=='waived'&&k>curIdx)break;
     if(stt==='paid'&&pr<=0&&k>curIdx+1)break;
     k++;
@@ -990,7 +1013,7 @@ function analyzeOneTime(s,today){
   return {kind:'one-time',paid,unconv:pc.unconv,remaining,nextDue:remaining>0?s.due||null:null,amountDue:remaining,status,cur:s.currency,overdue:status==='overdue'?1:0};
 }
 /* amount of one cycle period of a plan (first period may be prorated or waived), and what is still owed per period from the first unpaid one up to a target period */
-function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=effPrice(s,es);const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;return {k,st,en,es,pr:waived?0:(prorated?prorateCalc(s,full,days,total).amt:full)};}
+function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=effPrice(s,es);const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;const ov=periodOverride(s,st);return {k,st,en,es,pr:ov?ov.amount:(waived?0:(prorated?prorateCalc(s,full,days,total).amt:full))};}
 function coverPlan(s,sa,targetK){const out=[];for(let k=sa.kPaid;k<=targetK&&k<sa.kPaid+240;k++){const p=periodAmt(s,k);const ex=(sa.periods||[]).find(x=>x.k===k);const cov=ex?ex.covered:0;out.push({k,st:p.st,en:p.en,pr:p.pr,credit:cov,due:Math.max(0,p.pr-cov)});}return out;}
 const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,paid:5,ended:5,cancelled:5,nosub:6};
 function analyze(u,today){
@@ -1067,7 +1090,7 @@ function switchFor(s,cs){const cur=pkgIdAt(s,cs);const curName=pkgName(cur)||'';
 function cycleCard(u,a,cs,today){const ce=cycleEndOf(cs);const replyBy=dayOnOrBefore(addDays(cs,-1),replyDay());const plans=[];
   for(const s of u.subscriptions||[]){if(s.kind!=='monthly'||subCycle(s)!=='monthly')continue;if(s.end&&s.end<cs)continue;if(s.start>ce)continue;const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly')continue;
     const p=(sa.periods||[]).find(x=>x.st===cs);const price=effPrice(s,cs);const amount=p?Math.max(0,p.pr-p.covered):price;const paid=!!p&&(p.state==='paid'||p.state==='waived');const ac=acctParts(u,s);const tier=pkgName(pkgIdAt(s,cs))||planLabel(s,cs);
-    plans.push({planId:s.id,label:ac.label||tier,acct:[ac.label,ac.email].filter(Boolean).join(' · '),pkgId:pkgIdAt(s,cs),tier,price,priceText:fmtAmt(price,s.currency)+perOf(s),currency:s.currency,amount,amountText:fmtAmt(amount,s.currency),paid,switch:switchFor(s,cs)});}
+    plans.push({planId:s.id,label:ac.label||tier,custom:!!(p&&p.custom),amountNote:p&&p.custom?p.note:'',acct:[ac.label,ac.email].filter(Boolean).join(' · '),pkgId:pkgIdAt(s,cs),tier,price,priceText:fmtAmt(price,s.currency)+perOf(s),currency:s.currency,amount,amountText:fmtAmt(amount,s.currency),paid,switch:switchFor(s,cs)});}
   const due=plans.filter(p=>!p.paid&&p.amount>0);const S=newSum();for(const p of due)sumAdd(S,p.amount,p.currency,null);
   let amountText=due.length?ownText(S,plans[0].currency):(plans.length?'nothing (already paid)':'—');if(due.length>1)amountText+=' ('+due.map(p=>`${p.amountText} ${p.label}`).join(' + ')+')';
   const tiers=plans.map(p=>p.tier).filter((x,i,arr)=>x&&arr.indexOf(x)===i);const first=plans.find(p=>p.switch);
@@ -1370,6 +1393,9 @@ function overdueBefore(r,cycle){const S=newSum();for(const s of r.u.subscription
 function queueFields(r,st){const c=r.card;const ob=overdueBefore(r,st.cycle);return {name:firstName(r.u),amount:c.amountText+(ob.n?` (plus ${ownText(ob,r.a.mainCur)} overdue from earlier)`:''),cycle:c.periodText,link:confirmLink(r.u),tier:c.tierText,dueDate:c.dueDateText,replyBy:c.replyByText,switchLabel:c.switchLabel,payHow:payHowOf(),appName:appName()};}
 function queueText(r,st){const tpl=queueTplOf(st.stage);const f=queueFields(r,st);let out=tpl.replace(/\{(name|amount|cycle|link|tier|dueDate|replyBy|switchLabel|payHow|appName)\}/g,(m,k)=>f[k]||'');if(f.link&&!/\{link\}/.test(tpl))out+=' Reply here: '+f.link;return out;}
 const qLastCh={};
+/* v22: the amount form(s) inside a Queue row: one per plan the cycle bills (Haroon's two accounts get two) */
+function qAmtBox(r,cycle){const forms=[];for(const pl of r.card.plans){const s=(r.u.subscriptions||[]).find(x=>x.id===pl.planId);const sa=s&&r.a.sa[s.id];const p=sa&&sa.kind==='monthly'?(sa.periods||[]).find(x=>x.st===cycle):null;if(!s||!p)continue;forms.push(amtFormHTML(r.id,s,p,'queue',r.card.multi?(pl.acct||pl.label):''));}
+  return forms.length?`<div class="qamt-box">${forms.join('')}</div>`:'';}
 function renderQueue(){
   const today=todayISO();const auto=stageToday(today);const st=ui.qStage&&ui.qStage!==auto.stage?{stage:ui.qStage,cycle:ui.qStage===3?cycleStartOnOrBefore(today):auto.w.nc,w:auto.w,auto:false}:auto;
   const Q=st.stage?queueRows(today,st):{rows:[],todo:0,sent:0,cycle:st.cycle,stage:0};const cycle=Q.cycle;const ce=cycleEndOf(cycle);
@@ -1388,7 +1414,7 @@ function renderQueue(){
     parts.push(u.email?`<a class="btn sm" href="${esc(mailLink(u,`${appName()}: your ${r.card.tierText} plan for ${r.card.periodText}`,text))}" data-ch="email" title="Opens your mail app with the message prefilled">Email</a>`:`<button class="btn sm" type="button" disabled title="Add an email in Edit user">add email</button>`);
     return parts.join('');};
   const linkify=t=>esc(t).replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-  const row=r=>{const c=r.card;const s=r.sent;return `<div class="qrow" data-user="${esc(r.id)}" data-sent="${s?'1':'0'}"><div class="qhead"><span class="who">${esc(displayName(r.u))}</span><span class="due">${esc(c.tierText)} · <b>${esc(c.amountText)}</b> due ${esc(fmtD(cycle))}${st.stage===1&&r.answered?` · ${answerBadge(r.id,cycle)}`:''}</span><span class="remind-pair">${chan(r)}</span><label class="chk" title="Records the stage, cycle, channel and time"><input type="checkbox" data-act="qsent" data-user="${esc(r.id)}" data-stage="${st.stage}" data-cycle="${cycle}"${s?' checked':''}>Sent${s?` <span class="when">${esc(fmtWhen(s.at)||fmtD(s.at.slice(0,10)))} · ${esc(s.channel)}${s.by==='notify'?' (auto)':''}</span>`:''}</label></div><pre class="qmsg">${linkify(queueText(r,st))}</pre></div>`;};
+  const row=r=>{const c=r.card;const s=r.sent;return `<div class="qrow" data-user="${esc(r.id)}" data-sent="${s?'1':'0'}"><div class="qhead"><span class="who">${esc(displayName(r.u))}</span><span class="due">${esc(c.tierText)} · <b>${esc(c.amountText)}</b>${c.plans.some(p=>p.custom)?' <span class="tag custom" title="Amount set by hand">custom</span>':''} due ${esc(fmtD(cycle))}${st.stage===1&&r.answered?` · ${answerBadge(r.id,cycle)}`:''} <button class="link sm qamt" type="button" data-act="qamt" data-user="${esc(r.id)}" aria-expanded="${ui.qOpen[r.id]?'true':'false'}" title="Change the amount for this cycle (discount or correction); the message updates at once">✎ edit amount</button></span><span class="remind-pair">${chan(r)}</span><label class="chk" title="Records the stage, cycle, channel and time"><input type="checkbox" data-act="qsent" data-user="${esc(r.id)}" data-stage="${st.stage}" data-cycle="${cycle}"${s?' checked':''}>Sent${s?` <span class="when">${esc(fmtWhen(s.at)||fmtD(s.at.slice(0,10)))} · ${esc(s.channel)}${s.by==='notify'?' (auto)':''}</span>`:''}</label></div>${ui.qOpen[r.id]?qAmtBox(r,cycle):''}<pre class="qmsg">${linkify(queueText(r,st))}</pre></div>`;};
   if(st.stage)html+=Q.rows.length?Q.rows.map(row).join(''):`<p class="small muted" style="margin-top:10px">${st.stage>=2?'Everyone due for this cycle has answered on the link (or is on the Except list).':'Nobody has an amount due for this cycle.'}</p>`;
   if(!Object.keys(state.users).length)html='<p class="small muted">No users yet.</p>';
   $('#rr-body').innerHTML=html;
@@ -1649,6 +1675,24 @@ function tierForm(id,s,sa,today,open){
     ${tl.length?`<div class="tier-list">${tl.map(t=>{const d=tierDesc(s,t,today);return `<span><b>${esc(d.text)}</b> · ${esc(fmtAmt(t.price,s.currency))}${perOf(s)}${t.note?` · ${esc(t.note)}`:''} <button class="link sm danger" type="button" data-act="tier-remove" data-sub="${s.id}" data-from="${t.from}">remove</button></span>`;}).join('')}</div>`:''}
   </form>`;
 }
+/* v22: the inline "edit amount" form, shared by the period boxes and the Queue rows. ctx = detail | queue decides which state closes it. */
+function amtFormHTML(id,s,p,ctx,label){const cur=s.currency;const ov=periodOverride(s,p.st);const credit=p.state!=='paid'&&p.state!=='waived'&&p.covered>0?p.covered:0;
+  return `<form class="amt-form" data-id="${esc(id)}" data-sub="${esc(s.id)}" data-start="${p.st}" data-ctx="${ctx}" data-listed="${p.listed}" data-credit="${credit}" data-cur="${cur}" novalidate>
+    ${label?`<span class="amt-plan">${esc(label)}</span>`:''}
+    <label class="f">Amount for ${esc(fmtD(p.st))} – ${esc(fmtD(p.en))} (${cur})<input name="amount" type="number" min="0" step="0.01" required value="${p.pr}" aria-label="Amount for ${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}"></label>
+    <label class="f">Discount <span class="muted">(10% or 500 off)</span><input name="disc" type="text" inputmode="decimal" placeholder="e.g. 10%" autocomplete="off" aria-label="Discount"></label>
+    <label class="f">Note <span class="muted">(optional)</span><input name="note" type="text" maxlength="140" placeholder="e.g. Eid discount, correction" value="${esc(ov?ov.note:'')}" aria-label="Note"></label>
+    <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button>${ov?`<button class="link sm" type="button" data-act="amt-reset">Reset to computed (${esc(fmtAmt(p.listed,cur))})</button>`:''}<button class="link sm" type="button" data-act="amt-cancel">Cancel</button></span>
+    <span class="d">Computed ${esc(fmtAmt(p.listed,cur))}${ov?` · currently set to ${esc(fmtAmt(p.pr,cur))}`:''}${credit?` · ${esc(fmtAmt(credit,cur))} credit already applies, so the message says <b data-role="net">${esc(fmtAmt(Math.max(0,p.pr-credit),cur))}</b>`:''}. Recorded payments stay as they are.</span></form>`;}
+function closeAmtForm(id,sid,st,ctx){if(ctx==='queue')delete ui.qOpen[id];else if(ui.open[id])ui.open[id]['amt:'+sid+':'+st]=false;}
+/* persist and show the change at once (the server poll would repeat the same render a moment later) */
+async function commitUser(id,u){const ok=await persistUser(id,u);if(ok&&db){state.users[id]=normalizeUser(cleanUser(Object.assign({},clone(u),{id})),id);render();}return ok;}
+async function resetPeriodOverride(id,sid,st,ctx){if(!state.users[id])return;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return;setPeriodOverride(s,st,null);if(pStart(s,0)===st)s.prorationAmountOverride=null;closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok)toast(`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`);}
+async function saveAmtForm(form){const id=form.dataset.id,sid=form.dataset.sub,st=form.dataset.start,ctx=form.dataset.ctx;if(!state.users[id]||!isDateKey(st))return;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return;
+  const amtEl=form.querySelector('[name=amount]'),noteEl=form.querySelector('[name=note]');const raw=String(amtEl.value||'').trim();if(!validAmt(raw)){toast('Enter the amount for this period (0 or more).');amtEl.focus();return;}
+  const amount=Math.round(Number(raw)*100)/100;const note=String(noteEl.value||'').trim().slice(0,140);const listed=Number(form.dataset.listed);const back=amount===listed&&!note;
+  if(back)setPeriodOverride(s,st,null);else{setPeriodOverride(s,st,amount,note);if(pStart(s,0)===st)s.prorationAmountOverride=null;}
+  closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok)toast(back?`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`:`${displayName(u)}: ${fmtD(st)} period set to ${fmtAmt(amount,s.currency)}${note?' · '+note:''}${amount<listed?` (${fmtAmt(listed-amount,s.currency)} off)`:amount>listed?` (${fmtAmt(amount-listed,s.currency)} more)`:''}.`);}
 function detailHTML(id,u,a,today){
   const open=ui.open[id]||{};const subs=u.subscriptions||[];
   let subsHtml='';
@@ -1663,12 +1707,15 @@ function detailHTML(id,u,a,today){
       const dueByFact=s.dueBy?`<span>Remaining due by <b>${esc(fmtD(s.dueBy,true))}</b></span>`:'';
       const lastPaid=sa.periods.filter(p=>p.state==='paid').pop();
       const tierTag=p=>sa.tiered&&p.pkgId?` <span class="tag tier">${esc(pkgName(p.pkgId))}</span>`:'';
-      const cells=sa.periods.map(p=>{const pro=p.prorated?`<span class="d">${p.daysCharged} day${p.daysCharged===1?'':'s'} × ${esc(fmtAmt(p.rate,s.currency))} = ${esc(fmtAmt(p.computed,s.currency))}${p.amtOverride?` → charged ${esc(fmtAmt(p.pr,s.currency))}`:''}${p.discounted?' <span class="tag">discounted</span>':''}</span><span class="d muted">${p.basisDays===30?'30-day month':p.total+'-day cycle'}${p.override?` · days set by hand (actual ${p.days})`:''}${p.rateOverride?' · rate set by hand':''} · <button class="link sm" type="button" data-act="toggle" data-key="days:${s.id}">edit days / rate</button></span>`:'';let a;
+      const cells=sa.periods.map(p=>{const fkey='amt:'+s.id+':'+p.st;const editing=!!open[fkey];const pro=p.prorated?`<span class="d">${p.daysCharged} day${p.daysCharged===1?'':'s'} × ${esc(fmtAmt(p.rate,s.currency))} = ${esc(fmtAmt(p.computed,s.currency))}${p.amtOverride&&!p.custom?` → charged ${esc(fmtAmt(p.pr,s.currency))}`:''}${p.discounted&&!p.custom?' <span class="tag">discounted</span>':''}</span><span class="d muted">${p.basisDays===30?'30-day month':p.total+'-day cycle'}${p.override?` · days set by hand (actual ${p.days})`:''}${p.rateOverride?' · rate set by hand':''} · <button class="link sm" type="button" data-act="toggle" data-key="days:${s.id}">edit days / rate</button></span>`:'';let a;
         let extra='';if(p.state==='waived'){a='Waived · '+esc(fmtD(p.es))+' – '+esc(fmtD(p.en));extra=`<span class="d">${p.days} stub day${p.days===1?'':'s'} free · billing starts ${esc(fmtD(addDays(p.en,1)))}</span>`;}else if(p.state==='paid'){a=esc(fmtAmt(p.pr,s.currency));if(p===lastPaid&&p.creditAfter>0&&sa.nextDue)extra=`<span class="d">paid ${esc(fmtAmt(p.pr+p.creditAfter,s.currency))} · credit ${esc(fmtAmt(p.creditAfter,s.currency))} carried</span>`;}
         else if(p.state==='partial')a=esc(fmtAmt(p.covered,s.currency))+' of '+esc(fmtAmt(p.pr,s.currency));
         else if(p.state==='unpaid')a='Unpaid · '+esc(fmtAmt(p.pr,s.currency));
         else{a='Upcoming · '+esc(fmtAmt(p.pr-p.covered,s.currency));if(p.covered>0)extra=`<span class="d">${esc(fmtAmt(p.pr,s.currency))} less ${esc(fmtAmt(p.covered,s.currency))} credit</span>`;}
-        return `<div class="cell" data-state="${p.state}"><span class="m">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}${p.prorated?' <span class="tag">prorated</span>':''}${tierTag(p)}</span><span class="a">${a}</span>${pro}${extra}</div>`;}).join('');
+        /* v22: a set amount shows the computed one struck through with the note; current and upcoming periods get "edit amount" */
+        const custom=p.custom?`<span class="d custom-line" title="Computed ${esc(fmtAmt(p.listed,s.currency))} · set to ${esc(fmtAmt(p.pr,s.currency))}${p.note?' · '+esc(p.note):''}"><s>${esc(fmtAmt(p.listed,s.currency))}</s> → <b>${esc(fmtAmt(p.pr,s.currency))}</b>${p.note?` · ${esc(p.note)}`:''}</span>`:'';
+        const canEdit=p.en>=today&&!u.cancel;const editLink=canEdit&&!editing?`<span class="d"><button class="link sm" type="button" data-act="toggle" data-key="${fkey}" title="Set the amount for this period by hand (discount or correction)">edit amount</button></span>`:'';
+        return `<div class="cell${editing?' editing':''}" data-state="${p.state}" data-custom="${p.custom?'1':'0'}"><span class="m">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}${p.prorated?' <span class="tag">prorated</span>':''}${tierTag(p)}${p.custom?' <span class="tag custom" title="Amount set by hand">custom</span>':''}</span><span class="a">${a}</span>${pro}${extra}${custom}${editLink}${editing?amtFormHTML(id,s,p,'detail',''):''}</div>`;}).join('');
       const nextPr=sa.nextDue?sa.nextAmount:sa.price;
       const pe=(ui.priceEdit||{})[s.id]||null;const pePrice=pe?(hist.find(x=>x.from===pe)||{}).price:null;
       const defFrom=pe||sa.nextDue||pStart(s,Math.max(0,sa.curIdx));
@@ -1696,10 +1743,10 @@ function detailHTML(id,u,a,today){
           <div class="pay-row">
             <label class="f">Days charged for ${esc(fmtD(sa.periods[0].es))} – ${esc(fmtD(sa.periods[0].en))}<input id="dy-days-${s.id}" name="days" type="number" min="1" max="366" step="1" required value="${sa.periods[0].daysCharged}"></label>
             <label class="f">Daily rate (${s.currency}) <span class="muted">(blank = price ÷ ${sa.periods[0].basisDays})</span><input id="dy-rate-${s.id}" name="rate" type="number" min="0" step="0.01" value="${s.prorationRateOverride!=null?s.prorationRateOverride:''}" placeholder="${esc(fmtAmt(sa.periods[0].rate,s.currency))}"></label>
-            <label class="f">Amount charged (${s.currency}) <span class="muted">(blank = days × rate)</span><input id="dy-amt-${s.id}" name="amount" type="number" min="0" step="0.01" value="${s.prorationAmountOverride!=null?s.prorationAmountOverride:''}" placeholder="${esc(fmtAmt(sa.periods[0].computed,s.currency))}"></label>
+            <label class="f">Amount charged (${s.currency}) <span class="muted">(blank = days × rate)</span><input id="dy-amt-${s.id}" name="amount" type="number" min="0" step="0.01" value="${periodOverride(s,sa.periods[0].st)?periodOverride(s,sa.periods[0].st).amount:(s.prorationAmountOverride!=null?s.prorationAmountOverride:'')}" placeholder="${esc(fmtAmt(sa.periods[0].computed,s.currency))}"></label>
             <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button><button class="link" type="button" data-act="days-reset" data-sub="${s.id}">Reset to actual (${sa.periods[0].days} days, standard rate)</button><button class="link" type="button" data-act="toggle" data-key="days:${s.id}">Cancel</button></span>
           </div>
-          <p class="small muted" style="margin-top:6px">Standard daily rate ${esc(fmtAmt(effPrice(s,sa.periods[0].es)/sa.periods[0].basisDays,s.currency))} (${sa.periods[0].basisDays===30?'fixed 30-day month':'actual '+sa.periods[0].total+'-day cycle'}${rawBasis(s.prorationBasis)?', set on this plan':', from Settings'}). The first period is charged days × rate, capped at the full price; a set amount wins over both and is marked "discounted" when lower.</p>
+          <p class="small muted" style="margin-top:6px">Standard daily rate ${esc(fmtAmt(effPrice(s,sa.periods[0].es)/sa.periods[0].basisDays,s.currency))} (${sa.periods[0].basisDays===30?'fixed 30-day month':'actual '+sa.periods[0].total+'-day cycle'}${rawBasis(s.prorationBasis)?', set on this plan':', from Settings'}). The first period is charged days × rate, capped at the full price; a set amount wins over both and is marked "custom" (the same entry as the period box's "edit amount").</p>
         </form>`:''}
         <form class="price-form" data-id="${id}" data-sub="${s.id}" ${open['price:'+s.id]?'':'hidden'} novalidate>
           <input type="hidden" name="replaceFrom" value="${esc(pe||'')}">
@@ -1973,9 +2020,17 @@ function bind(){
   $('#rr-body').addEventListener('click',async e=>{const sb=e.target.closest('#q-stages button[data-stage]');if(sb){ui.qStage=Number(sb.dataset.stage);renderRemindRun();return;}
     const ch=e.target.closest('a[data-ch]');if(ch){const rw=ch.closest('.qrow');if(rw)qLastCh[rw.dataset.user]=ch.dataset.ch;return;}
     const b=e.target.closest('button[data-act]');if(!b)return;
+    if(b.dataset.act==='qamt'){const id=b.dataset.user;if(ui.qOpen[id])delete ui.qOpen[id];else ui.qOpen[id]=true;renderRemindRun();const f=document.querySelector(`.qrow[data-user="${id}"] .amt-form [name=amount]`);if(f)f.focus();return;}
+    if(b.dataset.act==='amt-cancel'){const f=b.closest('form.amt-form');if(f){delete ui.qOpen[f.dataset.id];renderRemindRun();}return;}
+    if(b.dataset.act==='amt-reset'){const f=b.closest('form.amt-form');if(f){b.disabled=true;await resetPeriodOverride(f.dataset.id,f.dataset.sub,f.dataset.start,'queue');}return;}
     if(b.dataset.act==='qcopy'){const rw=b.closest('.qrow');const text=rw?rw.querySelector('.qmsg').textContent:'';qLastCh[b.dataset.user]=state.users[b.dataset.user]&&state.users[b.dataset.user].telegram?'telegram':'copy';try{await navigator.clipboard.writeText(text);toast('Message copied.');}catch(err){window.prompt('Copy this message',text);}return;}
     if(b.dataset.act==='disc-confirm'){b.disabled=true;await confirmDiscontinue(b.dataset.user);return;}if(b.dataset.act==='unskip'){const id=b.dataset.user;if(!state.users[id])return;const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[key]||{});r.skipped=null;if(!remEmpty(r))u.reminders[key]=r;else delete u.reminders[key];b.disabled=true;const ok=await persistUser(id,u);if(ok&&db)renderRemindRun();return;}if(b.dataset.act==='copy-link'){const id=b.dataset.user;if(!state.users[id])return;b.disabled=true;let tok=state.users[id].confirmToken;if(!TOKEN_RE.test(tok||''))tok=await ensureToken(id);const link=confirmLinkFor(tok);b.disabled=false;if(!link){toast('Set the Public base URL in Settings first.');return;}try{await navigator.clipboard.writeText(link);toast('Link copied: '+link);}catch(e){window.prompt('Copy this link',link);}return;}
     if(b.dataset.act==='fn-copy')copyFinalList();else if(b.dataset.act==='fn-csv'){const F=finalRows(todayISO());exportCSV(fnCSV(F),'deactivation-list-'+F.w.nc,'fn-msg','fn-text');}});
+  $('#rr-body').addEventListener('submit',async e=>{const form=e.target.closest('form.amt-form');if(!form)return;e.preventDefault();await saveAmtForm(form);});
+  /* v22: the Discount field fills the amount; the amount field updates the "message says" figure */
+  document.addEventListener('input',e=>{const el=e.target;const form=el&&el.closest?el.closest('form.amt-form'):null;if(!form)return;
+    if(el.name==='disc'){const v=discountTo(el.value,Number(form.dataset.listed));if(v!=null)form.querySelector('[name=amount]').value=v;}
+    const net=form.querySelector('[data-role=net]');if(net){const credit=Number(form.dataset.credit)||0;net.textContent=fmtAmt(Math.max(0,(Number(form.querySelector('[name=amount]').value)||0)-credit),form.dataset.cur);}});
   $('#rr-close').addEventListener('click',()=>{$('#remindRun').hidden=true;});
   $('#rr-body').addEventListener('change',async e=>{
     const dc=e.target.closest('input[data-act="deact"]');
@@ -2053,7 +2108,8 @@ function bind(){
     else if(A==='pay-edit'){ui.payEdit=ui.payEdit||{};ui.payEdit[sid]=act.dataset.pay;renderTable();}
     else if(A==='pay-edit-cancel'){if(ui.payEdit)delete ui.payEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['pay:'+sid]:false});renderTable();}
     else if(A==='price-edit'){ui.priceEdit=ui.priceEdit||{};ui.priceEdit[sid]=act.dataset.from;ui.open[id]=Object.assign({},ui.open[id],{['price:'+sid]:true});renderTable();}
-    else if(A==='days-reset'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;s.prorationDaysOverride=null;s.prorationRateOverride=null;s.prorationAmountOverride=null;ui.open[id]=Object.assign({},ui.open[id],{['days:'+sid]:false});const ok=await persistUser(id,u);if(ok)toast('First period back to actual days.');}
+    else if(A==='days-reset'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;s.prorationDaysOverride=null;s.prorationRateOverride=null;s.prorationAmountOverride=null;setPeriodOverride(s,pStart(s,0),null);ui.open[id]=Object.assign({},ui.open[id],{['days:'+sid]:false});const ok=await persistUser(id,u);if(ok)toast('First period back to actual days.');}
+    else if(A==='amt-cancel'||A==='amt-reset'){const f=act.closest('form.amt-form');if(!f)return;if(A==='amt-cancel')toggleOpen(id,'amt:'+f.dataset.sub+':'+f.dataset.start);else{act.disabled=true;await resetPeriodOverride(id,f.dataset.sub,f.dataset.start,'detail');}}
     else if(A==='tier-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const t=(s.tierHistory||[]).find(x=>x.from===act.dataset.from);s.tierHistory=(s.tierHistory||[]).filter(x=>x.from!==act.dataset.from);const ok=await persistUser(id,u);if(ok)toast(t?`Undone: ${displayName(u)} no longer moves to ${pkgName(t.packageId)||'that tier'} from ${fmtD(t.from,true)}.`:'Tier change removed.');}
     else if(A==='price-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;if((s.prices||[]).length<=1){toast('A plan needs at least one price. Edit it instead.');return;}s.prices=s.prices.filter(p=>p.from!==act.dataset.from);const ok=await persistUser(id,u);if(ok)toast('Price entry removed.');}
     else if(A==='pay-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const p=s.payments.find(x=>x.id===act.dataset.pay);s.payments=s.payments.filter(x=>x.id!==act.dataset.pay);const ok=await persistUser(id,u);if(ok&&p)toast(`Removed the ${fmtAmt(p.amount,p.currency||s.currency)} payment dated ${p.date}.`);}
@@ -2068,7 +2124,7 @@ function bind(){
   });
   tbody.addEventListener('keydown',e=>{const row=e.target.closest('tr.row');if(row&&(e.key==='Enter'||e.key===' ')&&e.target===row){e.preventDefault();row.click();}});
   tbody.addEventListener('submit',async e=>{
-    e.preventDefault();const form=e.target;const id=form.dataset.id;if(!state.users[id])return;const u=clone(state.users[id]);u.subscriptions=u.subscriptions||[];
+    e.preventDefault();const form=e.target;if(form.classList.contains('amt-form')){await saveAmtForm(form);return;}const id=form.dataset.id;if(!state.users[id])return;const u=clone(state.users[id]);u.subscriptions=u.subscriptions||[];
     const val=n=>{const el=form.querySelector(`[name=${n}]`);return el?el.value:'';};
     const setErr=(role,msg)=>{const el=form.querySelector(`[data-role=${role}]`);if(el)el.textContent=msg;else if(msg)toast(msg);};
     const closeKey=k=>{ui.open[id]=Object.assign({},ui.open[id],{[k]:false});};
@@ -2093,7 +2149,7 @@ function bind(){
       if(!(d>=1&&d<=366)){toast('Enter the number of days charged (1–366).');return;}
       if(rt!==''&&!(Number(rt)>0)){toast('The daily rate must be above zero, or blank for the standard rate.');return;}
       if(am!==''&&!(Number(am)>=0)){toast('The amount charged must be zero or more, or blank.');return;}
-      s.prorationDaysOverride=d;s.prorationRateOverride=rt===''?null:Number(rt);s.prorationAmountOverride=am===''?null:Number(am);closeKey('days:'+s.id);const ok=await persistUser(id,u);if(ok)toast(`${planLabel(s)}: first period set (${d} day${d===1?'':'s'}${rt!==''?', rate '+fmtAmt(Number(rt),s.currency):''}${am!==''?', charged '+fmtAmt(Number(am),s.currency):''}).`);
+      s.prorationDaysOverride=d;s.prorationRateOverride=rt===''?null:Number(rt);{const st0=pStart(s,0);const prev=periodOverride(s,st0);s.prorationAmountOverride=null;if(am==='')setPeriodOverride(s,st0,null);else setPeriodOverride(s,st0,Number(am),prev?prev.note:'');}closeKey('days:'+s.id);const ok=await persistUser(id,u);if(ok)toast(`${planLabel(s)}: first period set (${d} day${d===1?'':'s'}${rt!==''?', rate '+fmtAmt(Number(rt),s.currency):''}${am!==''?', charged '+fmtAmt(Number(am),s.currency):''}).`);
     }else if(form.classList.contains('price-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const priceRaw=val('price'),from=val('from'),replaceFrom=val('replaceFrom');
       if(!validAmt(priceRaw)){toast('Enter a valid price.');return;}
