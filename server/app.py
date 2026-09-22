@@ -23,7 +23,7 @@ import notify  # noqa: E402
 
 APP_NAME = "Wasool"
 TAGLINE = "Know who's paid."
-VERSION = "20"
+VERSION = "21"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
@@ -218,14 +218,16 @@ def blob(asset_id):
 @app.get("/api/read-image")
 @auth.login_required
 def api_read_image_info():
-    return jsonify({"enabled": claude_read.enabled(), "model": claude_read.MODEL, "mediaTypes": list(claude_read.MEDIA_TYPES)}), (200 if claude_read.enabled() else 501)
+    on = claude_read.enabled()
+    return jsonify({"enabled": on, "configured": on, "source": claude_read.key_source(), "model": claude_read.MODEL, "mediaTypes": list(claude_read.MEDIA_TYPES),
+                    "message": "" if on else claude_read.NOT_SET_UP}), (200 if on else 501)
 
 
 @app.post("/api/read-image")
 @auth.login_required
 def api_read_image():
     if not claude_read.enabled():
-        return jsonify({"error": "not_configured", "message": "Set ANTHROPIC_API_KEY on the server to read screenshots."}), 501
+        return jsonify({"error": "not_configured", "message": claude_read.NOT_SET_UP}), 501
     if request.is_json:
         body = request.get_json(silent=True) or {}
         prompt = str(body.get("prompt", ""))
@@ -242,6 +244,69 @@ def api_read_image():
         return jsonify({"error": e.code, "message": e.message, "text": e.text}), e.status
     db.audit("admin", "read.ok", "%d image(s)" % len(images), auth.client_ip())
     return jsonify({"data": data, "text": text})
+
+
+# ---------- AI reading settings (v21: the Anthropic key, kept in the meta table, never in the docs export) ----------
+
+@app.get("/api/ai-settings")
+@auth.login_required
+def api_ai_settings():
+    return jsonify(claude_read.public_ai_settings())
+
+
+@app.put("/api/ai-settings")
+@auth.login_required
+def api_ai_settings_put():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({"error": "body_must_be_object"}), 400
+    cur = claude_read.ai_settings()
+    out = dict(cur)
+    if body.get("clearKey"):
+        out["apiKey"] = ""
+        out["lastTest"] = None
+    else:
+        key = body.get("apiKey")
+        if not isinstance(key, str) or not key.strip():
+            return jsonify({"error": "no_key", "message": "Paste the API key first."}), 400
+        key = key.strip()
+        if len(key) < 20 or len(key) > 400 or re.search(r"\s", key):
+            return jsonify({"error": "bad_key", "message": "That does not look like an Anthropic API key (it starts with sk-ant- and has no spaces)."}), 400
+        out["apiKey"] = key
+        out["lastTest"] = None
+    out["savedAt"] = db.now_iso()
+    db.set_meta("ai", out)
+    db.audit("admin", "ai.settings", "key cleared" if body.get("clearKey") else "key saved", auth.client_ip())
+    return jsonify(claude_read.public_ai_settings(out))
+
+
+@app.post("/api/ai-test")
+@auth.login_required
+def api_ai_test():
+    """Validate a key with one request that costs no tokens; report the API's error message as-is."""
+    body = request.get_json(silent=True) or {}
+    typed = str(body.get("apiKey") or "").strip()
+    key = typed or claude_read.api_key()
+    if not key:
+        return jsonify({"error": "not_configured", "message": "No API key yet: paste one above and save it."}), 400
+    stored = not typed or typed == claude_read.stored_key()
+    result = {"ok": True, "at": db.now_iso()}
+    try:
+        result["model"] = claude_read.test_key(key)
+    except claude_read.ReadError as e:
+        result.update(ok=False, error=e.code, message=e.message)
+        if stored:
+            m = claude_read.ai_settings()
+            m["lastTest"] = result
+            db.set_meta("ai", m)
+        db.audit("admin", "ai.test.error", e.code, auth.client_ip())
+        return jsonify({"error": e.code, "message": e.message, "lastTest": result}), e.status
+    if stored:
+        m = claude_read.ai_settings()
+        m["lastTest"] = result
+        db.set_meta("ai", m)
+    db.audit("admin", "ai.test", result["model"], auth.client_ip())
+    return jsonify({"ok": True, "model": result["model"], "at": result["at"], "lastTest": result})
 
 
 # ---------- confirmations (answers from the public choice pages) ----------

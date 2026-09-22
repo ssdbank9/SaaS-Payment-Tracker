@@ -135,28 +135,41 @@ def day_on_or_before(s, day):
     return s
 
 
-def next_cycle_start(today, anchor):
+def cycle_at(anchor, n, cycle_day=None):
+    """v21: cycle start n months after the anchor month, on the billing day (clamped to the month's last day)."""
+    y, m, d = (int(x) for x in anchor.split("-"))
+    day = cycle_day or d
+    total = (m - 1) + n
+    ny, nm = y + total // 12, total % 12 + 1
+    return iso(date(ny, nm, min(day, days_in(ny, nm))))
+
+
+def cycle_idx_after(today, anchor, cycle_day=None):
     a, b = anchor.split("-"), today.split("-")
     j = (int(b[0]) - int(a[0])) * 12 + (int(b[1]) - int(a[1])) - 1
     g = 0
-    while add_months(anchor, j) <= today and g < 40:
+    while cycle_at(anchor, j, cycle_day) <= today and g < 40:
         j += 1
         g += 1
-    return add_months(anchor, j)
+    return j
 
 
-def reminder_window(today, anchor, remind_day, reply_day):
-    nc = next_cycle_start(today, anchor)
+def next_cycle_start(today, anchor, cycle_day=None):
+    return cycle_at(anchor, cycle_idx_after(today, anchor, cycle_day), cycle_day)
+
+
+def reminder_window(today, anchor, remind_day, reply_day, cycle_day=None):
+    nc = next_cycle_start(today, anchor, cycle_day)
     reply_by = day_on_or_before(add_days(nc, -1), reply_day)
     start = day_on_or_before(reply_by, remind_day)
     return {"nc": nc, "start": start, "replyBy": reply_by}
 
 
-def stage_today(today, anchor, remind_day, reply_day):
+def stage_today(today, anchor, remind_day, reply_day, cycle_day=None):
     """(stage, cycle_start): stage 3 on a cycle start day, else 2 from the reply-by day, 1 from the reminder day, 0 otherwise."""
-    if add_months(next_cycle_start(today, anchor), -1) == today:
+    if cycle_at(anchor, cycle_idx_after(today, anchor, cycle_day) - 1, cycle_day) == today:
         return 3, today
-    w = reminder_window(today, anchor, remind_day, reply_day)
+    w = reminder_window(today, anchor, remind_day, reply_day, cycle_day)
     if today >= w["replyBy"]:
         return 2, w["nc"]
     if today >= w["start"]:
@@ -220,8 +233,9 @@ def run(today=None, dry_run=False):
     settings = (sdoc or {}).get("data") or {}
     anchor = settings.get("anchor") if re.match(r"^\d{4}-\d{2}-\d{2}$", str(settings.get("anchor") or "")) else DEFAULT_ANCHOR
     remind_day, reply_day = clamp_day(settings.get("remindDay"), DEFAULT_REMIND_DAY), clamp_day(settings.get("replyDay"), DEFAULT_REPLY_DAY)
+    cycle_day = clamp_day(settings.get("cycleDay"), int(anchor[8:10]))  # v21: billing day editable in Settings
     today = today or os.environ.get("WASOOL_TODAY") or iso(datetime.now(TZ).date())
-    stage, cycle = stage_today(today, anchor, remind_day, reply_day)
+    stage, cycle = stage_today(today, anchor, remind_day, reply_day, cycle_day)
     if not stage:
         log.info("%s: no queue stage today (next cycle %s); nothing to send", today, cycle)
         return 0

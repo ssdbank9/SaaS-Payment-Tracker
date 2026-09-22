@@ -404,6 +404,7 @@ table.review input,table.review select{min-height:30px;padding:4px 6px;font-size
 table.review input.amt{width:110px;text-align:right;font-family:var(--mono)}
 table.review input.dt{width:140px;font-family:var(--mono)}
 table.review input.cat{width:120px}
+table.review select.prod{max-width:150px}
 table.review tr[data-sel="0"] td{opacity:.55}
 table.review tr[data-role="taxabove"] td.desc{padding-left:22px}
 details.alt{margin-top:10px}
@@ -411,7 +412,21 @@ details.alt summary{cursor:pointer;color:var(--accent-ink);font-weight:500;font-
 details.alt textarea{margin-top:8px;min-height:90px}
 .costs-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .costs-head .tot{font-size:12px;color:var(--ink-2)}
-table.costs{min-width:820px}
+table.costs{min-width:900px}
+table.costs td.prod{color:var(--ink-2);white-space:nowrap}
+.shot-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.shot-acts[hidden],.notice[hidden],.ai-status[hidden]{display:none}
+.notice{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;justify-content:space-between;background:var(--warn-bg);border:1px solid var(--warn);border-radius:6px;padding:10px 12px;margin-top:10px;font-size:13px;color:var(--ink)}
+.notice[data-kind="info"]{background:var(--surface-2);border-color:var(--line-strong)}
+.ai-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line-strong);color:var(--ink-2);background:var(--surface)}
+.ai-status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.ai-status[data-state="ok"]{color:var(--good);border-color:var(--good)}.ai-status[data-state="ok"]::before{background:var(--good)}
+.ai-status[data-state="bad"]{color:var(--crit);border-color:var(--crit)}.ai-status[data-state="bad"]::before{background:var(--crit)}
+.ai-status[data-state="saved"]{color:var(--warn);border-color:var(--warn)}.ai-status[data-state="saved"]::before{background:var(--warn)}
+table.brk tfoot td{font-weight:600;border-top:2px solid var(--line-strong);border-bottom:0}
+table.brk td.neg{color:var(--crit)}
+table.brk td.pos{color:var(--good)}
+table.brk tr.shared td{color:var(--ink-2)}
 table.costs tr.month td{background:var(--surface-2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);padding:5px 8px}
 table.costs td.desc{white-space:normal;max-width:320px}
 table.costs td.cat{color:var(--ink-2)}
@@ -442,7 +457,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v20</span>
+      <span class="small muted num" id="app-ver" title="App version">v21</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
     </div>
@@ -488,14 +503,19 @@ table.costs td.cat{color:var(--ink-2)}
         <span class="small muted" style="align-self:center" id="s-base-url-help">Where your self-hosted copy of this app runs. Each user gets a private page at <code>{base}/c/{token}</code> where they choose Continue, Upgrade to C Max (or Move back to C) or Discontinue for the coming cycle; the answer shows in the Queue and Reminder run and is applied to their record. On the self-hosted server this is filled in from the address bar; in the claude.ai copy, paste your server address here to put links into reminders.</span>
         <label class="f">Default exchange rate (PKR per 1 USD)<input id="s-rate" type="number" min="0" step="0.01" class="num" placeholder="280"></label>
         <span class="small muted" style="align-self:center">Payments and costs saved without their own rate use this default, so changing it here re-values all of them in the summary tiles and chart. An entry with its own rate keeps it. Rows in the tables always show each entry's own currency; the tiles amalgamate into PKR and USD.</span>
-        <label class="f">Billing cycle anchor<input id="s-anchor" type="date" required></label>
+        <label class="f">Billing cycle starts on day <span class="muted">(of each month)</span><input id="s-cycle-day" type="number" min="1" max="31" step="1" class="num" placeholder="24" required></label>
+        <span class="small muted" style="align-self:center" id="s-cycle-day-help">Every monthly plan bills from this day to the day before it next month (<b>24</b> → 24th to 23rd). Changing it recomputes every period, the prorated first periods, due dates, the Queue stages and the subscribers' link pages. For 29, 30 or 31, a shorter month uses its last day (Feb 28, then back to the chosen day).</span>
+        <label class="f">Yearly plans renew in <span class="muted">(month)</span><select id="s-anchor-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input id="s-anchor" type="hidden"></label>
+        <span class="small muted" style="align-self:center" id="s-anchor-month-help">Yearly plans run from the billing day of this month to the day before it a year later. Together these two make the billing anchor <b id="s-anchor-text"></b>.</span>
         <label class="f">Reminder day <span class="muted">(of the month)</span><input id="s-remind-day" type="number" min="1" max="31" step="1" class="num" placeholder="20"></label>
         <span class="small muted" style="align-self:center">From this day until the reply-by day the page flags a reminder run: everyone with an amount due for the next cycle gets a WhatsApp nudge, and you tick who was reminded and who confirmed.</span>
         <label class="f">Reply-by day <span class="muted">(of the month)</span><input id="s-reply-day" type="number" min="1" max="31" step="1" class="num" placeholder="23"></label>
         <span class="small muted" style="align-self:center">The day people should confirm or pay by, before the cycle starts on the anchor day. Used for <code>{reply_by}</code> in the message.</span>
         <label class="f">Proration basis<select id="s-basis"><option value="actual">Actual days in the cycle</option><option value="fixed30">Fixed 30-day month</option></select></label>
         <span class="small muted" style="align-self:center">How a mid-cycle first period is charged. <b>Actual days</b>: price × days ÷ days in that cycle (31 for Aug 24 – Sep 23). <b>Fixed 30-day month</b>: a daily rate of price ÷ 30, capped at the full price (Rs 4,200 → Rs 140 a day; 22 days = Rs 3,080). The days charged can also be edited on each plan's first period.</span>
-        <span class="small muted" style="align-self:center" id="s-anchor-help">Every plan bills on the same cycle: monthly periods run from this day of the month to the day before the next one, and yearly periods from this date each year. Someone who joins mid-period pays a prorated share of that first period (by days), unless proration is turned off on their plan.</span>
+        <span class="small muted" style="align-self:center" id="s-anchor-help">Every plan bills on the same cycle: monthly periods run from the billing day to the day before the next one, and yearly periods from the anchor month each year. Someone who joins mid-period pays a prorated share of that first period (by days), unless proration is turned off on their plan.</span>
+        <label class="f">WhatsApp opens in<select id="s-wa-app"><option value="regular">Regular WhatsApp (default)</option><option value="business">WhatsApp Business</option><option value="ask">Ask (wa.me link; the phone picks)</option></select></label>
+        <span class="small muted" style="align-self:center" id="s-wa-app-help">Which app every WhatsApp button (rows, expanded panel, Queue) opens on this device. On Android, <b>Regular</b> or <b>Business</b> opens that app directly; on iPhone and desktop, Regular uses the <code>whatsapp://</code> link and the others the <code>wa.me</code> page. Or on your phone: Settings → Apps → WhatsApp Business → Open by default → Clear defaults.</span>
       </div>
       <div style="margin-top:14px">
         <div class="block-head" style="margin-bottom:2px"><h3>Packages &amp; products</h3><button class="btn primary sm" type="button" id="pkg-add">Add package or product</button></div>
@@ -518,6 +538,14 @@ table.costs td.cat{color:var(--ink-2)}
         <label class="f" style="margin-top:8px">Stage 2 · repeat <span class="muted">(reply-by day, no answer yet)</span><textarea id="s-q2" rows="3"></textarea></label>
         <label class="f" style="margin-top:8px">Stage 3 · final note <span class="muted">(cycle start, still silent: account continues, tier, amount, how to pay)</span><textarea id="s-q3" rows="3"></textarea></label>
         <label class="f" style="margin-top:8px">How to pay <span class="muted">(<code>{payHow}</code>, also shown on the choice page)</span><input id="s-payhow" type="text" maxlength="300" autocomplete="off"></label>
+      </div>
+      <div style="margin-top:16px" id="aiBlock" hidden>
+        <div class="block-head" style="margin-bottom:2px"><h3>AI reading (screenshots)</h3><span class="ai-status" id="ai-status" data-state="unset">Not set up</span></div>
+        <p class="small muted">Claude reads statement screenshots and pasted statement text in <b>Import from screenshot</b>, and the lines in <b>Quick add</b>. Paste an Anthropic API key from <code>console.anthropic.com</code> → API keys: it is kept on the server only, never in exports or in the browser, and only its first and last characters are shown again. <code>ANTHROPIC_API_KEY</code> in <code>/etc/payments-tracker.env</code> still works as a fallback. A test costs nothing: it only asks the API whether the key can use the reading model.</p>
+        <div class="form-grid mail-grid" style="margin-top:8px">
+          <label class="f">Anthropic API key<input id="ai-key" type="password" placeholder="sk-ant-api03-…" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <div class="form-actions" style="margin-top:8px"><button class="btn primary" type="button" id="ai-save">Save key</button><button class="btn" type="button" id="ai-test">Test</button><button class="link" type="button" id="ai-clear" hidden>Remove saved key</button><span class="small muted" id="ai-msg"></span></div>
       </div>
       <div style="margin-top:16px" id="mailBlock" hidden>
         <div class="block-head" style="margin-bottom:2px"><h3>Mail (daily reminder emails)</h3></div>
@@ -585,7 +613,7 @@ table.costs td.cat{color:var(--ink-2)}
         <label class="f">Joined on<input id="a-join" type="date" required></label>
         <label class="f">Package / product<select id="a-pkg" required></select></label>
         <label class="f"><span id="a-price-lbl">Monthly price (Rs)</span><input id="a-price" type="number" min="0" step="0.01" required placeholder="4200" inputmode="decimal"></label>
-        <label class="f">Pays in<select id="a-cur" required><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
+        <label class="f">Currency <span class="muted">(pays in)</span><select id="a-cur" required><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
       </div>
       <details class="more" id="a-more">
         <summary>More options: billing cycle, plan label, notes, proration</summary>
@@ -625,10 +653,10 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
       </div>
       <div>
         <h3 class="small" style="margin-bottom:6px">Costs</h3>
-        <p class="small muted">One row per cost. Columns: <code>date</code>, <code>description</code>, <code>category</code>, <code>currency</code> (USD or PKR), <code>cost</code>, <code>tax</code>, <code>rate</code> (PKR per USD, optional).</p>
-        <pre class="sample">date,description,category,currency,cost,tax,rate
-2026-09-05,Hetzner server,Servers,USD,42,0,280
-2026-09-10,ChatGPT Team seats,Tools,PKR,25000,4000,</pre>
+        <p class="small muted">One row per cost. Columns: <code>date</code>, <code>description</code>, <code>category</code>, <code>currency</code> (USD or PKR), <code>cost</code>, <code>tax</code>, <code>rate</code> (PKR per USD, optional), <code>product</code> (a package name; blank = shared).</p>
+        <pre class="sample">date,description,category,currency,cost,tax,rate,product
+2026-09-05,Hetzner server,Servers,USD,42,0,280,C
+2026-09-10,ChatGPT Team seats,Tools,PKR,25000,4000,,G</pre>
         <textarea id="importCostText" class="mono" aria-label="Costs CSV to import" placeholder="Paste cost rows here" style="margin-top:8px"></textarea>
         <div class="form-actions">
           <button class="btn primary" type="button" id="btn-import-costs">Import costs</button>
@@ -685,10 +713,13 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     <section class="panel" id="shotPanel" hidden aria-label="Import costs from a screenshot">
       <div class="panel-head"><h3>Import costs from a screenshot</h3><button class="link" type="button" id="shot-close">Close</button></div>
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add statement screenshots">
-        <p><b>Drop statement screenshots here</b>, paste them with Ctrl+V / Cmd+V, or <label class="link" for="shot-file">choose files</label>.</p>
+        <p><b>Drop statement screenshots here</b>, paste them with Ctrl+V / Cmd+V, or use the buttons below.</p>
         <p class="small muted" id="shot-cap" style="margin-top:4px">Claude reads each image and lists the transactions for you to review. Nothing is saved until you choose which rows to add.</p>
-        <input id="shot-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
       </div>
+      <div class="shot-acts" id="shot-acts"><button class="btn" type="button" id="shot-pick">Choose picture</button><button class="btn" type="button" id="shot-camera">Take photo</button><span class="small muted" id="shot-acts-msg"></span></div>
+      <input id="shot-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+      <input id="shot-camera-file" type="file" accept="image/*" capture="environment" hidden>
+      <div class="notice" id="shot-notice" hidden role="status"><span id="shot-notice-text"></span><button class="btn sm primary" type="button" data-act="open-ai-settings" id="shot-notice-btn">Open Settings → AI reading</button></div>
       <div class="thumbs" id="thumbs"></div>
       <details class="alt" id="shot-alt"><summary>Or paste the statement as text</summary>
         <textarea id="shot-text" class="mono" placeholder="Paste rows copied from your bank app, an email or a PDF: one transaction per line with a date and an amount"></textarea>
@@ -699,11 +730,12 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
         <div class="review-bar">
           <label class="f">Currency for rows without one<select id="rv-cur"><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
           <label class="f">Category for selected rows<input id="rv-cat" type="text" placeholder="e.g. Servers" list="cat-list"></label>
+          <label class="f">Product for rows without one<select id="rv-pkg"></select></label>
           <span class="grow"></span>
           <span class="tot" id="rv-total"></span>
         </div>
         <div class="table-wrap"><table class="review" aria-label="Transactions found">
-          <thead><tr><th><input type="checkbox" id="rv-all" aria-label="Select all" checked></th><th>Date</th><th>Description</th><th class="r">Amount</th><th>Currency</th><th>Role</th><th>Category</th><th>From</th></tr></thead>
+          <thead><tr><th><input type="checkbox" id="rv-all" aria-label="Select all" checked></th><th>Date</th><th>Description</th><th class="r">Amount</th><th>Currency</th><th>Role</th><th>Category</th><th>Product</th><th>From</th></tr></thead>
           <tbody id="rv-body"></tbody></table></div>
         <p class="small muted" style="margin-top:6px">Debits are pre-selected, credits are not. Mark a row <b>Tax of row above</b> to fold it into the previous cost's tax; a standalone <b>Tax</b> row is saved with cost 0.</p>
         <div class="form-actions"><button class="btn primary" type="button" id="rv-save">Add 0 selected</button><button class="link" type="button" id="rv-clear">Clear</button><span class="small muted" id="rv-msg"></span><span class="err" id="rv-err"></span></div>
@@ -716,6 +748,7 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
           <label class="f">Date<input id="c-date" type="date" required></label>
           <label class="f">Description<input id="c-desc" type="text" required placeholder="e.g. Hetzner server"></label>
           <label class="f">Category<input id="c-cat" type="text" placeholder="Servers, Tools, Tax…" list="cat-list"><datalist id="cat-list"></datalist></label>
+          <label class="f">Product <span class="muted">(which package it pays for)</span><select id="c-pkg"></select></label>
           <label class="f">Currency<select id="c-cur"><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
           <label class="f">Cost<input id="c-cost" type="number" min="0" step="0.01" required></label>
           <label class="f">Tax <span class="muted">(optional)</span><input id="c-tax" type="number" min="0" step="0.01" placeholder="0"></label>
@@ -731,7 +764,7 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     </section>
     <div class="table-wrap">
       <table class="costs" aria-label="Costs">
-        <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="r">Cost</th><th class="r">Tax</th><th class="r">Total</th><th class="r" title="Only shown when an entry has its own rate; others use the default">Own rate</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Product</th><th class="r">Cost</th><th class="r">Tax</th><th class="r">Total</th><th class="r" title="Only shown when an entry has its own rate; others use the default">Own rate</th><th></th></tr></thead>
         <tbody id="costBody"></tbody>
       </table>
       <div class="empty-costs" id="costEmpty" hidden>No costs recorded yet. Add servers, tools, taxes and anything else you pay for, in PKR or USD.</div>
@@ -764,7 +797,7 @@ const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
 const SCHEMA=11;
-const APP_VERSION='20';
+const APP_VERSION='21';
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
@@ -792,7 +825,7 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 const TOKEN_RE=/^[A-Za-z0-9_-]{16,64}$/;
 const newId=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 
-const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,publicBaseUrl:'',queueTemplates:{},payHow:''},mode:'connecting',backend:'local',loaded:false,costsLoaded:false};
+const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,cycleDay:null,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,publicBaseUrl:'',queueTemplates:{},payHow:'',waApp:'regular'},mode:'connecting',backend:'local',loaded:false,costsLoaded:false};
 const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'queue',cancelPre:{},qStage:null,qOpen:{}};
 let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,seedActive=false,migrateChecked=false;
 
@@ -826,7 +859,11 @@ const DEFAULT_RATE=280;
 function normalizePackages(arr){if(!Array.isArray(arr))return [];const seen={};const out=[];for(const p of arr){if(!p||typeof p!=='object')continue;const id=String(p.id||'').trim()||newId('pkg');const name=String(p.name||'').trim();if(!name||seen[id])continue;seen[id]=1;const pr=Number(p.price);out.push({id,name,cycle:normCycle(p.cycle),price:isFinite(pr)&&pr>0?pr:null,currency:p.currency?normCur(p.currency):'',description:String(p.description||'').trim()});}return out;}
 const packages=()=>state.settings.packages||[];
 const DEFAULT_APP_NAME='Wasool';const DEFAULT_TAGLINE='Know who\'s paid.';const appNameOf=v=>String(v==null?'':v).trim().slice(0,40)||DEFAULT_APP_NAME;const rawAppName=v=>{const t=String(v==null?'':v).trim().slice(0,40);return t===DEFAULT_APP_NAME?'':t;};const taglineOf=v=>String(v==null?'':v).trim().slice(0,60)||DEFAULT_TAGLINE;const rawTagline=v=>{const t=String(v==null?'':v).trim().slice(0,60);return t===DEFAULT_TAGLINE?'':t;};const tagline=()=>taglineOf(state.settings.tagline);const normModel=v=>v==='default'?'default':'quick';const readModel=()=>normModel(state.settings.readModel);const appName=()=>appNameOf(state.settings.appName);
-const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,appName:'',tagline:'',readModel:'quick',publicBaseUrl:'',queueTemplates:{},payHow:''});
+const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,cycleDay:null,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,appName:'',tagline:'',readModel:'quick',publicBaseUrl:'',queueTemplates:{},payHow:'',waApp:'regular'});
+/* v21: which WhatsApp app the buttons open. regular (default) / business force that app on Android; ask = the wa.me page (the phone asks when both apps are installed);
+   through an intent URL (with wa.me as the fallback), and use whatsapp:// (regular) or wa.me (business) on iPhone and desktop. */
+const normWaApp=v=>v==='ask'||v==='business'?v:'regular';const waApp=()=>normWaApp(state.settings.waApp);
+const isAndroid=()=>/android/i.test((navigator&&navigator.userAgent)||'');
 const pubBaseRaw=v=>{const t=String(v==null?'':v).trim().replace(/\/+$/,'');return /^https?:\/\/[^\s]+$/i.test(t)?t.slice(0,200):'';};
 const basis=()=>normBasis(state.settings.prorationBasis);
 const normDiscount=d=>{if(!d||typeof d!=='object')return null;const t=d.type==='percent'?'percent':d.type==='fixed'?'fixed':null;const v=Number(d.value);return t&&isFinite(v)&&v>0?{type:t,value:t==='percent'?Math.min(100,v):v}:null;};
@@ -847,12 +884,16 @@ function planLabel(s,date){const pn=pkgName(pkgIdAt(s,date||todayISO()));const e
 const subCycle=s=>s.kind==='one-time'?'one-time':normCycle(s.cycle);
 const cycMonths=s=>CYCLES[subCycle(s)].months||1;
 const anchor=()=>isDateKey(state.settings.anchor)?state.settings.anchor:DEFAULT_ANCHOR;
+/* v21: the billing day is its own setting (default: the anchor's day) so 29–31 survive a short anchor month; every cycle start is that day clamped to the month's last day.
+   The anchor date keeps the year and the month yearly plans renew in. */
+const cycleDay=()=>clampDay(state.settings.cycleDay,+anchor().slice(8,10));
+function cycleAt(n){const p=anchor().split('-').map(Number);const total=(p[1]-1)+n;const ny=p[0]+Math.floor(total/12);const nm=((total%12)+12)%12;return toISO(new Date(ny,nm,Math.min(cycleDay(),daysIn(ny,nm))));}
 /* shared billing cycle: period j of a plan starts at anchor + j cycles; a plan's first period is the one containing its start date */
-const cStart=(s,j)=>addMonths(anchor(),j*cycMonths(s));
+const cStart=(s,j)=>cycleAt(j*cycMonths(s));
 function firstIdx(s){const a=anchor().split('-').map(Number),b=s.start.split('-').map(Number);let j=Math.floor(((b[0]-a[0])*12+(b[1]-a[1]))/cycMonths(s));let g=0;while(cStart(s,j+1)<=s.start&&g++<40)j++;while(cStart(s,j)>s.start&&g++<80)j--;return j;}
 const pStart=(s,k)=>cStart(s,firstIdx(s)+k);
-function nextCycleStart(today){const a=anchor().split('-').map(Number),b=today.split('-').map(Number);let j=(b[0]-a[0])*12+(b[1]-a[1])-1;let g=0;while(addMonths(anchor(),j)<=today&&g++<40)j++;return addMonths(anchor(),j);}
-const cycleDay=()=>+anchor().slice(8,10);
+function cycleIdxAfter(today){const a=anchor().split('-').map(Number),b=today.split('-').map(Number);let j=(b[0]-a[0])*12+(b[1]-a[1])-1;let g=0;while(cycleAt(j)<=today&&g++<40)j++;return j;}
+function nextCycleStart(today){return cycleAt(cycleIdxAfter(today));}
 const ordinal=n=>n+(n%10===1&&n!==11?'st':n%10===2&&n!==12?'nd':n%10===3&&n!==13?'rd':'th');
 const perOf=s=>CYCLES[subCycle(s)].per;
 function pkgUsage(id){let n=0;for(const uid in state.users)for(const s of state.users[uid].subscriptions||[])if(s.packageId===id||(s.tierHistory||[]).some(t=>t.packageId===id))n++;return n;}
@@ -896,7 +937,11 @@ function normalizeUser(b,id){
   return u;
 }
 function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,telegram:n.telegram||'',joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{},cancel:n.cancel||null,discontinue:n.discontinue||null,confirmToken:n.confirmToken||''};}
-function normalizeCost(b,id){return {id,date:normDate(b.date)||todayISO(),description:String(b.description||'').trim(),category:String(b.category||'').trim(),currency:normCur(b.currency),cost:Number(b.cost)||0,tax:Number(b.tax)||0,rate:normRate(b.rate),source:String(b.source||''),receipt:String(b.receipt||''),createdAt:b.createdAt||''};}
+function normalizeCost(b,id){return {id,date:normDate(b.date)||todayISO(),description:String(b.description||'').trim(),category:String(b.category||'').trim(),packageId:String(b.packageId||'').trim(),currency:normCur(b.currency),cost:Number(b.cost)||0,tax:Number(b.tax)||0,rate:normRate(b.rate),source:String(b.source||''),receipt:String(b.receipt||''),createdAt:b.createdAt||''};}
+/* v21: the product a cost pays for; '' = shared / unassigned (every cost recorded before v21 stays shared) */
+const costPkgId=c=>(c&&c.packageId&&pkgById(c.packageId))?c.packageId:'';
+const costPkgName=c=>{const id=costPkgId(c);return id?pkgName(id):'';};
+function costPkgOptions(selected,blankLabel){return `<option value=""${selected?'':' selected'}>${esc(blankLabel||'Shared / unassigned')}</option>`+packages().map(p=>`<option value="${esc(p.id)}"${p.id===selected?' selected':''}>${esc(p.name)}</option>`).join('');}
 function cleanCost(c){const n=normalizeCost(c,c.id);delete n.id;n.createdAt=n.createdAt||new Date().toISOString();return n;}
 
 /* ---------- billing analysis ---------- */
@@ -1005,7 +1050,7 @@ async function ensureToken(id){const u=state.users[id];if(!u)return '';if(TOKEN_
 function ensureConfirmTokens(){for(const id in state.users){const u=state.users[id];if(!u.cancel&&!TOKEN_RE.test(u.confirmToken||''))ensureToken(id);}}
 /* ---------- v20: cycle cards. What a subscriber sees on the choice page and what the queue messages say, per cycle:
    each monthly plan with its tier, amount due for that cycle, whether it is already covered, and the one tier it can switch to. ---------- */
-const cycleStartOnOrBefore=today=>addMonths(nextCycleStart(today),-1);
+const cycleStartOnOrBefore=today=>cycleAt(cycleIdxAfter(today)-1);
 const cycleEndOf=cs=>addDays(nextCycleStart(cs),-1);
 function fmtCycle(cs,ce){const a=cs.split('-'),b=ce.split('-');return `${+a[2]} ${MONTHS[+a[1]-1]}${a[0]!==b[0]?' '+a[0]:''} – ${+b[2]} ${MONTHS[+b[1]-1]} ${b[0]}`;}
 /* today's stage from the date: 3 on a cycle start day, 2 from the reply-by day, 1 from the reminder day, 0 otherwise */
@@ -1029,7 +1074,7 @@ function cycleCard(u,a,cs,today){const ce=cycleEndOf(cs);const replyBy=dayOnOrBe
   return {cycleStart:cs,cycleEnd:ce,replyBy,periodText:fmtCycle(cs,ce),dueDateText:fmtD(cs,true),replyByText:fmtD(replyBy,true),plans,multi:plans.length>1,due:due.length>0,amountText,tierText:tiers.join(' + ')+(plans.length>1&&tiers.length===1?` (${plans.length} accounts)`:''),switchLabel:first?first.switch.label:'Upgrade'};}
 const confirmSynced={};
 /* the server renders /c/<token> from this document: the coming cycle (the one with the open reply window) and the cycle before it, for the final note on a cycle start day */
-function confirmDocFor(r,today){const u=r.u,a=r.a;const w=reminderWindow(today);const nc=w.nc,prev=addMonths(nc,-1);const cards={};cards[nc]=cycleCard(u,a,nc,today);const pc=cycleCard(u,a,prev,today);if(pc.plans.length)cards[prev]=pc;const c=cards[nc];
+function confirmDocFor(r,today){const u=r.u,a=r.a;const w=reminderWindow(today);const nc=w.nc,prev=cycleStartOnOrBefore(today);const cards={};cards[nc]=cycleCard(u,a,nc,today);const pc=cycleCard(u,a,prev,today);if(pc.plans.length)cards[prev]=pc;const c=cards[nc];
   return {userId:r.id,name:firstName(u),fullName:displayName(u),appName:appName(),link:confirmLink(u),cycleStart:nc,cycleEnd:c.cycleEnd,replyByISO:c.replyBy,period:c.periodText,dueDate:c.dueDateText,replyBy:c.replyByText,amount:c.amountText,package:c.tierText,nothingDue:!c.due,plans:c.plans,multi:c.multi,cycles:cards};}
 function syncConfirmRequests(R,today){
   if(state.backend!=='api')return;
@@ -1080,10 +1125,15 @@ function discBadge(u){const d=u.discontinue;if(!d||u.cancel)return '';return `<s
 function discNote(id,u){const d=u.discontinue;if(!d||u.cancel)return '';const lastDay=addDays(d.cycleStart,-1);const partial=d.planIds&&d.planIds.length?(u.subscriptions||[]).filter(s=>d.planIds.includes(s.id)).map(s=>acctParts(u,s).label||planLabel(s)).join(', '):'';
   return `<div class="disc-note"><span><b>Discontinue requested</b> on the link ${esc(fmtWhen(d.at))}${partial?` for <b>${esc(partial)}</b>`:''} · from ${esc(fmtD(d.cycleStart,true))}${d.note?` · “${esc(d.note)}”`:''}</span><button class="btn sm danger" type="button" data-act="disc-confirm" title="${partial?'Ends that plan':'Runs Cancel subscription'} with the last day ${esc(fmtD(lastDay,true))}">Confirm cancel · last day ${esc(fmtD(lastDay))}</button><button class="link" type="button" data-act="disc-dismiss" title="Keep the account; the answer stays recorded">Dismiss</button></div>`;}
 function linkControl(id){if(!publicBase())return '';return `<button class="btn sm" type="button" data-act="copy-link" data-user="${esc(id)}" title="Copy this user's private choice page link (Continue / Upgrade / Discontinue)">Copy link</button>`;}
-const waLink=(u,text)=>'https://wa.me/'+u.phone+'?text='+encodeURIComponent(text);
+function waLink(u,text){const ph=digits(u.phone);const enc=encodeURIComponent(text);const web='https://wa.me/'+ph+'?text='+enc;const app=waApp();if(app==='ask')return web;
+  if(isAndroid())return 'intent://send?phone='+ph+'&text='+enc+'#Intent;scheme=whatsapp;package='+(app==='business'?'com.whatsapp.w4b':'com.whatsapp')+';S.browser_fallback_url='+encodeURIComponent(web)+';end';
+  return app==='regular'?'whatsapp://send?phone='+ph+'&text='+enc:web;}
+/* app links (intent://, whatsapp://) must open in this tab or Android ignores them; the wa.me page opens in a new one */
+const waAttrs=href=>`href="${esc(href)}"${/^https?:/.test(href)?' target="_blank"':''} rel="noopener noreferrer"`;
+const waTitle=what=>`Opens ${waApp()==='business'?'WhatsApp Business':waApp()==='regular'?'WhatsApp':'WhatsApp'} with the ${what} prefilled`;
 function remindControl(u,a,today,label,mode,x){
   if(!u.phone)return `<button class="btn sm" type="button" disabled title="Add a WhatsApp number in Edit user">add phone</button>`;
-  return `<a class="btn sm wa" href="${esc(waLink(u,reminderText(u,a,today,mode,null,x)))}" target="_blank" rel="noopener noreferrer" title="Opens WhatsApp with the ${x&&x.tpl?'final notice':'reminder'} prefilled">${label||'Remind'}</a>`;
+  return `<a class="btn sm wa" ${waAttrs(waLink(u,reminderText(u,a,today,mode,null,x)))} title="${waTitle(x&&x.tpl?'final notice':'reminder')}">${label||'Remind'}</a>`;
 }
 const mailLink=(u,subject,body)=>'mailto:'+encodeURIComponent(u.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
 function emailControl(u,a,today,label,mode,x){
@@ -1187,7 +1237,7 @@ async function maybeSeedShared(){
 /* v11 (v18 app): the one writer of settings/main. Fills the default rate, packages, anchor and days, keeps everything else
    (including publicBaseUrl, which the older writers dropped), and sets the proration basis: `force` (seed, and stores below
    schema 11) pins the fixed 30-day month that the owner's records use even when the doc says "actual"; otherwise a chosen basis is kept. */
-function canonicalSettings(b,force){b=b||{};let pk=normalizePackages(b.packages);if(!pk.length)pk=clone(DEFAULT_PACKAGES);for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(!p)continue;if(!p.cycle||(force&&p.cycle!==d.cycle))p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}}return {rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:force?'fixed30':(rawBasis(b.prorationBasis)||'fixed30'),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),publicBaseUrl:pubBaseRaw(b.publicBaseUrl),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY),queueTemplates:normQueueTpl(b.queueTemplates),payHow:rawPayHow(b.payHow)};}
+function canonicalSettings(b,force){b=b||{};let pk=normalizePackages(b.packages);if(!pk.length)pk=clone(DEFAULT_PACKAGES);for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(!p)continue;if(!p.cycle||(force&&p.cycle!==d.cycle))p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}}return {rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:force?'fixed30':(rawBasis(b.prorationBasis)||'fixed30'),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),publicBaseUrl:pubBaseRaw(b.publicBaseUrl),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,cycleDay:clampDay(b.cycleDay,+(isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR).slice(8,10)),remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY),queueTemplates:normQueueTpl(b.queueTemplates),payHow:rawPayHow(b.payHow),waApp:normWaApp(b.waApp)};}
 async function ensureSettingsShared(force){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const want=canonicalSettings(b,force);const same=sn.exists&&Object.keys(want).every(k=>JSON.stringify(want[k])===JSON.stringify(b[k]));if(!same)await db.doc('settings/main').set(want);}catch(e){}}
 async function maybeMigrateShared(rawDocs){
   if(migrateChecked||seedActive)return;migrateChecked=true; /* a seed in progress writes the schema marker itself; try again on a later snapshot */
@@ -1227,7 +1277,7 @@ async function resetData(){
 }
 
 /* ---------- persistence ---------- */
-function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.prorationBasis=rawBasis(state.settings.prorationBasis);state.settings.appName=rawAppName(state.settings.appName);state.settings.tagline=rawTagline(state.settings.tagline);state.settings.readModel=normModel(state.settings.readModel);state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();state.settings.queueTemplates=normQueueTpl(state.settings.queueTemplates);state.settings.payHow=rawPayHow(state.settings.payHow);}}catch(e){}}
+function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.prorationBasis=rawBasis(state.settings.prorationBasis);state.settings.appName=rawAppName(state.settings.appName);state.settings.tagline=rawTagline(state.settings.tagline);state.settings.readModel=normModel(state.settings.readModel);state.settings.cycleDay=cycleDay();state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();state.settings.queueTemplates=normQueueTpl(state.settings.queueTemplates);state.settings.payHow=rawPayHow(state.settings.payHow);state.settings.waApp=waApp();}}catch(e){}}
 function saveLocal(){try{localStorage.setItem('pt-data',JSON.stringify({users:state.users,costs:state.costs,settings:state.settings}));}catch(e){}}
 function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;}catch(e){}}
 function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur}));}catch(e){}}
@@ -1236,7 +1286,7 @@ async function persistUser(id,u){const body=cleanUser(Object.assign({},u,{id}));
 async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.users[id];saveLocal();render();}return true;}
 async function persistCost(id,c){const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}else{state.costs[id]=normalizeCost(body,id);saveLocal();render();}return true;}
 async function removeCost(id){if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.costs[id];saveLocal();render();}return true;}
-function settingsDoc(){return {rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),publicBaseUrl:pubBaseRaw(state.settings.publicBaseUrl),packages:state.settings.packages||[],anchor:anchor(),remindDay:remindDay(),replyDay:replyDay(),queueTemplates:normQueueTpl(state.settings.queueTemplates),payHow:rawPayHow(state.settings.payHow)};}
+function settingsDoc(){return {rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),publicBaseUrl:pubBaseRaw(state.settings.publicBaseUrl),packages:state.settings.packages||[],anchor:anchor(),cycleDay:cycleDay(),remindDay:remindDay(),replyDay:replyDay(),queueTemplates:normQueueTpl(state.settings.queueTemplates),payHow:rawPayHow(state.settings.payHow),waApp:waApp()};}
 async function persistSettings(){if(db){try{await db.doc('settings/main').set(settingsDoc());}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
 function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||'').trim().toLowerCase();const ids=Object.keys(state.users);if(e){const hit=ids.find(id=>(state.users[id].email||'').toLowerCase()===e);if(hit)return hit;}if(n&&!e){const hit=ids.find(id=>(state.users[id].name||'').toLowerCase()===n);if(hit)return hit;}return null;}
 
@@ -1257,7 +1307,7 @@ function applyBranding(){const name=appName();const tag=tagline();const letter=(
   const big=iconPNG(letter,512);const icons=[{src:svg,sizes:'any',type:'image/svg+xml',purpose:'any'}];if(big)icons.push({src:big,sizes:'512x512',type:'image/png',purpose:'any maskable'});if(png)icons.push({src:png,sizes:'180x180',type:'image/png'});
   const man={name:name,short_name:name.length>12?name.split(/\s+/)[0].slice(0,12):name,description:tag,start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f3f5f3',theme_color:'#0f6e56',icons:icons};
   const lm=$('#link-manifest');if(lm)lm.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));}
-function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);fillQueueSettings();}}
+function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);fillQueueSettings();}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
   el.textContent=state.mode==='shared'?(state.backend==='api'?'Saved on your server, shared across your devices':'Shared with your team, saves live'):state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
@@ -1332,7 +1382,7 @@ function renderQueue(){
   if(!publicBase())html+=`<p class="skipped-note">No link in the messages yet: set the <button class="link sm" type="button" data-act="open-settings">Public base URL</button> in Settings so every message carries the user's private choice page.</p>`;
   if(state.backend!=='api')html+=`<p class="skipped-note">Answers from the link pages arrive only on the self-hosted server; here the queue shows everyone due.</p>`;
   const chan=r=>{const u=r.u,text=queueText(r,st);const parts=[];
-    parts.push(u.phone?`<a class="btn sm wa" href="${esc(waLink(u,text))}" target="_blank" rel="noopener noreferrer" data-ch="whatsapp" title="Opens WhatsApp with the message prefilled">WhatsApp</a>`:`<button class="btn sm" type="button" disabled title="Add a WhatsApp number in Edit user">add phone</button>`);
+    parts.push(u.phone?`<a class="btn sm wa" ${waAttrs(waLink(u,text))} data-ch="whatsapp" title="${waTitle('message')}">WhatsApp</a>`:`<button class="btn sm" type="button" disabled title="Add a WhatsApp number in Edit user">add phone</button>`);
     parts.push(telegramControl(u,'Telegram',true));
     parts.push(`<button class="btn sm" type="button" data-act="qcopy" data-user="${esc(r.id)}" title="Copy the message (Telegram cannot prefill it)">Copy</button>`);
     parts.push(u.email?`<a class="btn sm" href="${esc(mailLink(u,`${appName()}: your ${r.card.tierText} plan for ${r.card.periodText}`,text))}" data-ch="email" title="Opens your mail app with the message prefilled">Email</a>`:`<button class="btn sm" type="button" disabled title="Add an email in Edit user">add email</button>`);
@@ -1393,20 +1443,40 @@ function pkgOptions(selected,blankLabel){return (blankLabel!==undefined?`<option
 const cycleSelect=(id,name,val,withOne)=>`<select id="${id}" name="${name}"><option value="monthly"${val==='monthly'?' selected':''}>Monthly</option><option value="yearly"${val==='yearly'?' selected':''}>Yearly</option>${withOne?`<option value="one-time"${val==='one-time'?' selected':''}>One-time</option>`:''}</select>`;
 function newPackageFlow(){openSettings();ui.pkgEdit=ui.pkgEdit||clone(packages());ui.pkgEdit.push({id:newId('pkg'),name:'',cycle:'monthly',price:null,currency:'',description:''});renderPkgEditor();const inputs=document.querySelectorAll('#pkgList input[data-f=name]');if(inputs.length)inputs[inputs.length-1].focus();}
 function renderPkgFilter(){const sel=$('#pkgFilter');const cur=ui.pkgFilter;sel.innerHTML=`<option value="all">Package: all</option>`+packages().map(p=>`<option value="${esc(p.id)}">Package: ${esc(p.name)}</option>`).join('')+`<option value="none">Package: not set</option>`;sel.value=[...sel.options].some(o=>o.value===cur)?cur:'all';ui.pkgFilter=sel.value;}
+/* v21: which product each payment paid for. Payments fill a plan's periods in order (credit carries), so a payment is split across the tier of the
+   period(s) it covers: a plan that moved C → C Max mid-way sends the later months' money to C Max. One-time items go to their own product.
+   Returns [{p, parts:[{pid, frac}]}] with the fractions of each payment summing to 1, so the products add up to the Collected tile exactly. */
+function paymentShares(s,sa){const out=[];const pays=(s.payments||[]).slice().sort((a,b)=>a.date.localeCompare(b.date)||String(a.id).localeCompare(String(b.id)));
+  if(s.kind!=='monthly'||!sa||sa.kind!=='monthly'){for(const p of pays)out.push({p,parts:[{pid:(s.packageId&&pkgById(s.packageId))?s.packageId:'',frac:1}]});return out;}
+  const periods=sa.periods||[];let i=0,left=periods.length?periods[0].pr:0;const lastPid=periods.length?(periods[periods.length-1].pkgId||''):(s.packageId||'');
+  for(const p of pays){const v=toCur(p.amount,p.currency||s.currency,s.currency,p.rate);
+    if(v==null||v<=0){out.push({p,parts:[{pid:pkgIdAt(s,p.date)||'',frac:1}]});continue;}
+    let rest=v;const acc={};
+    while(rest>1e-9&&i<periods.length){const take=Math.min(left,rest);if(take>0){const k=periods[i].pkgId||'';acc[k]=(acc[k]||0)+take;rest-=take;left-=take;}if(left<=1e-9){i++;left=i<periods.length?periods[i].pr:0;}}
+    if(rest>1e-9)acc[lastPid]=(acc[lastPid]||0)+rest;
+    out.push({p,parts:Object.keys(acc).map(k=>({pid:k,frac:acc[k]/v}))});}
+  return out;}
 function renderBreakdown(rb){
-  const today=todayISO();const box=$('#pkgBreak');const ids=Object.keys(state.users);
-  if(!ids.length){box.hidden=true;return;}
-  const rows={};const mk=(key,label)=>rows[key]||(rows[key]={label,users:new Set(),col:newSum(),out:newSum()});
+  const today=todayISO();const box=$('#pkgBreak');const ids=Object.keys(state.users);const costIds=Object.keys(state.costs);
+  if(!ids.length&&!costIds.length){box.hidden=true;return;}
+  const rows={};const mk=(key,label)=>rows[key]||(rows[key]={key,label,users:new Set(),col:newSum(),cost:newSum(),out:newSum(),npay:0,ncost:0});
   for(const p of packages())mk(p.id,p.name);
   for(const id of ids){const u=state.users[id];const a=analyze(u,today);
-    for(const s of u.subscriptions||[]){const pid=pkgIdAt(s,today);const key=(pid&&pkgById(pid))?pid:(s.kind==='one-time'?'__one':'__none');const r=mk(key,key==='__one'?'One-time items':key==='__none'?'Package not set':pkgName(key));
-      const sa=a.sa[s.id];if(!u.cancel&&(s.kind==='monthly'?sa.status!=='ended':sa.remaining>0))r.users.add(id);
-      for(const pay of s.payments||[])if(inRange(pay.date,rb))sumAdd(r.col,pay.amount,pay.currency||s.currency,pay.rate);
+    for(const s of u.subscriptions||[]){const sa=a.sa[s.id];const pid=pkgIdAt(s,today);const key=(pid&&pkgById(pid))?pid:(s.kind==='one-time'?'__one':'__none');const r=mk(key,key==='__one'?'One-time items':key==='__none'?'Package not set':pkgName(key));
+      if(!u.cancel&&(s.kind==='monthly'?sa.status!=='ended':sa.remaining>0))r.users.add(id);
+      for(const sh of paymentShares(s,sa)){const pay=sh.p;if(!inRange(pay.date,rb))continue;const cur=pay.currency||s.currency;let counted=false;
+        for(const part of sh.parts){const k=(part.pid&&pkgById(part.pid))?part.pid:(s.kind==='one-time'?'__one':'__none');const rr=mk(k,k==='__one'?'One-time items':k==='__none'?'Package not set':pkgName(k));sumAdd(rr.col,pay.amount*part.frac,cur,pay.rate);if(!counted){rr.npay++;counted=true;}}}
       if(s.kind==='monthly'){if(sa.overdueAmount>0)sumAdd(r.out,sa.overdueAmount,s.currency,null);}else if(sa.remaining>0)sumAdd(r.out,sa.remaining,s.currency,null);}}
-  const order=[...packages().map(p=>p.id),'__none','__one'].filter(k=>rows[k]&&(rows[k].users.size||rows[k].col.n||rows[k].out.n||!k.startsWith('__')));
-  const cell=S=>{if(!S.n)return '<td class="r num muted">—</td>';const x=sumParts(S,'PKR');return `<td class="r num">${esc(x.p)}${x.s?`<span class="s">${esc(x.s)}</span>`:''}</td>`;};
+  const shared=mk('__shared','Shared / unassigned');
+  for(const id of costIds){const c=state.costs[id];if(!inRange(c.date,rb))continue;const pid=costPkgId(c);const r=pid?mk(pid,pkgName(pid)):shared;sumAdd(r.cost,costTotal(c),c.currency,c.rate);r.ncost++;}
+  const order=[...packages().map(p=>p.id),'__none','__one','__shared'].filter(k=>rows[k]&&(rows[k].users.size||rows[k].col.n||rows[k].out.n||rows[k].cost.n||!k.startsWith('__')));
+  const cell=(S,cls)=>{if(!S.n)return `<td class="r num muted${cls?' '+cls:''}">—</td>`;const x=sumParts(S,'PKR');return `<td class="r num${cls?' '+cls:''}">${esc(x.p)}${x.s?`<span class="s">${esc(x.s)}</span>`:''}</td>`;};
+  const netOf=r=>{const n=sumMerge(r.col,r.cost,-1);n.n=r.col.n+r.cost.n;return n;};
+  const netCls=n=>!n.n?'':(n.missing?n.pkr+n.usd:n.pkr)<0?'neg':(n.missing?n.pkr+n.usd:n.pkr)>0?'pos':'';
+  let tCol=newSum(),tCost=newSum(),tOut=newSum();const tUsers=new Set();for(const k of Object.keys(rows)){const r=rows[k];tCol=sumMerge(tCol,r.col);tCost=sumMerge(tCost,r.cost);tOut=sumMerge(tOut,r.out);r.users.forEach(x=>tUsers.add(x));}
+  const tNet=sumMerge(tCol,tCost,-1);tNet.n=tCol.n+tCost.n;
   box.hidden=false;
-  box.innerHTML=`<div class="bh"><h2>By package</h2><span class="small muted">users on each package · collected in ${esc(rb.label)} · balance outstanding</span></div><div class="table-wrap" style="border:0"><table class="brk"><thead><tr><th>Package</th><th class="r">Users</th><th class="r">Collected</th><th class="r">Outstanding</th></tr></thead><tbody>${order.map(k=>{const r=rows[k];return `<tr><td>${k==='__none'?'<span class="pill warnp">Package not set</span>':esc(r.label)}</td><td class="r num">${r.users.size}</td>${cell(r.col)}${cell(r.out)}</tr>`;}).join('')}</tbody></table></div>`;
+  box.innerHTML=`<div class="bh"><h2>By product</h2><span class="small muted">per package: users · collected in ${esc(rb.label)} (each payment counted for the tier of the periods it covers) · costs tagged to it · net · balance outstanding</span></div><div class="table-wrap" style="border:0"><table class="brk"><thead><tr><th>Product</th><th class="r">Users</th><th class="r">Collected</th><th class="r">Costs</th><th class="r">Net</th><th class="r">Outstanding</th></tr></thead><tbody>${order.map(k=>{const r=rows[k];const n=netOf(r);return `<tr${k==='__shared'?' class="shared"':''}><td>${k==='__none'?'<span class="pill warnp">Package not set</span>':k==='__shared'?`${esc(r.label)} <span class="small muted">(costs without a product)</span>`:esc(r.label)}</td><td class="r num">${k==='__shared'?'<span class="muted">—</span>':r.users.size}</td>${cell(r.col)}${cell(r.cost)}${cell(n,netCls(n))}${cell(r.out)}</tr>`;}).join('')}</tbody><tfoot><tr><td>Total <span class="small muted">(matches the tiles)</span></td><td class="r num">${tUsers.size}</td>${cell(tCol)}${cell(tCost)}${cell(tNet,netCls(tNet))}${cell(tOut)}</tr></tfoot></table></div><p class="small muted" style="margin:6px 0 8px">Tag a cost to a product when adding or editing it (Costs → Product). Costs recorded before this existed stay under Shared until you edit them.</p>`;
 }
 function setTile(id,S,primary,alertNeg){
   const p=sumParts(S,primary);$('#'+id).textContent=S.n?p.p:fmtAmt(0,primary);
@@ -1611,7 +1681,7 @@ function detailHTML(id,u,a,today){
           ${acctLine(u,s)}
           <div class="sub-line"><span class="pkg-badge" title="Package / tier">${esc(pkgName(sa.curPkgId)||planLabel(s))}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="kind">${subCycle(s)} · ${s.currency}</span><span class="num">${s.discount?`${esc(fmtAmt(shownList,s.currency))}<span class="muted">${perOf(s)}</span> · ${esc(discountLabel(s))} = <b>${esc(fmtAmt(shownPrice,s.currency))}</b>`:`${esc(fmtAmt(shownPrice,s.currency))}<span class="muted">${perOf(s)}</span>`}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>${tierBadgeHTML(s,today)}
           <span class="sub-acts"><button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>
-          <button class="btn sm" type="button" data-act="toggle" data-key="upto:${s.id}" title="Record payment for every period up to a chosen cycle or date">Paid up to…</button>
+          ${sa.nextDue?`<button class="btn sm" type="button" data-act="toggle" data-key="upto:${s.id}" title="Record payment for every period up to a chosen cycle or date">Paid up to…</button>`:''}
           <button class="btn sm" type="button" data-act="toggle" data-key="price:${s.id}">Change price</button>
           ${canTier?`<button class="btn sm" type="button" data-act="toggle" data-key="tier:${s.id}" title="Move this plan to another tier with the same billing cycle (for example C ↔ C Max) from a chosen cycle">Change tier</button>`:''}
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
@@ -1807,14 +1877,14 @@ function renderCosts(){
   const ids=Object.keys(state.costs).sort((a,b)=>state.costs[b].date.localeCompare(state.costs[a].date)||(state.costs[b].createdAt||'').localeCompare(state.costs[a].createdAt||''));
   $('#costEmpty').hidden=ids.length>0;
   const all=newSum();let html='';let curMonth=null;let monthSum=null;
-  const flushMonth=()=>{if(curMonth&&monthSum){html+=`<tr class="month"><td colspan="5">${mLabel(curMonth)} subtotal</td><td class="r">${ownHTML(monthSum,'PKR')}</td><td colspan="2"></td></tr>`;}};
+  const flushMonth=()=>{if(curMonth&&monthSum){html+=`<tr class="month"><td colspan="6">${mLabel(curMonth)} subtotal</td><td class="r">${ownHTML(monthSum,'PKR')}</td><td colspan="2"></td></tr>`;}};
   const cats=new Set();
   for(const id of ids){
     const c=state.costs[id];const mk=monthKey(c.date);if(c.category)cats.add(c.category);
     if(mk!==curMonth){flushMonth();curMonth=mk;monthSum=newSum();}
     sumAdd(monthSum,costTotal(c),c.currency,c.rate);sumAdd(all,costTotal(c),c.currency,c.rate);
     const del=ui.costDel===id?`<span class="small">Delete? </span><button class="btn sm danger" type="button" data-act="cost-del-yes" data-cost="${id}">Yes</button> <button class="link" type="button" data-act="cost-del-no">No</button>`:`<button class="link" type="button" data-act="cost-edit" data-cost="${id}">Edit</button> <button class="link danger" type="button" data-act="cost-del" data-cost="${id}">Delete</button>`;
-    html+=`<tr><td class="num">${esc(c.date)}</td><td class="desc"${c.source==='screenshot'?' title="Imported from a screenshot"':''}>${esc(c.description)||'<span class="muted">—</span>'}${c.receipt?` <a class="link sm" href="/_blob/${esc(c.receipt)}" target="_blank" rel="noopener">view receipt</a>`:''}</td><td class="cat">${esc(c.category)||'<span class="muted">—</span>'}</td><td class="r num">${esc(fmtAmt(c.cost,c.currency))}</td><td class="r num">${c.tax?esc(fmtAmt(c.tax,c.currency)):'<span class="muted">—</span>'}</td><td class="r num">${esc(fmtAmt(costTotal(c),c.currency))}</td><td class="r num small muted">${c.rate?'at '+c.rate.toLocaleString():''}</td><td>${del}</td></tr>`;
+    html+=`<tr><td class="num">${esc(c.date)}</td><td class="desc"${c.source==='screenshot'?' title="Imported from a screenshot"':''}>${esc(c.description)||'<span class="muted">—</span>'}${c.receipt?` <a class="link sm" href="/_blob/${esc(c.receipt)}" target="_blank" rel="noopener">view receipt</a>`:''}</td><td class="cat">${esc(c.category)||'<span class="muted">—</span>'}</td><td class="prod">${costPkgName(c)?esc(costPkgName(c)):'<span class="muted">Shared</span>'}</td><td class="r num">${esc(fmtAmt(c.cost,c.currency))}</td><td class="r num">${c.tax?esc(fmtAmt(c.tax,c.currency)):'<span class="muted">—</span>'}</td><td class="r num">${esc(fmtAmt(costTotal(c),c.currency))}</td><td class="r num small muted">${c.rate?'at '+c.rate.toLocaleString():''}</td><td>${del}</td></tr>`;
   }
   flushMonth();
   $('#costBody').innerHTML=html;
@@ -1823,7 +1893,7 @@ function renderCosts(){
 }
 function openCostForm(c){
   ui.costEdit=c?c.id:null;$('#costPanel').hidden=false;
-  $('#c-id').value=c?c.id:'';$('#c-date').value=c?c.date:todayISO();$('#c-desc').value=c?c.description:'';$('#c-cat').value=c?c.category:'';$('#c-cur').value=c?c.currency:'PKR';$('#c-cost').value=c?c.cost:'';$('#c-tax').value=c&&c.tax?c.tax:'';$('#c-rate').value=c&&c.rate?c.rate:'';$('#c-rate').placeholder=defaultRate()?'default '+defaultRate():'default';
+  $('#c-id').value=c?c.id:'';$('#c-date').value=c?c.date:todayISO();$('#c-desc').value=c?c.description:'';$('#c-cat').value=c?c.category:'';$('#c-pkg').innerHTML=costPkgOptions(c?costPkgId(c):'');$('#c-cur').value=c?c.currency:'PKR';$('#c-cost').value=c?c.cost:'';$('#c-tax').value=c&&c.tax?c.tax:'';$('#c-rate').value=c&&c.rate?c.rate:'';$('#c-rate').placeholder=defaultRate()?'default '+defaultRate():'default';
   $('#c-submit').textContent=c?'Save cost':'Add cost';$('#c-err').textContent='';updCostConv();$('#c-desc').focus();
 }
 function updCostConv(){const cur=$('#c-cur').value;const t=(Number($('#c-cost').value)||0)+(Number($('#c-tax').value)||0);const c=conv(t,cur,normRate($('#c-rate').value));const r0=normRate($('#c-rate').value);$('#c-conv').textContent=t?`Total ${fmtAmt(t,cur)}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`+(r0?` at ${r0.toLocaleString()}`:` at default ${c.r.toLocaleString()}`):' (no exchange rate yet)'):'';}
@@ -1834,8 +1904,34 @@ function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','rem
 function syncSettingsBtn(){const open=!$('#settingsPanel').hidden;const b=$('#btn-settings');b.innerHTML=open?'<span class="glyph" aria-hidden="true">‹</span>Home':'Settings';b.setAttribute('aria-expanded',String(open));b.title=open?'Back to the user list':'Open settings';}
 function closeSettings(){$('#settingsPanel').hidden=true;syncSettingsBtn();window.scrollTo({top:0,behavior:'smooth'});}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
-function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);if(state.backend==='api')$('#s-base-url').placeholder=location.origin;fillQueueSettings();$('#mailBlock').hidden=state.backend!=='api';if(state.backend==='api')loadMailSettings();ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
+function openSettings(){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);if(state.backend==='api')$('#s-base-url').placeholder=location.origin;fillQueueSettings();$('#s-wa-app').value=waApp();$('#mailBlock').hidden=state.backend!=='api';$('#aiBlock').hidden=state.backend!=='api';if(state.backend==='api'){loadMailSettings();loadAiSettings();}ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
 function fillQueueSettings(){$('#s-q1').value=queueTplOf(1);$('#s-q2').value=queueTplOf(2);$('#s-q3').value=queueTplOf(3);$('#s-payhow').value=payHowOf();}
+/* v21: the billing anchor is edited as "day of the month" + "yearly month"; the hidden #s-anchor carries the date they make (year kept from the current anchor) */
+function anchorFrom(day,month){const y=+anchor().slice(0,4);const m=Math.min(12,Math.max(1,Math.round(Number(month))||+anchor().slice(5,7)));const d=clampDay(day,cycleDay());return toISO(new Date(y,m-1,Math.min(d,daysIn(y,m-1))));}
+function previewCycleSettings(){const d=clampDay($('#s-cycle-day').value,cycleDay()),m=+$('#s-anchor-month').value||+anchor().slice(5,7);const an=anchorFrom(d,m);$('#s-anchor').value=an;const t=$('#s-anchor-text');if(t)t.textContent=`${fmtD(an,true)} · monthly ${ordinal(d)} to ${d===1?'end of month':ordinal(d-1)}${d>28?' (shorter months: the last day)':''}`;}
+function fillCycleSettings(){$('#s-cycle-day').value=cycleDay();$('#s-anchor-month').value=String(+anchor().slice(5,7));$('#s-anchor').value=anchor();previewCycleSettings();}
+/* ---------- v21: AI reading (self-hosted): the Anthropic key lives on the server; the page only ever sees a hint and the last test result ---------- */
+const aiUI={info:null};
+function renderAiStatus(j){aiUI.info=j||null;const st=$('#ai-status'),clr=$('#ai-clear'),key=$('#ai-key');if(!st)return;
+  if(!j){st.dataset.state='unset';st.textContent='Not set up';return;}
+  const lt=j.lastTest;const when=lt&&lt.at?fmtWhen(lt.at):'';
+  if(!j.configured){st.dataset.state='unset';st.textContent='Not set up';}
+  else if(lt&&lt.ok){st.dataset.state='ok';st.textContent=`Working · ${lt.model||j.model}${when?' · tested '+when:''}`;}
+  else if(lt&&lt.ok===false){st.dataset.state='bad';st.textContent=`Not working: ${lt.message||lt.error||'test failed'}`;}
+  else{st.dataset.state='saved';st.textContent=j.source==='env'?'Key from the server environment · not tested yet':'Key saved · not tested yet';}
+  clr.hidden=!j.hasKey;key.placeholder=j.hasKey?`${j.keyHint||'saved'} · paste a new key to replace`:(j.source==='env'?'using ANTHROPIC_API_KEY from the server · paste a key to override':'sk-ant-api03-…');}
+async function loadAiSettings(){const msg=$('#ai-msg');try{const j=await apiJSON('/api/ai-settings');renderAiStatus(j);msg.textContent=j.configured?(j.source==='env'?'Using the key from /etc/payments-tracker.env.':''):'Paste a key and press Save; screenshots in Costs → Import from screenshot then read automatically.';}catch(e){msg.textContent='Could not load the AI settings.';}}
+async function refreshAiInfo(){if(state.backend!=='api')return;let info=null;try{const r=await apiFetch('/api/read-image');if(r.ok)info=await r.json();}catch(e){}sample=info&&info.enabled?makeApiSample(info):null;canImage=!!sample;updateShotCaption();}
+async function saveAiKey(){const msg=$('#ai-msg');const k=$('#ai-key').value.trim();if(!k){msg.textContent='Paste the API key first.';$('#ai-key').focus();return;}msg.textContent='Saving…';$('#ai-save').disabled=true;
+  try{const j=await apiJSON('/api/ai-settings',apiBody('PUT',{apiKey:k}));$('#ai-key').value='';renderAiStatus(j);msg.textContent='Saved. Testing…';await testAiKey(true);await refreshAiInfo();}
+  catch(e){msg.textContent='Could not save: '+(e.message||e.code||'error');}
+  finally{$('#ai-save').disabled=false;}}
+async function testAiKey(afterSave){const msg=$('#ai-msg');const typed=afterSave?'':$('#ai-key').value.trim();if(!afterSave)msg.textContent='Testing…';$('#ai-test').disabled=true;
+  try{const j=await apiJSON('/api/ai-test',apiBody('POST',typed?{apiKey:typed}:{}));msg.textContent=`Working: the key can use ${j.model}.${typed?' Press Save key to keep it.':''}`;if(!typed)renderAiStatus(Object.assign({},aiUI.info||{},{configured:true,lastTest:j.lastTest||{ok:true,model:j.model,at:j.at}}));}
+  catch(e){const m=e.message||e.code||'error';msg.textContent='Not working: '+m+(e.code==='not_configured'?'':' (message from the Claude API)');if(!typed&&aiUI.info)renderAiStatus(Object.assign({},aiUI.info,{lastTest:e.lastTest||{ok:false,message:m,at:new Date().toISOString()}}));}
+  finally{$('#ai-test').disabled=false;}}
+async function clearAiKey(){const msg=$('#ai-msg');msg.textContent='Removing…';try{const j=await apiJSON('/api/ai-settings',apiBody('PUT',{clearKey:true}));renderAiStatus(j);msg.textContent=j.configured?'Saved key removed; the server environment key is used.':'Saved key removed. Screenshot reading is off until a key is saved.';await refreshAiInfo();}catch(e){msg.textContent='Could not remove: '+(e.message||e.code||'error');}}
+function openAiSettings(){openSettings();const b=$('#aiBlock');if(b&&!b.hidden){setTimeout(()=>{b.scrollIntoView({behavior:'smooth',block:'start'});$('#ai-key').focus();},350);}}
 async function loadMailSettings(){const msg=$('#m-msg');try{const m=await apiJSON('/api/mail-settings');$('#m-host').value=m.host||'';$('#m-port').value=m.port||587;$('#m-user').value=m.user||'';$('#m-from').value=m.fromName||'';$('#m-from-email').value=m.fromEmail||'';$('#m-test-to').value=m.testTo||'';$('#m-pass').value='';$('#m-pass').placeholder=m.hasPassword?'•••••••• saved · leave blank to keep':'app password';msg.textContent=m.configured?'Configured: the daily job at 09:00 emails today\'s stage.':'Not configured: nothing is emailed automatically.';}catch(e){msg.textContent='Could not load mail settings.';}}
 async function saveMailSettings(){const msg=$('#m-msg');msg.textContent='Saving…';const body={host:$('#m-host').value.trim(),port:Number($('#m-port').value)||587,user:$('#m-user').value.trim(),fromName:$('#m-from').value.trim(),fromEmail:$('#m-from-email').value.trim(),testTo:$('#m-test-to').value.trim()};const pw=$('#m-pass').value;if(pw)body.password=pw;if(!body.host&&!body.user&&!pw)body.clearPassword=true;
   try{const m=await apiJSON('/api/mail-settings',apiBody('PUT',body));$('#m-pass').value='';$('#m-pass').placeholder=m.hasPassword?'•••••••• saved · leave blank to keep':'app password';msg.textContent=m.configured?'Saved. The daily job at 09:00 will email today\'s stage.':'Saved, but not configured yet (host, user and app password are needed).';}catch(e){msg.textContent='Could not save: '+(e.message||e.code||'error');}}
@@ -1897,7 +1993,11 @@ function bind(){
   });
   $('#settings-close').addEventListener('click',closeSettings);
   $('#m-save').addEventListener('click',saveMailSettings);$('#m-test').addEventListener('click',testMail);
-  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.appName=rawAppName($('#s-app-name').value);state.settings.tagline=rawTagline($('#s-tagline').value);state.settings.readModel=normModel($('#s-model').value);state.settings.publicBaseUrl=pubBaseRaw($('#s-base-url').value);state.settings.queueTemplates=normQueueTpl({1:$('#s-q1').value,2:$('#s-q2').value,3:$('#s-q3').value});state.settings.payHow=rawPayHow($('#s-payhow').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
+  $('#ai-save').addEventListener('click',saveAiKey);$('#ai-test').addEventListener('click',()=>testAiKey(false));$('#ai-clear').addEventListener('click',clearAiKey);
+  $('#ai-key').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveAiKey();}});
+  $('#s-cycle-day').addEventListener('input',previewCycleSettings);$('#s-anchor-month').addEventListener('change',previewCycleSettings);
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-act="open-ai-settings"]');if(b){e.preventDefault();e.stopPropagation();openAiSettings();}},true);
+  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const cd=Number($('#s-cycle-day').value);if(!(cd>=1&&cd<=31)){err.textContent='The billing cycle day must be between 1 and 31.';return;}const an=anchorFrom(cd,$('#s-anchor-month').value);if(!isDateKey(an)){err.textContent='Pick the month yearly plans renew in.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.cycleDay=Math.round(cd);state.settings.waApp=normWaApp($('#s-wa-app').value);state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.appName=rawAppName($('#s-app-name').value);state.settings.tagline=rawTagline($('#s-tagline').value);state.settings.readModel=normModel($('#s-model').value);state.settings.publicBaseUrl=pubBaseRaw($('#s-base-url').value);state.settings.queueTemplates=normQueueTpl({1:$('#s-q1').value,2:$('#s-q2').value,3:$('#s-q3').value});state.settings.payHow=rawPayHow($('#s-payhow').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
   $('#reset-wrap').addEventListener('click',async e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.id==='btn-reset'){$('#reset-wrap').innerHTML=`<span class="small" style="margin-right:8px">Remove every user, payment and cost? This cannot be undone.</span><button class="btn sm danger" type="button" data-act="reset-yes">Yes, reset</button> <button class="btn sm" type="button" data-act="reset-no">Cancel</button>`;}
@@ -2056,13 +2156,13 @@ function bind(){
   ['c-cur','c-cost','c-tax','c-rate'].forEach(i=>$('#'+i).addEventListener('input',updCostConv));
   $('#costForm').addEventListener('submit',async e=>{
     e.preventDefault();const err=$('#c-err');err.textContent='';
-    const date=$('#c-date').value,desc=$('#c-desc').value.trim(),cat=$('#c-cat').value.trim(),cur=$('#c-cur').value,cost=$('#c-cost').value,tax=$('#c-tax').value,rate=normRate($('#c-rate').value);
+    const date=$('#c-date').value,desc=$('#c-desc').value.trim(),cat=$('#c-cat').value.trim(),cur=$('#c-cur').value,cost=$('#c-cost').value,tax=$('#c-tax').value,rate=normRate($('#c-rate').value),pkgSel=$('#c-pkg').value,packageId=pkgById(pkgSel)?pkgSel:'';
     if(!isDateKey(date)){err.textContent='Pick the date.';return;}
     if(!desc){err.textContent='Describe the cost.';return;}
     if(!validAmt(cost)){err.textContent='Enter the cost amount.';return;}
     if(tax!==''&&!validAmt(tax)){err.textContent='Tax must be zero or more.';return;}
     const id=$('#c-id').value||newId('c');const existing=state.costs[id];
-    const ok=await persistCost(id,{date,description:desc,category:cat,currency:cur,cost:Number(cost),tax:Number(tax)||0,rate,createdAt:existing?existing.createdAt:''});
+    const ok=await persistCost(id,{date,description:desc,category:cat,packageId,currency:cur,cost:Number(cost),tax:Number(tax)||0,rate,source:existing?existing.source:'',receipt:existing?existing.receipt:'',createdAt:existing?existing.createdAt:''});
     if(ok){$('#costPanel').hidden=true;ui.costEdit=null;toast((existing?'Updated ':'Added ')+desc+' · '+fmtAmt(Number(cost)+(Number(tax)||0),cur)+'.');}
   });
   $('#costBody').addEventListener('click',async e=>{
@@ -2179,13 +2279,15 @@ const MONTH_RE='jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec';
 function extractPrompt(){return `You are reading a screenshot of a bank or credit-card statement, or its text. Extract every transaction row.
 Reply with only a JSON array. Each element: {"date":"YYYY-MM-DD","description":"text as printed","amount":123.45,"currency":"USD" or "PKR" or null,"is_credit":true or false}.
 Rules: amount is a positive number with no symbols or thousands separators. is_credit is true for money received, refunds, reversals and payments made to the card, false for purchases, charges, fees and taxes. Infer the year from context on the statement; if none is visible use ${todayISO().slice(0,4)}. Set currency only when a symbol or code is visible next to the amount or in the statement header (Rs, PKR, $, USD), else null. Skip balances, totals, headings and running-balance columns. If there are no transactions reply [].`;}
+const NOT_SET_UP_MSG='Screenshot reading isn\'t set up yet: paste an API key in Settings → AI reading.';
+function shotNotice(text,withButton,kind){const n=$('#shot-notice');if(!text){n.hidden=true;return;}n.hidden=false;n.dataset.kind=kind||'warn';$('#shot-notice-text').textContent=text;$('#shot-notice-btn').hidden=!withButton;}
 function updateShotCaption(){
-  const cap=$('#shot-cap');const drop=$('#drop');
-  if(sample&&canImage){cap.textContent='Claude reads each image and lists the transactions for you to review. Nothing is saved until you choose which rows to add.';drop.hidden=false;}
-  else if(sample){cap.textContent='This view cannot send images to Claude. Paste the statement as text below and Claude will structure it.';drop.hidden=true;$('#shot-alt').open=true;}
-  else{cap.textContent=state.backend==='api'?'Screenshot reading is off on this server. Add ANTHROPIC_API_KEY to /etc/payments-tracker.env and restart the service; Claude (Haiku 4.5) then reads screenshots here. Until then, paste the statement as text below; dates and amounts are picked out line by line.':'Claude is not available in this view, so paste the statement as text below; dates and amounts are picked out line by line.';drop.hidden=true;$('#shot-alt').open=true;}
+  const cap=$('#shot-cap');const drop=$('#drop');const acts=$('#shot-acts');
+  if(sample&&canImage){cap.textContent='Claude reads each image and lists the transactions for you to review. Nothing is saved until you choose which rows to add.';drop.hidden=false;acts.hidden=false;shotNotice('');}
+  else if(sample){drop.hidden=true;acts.hidden=true;$('#shot-alt').open=true;shotNotice('This view cannot send images to Claude. Paste the statement as text below and Claude will structure it.',false,'info');}
+  else{drop.hidden=true;acts.hidden=true;$('#shot-alt').open=true;shotNotice(state.backend==='api'?NOT_SET_UP_MSG+' Until then, paste the statement as text below; dates and amounts are picked out line by line.':'Claude is not available in this view, so paste the statement as text below; dates and amounts are picked out line by line.',state.backend==='api',state.backend==='api'?'warn':'info');}
 }
-function openShot(){$('#shotPanel').hidden=false;$('#costPanel').hidden=true;updateShotCaption();$('#rv-cur').value='PKR';$('#shotPanel').scrollIntoView({behavior:'smooth',block:'start'});}
+function openShot(){$('#shotPanel').hidden=false;$('#costPanel').hidden=true;updateShotCaption();$('#rv-cur').value='PKR';$('#rv-pkg').innerHTML=costPkgOptions('');$('#shotPanel').scrollIntoView({behavior:'smooth',block:'start'});}
 function closeShot(){$('#shotPanel').hidden=true;}
 function clearShot(){shot.images.forEach(i=>{try{URL.revokeObjectURL(i.url);}catch(e){}});shot.images=[];shot.rows=[];$('#shot-raw').hidden=true;$('#shot-raw').textContent='';$('#rv-msg').textContent='';$('#rv-err').textContent='';renderThumbs();renderReview();}
 function renderThumbs(){
@@ -2198,7 +2300,7 @@ function addRows(data,imgIdx,fromText){
     if(!t||typeof t!=='object')continue;const amt=parseAmount(t.amount);if(amt==null||amt<=0)continue;
     let date=parseDate(t.date)||null;if(!date&&t.date)date=parseLooseDate(String(t.date));if(!date)date=todayISO();
     const cur=t.currency?normCur(t.currency):null;
-    shot.rows.push({id:newId('r'),img:imgIdx,sel:!t.is_credit,date,desc:String(t.description||'').trim().slice(0,140),amount:amt,cur,role:'cost',cat:'',credit:!!t.is_credit,fromText:!!fromText});n++;
+    shot.rows.push({id:newId('r'),img:imgIdx,sel:!t.is_credit,date,desc:String(t.description||'').trim().slice(0,140),amount:amt,cur,role:'cost',cat:'',pkg:'',credit:!!t.is_credit,fromText:!!fromText});n++;
   }
   return n;
 }
@@ -2234,7 +2336,8 @@ async function extractImage(idx){
     const n=addRows(data,idx,false);im.status='done';if(!n)im.err='No transactions found';
   }catch(e){
     im.status='error';const c=e&&e.code;
-    im.err=c==='not_granted'||c==='sampling_disabled'?'Claude not allowed here':c==='rate_limited'?'Too many requests, try again in a minute':c==='image_rejected'?'Image not accepted (type or size)':c==='invalid_json'?'Could not parse the reply; see text below':c==='images_unavailable'?'Images cannot be sent from this view':c==='refused'?'Claude declined this image':'Reading failed'+(e&&e.message?': '+e.message:'');
+    if(c==='not_configured'&&state.backend==='api'){sample=null;canImage=false;updateShotCaption();}
+    im.err=c==='not_configured'?'Reading not set up (see above)':c==='invalid_key'?'API key rejected: check Settings → AI reading':c==='not_granted'||c==='sampling_disabled'?'Claude not allowed here':c==='rate_limited'?'Too many requests, try again in a minute':c==='image_rejected'?'Image not accepted (type or size)':c==='invalid_json'?'Could not parse the reply; see text below':c==='images_unavailable'?'Images cannot be sent from this view':c==='refused'?'Claude declined this image':'Reading failed'+(e&&e.message?': '+e.message:'');
     if(e&&e.text){$('#shot-raw').hidden=false;$('#shot-raw').textContent='Claude read this from '+im.name+' but it could not be parsed. Fix it and paste it as text below:\n\n'+e.text;}
   }
   renderThumbs();renderReview();
@@ -2275,6 +2378,7 @@ function renderReview(){
     <td><select data-f="cur"><option value=""${r.cur?'':' selected'}>default</option><option value="PKR"${r.cur==='PKR'?' selected':''}>PKR</option><option value="USD"${r.cur==='USD'?' selected':''}>USD</option></select></td>
     <td><select data-f="role"><option value="cost"${r.role==='cost'?' selected':''}>Cost</option><option value="tax"${r.role==='tax'?' selected':''}>Tax</option><option value="taxabove"${r.role==='taxabove'?' selected':''}${i===0?' disabled':''}>Tax of row above</option></select></td>
     <td><input class="cat" type="text" data-f="cat" value="${esc(r.cat)}" placeholder="${esc($('#rv-cat').value||'—')}" list="cat-list"></td>
+    <td><select class="prod" data-f="pkg" aria-label="Product">${costPkgOptions(r.pkg,'(as above)')}</select></td>
     <td class="small muted">${r.img>=0?'image '+(r.img+1):'text'}${r.credit?' · credit':''}</td>
   </tr>`).join('');
   const sel=rows.filter(r=>r.sel);const cur=$('#rv-cur').value;const S=newSum();let unconv=0;
@@ -2288,12 +2392,12 @@ function isDupCost(date,desc,total,cur){const d=desc.trim().toLowerCase();return
 async function saveReview(){
   const rows=reviewRows();const sel=rows.filter(r=>r.sel);if(!sel.length)return;
   const err=$('#rv-err'),msg=$('#rv-msg');err.textContent='';msg.textContent='Saving…';shot.busy=true;renderReview();
-  const globalCat=$('#rv-cat').value.trim();
+  const globalCat=$('#rv-cat').value.trim();const globalPkg=pkgById($('#rv-pkg').value)?$('#rv-pkg').value:'';
   const entries=[];
   for(const r of sel){
     const amt=Number(r.amount)||0;if(amt<=0)continue;const cur=rowCur(r);
     if(r.role==='taxabove'&&entries.length){const prev=entries[entries.length-1];if(prev.currency===cur){prev.tax+=amt;continue;}}
-    entries.push({date:r.date,description:r.desc||'Imported transaction',category:r.cat.trim()||globalCat,currency:cur,cost:r.role==='tax'?0:amt,tax:r.role==='tax'?amt:0,rate:null,source:'screenshot',img:r.img});
+    entries.push({date:r.date,description:r.desc||'Imported transaction',category:r.cat.trim()||globalCat,packageId:pkgById(r.pkg)?r.pkg:globalPkg,currency:cur,cost:r.role==='tax'?0:amt,tax:r.role==='tax'?amt:0,rate:null,source:'screenshot',img:r.img});
   }
   const uploads={};
   if(assets){for(const e of entries){if(e.img>=0&&uploads[e.img]===undefined){const im=shot.images[e.img];try{const res=await assets.upload(im.file);uploads[e.img]=res.id;}catch(ex){uploads[e.img]='';}}}}
@@ -2301,7 +2405,7 @@ async function saveReview(){
   for(const e of entries){
     const total=e.cost+e.tax;
     if(isDupCost(e.date,e.description,total,e.currency)){dups++;continue;}
-    const ok=await persistCost(newId('c'),{date:e.date,description:e.description,category:e.category,currency:e.currency,cost:e.cost,tax:e.tax,rate:null,source:'screenshot',receipt:(e.img>=0&&uploads[e.img])||''});
+    const ok=await persistCost(newId('c'),{date:e.date,description:e.description,category:e.category,packageId:e.packageId||'',currency:e.currency,cost:e.cost,tax:e.tax,rate:null,source:'screenshot',receipt:(e.img>=0&&uploads[e.img])||''});
     ok?added++:failed++;
   }
   shot.busy=false;
@@ -2318,6 +2422,9 @@ function bindShot(){
   drop.addEventListener('click',e=>{if(!e.target.closest('label'))$('#shot-file').click();});
   drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#shot-file').click();}});
   $('#shot-file').addEventListener('change',e=>{addFiles(e.target.files);e.target.value='';});
+  $('#shot-camera-file').addEventListener('change',e=>{addFiles(e.target.files);e.target.value='';});
+  $('#shot-pick').addEventListener('click',()=>$('#shot-file').click());
+  $('#shot-camera').addEventListener('click',()=>$('#shot-camera-file').click());
   ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
   ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
   drop.addEventListener('drop',e=>{if(e.dataTransfer&&e.dataTransfer.files)addFiles(e.dataTransfer.files);});
@@ -2332,7 +2439,7 @@ function bindShot(){
   const body=$('#rv-body');
   body.addEventListener('input',e=>{const el=e.target.closest('[data-f]');if(!el)return;const tr=el.closest('tr');const r=shot.rows.find(x=>x.id===tr.dataset.id);if(!r)return;const f=el.dataset.f;
     if(f==='sel'){r.sel=el.checked;tr.dataset.sel=r.sel?1:0;}else if(f==='amount'){r.amount=Number(el.value)||0;}else if(f==='cur'){r.cur=el.value||null;}else if(f==='role'){r.role=el.value;tr.dataset.role=r.role;}else r[f]=el.value;
-    if(f!=='desc'&&f!=='cat'&&f!=='date')renderReview();else{const sel=shot.rows.filter(x=>x.sel);$('#rv-save').textContent=`Add ${sel.length} selected`;}});
+    if(f!=='desc'&&f!=='cat'&&f!=='date'&&f!=='pkg')renderReview();else{const sel=shot.rows.filter(x=>x.sel);$('#rv-save').textContent=`Add ${sel.length} selected`;}});
   $('#rv-all').addEventListener('change',e=>{shot.rows.forEach(r=>r.sel=e.target.checked);renderReview();});
   $('#rv-cur').addEventListener('change',renderReview);
   $('#rv-cat').addEventListener('input',()=>{body.querySelectorAll('input.cat').forEach(i=>i.placeholder=$('#rv-cat').value||'—');});
@@ -2354,7 +2461,7 @@ function buildUsersCSV(){
       for(const p of pays)lines.push([...base,...sb,p.date,p.amount,p.currency||s.currency,p.rate||'',p.note||''].map(csvCell).join(','));}}
   return lines.join('\n');
 }
-function buildCostsCSV(){const ids=Object.keys(state.costs).sort((a,b)=>state.costs[a].date.localeCompare(state.costs[b].date));return [['date','description','category','currency','cost','tax','rate'].join(','),...ids.map(id=>{const c=state.costs[id];return [c.date,c.description,c.category,c.currency,c.cost,c.tax||'',c.rate||''].map(csvCell).join(',');})].join('\n');}
+function buildCostsCSV(){const ids=Object.keys(state.costs).sort((a,b)=>state.costs[a].date.localeCompare(state.costs[b].date));return [['date','description','category','currency','cost','tax','rate','product'].join(','),...ids.map(id=>{const c=state.costs[id];return [c.date,c.description,c.category,c.currency,c.cost,c.tax||'',c.rate||'',costPkgName(c)].map(csvCell).join(',');})].join('\n');}
 function blobDownload(filename,text,type){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'text/plain'}));a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);return true;}catch(e){return false;}}
 function buildExportAll(){const docs={};for(const id in state.users)docs['users/'+id]=cleanUser(Object.assign({},state.users[id],{id}));for(const id in state.costs)docs['costs/'+id]=cleanCost(Object.assign({},state.costs[id],{id}));docs['settings/main']=settingsDoc();const at=new Date().toISOString();docs['meta/schema']={version:SCHEMA,at};docs['meta/seed']={done:true,at,exported:true};return {format:'wasool-docs',version:1,exportedAt:at,app:appName(),docs};}
 async function exportAll(){const msg=$('#data-msg'),ta=$('#export-all-text');msg.textContent='';const text=JSON.stringify(buildExportAll(),null,1);const name='wasool-export-'+todayISO()+'.json';
@@ -2432,12 +2539,13 @@ async function importCostsCSV(){
   const msg=$('#importCostMsg');msg.textContent='';const parsed=parseRows($('#importCostText').value);
   if(!parsed){msg.textContent='Paste some rows first.';return;}const {header,rows}=parsed;
   const find=re=>header.findIndex(h=>re.test(h));
-  const col={date:find(/date/),desc:find(/desc|item|name|what/),cat:find(/cat|type/),cur:find(/curr/),cost:find(/^cost|amount|net/),tax:find(/tax|vat|gst/),rate:find(/rate/)};
+  const col={date:find(/date/),desc:find(/desc|item|name|what/),cat:find(/^cat|type/),cur:find(/curr/),cost:find(/^cost|amount|net/),tax:find(/tax|vat|gst/),rate:find(/rate/),pkg:find(/product|package/)};
+  const pkgFromText=t=>{t=String(t||'').trim().toLowerCase();if(!t)return '';const p=packages().find(x=>x.name.toLowerCase()===t);return p?p.id:'';};
   if(col.date<0||col.cost<0){msg.textContent='Need at least a date column and a cost column.';return;}
   const get=(r,k)=>col[k]>=0?(r[col[k]]||'').trim():'';
   let n=0,skipped=0,failed=0;
   for(const r of rows){const date=parseDate(get(r,'date')),cost=parseAmount(get(r,'cost'));if(!date||cost==null){skipped++;continue;}
-    const ok=await persistCost(newId('c'),{date,description:get(r,'desc'),category:get(r,'cat'),currency:curFromText(get(r,'cur'),'PKR'),cost,tax:parseAmount(get(r,'tax'))||0,rate:normRate(get(r,'rate'))});ok?n++:failed++;}
+    const ok=await persistCost(newId('c'),{date,description:get(r,'desc'),category:get(r,'cat'),packageId:pkgFromText(get(r,'pkg')),currency:curFromText(get(r,'cur'),'PKR'),cost,tax:parseAmount(get(r,'tax'))||0,rate:normRate(get(r,'rate'))});ok?n++:failed++;}
   msg.textContent=`Imported ${n} cost${n===1?'':'s'}${skipped?`, ${skipped} rows skipped`:''}${failed?`, ${failed} failed`:''}.`;
   if(!failed)$('#importCostText').value='';
 }
@@ -2471,7 +2579,7 @@ async function initApi(){
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)apiTouch();});
 }
 /* ---------- boot ---------- */
-function applySettingsDoc(b){state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.appName=rawAppName(b.appName);state.settings.tagline=rawTagline(b.tagline);state.settings.readModel=normModel(b.readModel);state.settings.publicBaseUrl=pubBaseRaw(b.publicBaseUrl);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);state.settings.queueTemplates=normQueueTpl(b.queueTemplates);state.settings.payHow=rawPayHow(b.payHow);}
+function applySettingsDoc(b){state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.appName=rawAppName(b.appName);state.settings.tagline=rawTagline(b.tagline);state.settings.readModel=normModel(b.readModel);state.settings.publicBaseUrl=pubBaseRaw(b.publicBaseUrl);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.cycleDay=clampDay(b.cycleDay,+state.settings.anchor.slice(8,10));state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);state.settings.queueTemplates=normQueueTpl(b.queueTemplates);state.settings.payHow=rawPayHow(b.payHow);state.settings.waApp=normWaApp(b.waApp);}
 function subscribe(){
   db.collection('users').onSnapshot(snap=>{
     const users={};snap.docs.forEach(d=>{const b=d.data();if(b&&(b.email||b.name))users[d.id]=normalizeUser(b,d.id);});
