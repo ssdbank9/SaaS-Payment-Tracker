@@ -13,8 +13,8 @@ Opening `index.html` directly in a browser also runs the app, but with per-devic
 ## Files
 
 - `index.html` - the whole app (markup, styles and script) in one file. It detects where it runs: the claude.ai artifact (shared `db`), your own server (the `/api/docs` store below) or a plain file (browser-local storage).
-- `server/` - the self-hosted backend: Flask + SQLite, no build step (`app.py` routes, `db.py` storage, `auth.py` passcode login, `claude_read.py` screenshot reading).
-- `deploy/` - `setup.sh` one-command installer, `update.sh` auto-deploy, `backup.sh`, and the systemd units.
+- `server/` - the self-hosted backend: Flask + SQLite, no build step (`app.py` routes, `db.py` storage, `auth.py` passcode login, `claude_read.py` screenshot reading, `notify.py` daily reminder emails).
+- `deploy/` - `setup.sh` one-command installer, `update.sh` auto-deploy, `backup.sh`, and the systemd units (service, update, backup and notify timers).
 - `CHANGELOG.md` - version history.
 
 ## Development
@@ -66,6 +66,8 @@ Every user gets a private token (22 random URL-safe characters, stored as `confi
 - On the server the **Public base URL** setting is filled in from the address bar. In the claude.ai copy you can paste your server address there to include links in messages sent from the artifact (the pages themselves are served by your server, so the data must be there).
 
 ### Backups
+
+**Mail and the daily reminder emails (v20).** Settings → Mail (shown only on the self-hosted copy) stores an SMTP host, port, user, app password and from name on the server (`/api/mail-settings`; the password is kept in the SQLite `meta` table, never in exports or in the browser) and has a "Send test email to me" button. `payments-tracker-notify.timer` runs `server/notify.py` daily at 09:00 Asia/Karachi (04:00 UTC): it works out today's stage from the date (reminder from the 20th, repeat on the 23rd to anyone without an answer, final "your account continues" note on the 24th to anyone still silent), emails it to every user with an email address who has not had that stage this cycle, ticks them as sent in the Queue and logs to the journal (`journalctl -u payments-tracker-notify`). Without SMTP settings it logs "mail not configured" and exits 0, so it is harmless until you fill the form. `deploy/update.sh` installs the unit and enables the timer on its next run after the pull, so nothing needs doing by hand on an existing server.
 
 `payments-tracker-backup.timer` runs `deploy/backup.sh` nightly at 03:15: an online SQLite backup gzipped into `/var/lib/payments-tracker/backups/` (the newest 30 kept) plus a rolling `assets-latest.tar.gz` of uploaded receipts. To restore, stop the service, `gunzip` a backup over `/var/lib/payments-tracker/tracker.sqlite3`, start the service. Copying the `backups/` folder somewhere off the VM now and then is a good idea; **Export everything (JSON)** is the portable alternative.
 

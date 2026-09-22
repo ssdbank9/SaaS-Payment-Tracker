@@ -1,0 +1,17 @@
+[Unit]
+Description=Wasool (Payments Tracker) - email today's queue stage to subscribers (notify.py)
+After=network-online.target payments-tracker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=payments-tracker
+Group=payments-tracker
+WorkingDirectory=/opt/payments-tracker/server
+EnvironmentFile=/etc/payments-tracker.env
+ExecStart=/opt/payments-tracker/venv/bin/python /opt/payments-tracker/server/notify.py
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/payments-tracker

@@ -3,14 +3,15 @@
 Serves the single-file admin app from the repository root, a JSON document
 store behind /api/docs that mirrors the claude.ai artifact ``db`` capability,
 receipt uploads, optional Claude screenshot reading, and public one-tap
-confirmation pages at /c/<token>.
+choice pages at /c/<token> (Continue / Upgrade / Discontinue for the coming cycle).
 """
 import json
 import os
 import re
 import secrets
 import sys
-from datetime import timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from flask import Flask, Response, abort, jsonify, redirect, render_template, request, send_from_directory, session, url_for
 
@@ -18,14 +19,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import auth  # noqa: E402
 import claude_read  # noqa: E402
 import db  # noqa: E402
+import notify  # noqa: E402
 
 APP_NAME = "Wasool"
 TAGLINE = "Know who's paid."
-VERSION = "19"
+VERSION = "20"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
 ASSET_RE = re.compile(r"^[A-Za-z0-9_-]{8,40}\.(png|jpg|jpeg|webp|gif)$")
+APP_TZ = ZoneInfo(os.environ.get("APP_TZ", "Asia/Karachi"))
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 ASSET_EXT = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif"}
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"))
@@ -240,22 +244,128 @@ def api_read_image():
     return jsonify({"data": data, "text": text})
 
 
-# ---------- confirmations ----------
+# ---------- confirmations (answers from the public choice pages) ----------
 
 @app.get("/api/confirmations")
 @auth.login_required
 def api_confirmations():
     cycle = request.args.get("cycle", "")
-    if not re.match(r"^\d{4}-\d{2}-\d{2}$", cycle):
+    if not DATE_RE.match(cycle):
         return jsonify({"error": "cycle must be YYYY-MM-DD"}), 400
     return jsonify({"cycle": cycle, "answers": db.confirmations_for_cycle(cycle)})
 
+
+@app.post("/api/confirmations/<int:conf_id>/applied")
+@auth.login_required
+def api_confirmation_applied(conf_id):
+    at = db.mark_applied(conf_id)
+    if not at:
+        return jsonify({"error": "not_found"}), 404
+    return jsonify({"ok": True, "id": conf_id, "applied_at": at})
+
+
+# ---------- mail settings (kept in the meta table, never in the docs export) ----------
+
+@app.get("/api/mail-settings")
+@auth.login_required
+def api_mail_settings():
+    return jsonify(notify.public_mail_settings())
+
+
+@app.put("/api/mail-settings")
+@auth.login_required
+def api_mail_settings_put():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({"error": "body_must_be_object"}), 400
+    cur = notify.mail_settings()
+    out = {}
+    for k in ("host", "user", "fromName", "fromEmail", "testTo"):
+        out[k] = str(body.get(k, cur.get(k, "")) or "").strip()[:200]
+    try:
+        port = int(body.get("port") or cur.get("port") or 587)
+    except (TypeError, ValueError):
+        return jsonify({"error": "bad_port"}), 400
+    out["port"] = port if 1 <= port <= 65535 else 587
+    pw = body.get("password")
+    if body.get("clearPassword"):
+        out["password"] = ""
+    elif isinstance(pw, str) and pw:
+        out["password"] = pw[:500]
+    else:
+        out["password"] = cur.get("password", "")
+    db.set_meta("mail", out)
+    db.audit("admin", "mail.settings", out["host"], auth.client_ip())
+    return jsonify(notify.public_mail_settings(out))
+
+
+@app.post("/api/mail-test")
+@auth.login_required
+def api_mail_test():
+    m = notify.mail_settings()
+    body = request.get_json(silent=True) or {}
+    to = str(body.get("to") or m.get("testTo") or "").strip()
+    if not notify.mail_configured(m):
+        return jsonify({"error": "not_configured", "message": "Fill in the SMTP host, user and app password first."}), 400
+    if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", to):
+        return jsonify({"error": "no_recipient", "message": "Enter the address to send the test to."}), 400
+    settings = ((db.get_doc("settings/main") or {}).get("data") or {})
+    name = (settings.get("appName") or "").strip() or APP_NAME
+    try:
+        notify.send_mail(m, to, "%s: test email" % name, "This is a test from %s. If you can read this, the daily reminder emails will work.\n\nSent %s." % (name, db.now_iso()))
+    except Exception as e:  # noqa: BLE001 - report the SMTP error to the admin
+        db.audit("admin", "mail.test.error", str(e)[:200], auth.client_ip())
+        return jsonify({"error": "smtp_failed", "message": str(e)[:300]}), 502
+    db.audit("admin", "mail.test", to, auth.client_ip())
+    return jsonify({"ok": True, "to": to})
+
+
+# ---------- public choice page ----------
 
 def _confirm_context(token):
     d = db.get_doc("confirm/" + token)
     if not d or not isinstance(d["data"], dict):
         return None
-    return d["data"]
+    ctx = d["data"]
+    uid = str(ctx.get("userId") or "")
+    if uid:
+        # the link must still be the user's current one; a replaced token shows "not active"
+        u = db.get_doc("users/" + uid)
+        if not u or not isinstance(u["data"], dict) or (u["data"].get("confirmToken") and u["data"].get("confirmToken") != token):
+            return None
+    return ctx
+
+
+def _today():
+    t = os.environ.get("WASOOL_TODAY", "")
+    return t if DATE_RE.match(t) else datetime.now(APP_TZ).date().isoformat()
+
+
+def _card(ctx, cycle):
+    cycles = ctx.get("cycles") if isinstance(ctx.get("cycles"), dict) else {}
+    card = cycles.get(cycle)
+    if not isinstance(card, dict) and isinstance(ctx.get("plans"), list) and ctx.get("cycleStart") == cycle:
+        card = ctx
+    return card if isinstance(card, dict) else None
+
+
+def _plans(card, packages):
+    """Plan boxes for the page; the admin page writes them, the package list from settings labels the switch button."""
+    out = []
+    by_id = {p.get("id"): p for p in packages if isinstance(p, dict)}
+    for p in card.get("plans") or []:
+        if not isinstance(p, dict):
+            continue
+        sw = p.get("switch") if isinstance(p.get("switch"), dict) else None
+        if sw:
+            tgt = by_id.get(sw.get("packageId")) or {}
+            sw = dict(sw, name=sw.get("name") or tgt.get("name") or "another tier")
+            if not sw.get("label"):
+                cur = str(p.get("tier") or "")
+                sw["label"] = ("Move back to %s" % sw["name"]) if re.search(r"max", cur, re.I) else ("Upgrade to %s" % sw["name"]) if re.search(r"max", sw["name"], re.I) else ("Change to %s" % sw["name"])
+        out.append({"planId": str(p.get("planId") or ""), "label": p.get("label") or p.get("tier") or "Plan", "acct": p.get("acct") or "", "tier": p.get("tier") or "",
+                    "amountText": p.get("amountText") or "", "paid": bool(p.get("paid")), "priceText": p.get("priceText") or "", "switch": sw})
+    return out
 
 
 @app.route("/c/<token>", methods=["GET", "POST"])
@@ -265,25 +375,57 @@ def confirm(token):
     ctx = _confirm_context(token)
     if not ctx:
         return render_template("confirm.html", app_name=APP_NAME, tagline=TAGLINE, missing=True), 404
+    settings = ((db.get_doc("settings/main") or {}).get("data") or {})
+    packages = settings.get("packages") if isinstance(settings.get("packages"), list) else []
+    app_name = str(ctx.get("appName") or (settings.get("appName") or "").strip() or APP_NAME)
     cycle = str(ctx.get("cycleStart") or "")
     name = str(ctx.get("name") or "there")
+    card = _card(ctx, cycle) or {}
+    plans = _plans(card, packages)
+    multi = len(plans) > 1 and bool(card.get("multi", True))
+    today = _today()
+    reply_by = str(card.get("replyBy") or ctx.get("replyByISO") or "")
+    open_now = bool(cycle) and (not DATE_RE.match(reply_by) or today <= reply_by)
     if request.method == "POST":
-        answer = request.form.get("answer", "").lower()
-        if answer not in ("yes", "no"):
+        if not open_now:
+            abort(403)
+        choice = db.norm_choice(request.form.get("choice") or request.form.get("answer") or "")
+        if choice not in db.CHOICES:
             abort(400)
+        plan_id = (request.form.get("planId") or "").strip()[:80]
+        plan = next((p for p in plans if p["planId"] == plan_id), None) if plan_id else None
+        if plan_id and not plan:
+            abort(400)
+        target = ""
+        if choice in ("upgrade", "downgrade"):
+            sw = (plan or (plans[0] if plans else {})).get("switch") if (plan or plans) else None
+            if not sw:
+                abort(400)
+            target = str(sw.get("packageId") or "")
+            choice = sw.get("choice") if sw.get("choice") in ("upgrade", "downgrade") else choice
+        if not multi:
+            plan_id = ""  # one answer covers every monthly plan
         note = (request.form.get("note") or "").strip()
-        db.record_confirmation(token, str(ctx.get("userId") or ""), cycle, answer, note, auth.client_ip(), request.headers.get("User-Agent", ""))
-        db.audit("public", "confirm." + answer, token[:8] + "… cycle " + cycle, auth.client_ip())
+        db.record_confirmation(token, str(ctx.get("userId") or ""), cycle, choice, note, auth.client_ip(), request.headers.get("User-Agent", ""), plan_id, target)
+        db.audit("public", "choice." + choice, token[:8] + "… cycle " + cycle + (" plan " + plan_id if plan_id else ""), auth.client_ip())
         return redirect(url_for("confirm", token=token, done=1))
-    recorded = db.latest_confirmation(token, cycle) if cycle else None
+    answers = db.latest_confirmations(token, cycle) if cycle else {}
+    if not multi and answers and "" not in answers:
+        answers = {"": sorted(answers.values(), key=lambda a: a["id"])[-1]}
     change = request.args.get("change") == "1"
+    for p in plans:
+        a = answers.get(p["planId"] if multi else "")
+        p["answer"] = None if change else a
+    whole = None if (multi or change) else answers.get("")
     return render_template(
         "confirm.html",
-        app_name=str(ctx.get("appName") or APP_NAME), tagline=TAGLINE, missing=False,
-        name=name, package=ctx.get("package") or "", amount=ctx.get("amount") or "", period=ctx.get("period") or "",
-        due_date=ctx.get("dueDate") or "", reply_by=ctx.get("replyBy") or "", cycle=cycle,
-        recorded=None if change else recorded, done=request.args.get("done") == "1", token=token,
-        nothing_due=bool(ctx.get("nothingDue")),
+        app_name=app_name, tagline=TAGLINE, missing=False, token=token, name=name, cycle=cycle,
+        period=card.get("periodText") or ctx.get("period") or "", due_date=card.get("dueDateText") or ctx.get("dueDate") or "",
+        reply_by=card.get("replyByText") or ctx.get("replyBy") or "", amount=card.get("amountText") or ctx.get("amount") or "",
+        plans=plans, multi=multi, whole=whole, answered=bool(whole) or (multi and all(p.get("answer") for p in plans)),
+        done=request.args.get("done") == "1", open_now=open_now, nothing_due=not plans and bool(ctx.get("nothingDue")),
+        pay_how=(settings.get("payHow") or "").strip() or notify.DEFAULT_PAY_HOW, owner=(settings.get("ownerName") or "").strip(),
+        labels={"continue": "Continue", "discontinue": "Discontinue"},
     )
 
 

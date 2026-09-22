@@ -8,7 +8,7 @@
 # Idempotent: run it again to repair or to change DOMAIN / ADMIN_PASSCODE.
 # What it does: installs python3-venv, git and Caddy; clones or updates the repo in
 # /opt/payments-tracker; creates a venv; writes /etc/payments-tracker.env; installs the
-# systemd units (service, 5-minute GitHub auto-update, nightly backup); writes the
+# systemd units (service, 5-minute GitHub auto-update, nightly backup, daily reminder emails); writes the
 # Caddyfile (automatic HTTPS); opens ports 80/443 in iptables and persists them.
 set -euo pipefail
 
@@ -113,6 +113,7 @@ systemctl daemon-reload
 systemctl enable --quiet --now payments-tracker.service
 systemctl enable --quiet --now payments-tracker-update.timer
 systemctl enable --quiet --now payments-tracker-backup.timer
+systemctl enable --quiet --now payments-tracker-notify.timer
 systemctl restart payments-tracker.service
 
 # ---- Caddy (automatic HTTPS) ----
@@ -174,6 +175,7 @@ $APP_NAME is installed.
   Passcode:       the ADMIN_PASSCODE you set (kept in $ENV_FILE)
   Data:           $DATA_DIR (SQLite + receipts; nightly backups in $DATA_DIR/backups)
   Updates:        every 5 minutes the VM checks GitHub ($BRANCH) and restarts on a new commit
+  Emails:         payments-tracker-notify.timer runs daily at 09:00 PKT once SMTP is set in Settings -> Mail
   Logs:           journalctl -u payments-tracker -f      /      journalctl -u caddy -f
 
 Still to do on your side:

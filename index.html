@@ -163,6 +163,32 @@ details.except[open] summary{background:var(--accent-soft)}
 .except-list label.chk .when{color:var(--muted);font-family:var(--mono);font-size:11px;margin-left:auto}
 .except-list .hint{font-size:11px;color:var(--muted);white-space:normal}
 .skipped-note{font-size:12px;color:var(--ink-2);margin:0 0 6px}
+.qbar{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;margin:10px 0 6px}
+.qbar .lead{font-size:13px;color:var(--ink-2);flex:1 1 220px}
+.qbar .lead b{color:var(--ink)}
+.qstage{font-size:12px;color:var(--ink-2);background:var(--accent-soft);color:var(--accent-ink);border-radius:999px;padding:3px 10px;font-weight:600}
+.qstage[data-stage="0"]{background:var(--surface-2);color:var(--ink-2)}
+.qstage[data-stage="3"]{background:var(--crit-bg);color:var(--crit)}
+.qrow{border:1px solid var(--line);border-radius:6px;padding:9px 12px;margin-top:8px;background:var(--surface)}
+.qrow[data-sent="1"]{border-color:var(--accent-line);background:var(--accent-tint)}
+.qhead{display:flex;gap:8px 14px;align-items:center;flex-wrap:wrap}
+.qhead .who{font-weight:600;font-size:14px}
+.qhead .due{font-size:12px;color:var(--ink-2)}
+.qhead .due b{color:var(--ink);font-weight:500;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.qhead label.chk{margin-left:auto;font-size:12px;min-height:0;align-items:center}
+.qhead label.chk .when{color:var(--muted);font-family:var(--mono);font-size:11px}
+.qmsg{margin:8px 0 0;padding:8px 10px;background:var(--surface-2);border-radius:4px;font:12.5px/1.45 var(--sans);white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
+.qmsg a{color:var(--accent-ink)}
+.ans[data-ans="continue"]{color:var(--good)}
+.ans[data-ans="upgrade"],.ans[data-ans="downgrade"]{color:var(--accent-ink)}
+.ans[data-ans="discontinue"]{color:var(--crit)}
+.ans[data-ans="none"]{color:var(--muted);font-weight:400}
+.ans .plan{font-weight:400;color:var(--ink-2)}
+.rem-badge[data-k="disc"]{color:var(--crit);white-space:normal}
+.disc-note{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--ink);background:var(--crit-bg);border:1px solid var(--crit);border-radius:4px;padding:8px 10px;margin-bottom:10px}
+.disc-note b{color:var(--crit)}
+.tag.via-link{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--good-bg);color:var(--good);white-space:nowrap}
+.mail-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
 .ans{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:500;white-space:nowrap}
 .ans[data-ans="yes"]{color:var(--good)}
 .ans[data-ans="no"]{color:var(--crit)}
@@ -416,15 +442,15 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v19</span>
-      <button class="btn" type="button" id="btn-reminders">Run reminders<span class="cnt" id="rem-cnt" hidden></span></button>
+      <span class="small muted num" id="app-ver" title="App version">v20</span>
+      <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
     </div>
   </header>
 
   <div class="banner" id="remindBanner" hidden role="status"><span id="remindBannerText"></span><button class="btn sm primary" type="button" id="remindBannerBtn">Open reminder run</button></div>
   <section class="panel" id="remindRun" hidden aria-label="Reminder run">
-    <div class="panel-head"><div><div class="rr-tabs"><h3 id="rr-title">Reminder run</h3><span class="seg" id="rr-tabs"><button type="button" data-tab="run" aria-pressed="true">Reminder run</button><button type="button" data-tab="final" aria-pressed="false">Final notice</button></span></div><p class="small muted" id="rr-sub"></p></div><button class="link" type="button" id="rr-close">Close</button></div>
+    <div class="panel-head"><div><div class="rr-tabs"><h3 id="rr-title">Queue</h3><span class="seg" id="rr-tabs"><button type="button" data-tab="queue" aria-pressed="true">Queue</button><button type="button" data-tab="run" aria-pressed="false">Reminder run</button><button type="button" data-tab="final" aria-pressed="false">Final notice</button></span></div><p class="small muted" id="rr-sub"></p></div><button class="link" type="button" id="rr-close">Close</button></div>
     <div id="rr-body"></div>
   </section>
 
@@ -459,7 +485,7 @@ table.costs td.cat{color:var(--ink-2)}
         <label class="f">Reading model<select id="s-model"><option value="quick">Quick (cheapest, fastest)</option><option value="default">Default (more careful)</option></select></label>
         <span class="small muted" style="align-self:center">The Claude model that reads statement screenshots, pasted statement text and Quick add lines. <b>Quick</b> is the cheapest and fastest and is enough for clean screenshots; switch to <b>Default</b> if it misreads amounts or dates.</span>
         <label class="f">Public base URL <span class="muted">(for confirmation links)</span><input id="s-base-url" type="url" placeholder="https://wasool.example.com" autocomplete="off" inputmode="url"></label>
-        <span class="small muted" style="align-self:center" id="s-base-url-help">Where your self-hosted copy of this app runs. Each user gets a private one-tap page at <code>{base}/c/{token}</code> where they answer YES or NO; the answer shows in the reminder run. On the self-hosted server this is filled in from the address bar; in the claude.ai copy, paste your server address here to put links into reminders.</span>
+        <span class="small muted" style="align-self:center" id="s-base-url-help">Where your self-hosted copy of this app runs. Each user gets a private page at <code>{base}/c/{token}</code> where they choose Continue, Upgrade to C Max (or Move back to C) or Discontinue for the coming cycle; the answer shows in the Queue and Reminder run and is applied to their record. On the self-hosted server this is filled in from the address bar; in the claude.ai copy, paste your server address here to put links into reminders.</span>
         <label class="f">Default exchange rate (PKR per 1 USD)<input id="s-rate" type="number" min="0" step="0.01" class="num" placeholder="280"></label>
         <span class="small muted" style="align-self:center">Payments and costs saved without their own rate use this default, so changing it here re-values all of them in the summary tiles and chart. An entry with its own rate keeps it. Rows in the tables always show each entry's own currency; the tiles amalgamate into PKR and USD.</span>
         <label class="f">Billing cycle anchor<input id="s-anchor" type="date" required></label>
@@ -485,6 +511,28 @@ table.costs td.cat{color:var(--ink-2)}
         <textarea id="s-final-template" rows="3"></textarea>
       </label>
       <p class="small muted" style="margin-top:6px">Same placeholders. In the final notice <code>{due_date}</code> is the day the new cycle starts (the deactivation day), and <code>{amount_due}</code> and <code>{period}</code> describe the unpaid amount for someone who is overdue.</p>
+      <div style="margin-top:16px" id="queueBlock">
+        <div class="block-head" style="margin-bottom:2px"><h3>Queue messages</h3></div>
+        <p class="small muted">The Queue picks today's stage from the date: <b>stage 1</b> from the reminder day, <b>stage 2</b> from the reply-by day to anyone without an answer, <b>stage 3</b> on the cycle start to anyone still silent (their account continues at the current tier). Placeholders: <code>{name}</code> <code>{amount}</code> <code>{cycle}</code> (e.g. 24 Sep – 23 Oct 2026) <code>{link}</code> (the user's private choice page) <code>{tier}</code> <code>{dueDate}</code> <code>{replyBy}</code> <code>{switchLabel}</code> (Upgrade to C Max / Move back to C) <code>{payHow}</code>. The link is added to the end when a message does not mention it. The same texts are used by the daily email job.</p>
+        <label class="f" style="margin-top:8px">Stage 1 · reminder <span class="muted">(from the reminder day)</span><textarea id="s-q1" rows="3"></textarea></label>
+        <label class="f" style="margin-top:8px">Stage 2 · repeat <span class="muted">(reply-by day, no answer yet)</span><textarea id="s-q2" rows="3"></textarea></label>
+        <label class="f" style="margin-top:8px">Stage 3 · final note <span class="muted">(cycle start, still silent: account continues, tier, amount, how to pay)</span><textarea id="s-q3" rows="3"></textarea></label>
+        <label class="f" style="margin-top:8px">How to pay <span class="muted">(<code>{payHow}</code>, also shown on the choice page)</span><input id="s-payhow" type="text" maxlength="300" autocomplete="off"></label>
+      </div>
+      <div style="margin-top:16px" id="mailBlock" hidden>
+        <div class="block-head" style="margin-bottom:2px"><h3>Mail (daily reminder emails)</h3></div>
+        <p class="small muted">Kept on the server only, never in exports. With an SMTP account set here, the server job runs every day at 09:00 (Asia/Karachi) and emails today's stage to every user with an email address who has not had it yet for this cycle, then ticks them as sent in the Queue. For Gmail use <code>smtp.gmail.com</code>, port 587 and an <b>app password</b>. Leave it empty to send everything by hand.</p>
+        <div class="form-grid mail-grid" style="margin-top:8px">
+          <label class="f">SMTP host<input id="m-host" type="text" placeholder="smtp.gmail.com" autocomplete="off"></label>
+          <label class="f">Port<input id="m-port" type="number" min="1" max="65535" placeholder="587" class="num"></label>
+          <label class="f">User (login)<input id="m-user" type="text" placeholder="you@gmail.com" autocomplete="off"></label>
+          <label class="f">App password<input id="m-pass" type="password" placeholder="leave blank to keep" autocomplete="new-password"></label>
+          <label class="f">From name<input id="m-from" type="text" placeholder="Wasool" autocomplete="off"></label>
+          <label class="f">From email <span class="muted">(blank = user)</span><input id="m-from-email" type="email" placeholder="you@gmail.com" autocomplete="off"></label>
+          <label class="f">Send test to <span class="muted">(your address)</span><input id="m-test-to" type="email" placeholder="me@example.com" autocomplete="off"></label>
+        </div>
+        <div class="form-actions" style="margin-top:8px"><button class="btn" type="button" id="m-save">Save mail settings</button><button class="btn" type="button" id="m-test">Send test email to me</button><span class="small muted" id="m-msg"></span></div>
+      </div>
       <div style="margin-top:14px" id="dataBlock">
         <div class="block-head" style="margin-bottom:2px"><h3>Your data</h3></div>
         <p class="small muted">Everything the tracker stores (users, payments, costs, reminder ticks and settings) as one JSON file. Export from the claude.ai copy, then import on your own server to move in two clicks. Importing replaces the users and costs with the file's contents.</p>
@@ -702,12 +750,21 @@ const OLD_TPL='Hi {name_or_email}, this is a reminder that your {plan} balance o
 const DEFAULT_TPL='Hi {name_or_email}, your {package} payment of {amount_due} for {period} is due on {due_date}. Please confirm or pay by {reply_by}. Thanks!';
 const DEFAULT_FINAL_TPL='Hi {name_or_email}, we have not received your {package} payment of {amount_due} for {period}. Your account will be deactivated tomorrow ({due_date}) unless payment is confirmed today. Thanks!';
 const finalTplOf=t=>String(t||'').trim()||DEFAULT_FINAL_TPL;
+/* v20 queue: three stage messages picked from the date (reminder day, reply-by day, cycle start). Keep in step with server/notify.py. */
+const DEFAULT_QUEUE_TPL={1:'Hi {name}, your {tier} plan renews on {dueDate} for {cycle}. Amount due: {amount}. Please pick one on your private link by {replyBy} — Continue, {switchLabel}, or Discontinue: {link}',
+  2:'Hi {name}, quick follow-up: I have not heard back about your {tier} plan for {cycle} ({amount} due {dueDate}). Today is the last day to choose — Continue, {switchLabel}, or Discontinue: {link} If I do not hear from you, the account simply continues as it is.',
+  3:'Hi {name}, as I did not hear back, your {tier} account continues from {dueDate} for {cycle}. Amount due: {amount}. {payHow} Your plan and options stay here: {link}'};
+const DEFAULT_PAY_HOW='Please pay the way you usually do (NayaPay, bank transfer or USDT) and send me the receipt.';
+const normQueueTpl=t=>{const o={};if(t&&typeof t==='object')for(const k of ['1','2','3']){const v=String(t[k]||'').trim();if(v&&v!==DEFAULT_QUEUE_TPL[k])o[k]=v.slice(0,1200);}return o;};
+const queueTplOf=stage=>{const t=state.settings.queueTemplates||{};return String(t[stage]||'').trim()||DEFAULT_QUEUE_TPL[stage];};
+const rawPayHow=v=>{const t=String(v==null?'':v).trim().slice(0,300);return t===DEFAULT_PAY_HOW?'':t;};const payHowOf=()=>rawPayHow(state.settings.payHow)||DEFAULT_PAY_HOW;
+const STAGE_NAMES={1:'Reminder',2:'Repeat reminder',3:'Final note'};
 const normBasis=v=>v==='fixed30'?'fixed30':'actual';const rawBasis=v=>v==='fixed30'||v==='actual'?v:'';
 const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
 const SCHEMA=11;
-const APP_VERSION='19';
+const APP_VERSION='20';
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
@@ -735,8 +792,8 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 const TOKEN_RE=/^[A-Za-z0-9_-]{16,64}$/;
 const newId=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 
-const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,publicBaseUrl:''},mode:'connecting',backend:'local',loaded:false,costsLoaded:false};
-const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'run',cancelPre:{}};
+const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,publicBaseUrl:'',queueTemplates:{},payHow:''},mode:'connecting',backend:'local',loaded:false,costsLoaded:false};
+const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'queue',cancelPre:{},qStage:null,qOpen:{}};
 let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,seedActive=false,migrateChecked=false;
 
 /* ---------- money: two currencies, per-entry rate ---------- */
@@ -769,7 +826,7 @@ const DEFAULT_RATE=280;
 function normalizePackages(arr){if(!Array.isArray(arr))return [];const seen={};const out=[];for(const p of arr){if(!p||typeof p!=='object')continue;const id=String(p.id||'').trim()||newId('pkg');const name=String(p.name||'').trim();if(!name||seen[id])continue;seen[id]=1;const pr=Number(p.price);out.push({id,name,cycle:normCycle(p.cycle),price:isFinite(pr)&&pr>0?pr:null,currency:p.currency?normCur(p.currency):'',description:String(p.description||'').trim()});}return out;}
 const packages=()=>state.settings.packages||[];
 const DEFAULT_APP_NAME='Wasool';const DEFAULT_TAGLINE='Know who\'s paid.';const appNameOf=v=>String(v==null?'':v).trim().slice(0,40)||DEFAULT_APP_NAME;const rawAppName=v=>{const t=String(v==null?'':v).trim().slice(0,40);return t===DEFAULT_APP_NAME?'':t;};const taglineOf=v=>String(v==null?'':v).trim().slice(0,60)||DEFAULT_TAGLINE;const rawTagline=v=>{const t=String(v==null?'':v).trim().slice(0,60);return t===DEFAULT_TAGLINE?'':t;};const tagline=()=>taglineOf(state.settings.tagline);const normModel=v=>v==='default'?'default':'quick';const readModel=()=>normModel(state.settings.readModel);const appName=()=>appNameOf(state.settings.appName);
-const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,appName:'',tagline:'',readModel:'quick',publicBaseUrl:''});
+const DEFAULT_SETTINGS=()=>({rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,appName:'',tagline:'',readModel:'quick',publicBaseUrl:'',queueTemplates:{},payHow:''});
 const pubBaseRaw=v=>{const t=String(v==null?'':v).trim().replace(/\/+$/,'');return /^https?:\/\/[^\s]+$/i.test(t)?t.slice(0,200):'';};
 const basis=()=>normBasis(state.settings.prorationBasis);
 const normDiscount=d=>{if(!d||typeof d!=='object')return null;const t=d.type==='percent'?'percent':d.type==='fixed'?'fixed':null;const v=Number(d.value);return t&&isFinite(v)&&v>0?{type:t,value:t==='percent'?Math.min(100,v):v}:null;};
@@ -782,7 +839,8 @@ const remindDay=()=>clampDay(state.settings.remindDay,DEFAULT_REMIND_DAY);const 
 function dayOnOrBefore(iso,day){let y=+iso.slice(0,4),m=+iso.slice(5,7)-1;for(let g=0;g<3;g++){const d=toISO(new Date(y,m,Math.min(day,daysIn(y,m))));if(d<=iso)return d;m--;if(m<0){m=11;y--;}}return iso;}
 /* reminder window for the upcoming cycle: remind from the reminder day, replies due by the reply-by day, both before the cycle starts */
 function reminderWindow(today){const nc=nextCycleStart(today);const replyBy=dayOnOrBefore(addDays(nc,-1),replyDay());const start=dayOnOrBefore(replyBy,remindDay());return {nc,start,replyBy,open:today>=start&&today<=replyBy,periodEnd:addDays(nextCycleStart(nc),-1)};}
-function remState(u,key){const r=(u.reminders||{})[key];return Object.assign({reminded:null,confirmed:null,final:null,skipped:null},r||{});}
+function remState(u,key){const r=(u.reminders||{})[key];return Object.assign({reminded:null,confirmed:null,final:null,skipped:null,sent:[]},r||{});}
+const remEmpty=r=>!(r.reminded||r.confirmed||r.final||r.skipped||(r.sent&&r.sent.length));
 const pkgById=id=>packages().find(p=>p.id===id)||null;
 const pkgName=id=>{const p=pkgById(id);return p?p.name:'';};
 function planLabel(s,date){const pn=pkgName(pkgIdAt(s,date||todayISO()));const extra=(s.name||'').trim();if(!pn)return extra||(s.kind==='one-time'?'Item':'Plan');return extra&&extra.toLowerCase()!=='standard'&&extra.toLowerCase()!==pn.toLowerCase()?pn+' · '+extra:pn;}
@@ -801,15 +859,15 @@ function pkgUsage(id){let n=0;for(const uid in state.users)for(const s of state.
 /* ---------- tiers: a plan can switch to another package of the same cycle (C ↔ C Max) from a chosen cycle start.
    tierHistory: [{from (a cycle start), packageId, price, currency, note}]; the plan's own package and price stay the starting tier,
    and each period resolves to the latest entry whose `from` is on or before the period start. No entries = the plan as before. ---------- */
-function normTierHistory(arr,cur){if(!Array.isArray(arr))return [];const out=[];const seen={};for(const t of arr){if(!t||typeof t!=='object')continue;const from=normDate(t.from);const pid=String(t.packageId||'').trim();const pr=Number(t.price);if(!from||!pid||!isFinite(pr)||pr<0||seen[from])continue;seen[from]=1;out.push({from,packageId:pid,price:pr,currency:t.currency?normCur(t.currency):cur,note:String(t.note||'').trim().slice(0,140)});}return out.sort((a,b)=>a.from.localeCompare(b.from));}
+function normTierHistory(arr,cur){if(!Array.isArray(arr))return [];const out=[];const seen={};for(const t of arr){if(!t||typeof t!=='object')continue;const from=normDate(t.from);const pid=String(t.packageId||'').trim();const pr=Number(t.price);if(!from||!pid||!isFinite(pr)||pr<0||seen[from])continue;seen[from]=1;const e={from,packageId:pid,price:pr,currency:t.currency?normCur(t.currency):cur,note:String(t.note||'').trim().slice(0,140)};if(t.via==='link')e.via='link';out.push(e);}return out.sort((a,b)=>a.from.localeCompare(b.from));}
 const tierEntries=s=>((s&&s.tierHistory)||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));
 function tierAt(s,date){let e=null;for(const t of tierEntries(s)){if(t.from<=date)e=t;else break;}return e;}
 const pkgIdAt=(s,date)=>{const t=tierAt(s,date);return t?t.packageId:(s.packageId||null);};
 /* one entry described against the tier in force the day before: direction, in effect or still scheduled, badge text */
-function tierDesc(s,t,today){const before=addDays(t.from,-1);const prevPrice=priceAt(s,before),prevPkg=pkgIdAt(s,before);const held=s.packageId===t.packageId||tierEntries(s).some(x=>x.from<t.from&&x.packageId===t.packageId);const dir=t.price>prevPrice?'up':t.price<prevPrice?'down':(held?'down':'up');const sched=t.from>today;const name=pkgName(t.packageId)||'another tier';const verb=dir==='up'?(sched?'Upgrades to':'Upgraded to'):held?(sched?'Moves back to':'Moved back to'):(sched?'Moves to':'Moved to');return {dir,sched,name,prevPkg,prevPrice,text:`${verb} ${name} from ${fmtD(t.from)}`,long:`${verb} ${name} at ${fmtAmt(t.price,s.currency)}${perOf(s)} from ${fmtD(t.from,true)}${prevPkg?` (before: ${pkgName(prevPkg)} at ${fmtAmt(prevPrice,s.currency)}${perOf(s)})`:''}${t.note?` · ${t.note}`:''}`};}
+function tierDesc(s,t,today){const before=addDays(t.from,-1);const prevPrice=priceAt(s,before),prevPkg=pkgIdAt(s,before);const held=s.packageId===t.packageId||tierEntries(s).some(x=>x.from<t.from&&x.packageId===t.packageId);const dir=t.price>prevPrice?'up':t.price<prevPrice?'down':(held?'down':'up');const sched=t.from>today;const name=pkgName(t.packageId)||'another tier';const verb=dir==='up'?(sched?'Upgrades to':'Upgraded to'):held?(sched?'Moves back to':'Moved back to'):(sched?'Moves to':'Moved to');return {dir,sched,name,prevPkg,prevPrice,via:t.via||'',text:`${verb} ${name} from ${fmtD(t.from)}`,long:`${verb} ${name} at ${fmtAmt(t.price,s.currency)}${perOf(s)} from ${fmtD(t.from,true)}${prevPkg?` (before: ${pkgName(prevPkg)} at ${fmtAmt(prevPrice,s.currency)}${perOf(s)})`:''}${t.note?` · ${t.note}`:''}`};}
 /* the plan header shows the change in effect today and the next scheduled one */
 function tierBadges(s,today){const es=tierEntries(s);if(!es.length)return [];const out=[];const cur=es.filter(t=>t.from<=today).pop();const next=es.find(t=>t.from>today);if(cur)out.push(tierDesc(s,cur,today));if(next)out.push(tierDesc(s,next,today));return out;}
-const tierBadgeHTML=(s,today)=>tierBadges(s,today).map(d=>`<span class="tier-badge" data-dir="${d.dir}" data-when="${d.sched?'scheduled':'active'}" title="${esc(d.long)}">${esc(d.text)}</span>`).join('');
+const tierBadgeHTML=(s,today)=>tierBadges(s,today).map(d=>`<span class="tier-badge" data-dir="${d.dir}" data-when="${d.sched?'scheduled':'active'}" title="${esc(d.long)}">${esc(d.text)}</span>${d.via==='link'?`<span class="tag via-link" title="Chosen by the user on their link page">${d.dir==='up'?'Account upgraded':'Account changed'} · via link</span>`:''}`).join('');
 function tierMarkHTML(s,today){const b=tierBadges(s,today);if(!b.length)return '';const d=b[b.length-1];return `<span class="tier-mark" data-dir="${d.dir}" title="${esc(b.map(x=>x.text).join(' · '))}">${d.dir==='up'?'↗':'↘'}</span>`;}
 /* the account a plan belongs to: an email written into the plan label wins, else the user's email */
 const EMAIL_IN_TEXT=/[^\s@·,;()]+@[^\s@·,;()]+\.[^\s@·,;()]+/;
@@ -818,9 +876,14 @@ function normDate(s){if(!s)return null;s=String(s);if(isDateKey(s))return s;if(i
 const normRate=r=>{const x=Number(r);return x>0?x:null;};
 const normTg=v=>{let t=String(v||'').trim().replace(/^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\//i,'').replace(/^@+/,'').replace(/[\/?#].*$/,'');if(/^\+?[\d\s\-()]+$/.test(t)&&digits(t).length>=7)t=digits(t);return t;};
 function normalizeUser(b,id){
-  const u={id,name:String(b.name||'').trim(),email:String(b.email||'').trim(),phone:digits(b.phone),telegram:normTg(b.telegram),joinDate:normDate(b.joinDate)||todayISO(),notes:String(b.notes||'').trim(),createdAt:b.createdAt||'',subscriptions:[],reminders:{},cancel:null,confirmToken:TOKEN_RE.test(String(b.confirmToken||''))?String(b.confirmToken):''};
+  const u={id,name:String(b.name||'').trim(),email:String(b.email||'').trim(),phone:digits(b.phone),telegram:normTg(b.telegram),joinDate:normDate(b.joinDate)||todayISO(),notes:String(b.notes||'').trim(),createdAt:b.createdAt||'',subscriptions:[],reminders:{},cancel:null,discontinue:null,confirmToken:TOKEN_RE.test(String(b.confirmToken||''))?String(b.confirmToken):''};
   if(b.cancel&&typeof b.cancel==='object'&&normDate(b.cancel.lastDay))u.cancel={lastDay:normDate(b.cancel.lastDay),reason:String(b.cancel.reason||'').trim(),note:String(b.cancel.note||'').trim(),at:normDate(b.cancel.at)||''};
-  const rm=b.reminders&&typeof b.reminders==='object'?b.reminders:{};for(const k in rm){if(!isDateKey(k))continue;const v=rm[k]||{};const r={reminded:normDate(v.reminded),confirmed:normDate(v.confirmed),final:normDate(v.final),skipped:normDate(v.skipped)};if(r.reminded||r.confirmed||r.final||r.skipped)u.reminders[k]=r;}
+  /* v20: a Discontinue chosen on the link page, waiting for the owner to confirm the cancellation */
+  if(b.discontinue&&typeof b.discontinue==='object'&&normDate(b.discontinue.cycleStart))u.discontinue={cycleStart:normDate(b.discontinue.cycleStart),at:String(b.discontinue.at||'').slice(0,40),planIds:Array.isArray(b.discontinue.planIds)?b.discontinue.planIds.map(String).slice(0,20):[],note:String(b.discontinue.note||'').trim().slice(0,500)};
+  const rm=b.reminders&&typeof b.reminders==='object'?b.reminders:{};for(const k in rm){if(!isDateKey(k))continue;const v=rm[k]||{};const r={reminded:normDate(v.reminded),confirmed:normDate(v.confirmed),final:normDate(v.final),skipped:normDate(v.skipped)};
+    /* v20: queue Sent ticks {stage, cycleStart, channel, at} */
+    const sent=(Array.isArray(v.sent)?v.sent:[]).filter(x=>x&&typeof x==='object'&&[1,2,3].includes(Number(x.stage))).map(x=>{const o={stage:Number(x.stage),cycleStart:normDate(x.cycleStart)||k,channel:String(x.channel||'manual').slice(0,20),at:String(x.at||'').slice(0,40)};if(x.by)o.by=String(x.by).slice(0,20);return o;});if(sent.length)r.sent=sent;
+    if(r.reminded||r.confirmed||r.final||r.skipped||r.sent)u.reminders[k]=r;}
   for(const s of b.subscriptions||[]){
     const kind=s.kind==='one-time'?'one-time':'monthly';const start=normDate(s.start)||u.joinDate;const cur=normCur(s.currency);
     const sub={id:s.id||newId('s'),kind,name:String(s.name||'').trim()||(kind==='one-time'?'Item':''),currency:cur,packageId:String(s.packageId||'').trim()||null,payments:[]};
@@ -832,7 +895,7 @@ function normalizeUser(b,id){
   }
   return u;
 }
-function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,telegram:n.telegram||'',joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{},cancel:n.cancel||null,confirmToken:n.confirmToken||''};}
+function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,telegram:n.telegram||'',joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{},cancel:n.cancel||null,discontinue:n.discontinue||null,confirmToken:n.confirmToken||''};}
 function normalizeCost(b,id){return {id,date:normDate(b.date)||todayISO(),description:String(b.description||'').trim(),category:String(b.category||'').trim(),currency:normCur(b.currency),cost:Number(b.cost)||0,tax:Number(b.tax)||0,rate:normRate(b.rate),source:String(b.source||''),receipt:String(b.receipt||''),createdAt:b.createdAt||''};}
 function cleanCost(c){const n=normalizeCost(c,c.id);delete n.id;n.createdAt=n.createdAt||new Date().toISOString();return n;}
 
@@ -940,19 +1003,83 @@ const confirmLink=u=>confirmLinkFor(u&&u.confirmToken);
 const tokenPending={};
 async function ensureToken(id){const u=state.users[id];if(!u)return '';if(TOKEN_RE.test(u.confirmToken||''))return u.confirmToken;if(tokenPending[id])return '';tokenPending[id]=true;const c=clone(u);c.confirmToken=newToken();const ok=await persistUser(id,c);delete tokenPending[id];return ok?c.confirmToken:'';}
 function ensureConfirmTokens(){for(const id in state.users){const u=state.users[id];if(!u.cancel&&!TOKEN_RE.test(u.confirmToken||''))ensureToken(id);}}
+/* ---------- v20: cycle cards. What a subscriber sees on the choice page and what the queue messages say, per cycle:
+   each monthly plan with its tier, amount due for that cycle, whether it is already covered, and the one tier it can switch to. ---------- */
+const cycleStartOnOrBefore=today=>addMonths(nextCycleStart(today),-1);
+const cycleEndOf=cs=>addDays(nextCycleStart(cs),-1);
+function fmtCycle(cs,ce){const a=cs.split('-'),b=ce.split('-');return `${+a[2]} ${MONTHS[+a[1]-1]}${a[0]!==b[0]?' '+a[0]:''} – ${+b[2]} ${MONTHS[+b[1]-1]} ${b[0]}`;}
+/* today's stage from the date: 3 on a cycle start day, 2 from the reply-by day, 1 from the reminder day, 0 otherwise */
+function stageToday(today){const cs=cycleStartOnOrBefore(today);const w=reminderWindow(today);if(cs===today)return {stage:3,cycle:today,w,auto:true};if(today>=w.replyBy)return {stage:2,cycle:w.nc,w,auto:true};if(today>=w.start)return {stage:1,cycle:w.nc,w,auto:true};return {stage:0,cycle:w.nc,w,auto:true};}
+const basePriceAt=(s,date)=>{const ps=(s.prices||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));let p=ps.length?ps[0].price:0;for(const x of ps){if(x.from<=date)p=x.price;else break;}return p;};
+/* the price a plan would bill at on another tier: the package default (same currency), else the price it last had on that tier, else unknown */
+function switchPrice(s,pid,cs){const p=pkgById(pid);if(p&&p.price!=null&&(!p.currency||p.currency===s.currency))return p.price;const prev=tierEntries(s).filter(t=>t.packageId===pid&&t.from<cs).pop();if(prev)return prev.price;if(pid===s.packageId)return basePriceAt(s,cs);return null;}
+function switchFor(s,cs){const cur=pkgIdAt(s,cs);const curName=pkgName(cur)||'';const opts=packages().filter(p=>p.cycle===subCycle(s)&&p.id!==cur);if(!opts.length)return null;
+  let t=opts.length===1?opts[0]:(!/max/i.test(curName)&&opts.find(p=>/max/i.test(p.name)))||(cur!==s.packageId&&opts.find(p=>p.id===s.packageId))||opts[0];
+  const price=switchPrice(s,t.id,cs);const curPrice=effPrice(s,cs);const back=t.id===s.packageId||tierEntries(s).some(x=>x.packageId===t.id&&x.from<cs);
+  const choice=/max/i.test(t.name)&&!/max/i.test(curName)?'upgrade':/max/i.test(curName)?'downgrade':price!=null&&price<curPrice?'downgrade':price!=null&&price>curPrice?'upgrade':back?'downgrade':'upgrade';
+  const label=/max/i.test(t.name)&&!/max/i.test(curName)?'Upgrade to '+t.name:/max/i.test(curName)&&back?'Move back to '+t.name:/max/i.test(curName)?'Move to '+t.name:back?'Move back to '+t.name:'Change to '+t.name;
+  return {packageId:t.id,name:t.name,label,choice,price,priceText:price!=null?fmtAmt(price,s.currency)+perOf(s):''};}
+function cycleCard(u,a,cs,today){const ce=cycleEndOf(cs);const replyBy=dayOnOrBefore(addDays(cs,-1),replyDay());const plans=[];
+  for(const s of u.subscriptions||[]){if(s.kind!=='monthly'||subCycle(s)!=='monthly')continue;if(s.end&&s.end<cs)continue;if(s.start>ce)continue;const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly')continue;
+    const p=(sa.periods||[]).find(x=>x.st===cs);const price=effPrice(s,cs);const amount=p?Math.max(0,p.pr-p.covered):price;const paid=!!p&&(p.state==='paid'||p.state==='waived');const ac=acctParts(u,s);const tier=pkgName(pkgIdAt(s,cs))||planLabel(s,cs);
+    plans.push({planId:s.id,label:ac.label||tier,acct:[ac.label,ac.email].filter(Boolean).join(' · '),pkgId:pkgIdAt(s,cs),tier,price,priceText:fmtAmt(price,s.currency)+perOf(s),currency:s.currency,amount,amountText:fmtAmt(amount,s.currency),paid,switch:switchFor(s,cs)});}
+  const due=plans.filter(p=>!p.paid&&p.amount>0);const S=newSum();for(const p of due)sumAdd(S,p.amount,p.currency,null);
+  let amountText=due.length?ownText(S,plans[0].currency):(plans.length?'nothing (already paid)':'—');if(due.length>1)amountText+=' ('+due.map(p=>`${p.amountText} ${p.label}`).join(' + ')+')';
+  const tiers=plans.map(p=>p.tier).filter((x,i,arr)=>x&&arr.indexOf(x)===i);const first=plans.find(p=>p.switch);
+  return {cycleStart:cs,cycleEnd:ce,replyBy,periodText:fmtCycle(cs,ce),dueDateText:fmtD(cs,true),replyByText:fmtD(replyBy,true),plans,multi:plans.length>1,due:due.length>0,amountText,tierText:tiers.join(' + ')+(plans.length>1&&tiers.length===1?` (${plans.length} accounts)`:''),switchLabel:first?first.switch.label:'Upgrade'};}
 const confirmSynced={};
+/* the server renders /c/<token> from this document: the coming cycle (the one with the open reply window) and the cycle before it, for the final note on a cycle start day */
+function confirmDocFor(r,today){const u=r.u,a=r.a;const w=reminderWindow(today);const nc=w.nc,prev=addMonths(nc,-1);const cards={};cards[nc]=cycleCard(u,a,nc,today);const pc=cycleCard(u,a,prev,today);if(pc.plans.length)cards[prev]=pc;const c=cards[nc];
+  return {userId:r.id,name:firstName(u),fullName:displayName(u),appName:appName(),link:confirmLink(u),cycleStart:nc,cycleEnd:c.cycleEnd,replyByISO:c.replyBy,period:c.periodText,dueDate:c.dueDateText,replyBy:c.replyByText,amount:c.amountText,package:c.tierText,nothingDue:!c.due,plans:c.plans,multi:c.multi,cycles:cards};}
 function syncConfirmRequests(R,today){
-  if(state.backend!=='api')return;const w=R.w;
+  if(state.backend!=='api')return;
   const put=(tok,body)=>{const k=JSON.stringify(body);if(confirmSynced[tok]===k)return;confirmSynced[tok]=k;apiPut('confirm/'+tok,Object.assign({updatedAt:new Date().toISOString()},body)).catch(()=>{delete confirmSynced[tok];});};
-  for(const r of R.due){const u=r.u;if(!TOKEN_RE.test(u.confirmToken||''))continue;const f=reminderFields(u,r.a,today,r.a.unpaid?'overdue':'cycle');put(u.confirmToken,{userId:r.id,name:firstName(u),package:f.pkgs,amount:f.amount,period:f.period,dueDate:f.dueDate,replyBy:f.replyBy,cycleStart:w.nc,appName:appName(),nothingDue:false});}
-  for(const r of R.covered){const u=r.u;if(!TOKEN_RE.test(u.confirmToken||''))continue;const pk=[...r.a.pkgIds].map(pkgName).filter(Boolean).join(' + ');put(u.confirmToken,{userId:r.id,name:firstName(u),package:pk,amount:'',period:fmtD(w.nc)+' – '+fmtD(w.periodEnd),dueDate:fmtD(w.nc,true),replyBy:fmtD(w.replyBy),cycleStart:w.nc,appName:appName(),nothingDue:true});}
+  for(const r of R.all){const u=r.u;if(!TOKEN_RE.test(u.confirmToken||''))continue;put(u.confirmToken,confirmDocFor(r,today));}
 }
-const confirmAnswers={cycle:'',key:'',byUser:{}};
-async function refreshConfirmations(){if(state.backend!=='api'||!state.loaded)return;const cycle=nextCycleStart(todayISO());try{const j=await apiJSON('/api/confirmations?cycle='+cycle);const by={};for(const a of j.answers||[])if(a.user_id)by[a.user_id]=a;const k=JSON.stringify(by);const changed=confirmAnswers.cycle!==cycle||confirmAnswers.key!==k;confirmAnswers.cycle=cycle;confirmAnswers.key=k;confirmAnswers.byUser=by;if(changed)render();}catch(e){}}
+const confirmAnswers={byCycle:{},key:''};
+const answersFor=(id,cycle)=>((confirmAnswers.byCycle[cycle]||{})[id]||[]);
+const hasAnswer=(id,cycle)=>answersFor(id,cycle).length>0;
+async function refreshConfirmations(){if(state.backend!=='api'||!state.loaded)return;const today=todayISO();const cycles=[nextCycleStart(today)];const cs=cycleStartOnOrBefore(today);if(cs===today)cycles.push(cs);const by={};
+  for(const c of cycles){try{const j=await apiJSON('/api/confirmations?cycle='+c);by[c]={};for(const a of j.answers||[])if(a.user_id)(by[c][a.user_id]=by[c][a.user_id]||[]).push(a);}catch(e){by[c]=confirmAnswers.byCycle[c]||{};}}
+  const k=JSON.stringify(by);const changed=k!==confirmAnswers.key;confirmAnswers.byCycle=by;confirmAnswers.key=k;if(changed)render();applyAnswers();}
 function fmtWhen(iso){const d=new Date(iso);if(isNaN(d))return '';return MONTHS[d.getMonth()]+' '+d.getDate()+', '+pad(d.getHours())+':'+pad(d.getMinutes());}
-function answerBadge(id){if(state.backend!=='api')return '';const a=confirmAnswers.byUser[id];if(!a)return '<span class="ans" data-ans="none">no reply on the link yet</span>';return `<span class="ans" data-ans="${a.answer==='yes'?'yes':'no'}">${a.answer==='yes'?'✓ Replied YES':'✗ Replied NO'} <span class="when">${esc(fmtWhen(a.at))}</span>${a.note?`<span class="note">· “${esc(a.note)}”</span>`:''}</span>`;}
-const answerLine=id=>state.backend==='api'?`<br>${answerBadge(id)}`:'';
-function linkControl(id){if(!publicBase())return '';return `<button class="btn sm" type="button" data-act="copy-link" data-user="${esc(id)}" title="Copy this user's private YES/NO confirmation link">Copy link</button>`;}
+function choiceText(a,id){const u=state.users[id];const s=u&&a.plan_id?(u.subscriptions||[]).find(x=>x.id===a.plan_id):null;const pl=s?` <span class="plan">(${esc(acctParts(u,s).label||planLabel(s))})</span>`:'';const tgt=pkgName(a.target_package_id)||'other tier';
+  switch(a.answer){case 'continue':return '✓ Continue'+pl;case 'upgrade':return '↗ Upgrade → '+esc(tgt)+pl;case 'downgrade':return '↘ Move → '+esc(tgt)+pl;case 'discontinue':return '✗ Discontinue'+pl;default:return esc(a.answer)+pl;}}
+function answerBadge(id,cycle){if(state.backend!=='api')return '';const rows=answersFor(id,cycle||nextCycleStart(todayISO()));if(!rows.length)return '<span class="ans" data-ans="none">no answer on the link yet</span>';
+  return rows.map(a=>`<span class="ans" data-ans="${esc(a.answer)}">${choiceText(a,id)} <span class="when">${esc(fmtWhen(a.at))}${a.applied_at?' · applied':''}</span>${a.note?`<span class="note">· “${esc(a.note)}”</span>`:''}</span>`).join('<br>');}
+const answerLine=(id,cycle)=>state.backend==='api'?`<br>${answerBadge(id,cycle)}`:'';
+/* apply what a subscriber chose, once per answer (the server stamps applied_at); re-running changes nothing.
+   continue → confirmed tick; upgrade / downgrade → a tierHistory entry from the cycle start at the package price (marked via:'link');
+   discontinue → a "Discontinue requested" mark the owner confirms with one tap; a changed answer resets the earlier one. */
+function applyAnswerSet(u,rows,cycle){const today=todayISO();const monthly=(u.subscriptions||[]).filter(s=>s.kind==='monthly'&&subCycle(s)==='monthly'&&(!s.end||s.end>=cycle));
+  const targetsOf=a=>a.plan_id?monthly.filter(s=>s.id===a.plan_id):monthly;const touched=new Set();for(const a of rows)for(const s of targetsOf(a))touched.add(s.id);
+  for(const s of monthly)if(touched.has(s.id))s.tierHistory=(s.tierHistory||[]).filter(t=>!(t.from===cycle&&t.via==='link'));
+  const keep=rows.some(a=>a.answer!=='discontinue');u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[cycle]||{});
+  if(keep&&!r.confirmed)r.confirmed=today;if(remEmpty(r))delete u.reminders[cycle];else u.reminders[cycle]=r;
+  const disc=[];let discNote='',discAt='';
+  for(const a of rows){const when=a.at?String(a.at).slice(0,10):today;
+    if(a.answer==='upgrade'||a.answer==='downgrade'){for(const s of targetsOf(a)){const sw=switchFor(s,cycle);const pid=a.target_package_id||(sw&&sw.packageId);if(!pid||pid===pkgIdAt(s,addDays(cycle,-1)))continue;const pk=pkgById(pid);if(!pk||pk.cycle!==subCycle(s))continue;
+        if((s.tierHistory||[]).some(t=>t.from===cycle&&t.packageId===pid))continue;let price=switchPrice(s,pid,cycle);const guess=price==null;if(guess)price=priceAt(s,addDays(cycle,-1));
+        s.tierHistory=(s.tierHistory||[]).filter(t=>t.from!==cycle);s.tierHistory.push({from:cycle,packageId:pid,price,currency:s.currency,note:'Chosen on the link '+fmtD(when)+(guess?' · price to confirm':''),via:'link'});s.tierHistory.sort((x,y)=>x.from.localeCompare(y.from));}}
+    else if(a.answer==='discontinue'){for(const s of targetsOf(a))disc.push(s.id);if(a.note)discNote=a.note;discAt=a.at||discAt;}}
+  if(disc.length)u.discontinue={cycleStart:cycle,at:discAt||new Date().toISOString(),planIds:disc.length<monthly.length?disc:[],note:discNote};
+  else if(u.discontinue&&u.discontinue.cycleStart===cycle)u.discontinue=null;
+  return u;}
+const applying={};
+async function applyAnswers(){if(state.backend!=='api'||!state.loaded)return;
+  for(const cycle in confirmAnswers.byCycle){const byUser=confirmAnswers.byCycle[cycle];for(const uid in byUser){const rows=byUser[uid];const pending=rows.filter(a=>!a.applied_at);if(!pending.length)continue;const u=state.users[uid];if(!u||u.cancel||applying[uid])continue;applying[uid]=1;
+    try{const before=JSON.stringify(cleanUser(Object.assign({},clone(u),{id:uid})));const c=applyAnswerSet(clone(u),rows,cycle);const after=JSON.stringify(cleanUser(Object.assign({},c,{id:uid})));let ok=true;if(after!==before)ok=await persistUser(uid,c);
+      if(ok){for(const a of pending){try{const j=await apiJSON('/api/confirmations/'+a.id+'/applied',{method:'POST'});a.applied_at=j.applied_at||new Date().toISOString();}catch(e){}}confirmAnswers.key='';}}
+    finally{delete applying[uid];}}}}
+/* the existing cancel flow, shared by the Cancel form, the Final notice "Deactivate" and the one-tap "Confirm cancel" of a Discontinue answer */
+function applyCancel(u,lastDay,reason,note){for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;if(!s.end||s.end>lastDay)s.end=lastDay;}u.cancel={lastDay,reason:reason||'',note:note||'',at:todayISO()};u.discontinue=null;}
+async function confirmDiscontinue(id){const u=clone(state.users[id]);const d=u.discontinue;if(!d||u.cancel)return;const lastDay=addDays(d.cycleStart,-1);const monthly=(u.subscriptions||[]).filter(s=>s.kind==='monthly'&&(!s.end||s.end>lastDay));const targets=d.planIds&&d.planIds.length?monthly.filter(s=>d.planIds.includes(s.id)):monthly;
+  if(targets.length&&targets.length<monthly.length){for(const s of targets)s.end=lastDay;u.discontinue=null;const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: ${targets.map(s=>acctParts(u,s).label||planLabel(s)).join(', ')} ends ${fmtD(lastDay,true)}; the other plans continue.`);return;}
+  applyCancel(u,lastDay,'Chose Discontinue on the link'+(d.note?' · '+d.note:''),'');const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} cancelled · last day ${fmtD(lastDay,true)}.`);}
+function discBadge(u){const d=u.discontinue;if(!d||u.cancel)return '';return `<span class="rem-badge" data-k="disc" title="Chosen on the link page${d.note?': '+esc(d.note):''}">✗ Discontinue requested · from ${esc(fmtD(d.cycleStart))}</span>`;}
+function discNote(id,u){const d=u.discontinue;if(!d||u.cancel)return '';const lastDay=addDays(d.cycleStart,-1);const partial=d.planIds&&d.planIds.length?(u.subscriptions||[]).filter(s=>d.planIds.includes(s.id)).map(s=>acctParts(u,s).label||planLabel(s)).join(', '):'';
+  return `<div class="disc-note"><span><b>Discontinue requested</b> on the link ${esc(fmtWhen(d.at))}${partial?` for <b>${esc(partial)}</b>`:''} · from ${esc(fmtD(d.cycleStart,true))}${d.note?` · “${esc(d.note)}”`:''}</span><button class="btn sm danger" type="button" data-act="disc-confirm" title="${partial?'Ends that plan':'Runs Cancel subscription'} with the last day ${esc(fmtD(lastDay,true))}">Confirm cancel · last day ${esc(fmtD(lastDay))}</button><button class="link" type="button" data-act="disc-dismiss" title="Keep the account; the answer stays recorded">Dismiss</button></div>`;}
+function linkControl(id){if(!publicBase())return '';return `<button class="btn sm" type="button" data-act="copy-link" data-user="${esc(id)}" title="Copy this user's private choice page link (Continue / Upgrade / Discontinue)">Copy link</button>`;}
 const waLink=(u,text)=>'https://wa.me/'+u.phone+'?text='+encodeURIComponent(text);
 function remindControl(u,a,today,label,mode,x){
   if(!u.phone)return `<button class="btn sm" type="button" disabled title="Add a WhatsApp number in Edit user">add phone</button>`;
@@ -965,7 +1092,7 @@ function emailControl(u,a,today,label,mode,x){
   return `<a class="btn sm" href="${esc(mailLink(u,subject,reminderText(u,a,today,mode,null,x)))}" title="Opens your mail app with the ${x&&x.tpl?'final notice':'reminder'} prefilled">${label||'Email'}</a>`;
 }
 const tgLink=u=>{const t=normTg(u.telegram);if(!t)return '';const d=digits(t);return /^\+?[\d\s\-()]+$/.test(t)&&d.length>=7?'https://t.me/+'+d:'https://t.me/'+encodeURIComponent(t);};
-function telegramControl(u,label){const href=tgLink(u);if(!href)return `<button class="btn sm" type="button" disabled title="Add a Telegram handle in Edit user">add Telegram</button>`;return `<a class="btn sm" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Opens the Telegram chat; the message is not prefilled">${label||'Telegram'}</a>`;}
+function telegramControl(u,label,ch){const href=tgLink(u);if(!href)return `<button class="btn sm" type="button" disabled title="Add a Telegram handle in Edit user">add Telegram</button>`;return `<a class="btn sm" href="${esc(href)}" target="_blank" rel="noopener noreferrer"${ch?' data-ch="telegram"':''} title="Opens the Telegram chat; the message is not prefilled">${label||'Telegram'}</a>`;}
 function cyclePkgs(u,a){const out=[];const nc=nextCycleStart(todayISO());for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.cycleDue>0){const n=pkgName(pkgIdAt(s,nc));if(n&&!out.includes(n))out.push(n);}}return out;}
 function remBadge(u,key){const r=remState(u,key);if(r.confirmed)return `<span class="rem-badge" data-k="confirmed">✓ confirmed ${esc(fmtD(r.confirmed))}</span>`;if(r.reminded)return `<span class="rem-badge" data-k="reminded">✓ reminded ${esc(fmtD(r.reminded))}</span>`;return '';}
 
@@ -1060,7 +1187,7 @@ async function maybeSeedShared(){
 /* v11 (v18 app): the one writer of settings/main. Fills the default rate, packages, anchor and days, keeps everything else
    (including publicBaseUrl, which the older writers dropped), and sets the proration basis: `force` (seed, and stores below
    schema 11) pins the fixed 30-day month that the owner's records use even when the doc says "actual"; otherwise a chosen basis is kept. */
-function canonicalSettings(b,force){b=b||{};let pk=normalizePackages(b.packages);if(!pk.length)pk=clone(DEFAULT_PACKAGES);for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(!p)continue;if(!p.cycle||(force&&p.cycle!==d.cycle))p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}}return {rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:force?'fixed30':(rawBasis(b.prorationBasis)||'fixed30'),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),publicBaseUrl:pubBaseRaw(b.publicBaseUrl),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY)};}
+function canonicalSettings(b,force){b=b||{};let pk=normalizePackages(b.packages);if(!pk.length)pk=clone(DEFAULT_PACKAGES);for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(!p)continue;if(!p.cycle||(force&&p.cycle!==d.cycle))p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}}return {rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:force?'fixed30':(rawBasis(b.prorationBasis)||'fixed30'),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),publicBaseUrl:pubBaseRaw(b.publicBaseUrl),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY),queueTemplates:normQueueTpl(b.queueTemplates),payHow:rawPayHow(b.payHow)};}
 async function ensureSettingsShared(force){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const want=canonicalSettings(b,force);const same=sn.exists&&Object.keys(want).every(k=>JSON.stringify(want[k])===JSON.stringify(b[k]));if(!same)await db.doc('settings/main').set(want);}catch(e){}}
 async function maybeMigrateShared(rawDocs){
   if(migrateChecked||seedActive)return;migrateChecked=true; /* a seed in progress writes the schema marker itself; try again on a later snapshot */
@@ -1100,7 +1227,7 @@ async function resetData(){
 }
 
 /* ---------- persistence ---------- */
-function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.prorationBasis=rawBasis(state.settings.prorationBasis);state.settings.appName=rawAppName(state.settings.appName);state.settings.tagline=rawTagline(state.settings.tagline);state.settings.readModel=normModel(state.settings.readModel);state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();}}catch(e){}}
+function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.prorationBasis=rawBasis(state.settings.prorationBasis);state.settings.appName=rawAppName(state.settings.appName);state.settings.tagline=rawTagline(state.settings.tagline);state.settings.readModel=normModel(state.settings.readModel);state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();state.settings.queueTemplates=normQueueTpl(state.settings.queueTemplates);state.settings.payHow=rawPayHow(state.settings.payHow);}}catch(e){}}
 function saveLocal(){try{localStorage.setItem('pt-data',JSON.stringify({users:state.users,costs:state.costs,settings:state.settings}));}catch(e){}}
 function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;}catch(e){}}
 function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur}));}catch(e){}}
@@ -1109,7 +1236,7 @@ async function persistUser(id,u){const body=cleanUser(Object.assign({},u,{id}));
 async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.users[id];saveLocal();render();}return true;}
 async function persistCost(id,c){const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}else{state.costs[id]=normalizeCost(body,id);saveLocal();render();}return true;}
 async function removeCost(id){if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.costs[id];saveLocal();render();}return true;}
-function settingsDoc(){return {rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),publicBaseUrl:pubBaseRaw(state.settings.publicBaseUrl),packages:state.settings.packages||[],anchor:anchor(),remindDay:remindDay(),replyDay:replyDay()};}
+function settingsDoc(){return {rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),publicBaseUrl:pubBaseRaw(state.settings.publicBaseUrl),packages:state.settings.packages||[],anchor:anchor(),remindDay:remindDay(),replyDay:replyDay(),queueTemplates:normQueueTpl(state.settings.queueTemplates),payHow:rawPayHow(state.settings.payHow)};}
 async function persistSettings(){if(db){try{await db.doc('settings/main').set(settingsDoc());}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
 function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||'').trim().toLowerCase();const ids=Object.keys(state.users);if(e){const hit=ids.find(id=>(state.users[id].email||'').toLowerCase()===e);if(hit)return hit;}if(n&&!e){const hit=ids.find(id=>(state.users[id].name||'').toLowerCase()===n);if(hit)return hit;}return null;}
 
@@ -1130,7 +1257,7 @@ function applyBranding(){const name=appName();const tag=tagline();const letter=(
   const big=iconPNG(letter,512);const icons=[{src:svg,sizes:'any',type:'image/svg+xml',purpose:'any'}];if(big)icons.push({src:big,sizes:'512x512',type:'image/png',purpose:'any maskable'});if(png)icons.push({src:png,sizes:'180x180',type:'image/png'});
   const man={name:name,short_name:name.length>12?name.split(/\s+/)[0].slice(0,12):name,description:tag,start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f3f5f3',theme_color:'#0f6e56',icons:icons};
   const lm=$('#link-manifest');if(lm)lm.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));}
-function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);}}
+function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);fillQueueSettings();}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
   el.textContent=state.mode==='shared'?(state.backend==='api'?'Saved on your server, shared across your devices':'Shared with your team, saves live'):state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
@@ -1151,18 +1278,19 @@ function renderReminderBits(){
   const today=todayISO();const ids=Object.keys(state.users);const ban=$('#remindBanner'),cnt=$('#rem-cnt');
   if(!ids.length||!state.loaded){ban.hidden=true;cnt.hidden=true;return;}
   const R=reminderRows(today);const w=R.w;const n=R.overdue.length+R.cycle.length;syncConfirmRequests(R,today);
+  const st=stageToday(today);const Q=st.stage?queueRows(today,st):{rows:[],todo:0};cnt.hidden=!Q.todo;cnt.textContent=Q.todo;$('#btn-reminders').title=st.stage?`Stage ${st.stage} · ${STAGE_NAMES[st.stage]}: ${Q.todo} to send`:'Today\'s messages to send, answers from the link pages, final notice';
   const finalDay=today>=w.replyBy&&today<w.nc;
-  if(finalDay){const F=finalRows(today);ban.hidden=false;ban.dataset.kind='final';cnt.hidden=!F.pending;cnt.textContent=F.pending;$('#remindBannerBtn').textContent='Open final notice';
+  if(finalDay){const F=finalRows(today);ban.hidden=false;ban.dataset.kind='final';$('#remindBannerBtn').textContent='Open final notice';
     $('#remindBannerText').innerHTML=`<b>Final notice day</b>: <b>${F.pending}</b> user${F.pending===1?'':'s'} not confirmed for the cycle starting <b>${esc(fmtD(w.nc,true))}</b>${F.rows.some(r=>r.deact)?` · ${F.rows.filter(r=>r.deact).length} already deactivated`:''}. Send the final notice and compile the deactivation list.`;return;}
-  ban.dataset.kind='window';$('#remindBannerBtn').textContent='Open reminder run';
-  cnt.hidden=!(w.open&&R.todo.length);cnt.textContent=R.todo.length;
+  ban.dataset.kind='window';$('#remindBannerBtn').textContent='Open queue';
   ban.hidden=!w.open;
   if(w.open)$('#remindBannerText').innerHTML=`<b>Reminder window open</b> (${esc(fmtD(w.start))} – ${esc(fmtD(w.replyBy))}): <b>${R.todo.length}</b> of ${n} user${n===1?'':'s'} still to remind for the cycle starting <b>${esc(fmtD(w.nc,true))}</b>${R.overdue.length?` · ${R.overdue.length} overdue from earlier`:''}${R.skipped.length?` · ${R.skipped.length} skipped`:''} · replies by ${esc(fmtD(w.replyBy))}.`;
 }
 function renderRemindRun(){
   document.querySelectorAll('#rr-tabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===ui.rrTab)));
-  $('#rr-title').textContent=ui.rrTab==='final'?'Final notice':'Reminder run';
+  $('#rr-title').textContent=ui.rrTab==='final'?'Final notice':ui.rrTab==='queue'?'Queue':'Reminder run';
   if(ui.rrTab==='final'){renderFinalNotice();return;}
+  if(ui.rrTab==='queue'){renderQueue();return;}
   const today=todayISO();const R=reminderRows(today);const w=R.w;const key=w.nc;
   $('#rr-sub').textContent=`Cycle starting ${fmtD(w.nc,true)} (${fmtD(w.nc)} – ${fmtD(w.periodEnd)}) · remind from ${fmtD(w.start)} · replies by ${fmtD(w.replyBy)} · ${w.open?'window open now':(today<w.start?'window opens '+fmtD(w.start):'window closed; cycle starts '+fmtD(w.nc))}. Ticks are saved per user for this cycle.`;
   const tog=(r,f,label)=>{const st=remState(r.u,key);const v=st[f];return `<label class="chk f"><input type="checkbox" data-act="rem" data-user="${esc(r.id)}" data-f="${f}"${v?' checked':''}>${label}${v?` <span class="when">${esc(fmtD(v))}</span>`:''}</label>`;};
@@ -1180,19 +1308,55 @@ function renderRemindRun(){
   if(!R.all.length)html='<p class="small muted">No users yet.</p>';
   $('#rr-body').innerHTML=html;
 }
+/* ---------- v20 queue: today's stage from the date; one row per user still to message, with the rendered text, channel buttons and a Sent tick ---------- */
+function queueRows(today,st){const cycle=st.cycle;const rows=[];
+  for(const id in state.users){const u=state.users[id];if(u.cancel)continue;const a=analyze(u,today);const card=cycleCard(u,a,cycle,today);if(!card.due)continue;const rs=remState(u,cycle);if(rs.skipped)continue;
+    const answered=hasAnswer(id,cycle);if(st.stage>=2&&answered)continue;
+    const sent=(rs.sent||[]).filter(x=>x.stage===st.stage&&x.cycleStart===cycle);rows.push({id,u,a,card,answered,sent:sent[sent.length-1]||null});}
+  rows.sort((x,y)=>((x.sent?1:0)-(y.sent?1:0))||displayName(x.u).localeCompare(displayName(y.u)));
+  return {rows,todo:rows.filter(r=>!r.sent).length,sent:rows.filter(r=>r.sent).length,cycle,stage:st.stage};}
+/* unpaid amounts from periods that started before the cycle in question (the cycle's own amount is already in the card) */
+function overdueBefore(r,cycle){const S=newSum();for(const s of r.u.subscriptions||[]){const sa=r.a.sa[s.id];if(!sa||sa.kind!=='monthly')continue;for(const p of sa.periods||[])if((p.state==='unpaid'||p.state==='partial')&&p.st<cycle)sumAdd(S,p.pr-p.covered,s.currency,null);}return S;}
+function queueFields(r,st){const c=r.card;const ob=overdueBefore(r,st.cycle);return {name:firstName(r.u),amount:c.amountText+(ob.n?` (plus ${ownText(ob,r.a.mainCur)} overdue from earlier)`:''),cycle:c.periodText,link:confirmLink(r.u),tier:c.tierText,dueDate:c.dueDateText,replyBy:c.replyByText,switchLabel:c.switchLabel,payHow:payHowOf(),appName:appName()};}
+function queueText(r,st){const tpl=queueTplOf(st.stage);const f=queueFields(r,st);let out=tpl.replace(/\{(name|amount|cycle|link|tier|dueDate|replyBy|switchLabel|payHow|appName)\}/g,(m,k)=>f[k]||'');if(f.link&&!/\{link\}/.test(tpl))out+=' Reply here: '+f.link;return out;}
+const qLastCh={};
+function renderQueue(){
+  const today=todayISO();const auto=stageToday(today);const st=ui.qStage&&ui.qStage!==auto.stage?{stage:ui.qStage,cycle:ui.qStage===3?cycleStartOnOrBefore(today):auto.w.nc,w:auto.w,auto:false}:auto;
+  const Q=st.stage?queueRows(today,st):{rows:[],todo:0,sent:0,cycle:st.cycle,stage:0};const cycle=Q.cycle;const ce=cycleEndOf(cycle);
+  const stageWhy={1:`reminder · from ${fmtD(auto.w.start)} to ${fmtD(addDays(auto.w.replyBy,-1))}`,2:`repeat to anyone without an answer · from the reply-by day ${fmtD(auto.w.replyBy)}`,3:`final note to anyone still silent · the cycle started today, the account continues at the current tier`};
+  $('#rr-sub').textContent=st.stage?`Today ${fmtD(today,true)} · stage ${st.stage} ${st.auto?'(from the date)':'(preview)'}: ${stageWhy[st.stage]} · cycle ${fmtCycle(cycle,ce)}. Tap Sent after sending; the tick is saved per user, stage and cycle.`:`Today ${fmtD(today,true)} · no messages are due today. Stage 1 opens on ${fmtD(auto.w.start,true)} for the cycle starting ${fmtD(auto.w.nc,true)}; stage 2 on ${fmtD(auto.w.replyBy)}; stage 3 on ${fmtD(auto.w.nc)}.`;
+  const picker=`<span class="seg" id="q-stages" title="Preview another stage">${[1,2,3].map(n=>`<button type="button" data-stage="${n}" aria-pressed="${st.stage===n}">${n} · ${STAGE_NAMES[n]}${auto.stage===n?' (today)':''}</button>`).join('')}</span>`;
+  const R=reminderRows(today);const key=auto.w.nc;const dueTxt=r=>r.a.unpaid?ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur)+' overdue':ownText(r.a.cycleDue,r.a.mainCur);
+  const except=`<details class="except"${ui.exceptOpen?' open':''}><summary>Except… ${R.skipped.length?`(${R.skipped.length})`:''}</summary><div class="except-list"><span class="hint">Tick anyone to leave out of every stage this cycle (for example, someone who told you separately). Saved for the cycle starting ${esc(fmtD(key))}.</span>${R.due.length?R.due.map(r=>`<label class="chk"><input type="checkbox" data-act="skip" data-user="${esc(r.id)}"${remState(r.u,key).skipped?' checked':''}>${esc(displayName(r.u))}<span class="when">${esc(dueTxt(r))}</span></label>`).join(''):'<span class="hint">Nobody is due this cycle.</span>'}</div></details>`;
+  let html=`<div class="qbar"><span class="qstage" data-stage="${st.stage}">${st.stage?`Stage ${st.stage} · ${STAGE_NAMES[st.stage]}`:'Nothing due today'}</span><span class="lead">${st.stage?`<b>${Q.todo}</b> to send · <b>${Q.sent}</b> sent${st.stage>=2?' · users who answered on the link are left out':''}`:'Pick a stage to preview its messages.'}</span>${picker}${except}</div>`;
+  if(!publicBase())html+=`<p class="skipped-note">No link in the messages yet: set the <button class="link sm" type="button" data-act="open-settings">Public base URL</button> in Settings so every message carries the user's private choice page.</p>`;
+  if(state.backend!=='api')html+=`<p class="skipped-note">Answers from the link pages arrive only on the self-hosted server; here the queue shows everyone due.</p>`;
+  const chan=r=>{const u=r.u,text=queueText(r,st);const parts=[];
+    parts.push(u.phone?`<a class="btn sm wa" href="${esc(waLink(u,text))}" target="_blank" rel="noopener noreferrer" data-ch="whatsapp" title="Opens WhatsApp with the message prefilled">WhatsApp</a>`:`<button class="btn sm" type="button" disabled title="Add a WhatsApp number in Edit user">add phone</button>`);
+    parts.push(telegramControl(u,'Telegram',true));
+    parts.push(`<button class="btn sm" type="button" data-act="qcopy" data-user="${esc(r.id)}" title="Copy the message (Telegram cannot prefill it)">Copy</button>`);
+    parts.push(u.email?`<a class="btn sm" href="${esc(mailLink(u,`${appName()}: your ${r.card.tierText} plan for ${r.card.periodText}`,text))}" data-ch="email" title="Opens your mail app with the message prefilled">Email</a>`:`<button class="btn sm" type="button" disabled title="Add an email in Edit user">add email</button>`);
+    return parts.join('');};
+  const linkify=t=>esc(t).replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+  const row=r=>{const c=r.card;const s=r.sent;return `<div class="qrow" data-user="${esc(r.id)}" data-sent="${s?'1':'0'}"><div class="qhead"><span class="who">${esc(displayName(r.u))}</span><span class="due">${esc(c.tierText)} · <b>${esc(c.amountText)}</b> due ${esc(fmtD(cycle))}${st.stage===1&&r.answered?` · ${answerBadge(r.id,cycle)}`:''}</span><span class="remind-pair">${chan(r)}</span><label class="chk" title="Records the stage, cycle, channel and time"><input type="checkbox" data-act="qsent" data-user="${esc(r.id)}" data-stage="${st.stage}" data-cycle="${cycle}"${s?' checked':''}>Sent${s?` <span class="when">${esc(fmtWhen(s.at)||fmtD(s.at.slice(0,10)))} · ${esc(s.channel)}${s.by==='notify'?' (auto)':''}</span>`:''}</label></div><pre class="qmsg">${linkify(queueText(r,st))}</pre></div>`;};
+  if(st.stage)html+=Q.rows.length?Q.rows.map(row).join(''):`<p class="small muted" style="margin-top:10px">${st.stage>=2?'Everyone due for this cycle has answered on the link (or is on the Except list).':'Nobody has an amount due for this cycle.'}</p>`;
+  if(!Object.keys(state.users).length)html='<p class="small muted">No users yet.</p>';
+  $('#rr-body').innerHTML=html;
+}
 /* final notice: reply-by day onward, everyone with an amount due for the coming cycle who has not confirmed, plus anyone overdue */
 function userEmails(u){const out=[];const add=e=>{e=String(e||'').trim();if(e&&!out.some(x=>x.toLowerCase()===e.toLowerCase()))out.push(e);};add(u.email);for(const s of u.subscriptions||[]){const m=String(s.name||'').match(/[^\s@·,;()]+@[^\s@·,;()]+\.[^\s@·,;()]+/g);if(m)m.forEach(add);}return out;}
 function finalRows(today){
   const w=reminderWindow(today);const nc=w.nc;const dayBefore=addDays(nc,-1);const rows=[];
   for(const id in state.users){const u=state.users[id];const a=analyze(u,today);const st=remState(u,nc);
     if(u.cancel){const c=u.cancel;if(c.lastDay===dayBefore||(c.at&&c.at>=w.start&&c.at<=nc))rows.push({id,u,a,st,deact:true});continue;}
-    const cyc=a.cycleDue.n>0,over=a.unpaid;if(!cyc&&!over)continue;if((st.confirmed||st.skipped)&&!over)continue;
-    rows.push({id,u,a,st,deact:false});}
+    const disc=!!(u.discontinue&&u.discontinue.cycleStart===nc);
+    const cyc=a.cycleDue.n>0,over=a.unpaid;if(!cyc&&!over&&!disc)continue;if((st.confirmed||st.skipped)&&!over&&!disc)continue;
+    rows.push({id,u,a,st,deact:false,disc});}
   rows.sort((x,y)=>(x.deact-y.deact)||((y.a.unpaid?1:0)-(x.a.unpaid?1:0))||displayName(x.u).localeCompare(displayName(y.u)));
   return {w,rows,pending:rows.filter(r=>!r.deact&&!r.st.confirmed).length};
 }
 function fnAmount(r,w){const a=r.a;const parts=[];if(a.unpaid||(r.deact&&a.balance.n))parts.push(ownText(a.balance.n?a.balance:a.due,a.mainCur)+' overdue');if(a.cycleDue.n)parts.push(ownText(a.cycleDue,a.mainCur)+' due '+fmtD(w.nc));return parts.join(' + ')||'—';}
-function fnStatus(r){const st=r.st;const p=[];if(r.deact)p.push('deactivated · last day '+fmtD(r.u.cancel.lastDay));p.push(st.confirmed?'confirmed '+fmtD(st.confirmed)+(r.a.unpaid?' but still overdue':''):'not confirmed');p.push(st.reminded?'reminded '+fmtD(st.reminded):'not reminded');if(st.final)p.push('final notice sent '+fmtD(st.final));return p.join(', ');}
+function fnStatus(r){const st=r.st;const p=[];if(r.deact)p.push('deactivated · last day '+fmtD(r.u.cancel.lastDay));if(r.disc)p.push('asked to discontinue from '+fmtD(r.u.discontinue.cycleStart));p.push(st.confirmed?'confirmed '+fmtD(st.confirmed)+(r.a.unpaid?' but still overdue':''):'not confirmed');p.push(st.reminded?'reminded '+fmtD(st.reminded):'not reminded');if(st.final)p.push('final notice sent '+fmtD(st.final));return p.join(', ');}
 function fnPkgs(r){const a=r.a;const l=[...(a.duePkgs||[]),...cyclePkgs(r.u,a)];const out=l.filter((x,i,arr)=>x&&arr.indexOf(x)===i);return out.length?out.join(' + '):[...a.pkgIds].map(pkgName).filter(Boolean).join(' + ');}
 function fnLines(F){return F.rows.map(r=>`${displayName(r.u)} — ${userEmails(r.u).join(' / ')||'no email'} — ${fnAmount(r,F.w)} — ${fnStatus(r)}`);}
 function fnCSV(F){const head=['name','email','other_emails','phone','telegram','package','amount_due','status','cycle_start'];const lines=[head.join(',')];for(const r of F.rows){const em=userEmails(r.u);lines.push([displayName(r.u),em[0]||'',em.slice(1).join(' / '),fmtPhone(r.u.phone),r.u.telegram?(/^\d+$/.test(r.u.telegram)?'+'+r.u.telegram:'@'+r.u.telegram):'',fnPkgs(r),fnAmount(r,F.w),fnStatus(r),F.w.nc].map(csvCell).join(','));}return lines.join('\n');}
@@ -1201,7 +1365,7 @@ function renderFinalNotice(){
   const phase=today>=w.replyBy&&today<w.nc?'today is the reply-by day: send the final notice and compile the list':today<w.replyBy?'the reply-by day is '+fmtD(w.replyBy)+'; this is a preview of who would be listed today':'the cycle has started';
   $('#rr-sub').textContent=`Cycle starting ${fmtD(w.nc,true)} · replies were due by ${fmtD(w.replyBy)} · ${phase}. Confirmed users are left out; anyone overdue from earlier stays listed. Ticks are saved per user for this cycle.`;
   const tog=(r,f,label)=>{const v=r.st[f];return `<label class="chk"><input type="checkbox" data-act="rem" data-user="${esc(r.id)}" data-f="${f}"${v?' checked':''}${r.deact?' disabled':''}>${label}${v?` <span class="when">${esc(fmtD(v))}</span>`:''}</label>`;};
-  const deact=r=>r.deact?`<label class="chk"><input type="checkbox" checked disabled>Deactivated <span class="when">${esc(fmtD(r.u.cancel.lastDay))}</span></label>`:`<label class="chk" title="Opens Cancel subscription for this user with the last day set to ${esc(fmtD(addDays(w.nc,-1)))}"><input type="checkbox" data-act="deact" data-user="${esc(r.id)}">Deactivate</label>`;
+  const deact=r=>r.deact?`<label class="chk"><input type="checkbox" checked disabled>Deactivated <span class="when">${esc(fmtD(r.u.cancel.lastDay))}</span></label>`:r.disc?`<button class="btn sm danger" type="button" data-act="disc-confirm" data-user="${esc(r.id)}" title="Runs the cancel flow with the last day ${esc(fmtD(addDays(w.nc,-1)))}">Confirm cancel</button>`:`<label class="chk" title="Opens Cancel subscription for this user with the last day set to ${esc(fmtD(addDays(w.nc,-1)))}"><input type="checkbox" data-act="deact" data-user="${esc(r.id)}">Deactivate</label>`;
   const k=(on,label)=>`<span class="k" data-on="${on?'1':'0'}">${on?'✓':'✗'} ${label}</span>`;
   const rows=F.rows.map(r=>{const u=r.u,a=r.a;const em=userEmails(u);const mode=a.unpaid?'overdue':'cycle';
     return `<tr data-user="${esc(r.id)}" data-deact="${r.deact?1:0}">
@@ -1209,12 +1373,13 @@ function renderFinalNotice(){
       <td class="ct">${u.phone?esc(fmtPhone(u.phone)):'<span class="muted">no WhatsApp</span>'}<br>${u.telegram?esc(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram):'<span class="muted">no Telegram</span>'}</td>
       <td>${esc(fnPkgs(r)||'—')}</td>
       <td class="amt">${esc(fnAmount(r,w))}</td>
-      <td class="st">${k(!!r.st.reminded,r.st.reminded?'reminded '+esc(fmtD(r.st.reminded)):'not reminded')}${k(!!r.st.confirmed,r.st.confirmed?'confirmed '+esc(fmtD(r.st.confirmed))+(a.unpaid?' · still overdue':''):'not confirmed')}${r.deact?k(true,'deactivated'):''}${r.deact?'':answerBadge(r.id)}</td>
+      <td class="st">${k(!!r.st.reminded,r.st.reminded?'reminded '+esc(fmtD(r.st.reminded)):'not reminded')}${k(!!r.st.confirmed,r.st.confirmed?'confirmed '+esc(fmtD(r.st.confirmed))+(a.unpaid?' · still overdue':''):'not confirmed')}${r.deact?k(true,'deactivated'):''}${r.disc?k(false,'asked to discontinue from '+esc(fmtD(r.u.discontinue.cycleStart))):''}${r.deact?'':answerBadge(r.id)}</td>
       <td>${tog(r,'final','Final notice sent')}</td>
       <td>${deact(r)}</td>
       <td>${r.deact?'<span class="muted">—</span>':`<span class="remind-pair">${remindControl(u,a,today,'WhatsApp',mode,x)}${emailControl(u,a,today,'Email',mode,x)}${telegramControl(u,'Telegram')}${linkControl(r.id)}</span>`}</td>
     </tr>`;}).join('');
-  $('#rr-body').innerHTML=`<div class="fn-bar"><span class="lead"><b>${F.pending}</b> not confirmed${F.rows.length-F.pending?` · ${F.rows.length-F.pending} more listed (confirmed but overdue, or already deactivated)`:''} · ${F.rows.length} line${F.rows.length===1?'':'s'} in the deactivation list</span><button class="btn sm primary" type="button" data-act="fn-copy"${F.rows.length?'':' disabled'}>Copy deactivation list</button><button class="btn sm" type="button" data-act="fn-csv"${F.rows.length?'':' disabled'}>Download CSV</button><span class="small muted" id="fn-msg"></span></div>
+  const nd=F.rows.filter(r=>r.disc).length;
+  $('#rr-body').innerHTML=`<div class="fn-bar"><span class="lead"><b>${F.pending}</b> not confirmed${nd?` · <b>${nd}</b> asked to discontinue`:''}${F.rows.length-F.pending?` · ${F.rows.length-F.pending} more listed (confirmed but overdue, or already deactivated)`:''} · ${F.rows.length} line${F.rows.length===1?'':'s'} in the deactivation list</span><button class="btn sm primary" type="button" data-act="fn-copy"${F.rows.length?'':' disabled'}>Copy deactivation list</button><button class="btn sm" type="button" data-act="fn-csv"${F.rows.length?'':' disabled'}>Download CSV</button><span class="small muted" id="fn-msg"></span></div>
     ${F.rows.length?`<div class="table-wrap"><table class="fn" aria-label="Final notice list"><thead><tr><th>User · account emails</th><th>Contact</th><th>Package</th><th class="r">Amount due</th><th>State</th><th>Final notice</th><th>Deactivate</th><th>Send final notice</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<p class="small muted">Nobody to list: everyone with an amount due for this cycle has confirmed, and nobody is overdue.</p>'}
     <textarea id="fn-text" class="mono" hidden readonly aria-label="Deactivation list" style="margin-top:8px"></textarea>
     <p class="small muted" style="margin-top:8px">The copied list has one line per user: name — email — amount due — status. "Deactivate" opens that user's Cancel subscription form with the last day set to ${esc(fmtD(addDays(w.nc,-1),true))}; the user then shows here as deactivated and stops being billed or reminded.</p>`;
@@ -1340,7 +1505,7 @@ function renderTable(){
       <td class="r">${ndTxt}</td>
       <td class="r">${ownHTML(a.totals,a.mainCur,fmtAmt(0,a.mainCur))}</td>
       <td class="r${a.balance.n?' late':''}">${ownHTML(a.balance,a.mainCur)}</td>
-      <td><span class="pill" data-status="${a.status}">${statusLabel(a)}</span></td>
+      <td><span class="pill" data-status="${a.status}">${statusLabel(a)}</span>${discBadge(u)}</td>
       <td>${a.needsReminder?`<span class="remind-pair">${remindControl(u,a,today)}${emailControl(u,a,today)}${u.telegram?telegramControl(u):''}</span>`:'<span class="muted">—</span>'}${remBadge(u,nextCycleStart(today))}</td>
       <td><span class="chev">›</span></td>
     </tr>`;
@@ -1527,7 +1692,7 @@ function detailHTML(id,u,a,today){
       <div class="meta"><span>Joined <b>${esc(fmtD(u.joinDate,true))}</b></span>${u.cancel?`<span>Last day <b>${esc(fmtD(u.cancel.lastDay,true))}</b></span>`:''}${u.email&&u.name?`<span>Email <b class="num">${esc(u.email)}</b></span>`:''}<span>WhatsApp <b>${u.phone?esc(fmtPhone(u.phone)):'not set'}</b></span>${u.telegram?`<span>Telegram <b>${esc(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram)}</b></span>`:''}<span>Method / notes <b>${u.notes?esc(u.notes):'—'}</b></span><span>Total paid <b>${esc(ownText(a.totals,a.mainCur))}</b></span></div>
       <span style="display:flex;gap:12px;align-items:center">${u.cancel?'':remindControl(u,a,today,'Remind on WhatsApp')+emailControl(u,a,today,'Email')+telegramControl(u,'Telegram')}<button class="link" type="button" data-act="toggle" data-key="edit">Edit user</button>${u.cancel?`<button class="btn sm primary" type="button" data-act="toggle" data-key="react">Reactivate</button>`:`<button class="link danger" type="button" data-act="toggle" data-key="cancel">Cancel subscription</button>`}</span>
     </div>
-    ${u.cancel?`<p class="cancel-note"><b>Cancelled</b> · last day ${esc(fmtD(u.cancel.lastDay,true))}${u.cancel.reason?` · ${esc(u.cancel.reason)}`:''}${u.cancel.note?` · ${esc(u.cancel.note)}`:''} · ${a.balance.n?'still owes '+esc(ownText(a.balance,a.mainCur))+' for periods before the last day':'settled, nothing owed'}. No further periods or reminders.</p>`:''}
+    ${discNote(id,u)}${u.cancel?`<p class="cancel-note"><b>Cancelled</b> · last day ${esc(fmtD(u.cancel.lastDay,true))}${u.cancel.reason?` · ${esc(u.cancel.reason)}`:''}${u.cancel.note?` · ${esc(u.cancel.note)}`:''} · ${a.balance.n?'still owes '+esc(ownText(a.balance,a.mainCur))+' for periods before the last day':'settled, nothing owed'}. No further periods or reminders.</p>`:''}
     <form class="block cancel-form" data-id="${id}" ${open.cancel&&!u.cancel?'':'hidden'} novalidate>
       <h3 style="margin-bottom:8px">Cancel subscription</h3>
       <div class="form-grid">
@@ -1669,7 +1834,12 @@ function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','rem
 function syncSettingsBtn(){const open=!$('#settingsPanel').hidden;const b=$('#btn-settings');b.innerHTML=open?'<span class="glyph" aria-hidden="true">‹</span>Home':'Settings';b.setAttribute('aria-expanded',String(open));b.title=open?'Back to the user list':'Open settings';}
 function closeSettings(){$('#settingsPanel').hidden=true;syncSettingsBtn();window.scrollTo({top:0,behavior:'smooth'});}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
-function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);if(state.backend==='api')$('#s-base-url').placeholder=location.origin;ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
+function openSettings(){$('#s-rate').value=state.settings.rate||'';$('#s-anchor').value=anchor();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);if(state.backend==='api')$('#s-base-url').placeholder=location.origin;fillQueueSettings();$('#mailBlock').hidden=state.backend!=='api';if(state.backend==='api')loadMailSettings();ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
+function fillQueueSettings(){$('#s-q1').value=queueTplOf(1);$('#s-q2').value=queueTplOf(2);$('#s-q3').value=queueTplOf(3);$('#s-payhow').value=payHowOf();}
+async function loadMailSettings(){const msg=$('#m-msg');try{const m=await apiJSON('/api/mail-settings');$('#m-host').value=m.host||'';$('#m-port').value=m.port||587;$('#m-user').value=m.user||'';$('#m-from').value=m.fromName||'';$('#m-from-email').value=m.fromEmail||'';$('#m-test-to').value=m.testTo||'';$('#m-pass').value='';$('#m-pass').placeholder=m.hasPassword?'•••••••• saved · leave blank to keep':'app password';msg.textContent=m.configured?'Configured: the daily job at 09:00 emails today\'s stage.':'Not configured: nothing is emailed automatically.';}catch(e){msg.textContent='Could not load mail settings.';}}
+async function saveMailSettings(){const msg=$('#m-msg');msg.textContent='Saving…';const body={host:$('#m-host').value.trim(),port:Number($('#m-port').value)||587,user:$('#m-user').value.trim(),fromName:$('#m-from').value.trim(),fromEmail:$('#m-from-email').value.trim(),testTo:$('#m-test-to').value.trim()};const pw=$('#m-pass').value;if(pw)body.password=pw;if(!body.host&&!body.user&&!pw)body.clearPassword=true;
+  try{const m=await apiJSON('/api/mail-settings',apiBody('PUT',body));$('#m-pass').value='';$('#m-pass').placeholder=m.hasPassword?'•••••••• saved · leave blank to keep':'app password';msg.textContent=m.configured?'Saved. The daily job at 09:00 will email today\'s stage.':'Saved, but not configured yet (host, user and app password are needed).';}catch(e){msg.textContent='Could not save: '+(e.message||e.code||'error');}}
+async function testMail(){const msg=$('#m-msg');const to=$('#m-test-to').value.trim();msg.textContent='Sending test…';try{const j=await apiJSON('/api/mail-test',apiBody('POST',{to}));msg.textContent='Test email sent to '+j.to+'. Check the inbox (and spam).';}catch(e){msg.textContent='Test failed: '+(e.message||e.code||'error')+(e.code==='not_configured'?' Save the mail settings first.':'');}}
 function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
 function openAdd(){showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
 function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';}
@@ -1700,24 +1870,34 @@ function bind(){
   $('#btn-io').addEventListener('click',()=>{$('#ioPanel').hidden?showPanel('ioPanel'):($('#ioPanel').hidden=true);});
   $('#io-close').addEventListener('click',()=>{$('#ioPanel').hidden=true;});
   $('#btn-settings').addEventListener('click',()=>{$('#settingsPanel').hidden?openSettings():closeSettings();});
-  $('#btn-reminders').addEventListener('click',()=>{if($('#remindRun').hidden){const w=reminderWindow(todayISO());ui.rrTab=todayISO()>=w.replyBy&&todayISO()<w.nc?'final':'run';openRemindRun();}else $('#remindRun').hidden=true;});
-  $('#remindBannerBtn').addEventListener('click',()=>{ui.rrTab=$('#remindBanner').dataset.kind==='final'?'final':'run';openRemindRun();});
+  $('#btn-reminders').addEventListener('click',()=>{if($('#remindRun').hidden){ui.rrTab='queue';ui.qStage=null;openRemindRun();}else $('#remindRun').hidden=true;});
+  $('#remindBannerBtn').addEventListener('click',()=>{ui.rrTab=$('#remindBanner').dataset.kind==='final'?'final':'queue';ui.qStage=null;openRemindRun();});
   $('#rr-tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;ui.rrTab=b.dataset.tab;renderRemindRun();});
   $('#rr-body').addEventListener('toggle',e=>{if(e.target&&e.target.matches&&e.target.matches('details.except'))ui.exceptOpen=e.target.open;},true);
-  $('#rr-body').addEventListener('click',async e=>{const b=e.target.closest('button[data-act]');if(!b)return;if(b.dataset.act==='unskip'){const id=b.dataset.user;if(!state.users[id])return;const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[key]||{});r.skipped=null;if(r.reminded||r.confirmed||r.final)u.reminders[key]=r;else delete u.reminders[key];b.disabled=true;const ok=await persistUser(id,u);if(ok&&db)renderRemindRun();return;}if(b.dataset.act==='copy-link'){const id=b.dataset.user;if(!state.users[id])return;b.disabled=true;let tok=state.users[id].confirmToken;if(!TOKEN_RE.test(tok||''))tok=await ensureToken(id);const link=confirmLinkFor(tok);b.disabled=false;if(!link){toast('Set the Public base URL in Settings first.');return;}try{await navigator.clipboard.writeText(link);toast('Link copied: '+link);}catch(e){window.prompt('Copy this link',link);}return;}
+  $('#rr-body').addEventListener('click',async e=>{const sb=e.target.closest('#q-stages button[data-stage]');if(sb){ui.qStage=Number(sb.dataset.stage);renderRemindRun();return;}
+    const ch=e.target.closest('a[data-ch]');if(ch){const rw=ch.closest('.qrow');if(rw)qLastCh[rw.dataset.user]=ch.dataset.ch;return;}
+    const b=e.target.closest('button[data-act]');if(!b)return;
+    if(b.dataset.act==='qcopy'){const rw=b.closest('.qrow');const text=rw?rw.querySelector('.qmsg').textContent:'';qLastCh[b.dataset.user]=state.users[b.dataset.user]&&state.users[b.dataset.user].telegram?'telegram':'copy';try{await navigator.clipboard.writeText(text);toast('Message copied.');}catch(err){window.prompt('Copy this message',text);}return;}
+    if(b.dataset.act==='disc-confirm'){b.disabled=true;await confirmDiscontinue(b.dataset.user);return;}if(b.dataset.act==='unskip'){const id=b.dataset.user;if(!state.users[id])return;const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[key]||{});r.skipped=null;if(!remEmpty(r))u.reminders[key]=r;else delete u.reminders[key];b.disabled=true;const ok=await persistUser(id,u);if(ok&&db)renderRemindRun();return;}if(b.dataset.act==='copy-link'){const id=b.dataset.user;if(!state.users[id])return;b.disabled=true;let tok=state.users[id].confirmToken;if(!TOKEN_RE.test(tok||''))tok=await ensureToken(id);const link=confirmLinkFor(tok);b.disabled=false;if(!link){toast('Set the Public base URL in Settings first.');return;}try{await navigator.clipboard.writeText(link);toast('Link copied: '+link);}catch(e){window.prompt('Copy this link',link);}return;}
     if(b.dataset.act==='fn-copy')copyFinalList();else if(b.dataset.act==='fn-csv'){const F=finalRows(todayISO());exportCSV(fnCSV(F),'deactivation-list-'+F.w.nc,'fn-msg','fn-text');}});
   $('#rr-close').addEventListener('click',()=>{$('#remindRun').hidden=true;});
   $('#rr-body').addEventListener('change',async e=>{
     const dc=e.target.closest('input[data-act="deact"]');
     if(dc){const id=dc.dataset.user;if(!state.users[id]||state.users[id].cancel)return;const nc=nextCycleStart(todayISO());ui.cancelPre[id]={lastDay:addDays(nc,-1),reason:'Not confirmed for the cycle starting '+fmtD(nc,true)};ui.expanded=id;ui.open[id]=Object.assign({},ui.open[id],{cancel:true});renderTable();const det=document.querySelector(`tr.detail[data-id="${id}"]`);if(det){det.scrollIntoView({behavior:'smooth',block:'start'});const f=det.querySelector('.cancel-form [name=lastDay]');if(f)f.focus();}dc.checked=false;return;}
+    const qs=e.target.closest('input[data-act="qsent"]');
+    if(qs){const id=qs.dataset.user;if(!state.users[id])return;const stage=Number(qs.dataset.stage),cycle=qs.dataset.cycle;const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[cycle]||{});r.sent=(r.sent||[]).filter(x=>!(x.stage===stage&&x.cycleStart===cycle));
+      if(qs.checked){r.sent.push({stage,cycleStart:cycle,channel:qLastCh[id]||'manual',at:new Date().toISOString()});if(stage===1&&!r.reminded)r.reminded=todayISO();if(stage===2&&!r.final)r.final=todayISO();}
+      if(!r.sent.length)delete r.sent;if(remEmpty(r))delete u.reminders[cycle];else u.reminders[cycle]=r;
+      qs.disabled=true;const ok=await persistUser(id,u);if(!ok){qs.disabled=false;qs.checked=!qs.checked;}else if(db)renderRemindRun();return;}
     const cb=e.target.closest('input[data-act="rem"],input[data-act="skip"]');if(!cb)return;const id=cb.dataset.user;if(!state.users[id])return;
     const f=cb.dataset.act==='skip'?'skipped':cb.dataset.f;
     const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[key]||{});
-    r[f]=cb.checked?todayISO():null;if(r.reminded||r.confirmed||r.final||r.skipped)u.reminders[key]=r;else delete u.reminders[key];
+    r[f]=cb.checked?todayISO():null;if(!remEmpty(r))u.reminders[key]=r;else delete u.reminders[key];
     cb.disabled=true;const ok=await persistUser(id,u);if(!ok){cb.disabled=false;cb.checked=!cb.checked;}else if(db)renderRemindRun();
   });
   $('#settings-close').addEventListener('click',closeSettings);
-  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.appName=rawAppName($('#s-app-name').value);state.settings.tagline=rawTagline($('#s-tagline').value);state.settings.readModel=normModel($('#s-model').value);state.settings.publicBaseUrl=pubBaseRaw($('#s-base-url').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
+  $('#m-save').addEventListener('click',saveMailSettings);$('#m-test').addEventListener('click',testMail);
+  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const an=$('#s-anchor').value;if(!isDateKey(an)){err.textContent='Pick the billing cycle anchor date.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.appName=rawAppName($('#s-app-name').value);state.settings.tagline=rawTagline($('#s-tagline').value);state.settings.readModel=normModel($('#s-model').value);state.settings.publicBaseUrl=pubBaseRaw($('#s-base-url').value);state.settings.queueTemplates=normQueueTpl({1:$('#s-q1').value,2:$('#s-q2').value,3:$('#s-q3').value});state.settings.payHow=rawPayHow($('#s-payhow').value);state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
   $('#reset-wrap').addEventListener('click',async e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.id==='btn-reset'){$('#reset-wrap').innerHTML=`<span class="small" style="margin-right:8px">Remove every user, payment and cost? This cannot be undone.</span><button class="btn sm danger" type="button" data-act="reset-yes">Yes, reset</button> <button class="btn sm" type="button" data-act="reset-no">Cancel</button>`;}
@@ -1783,6 +1963,8 @@ function bind(){
     else if(A==='del'){act.parentElement.innerHTML=`<span class="small" style="margin-right:8px">Delete <b>${esc(displayName(state.users[id]))}</b> and all payments?</span><button class="btn sm danger" type="button" data-act="del-yes">Yes, delete</button> <button class="btn sm" type="button" data-act="del-no">Cancel</button>`;}
     else if(A==='del-yes'){const nm=displayName(state.users[id]);const ok=await removeUser(id);if(ok){ui.expanded=null;toast('Deleted '+nm+'.');}}
     else if(A==='del-no')renderTable();
+    else if(A==='disc-confirm'){act.disabled=true;await confirmDiscontinue(id);}
+    else if(A==='disc-dismiss'){const u=clone(state.users[id]);u.discontinue=null;const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: kept; the Discontinue answer stays on record.`);}
   });
   tbody.addEventListener('keydown',e=>{const row=e.target.closest('tr.row');if(row&&(e.key==='Enter'||e.key===' ')&&e.target===row){e.preventDefault();row.click();}});
   tbody.addEventListener('submit',async e=>{
@@ -1845,8 +2027,7 @@ function bind(){
     }else if(form.classList.contains('cancel-form')){
       setErr('cancel-err','');const lastDay=val('lastDay'),reason=val('reason').trim(),note=val('note').trim();
       if(!isDateKey(lastDay)){setErr('cancel-err','Pick the last day.');return;}
-      for(const s of u.subscriptions){if(s.kind!=='monthly')continue;if(!s.end||s.end>lastDay)s.end=lastDay;}
-      u.cancel={lastDay,reason,note,at:todayISO()};closeKey('cancel');delete ui.cancelPre[id];
+      applyCancel(u,lastDay,reason,note);closeKey('cancel');delete ui.cancelPre[id];
       const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} cancelled · last day ${fmtD(lastDay,true)}.`);
     }else if(form.classList.contains('react-form')){
       setErr('react-err','');const start=val('start');if(!isDateKey(start)){setErr('react-err','Pick the new start date.');return;}
@@ -2290,11 +2471,12 @@ async function initApi(){
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)apiTouch();});
 }
 /* ---------- boot ---------- */
-function applySettingsDoc(b){state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.appName=rawAppName(b.appName);state.settings.tagline=rawTagline(b.tagline);state.settings.readModel=normModel(b.readModel);state.settings.publicBaseUrl=pubBaseRaw(b.publicBaseUrl);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);}
+function applySettingsDoc(b){state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.appName=rawAppName(b.appName);state.settings.tagline=rawTagline(b.tagline);state.settings.readModel=normModel(b.readModel);state.settings.publicBaseUrl=pubBaseRaw(b.publicBaseUrl);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);state.settings.queueTemplates=normQueueTpl(b.queueTemplates);state.settings.payHow=rawPayHow(b.payHow);}
 function subscribe(){
   db.collection('users').onSnapshot(snap=>{
     const users={};snap.docs.forEach(d=>{const b=d.data();if(b&&(b.email||b.name))users[d.id]=normalizeUser(b,d.id);});
-    state.users=users;state.loaded=true;render();
+    const firstLoad=!state.loaded;state.users=users;state.loaded=true;render();
+    if(firstLoad&&state.backend==='api')refreshConfirmations();
     if(!snap.metadata.fromCache){if(snap.empty)maybeSeedShared();else maybeMigrateShared(snap.docs);}
     if(publicBase())ensureConfirmTokens();
   },e=>{state.mode='error';state.loaded=true;toast('Live data unavailable ('+(e&&e.code||'unknown')+'). Reload to reconnect.');render();});

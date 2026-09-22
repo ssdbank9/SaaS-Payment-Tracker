@@ -1,0 +1,11 @@
+[Unit]
+Description=Wasool (Payments Tracker) - run the daily reminder emails at 09:00 Asia/Karachi (04:00 UTC)
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 UTC
+Persistent=true
+RandomizedDelaySec=5min
+Unit=payments-tracker-notify.service
+
+[Install]
+WantedBy=timers.target

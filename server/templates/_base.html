@@ -48,6 +48,7 @@ textarea{min-height:72px;resize:vertical}
 .status .when{display:block;font-size:12px;opacity:.85;font-family:var(--mono)}
 .foot{margin-top:18px;font-size:12px;color:var(--muted);text-align:center;max-width:440px}
 </style>
+{% block head %}{% endblock %}
 </head>
 <body>
 <div class="brand" aria-label="{{ app_name }}"><span class="mark" aria-hidden="true">{{ app_name[:1]|upper }}</span><span><span class="name">{{ app_name }}</span> <span class="tag">{{ tagline }}</span></span></div>

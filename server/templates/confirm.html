@@ -1,42 +1,110 @@
 {% extends "_base.html" %}
-{% block title %}{{ app_name }} · {% if missing %}Link not active{% else %}Confirm your payment{% endif %}{% endblock %}
+{% block title %}{{ app_name }} · {% if missing %}Link not active{% else %}Your plan for {{ period }}{% endif %}{% endblock %}
+{% block head %}
+<style>
+.card{max-width:480px}
+.cycle{display:inline-block;margin:2px 0 14px;font-size:13px;font-weight:600;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:4px 12px}
+.plan{border:2px solid var(--accent-line, var(--line-strong));border-radius:10px;overflow:hidden;margin-top:12px;background:var(--surface)}
+.plan-head{display:flex;flex-direction:column;gap:2px;padding:10px 14px;background:var(--accent-soft);border-bottom:1px solid var(--accent-line, var(--line-strong))}
+.plan-head .acct{font-size:12px;color:var(--ink-2);font-family:var(--mono);overflow-wrap:anywhere}
+.plan-head .tier{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.plan-head .tier b{font-size:18px;font-weight:600;color:var(--ink)}
+.plan-head .tier .price{font-size:13px;color:var(--ink-2);font-family:var(--mono)}
+.plan-body{padding:12px 14px 14px}
+.due{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:15px}
+.due .amt{font-family:var(--mono);font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
+.due[data-paid="1"] .amt{color:var(--good)}
+.choices{display:grid;gap:10px;margin-top:14px}
+.choice{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:60px;border-radius:10px;border:2px solid var(--line-strong);background:var(--surface);color:var(--ink);font:inherit;font-weight:600;font-size:17px;cursor:pointer;padding:10px 16px;text-align:left;width:100%}
+.choice small{font-size:12px;font-weight:400;color:var(--ink-2)}
+.choice:hover{background:var(--surface-2)}
+.choice.continue{background:var(--accent);border-color:var(--accent);color:#fff}
+.choice.continue small{color:rgba(255,255,255,.85)}
+.choice.continue:hover{filter:brightness(1.08)}
+.choice.switch{border-color:var(--accent);color:var(--accent-ink)}
+.choice.discontinue{border-color:var(--crit);color:var(--crit)}
+.choice:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.status{margin:12px 0 0;display:flex;gap:12px;align-items:flex-start;border-radius:8px;padding:12px 14px;font-size:15px;border:1px solid transparent}
+.status[data-answer="continue"],.status[data-answer="upgrade"],.status[data-answer="downgrade"]{background:var(--good-bg);color:var(--good);border-color:var(--accent-line, transparent)}
+.status[data-answer="discontinue"]{background:var(--crit-bg);color:var(--crit)}
+.status .mark{font-size:20px;line-height:1.1}
+.status .when{display:block;font-size:12px;opacity:.85;font-family:var(--mono);margin-top:2px}
+.status .note{display:block;font-weight:400;font-size:14px;margin-top:2px;color:inherit;opacity:.9}
+.thanks{background:var(--good-bg);color:var(--good);border-radius:8px;padding:10px 14px;font-weight:600;margin-bottom:12px;font-size:15px}
+.closed{background:var(--surface-2);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--ink-2);margin-top:12px}
+label.f{margin-top:12px}
+.sum{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:15px}
+.sum .amt{font-family:var(--mono);font-weight:600;font-size:18px}
+</style>
+{% endblock %}
 {% block body %}
 <main class="card">
 {% if missing %}
   <h1>This link is not active</h1>
   <p class="lead" style="font-size:15px;color:var(--ink-2)">It may have been replaced with a newer one. Please reply to the message you received instead.</p>
 {% else %}
-  {% if nothing_due %}
+  {% if done %}<div class="thanks" role="status">Thanks, {{ name }} — your answer is recorded.</div>{% endif %}
   <h1>Hi {{ name }},</h1>
-  <p class="lead">you are all set for <b>{{ period }}</b>{% if package %} on <b>{{ package }}</b>{% endif %}. Nothing to confirm right now.</p>
-  <p class="hint">This page updates when your next payment comes due.</p>
-  {% elif recorded %}
-  <h1>Thanks, {{ name }}.</h1>
-  <p class="lead">{% if done %}Your answer is recorded.{% else %}You already answered for the period starting {{ due_date }}.{% endif %}</p>
-  <div class="status" data-answer="{{ recorded.answer }}" role="status">
-    <span aria-hidden="true">{% if recorded.answer == 'yes' %}✓{% else %}✗{% endif %}</span>
-    <span><b>{% if recorded.answer == 'yes' %}YES — continuing and paying by {{ reply_by }}{% else %}NO — not continuing{% endif %}</b>{% if recorded.note %}<br>“{{ recorded.note }}”{% endif %}<span class="when">recorded {{ recorded.at[:16].replace('T', ' ') }} UTC</span></span>
-  </div>
-  <p class="hint">Changed your mind? <a class="btn sm" href="{{ url_for('confirm', token=token, change=1) }}" style="margin-left:6px">Change my answer</a></p>
+  {% if nothing_due or not plans %}
+  <p class="lead">you are all set for <b>{{ period }}</b>. Nothing to decide right now.</p>
+  <p class="hint">This page updates when your next billing cycle comes up.</p>
   {% else %}
-  <h1>Hi {{ name }},</h1>
-  <p class="lead">your <b>{{ package }}</b> payment of <b>{{ amount }}</b> for <b>{{ period }}</b> is due on <b>{{ due_date }}</b>.</p>
-  <dl class="facts">
-    <dt>Package</dt><dd>{{ package }}</dd>
-    <dt>Amount</dt><dd class="num">{{ amount }}</dd>
-    <dt>Period</dt><dd>{{ period }}</dd>
-    <dt>Due on</dt><dd>{{ due_date }}</dd>
-    <dt>Reply by</dt><dd>{{ reply_by }}</dd>
-  </dl>
-  <form method="post">
-    <p class="q">Will you continue and pay by {{ reply_by }}?</p>
-    <div class="btns">
-      <button class="btn yes" type="submit" name="answer" value="yes">YES</button>
-      <button class="btn no" type="submit" name="answer" value="no">NO</button>
+  <p class="lead">{% if plans|length > 1 %}here are your plans{% else %}here is your plan{% endif %} for the next billing cycle. {% if open_now %}Pick what you would like to do; you can change it until <b>{{ reply_by }}</b>.{% else %}The reply window for this cycle closed on <b>{{ reply_by }}</b>.{% endif %}</p>
+  <span class="cycle">{{ period }}</span>
+
+  {% macro choice_buttons(p, plan_id) -%}
+    <input type="hidden" name="planId" value="{{ plan_id }}">
+    <div class="choices">
+      <button class="choice continue" type="submit" name="choice" value="continue">Continue<small>Keep my {{ p.tier or 'current' }} plan as it is</small></button>
+      {% if p.switch %}<button class="choice switch" type="submit" name="choice" value="{{ p.switch.choice or 'upgrade' }}">{{ p.switch.label }}<small>{% if p.switch.priceText %}{{ p.switch.priceText }} {% endif %}from {{ due_date }}</small></button>{% endif %}
+      <button class="choice discontinue" type="submit" name="choice" value="discontinue">Discontinue<small>Stop after the current period</small></button>
     </div>
-    <label class="f">Note <span style="font-weight:400;color:var(--muted)">(optional — e.g. “paid via NayaPay”, or when you will pay)</span><textarea name="note" maxlength="500"></textarea></label>
-  </form>
-  <p class="hint">Your answer goes only to the person who runs your subscription. Nothing is charged from this page.</p>
+    <label class="f">Note <span style="font-weight:400;color:var(--muted)">(optional)</span><textarea name="note" maxlength="500" placeholder="e.g. paid via NayaPay, or when you will pay"></textarea></label>
+  {%- endmacro %}
+
+  {% macro status(a) -%}
+    <div class="status" data-answer="{{ a.answer }}" role="status">
+      <span class="mark" aria-hidden="true">{% if a.answer == 'discontinue' %}✗{% else %}✓{% endif %}</span>
+      <span><b>{% if a.answer == 'continue' %}Continue — plan stays as it is{% elif a.answer == 'upgrade' %}Upgrade requested from {{ due_date }}{% elif a.answer == 'downgrade' %}Tier change requested from {{ due_date }}{% else %}Discontinue — stops after the current period{% endif %}</b>
+      {% if a.note %}<span class="note">“{{ a.note }}”</span>{% endif %}
+      <span class="when">recorded {{ a.at[:16].replace('T', ' ') }} UTC</span></span>
+    </div>
+  {%- endmacro %}
+
+  {% for p in plans %}
+  <section class="plan" aria-label="{{ p.label }}">
+    <div class="plan-head">
+      {% if p.acct %}<span class="acct">{{ p.acct }}</span>{% endif %}
+      <span class="tier"><b>{{ p.tier or p.label }}</b>{% if p.priceText %}<span class="price">{{ p.priceText }}</span>{% endif %}</span>
+    </div>
+    <div class="plan-body">
+      <div class="due" data-paid="{{ 1 if p.paid else 0 }}"><span>{% if p.paid %}Already paid for this cycle{% else %}Due on {{ due_date }}{% endif %}</span><span class="amt">{% if p.paid %}✓ paid{% else %}{{ p.amountText }}{% endif %}</span></div>
+      {% if multi %}
+        {% if p.answer %}
+          {{ status(p.answer) }}
+          {% if open_now %}<p class="hint">Changed your mind? <a class="btn sm" href="{{ url_for('confirm', token=token, change=1) }}#p-{{ loop.index }}" style="margin-left:6px">Change</a></p>{% endif %}
+        {% elif open_now %}
+          <form method="post" id="p-{{ loop.index }}">{{ choice_buttons(p, p.planId) }}</form>
+        {% endif %}
+      {% endif %}
+    </div>
+  </section>
+  {% endfor %}
+
+  {% if not multi %}
+    {% if plans|length > 1 %}<div class="sum"><span>Total due on {{ due_date }}</span><span class="amt">{{ amount }}</span></div>{% endif %}
+    {% if whole %}
+      {{ status(whole) }}
+      {% if open_now %}<p class="hint">Changed your mind? <a class="btn sm" href="{{ url_for('confirm', token=token, change=1) }}" style="margin-left:6px">Change my answer</a></p>{% endif %}
+    {% elif open_now %}
+      <form method="post">
+        <p class="q">What would you like to do from {{ due_date }}?</p>
+        {{ choice_buttons(plans[0], '') }}
+      </form>
+    {% endif %}
+  {% endif %}
+  {% if not open_now %}<div class="closed">Your account continues as it is on the current tier. {% if owner %}Message {{ owner }}{% else %}Reply to the message you received{% endif %} if anything should change.</div>{% endif %}
+  <p class="hint">Your answer goes only to the person who runs your subscription. Nothing is charged from this page. {{ pay_how }}</p>
   {% endif %}
 {% endif %}
 </main>
