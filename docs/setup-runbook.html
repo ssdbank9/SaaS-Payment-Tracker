@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Wasooli server setup</title>
+<meta name="description" content="Wasooli: how the server was set up, step by step. Oracle Cloud VM, DuckDNS, SSH from Windows, the installer, first sign-in, settings, keeping it running, troubleshooting.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f3f5f3; --surface:#ffffff; --surface-2:#e9efeb; --ink:#161a17; --ink-2:#4a564f; --muted:#75817a;
+  --line:#d5ddd8; --line-2:#c1ccc6;
+  --brand:#1f6b4e; --brand-ink:#175a41; --brand-soft:#dcebe3; --brand-on:#ffffff;
+  --warn:#8f5a12; --warn-soft:#fbefd9; --danger:#983a2c; --danger-soft:#f9e5e0;
+  --code-bg:#14211c; --code-ink:#e6efea; --code-ph:#f7c86a; --code-dim:#8fa79e; --code-out:#b7c9c0;
+  --shadow:0 1px 2px rgba(22,26,23,.06),0 6px 20px -10px rgba(22,26,23,.18);
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111412; --surface:#181d1a; --surface-2:#1f2622; --ink:#edf1ee; --ink-2:#b3bfb8; --muted:#83908a;
+    --line:#2a332e; --line-2:#38443e;
+    --brand:#26805d; --brand-ink:#7fd3ba; --brand-soft:#173129; --brand-on:#ffffff;
+    --warn:#e0a64b; --warn-soft:#2b2213; --danger:#e08573; --danger-soft:#2e1b17;
+    --code-bg:#0b100e; --code-ink:#dce7e2; --code-ph:#f2c36a; --code-dim:#7b8f87; --code-out:#9fb3aa;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111412; --surface:#181d1a; --surface-2:#1f2622; --ink:#edf1ee; --ink-2:#b3bfb8; --muted:#83908a;
+  --line:#2a332e; --line-2:#38443e;
+  --brand:#26805d; --brand-ink:#7fd3ba; --brand-soft:#173129; --brand-on:#ffffff;
+  --warn:#e0a64b; --warn-soft:#2b2213; --danger:#e08573; --danger-soft:#2e1b17;
+  --code-bg:#0b100e; --code-ink:#dce7e2; --code-ph:#f2c36a; --code-dim:#7b8f87; --code-out:#9fb3aa;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--brand-ink);text-decoration-thickness:1px;text-underline-offset:2px}
+h1,h2,h3{margin:0;line-height:1.15;letter-spacing:-.01em;font-weight:600;text-wrap:balance}
+p{margin:0}
+code,kbd{font-family:var(--mono);font-size:.88em}
+p code,li code,td code,dd code{background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:.05em .35em;color:var(--ink);overflow-wrap:anywhere}
+kbd{background:var(--surface-2);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;padding:.02em .4em;font-size:.8em}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 64px}
+@media (min-width:720px){.wrap{padding-inline:28px}}
+
+/* header */
+.top{padding:28px 0 22px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:14px}
+.brand svg{width:52px;height:52px;flex:none}
+.brand .word{font-size:1.65rem;font-weight:600;letter-spacing:-.02em;line-height:1}
+.brand .tag{color:var(--brand-ink);font-weight:500;font-size:.95rem;margin-top:3px}
+.top h1{font-size:clamp(1.7rem,5vw,2.7rem);margin-top:22px}
+.lede{max-width:64ch;margin-top:12px;font-size:1.08rem;color:var(--ink-2)}
+.facts{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:18px;font-size:.95rem;color:var(--ink-2)}
+.facts b{color:var(--ink);font-weight:600}
+
+/* layout */
+.grid{display:grid;gap:26px;margin-top:22px}
+@media (min-width:920px){.grid{grid-template-columns:272px minmax(0,1fr);gap:44px;align-items:start}}
+.rail{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0;min-width:0;max-width:100%}
+@media (min-width:920px){.rail{top:16px;padding:0}}
+.progress{display:flex;align-items:center;gap:12px;font-size:.9rem;color:var(--ink-2)}
+.bar{flex:1;height:6px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--brand);transition:width .3s ease}
+.progress b{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600;white-space:nowrap}
+.steps{list-style:none;margin:10px 0 0;padding:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.steps::-webkit-scrollbar{display:none}
+@media (min-width:920px){.steps{flex-direction:column;overflow:visible;gap:2px;margin-top:14px}}
+.steps a{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;text-decoration:none;color:var(--ink-2);font-size:.92rem;white-space:nowrap;border:1px solid transparent}
+@media (min-width:920px){.steps a{white-space:normal}}
+.steps a:hover{background:var(--surface-2);color:var(--ink)}
+.steps a .n{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-2);display:grid;place-items:center;font-family:var(--mono);font-size:.72rem;flex:none;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.steps li[data-status="done"] a{color:var(--muted)}
+.steps li[data-status="done"] a .n{background:var(--brand);border-color:var(--brand);color:var(--brand-on)}
+.steps li[data-status="done"] a .n::before{content:"✓"}
+.steps li[data-status="done"] a .n span{display:none}
+.steps li.current a{border-color:var(--line);background:var(--surface)}
+.hint{font-size:.85rem;color:var(--muted);margin-top:12px;display:none}
+@media (min-width:920px){.hint{display:block}}
+
+/* steps */
+.flow{display:flex;flex-direction:column;gap:22px;min-width:0}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 16px 18px;scroll-margin-top:110px;box-shadow:var(--shadow);min-width:0}
+@media (min-width:720px){.step{padding:26px 28px 22px;scroll-margin-top:24px}}
+.step-head{display:flex;align-items:flex-start;gap:14px}
+.step-head .num{font-weight:600;font-size:1.5rem;color:var(--brand);line-height:1;padding-top:3px;min-width:2ch;font-variant-numeric:tabular-nums}
+.step-head h2{font-size:1.4rem}
+.step-head .where{color:var(--muted);font-size:.9rem;margin-top:4px}
+.step-body{margin-top:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.step-body p,.step-body li{max-width:70ch}
+.step-body ol,.step-body ul{margin:0;padding-left:1.35em;display:flex;flex-direction:column;gap:7px}
+.step-body ol li::marker{font-family:var(--mono);font-size:.85em;color:var(--brand-ink)}
+.step-body h3{font-size:1.05rem;margin-top:6px}
+.path{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 6px;font-size:.92rem}
+.path span{background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:1px 8px}
+.path .sep{border:0;background:none;padding:0;color:var(--muted)}
+.note{border-left:3px solid var(--brand);background:var(--brand-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:.95rem}
+.note.warn{border-color:var(--warn);background:var(--warn-soft)}
+.note.warn b{color:var(--warn)}
+.note.danger{border-color:var(--danger);background:var(--danger-soft)}
+.note.danger b{color:var(--danger)}
+.note b{font-weight:600}
+.field{display:grid;grid-template-columns:minmax(110px,34%) 1fr;gap:6px 14px;font-size:.95rem;border-top:1px solid var(--line);padding-top:8px;margin:0}
+.field dt{color:var(--muted)}
+.field dd{margin:0;font-weight:500}
+.field dd code{white-space:normal}
+.two{display:grid;gap:12px}
+@media (min-width:760px){.two{grid-template-columns:1fr 1fr}}
+.card{border:1px solid var(--line);border-radius:10px;padding:14px 14px 12px;background:var(--bg);min-width:0}
+.card h3{margin:0 0 8px;font-size:1rem}
+
+/* code */
+.code{position:relative;background:var(--code-bg);color:var(--code-ink);border-radius:10px;margin:2px 0;min-width:0}
+.code pre{margin:0;padding:14px 16px;padding-right:80px;overflow-x:auto;font-family:var(--mono);font-size:.84rem;line-height:1.6;white-space:pre}
+.code.wrap-lines pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.code .ph{color:var(--code-ph);font-weight:600;border-bottom:1px dashed var(--code-ph)}
+.code .dim{color:var(--code-dim)}
+.code .out pre,.code pre.out{color:var(--code-out)}
+.code .lbl{position:absolute;left:14px;top:-9px;background:var(--surface);color:var(--muted);font-size:.7rem;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:0 6px;border-radius:4px;border:1px solid var(--line)}
+.code.labelled pre{padding-top:20px}
+.copy{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.08);color:var(--code-ink);border:1px solid rgba(255,255,255,.18);border-radius:6px;font:600 .75rem var(--sans);padding:5px 10px;cursor:pointer}
+.copy:hover{background:rgba(255,255,255,.16)}
+.copy:focus-visible{outline:2px solid var(--code-ph);outline-offset:2px}
+.copy[data-ok="1"]{background:var(--brand);border-color:var(--brand);color:var(--brand-on)}
+.legend{font-size:.85rem;color:var(--muted)}
+.legend .ph{background:var(--code-bg);color:var(--code-ph);padding:0 .35em;border-radius:4px;font-family:var(--mono);font-weight:600}
+
+/* done line */
+.done{margin-top:18px;padding-top:14px;border-top:1px dashed var(--line-2);display:flex;gap:12px;align-items:flex-start}
+.done label{display:flex;gap:12px;align-items:flex-start;cursor:pointer;flex:1}
+.done input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--brand);flex:none;cursor:pointer}
+.done .t{font-size:.95rem;color:var(--ink-2)}
+.done .t b{color:var(--ink);font-weight:600}
+.step[data-status="done"]{border-color:var(--brand)}
+.step[data-status="done"] .step-head h2::after{content:"Done";margin-left:10px;font:600 .7rem var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--brand-on);background:var(--brand);padding:2px 7px;border-radius:5px;vertical-align:middle}
+
+/* table */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;max-width:100%}
+table{border-collapse:collapse;width:100%;font-size:.92rem;min-width:600px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font:600 .74rem var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600}
+td code{white-space:normal}
+
+.foot{margin-top:40px;color:var(--muted);font-size:.9rem;max-width:70ch}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}html{scroll-behavior:auto}}
+@media print{
+  body{background:#fff;color:#000;font-size:11pt}
+  .rail,.copy,.done input,.hint{display:none !important}
+  .step{box-shadow:none;break-inside:avoid;border-color:#bbb}
+  .code{background:#f2f2f2;color:#000;border:1px solid #ccc}
+  .code pre{white-space:pre-wrap;overflow-wrap:anywhere;padding-right:16px;color:#000}
+  .code .ph{color:#8a5a00}
+  .code .dim{color:#666}
+  a{color:#000}
+  .grid{display:block}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" role="img" aria-label="Wasooli mark"><rect width="64" height="64" rx="14" fill="#1f6b4e"/><path d="M11.5 22 L20 44 L28.5 27 L37 44 L52.5 16" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><div class="word">Wasooli</div><div class="tag">Know who's paid.</div></div>
+    </div>
+    <h1>Wasooli: how the server was set up, step by step</h1>
+    <p class="lede">Everything you did to put Wasooli on your own free Oracle Cloud server, in the order you did it, with the exact lines to paste. Written on 23 September 2026 from the real setup, including the snags, so you can repeat it on a new VM without help.</p>
+    <div class="facts">
+      <span><b>Time</b> about 30 minutes, plus a few minutes of DNS waiting</span>
+      <span><b>Cost</b> Rs 0 on Oracle Always Free</span>
+      <span><b>From</b> a Windows PC with PowerShell, and your phone</span>
+      <span><b>Result</b> <code>wasooli.duckdns.org</code> for you, <code>pay-up.duckdns.org</code> for subscriber links</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <nav class="rail" aria-label="Steps">
+      <div class="progress"><div class="bar" aria-hidden="true"><i id="bar-fill"></i></div><b id="bar-text">0 / 12</b></div>
+      <ol class="steps" id="step-list">
+        <li data-status="todo" data-for="s0"><a href="#s0"><span class="n"><span>0</span></span>What you need</a></li>
+        <li data-status="todo" data-for="s1"><a href="#s1"><span class="n"><span>1</span></span>Create the Oracle instance</a></li>
+        <li data-status="todo" data-for="s2"><a href="#s2"><span class="n"><span>2</span></span>Copy the public IP</a></li>
+        <li data-status="todo" data-for="s3"><a href="#s3"><span class="n"><span>3</span></span>Open ports 80 and 443</a></li>
+        <li data-status="todo" data-for="s4"><a href="#s4"><span class="n"><span>4</span></span>DuckDNS names</a></li>
+        <li data-status="todo" data-for="s5"><a href="#s5"><span class="n"><span>5</span></span>Connect from Windows</a></li>
+        <li data-status="todo" data-for="s6"><a href="#s6"><span class="n"><span>6</span></span>Run the installer</a></li>
+        <li data-status="todo" data-for="s7"><a href="#s7"><span class="n"><span>7</span></span>First sign-in and home screen</a></li>
+        <li data-status="todo" data-for="s8"><a href="#s8"><span class="n"><span>8</span></span>Settings to fill in</a></li>
+        <li data-status="todo" data-for="s9"><a href="#s9"><span class="n"><span>9</span></span>Send links, read answers</a></li>
+        <li data-status="todo" data-for="s10"><a href="#s10"><span class="n"><span>10</span></span>Keeping it running</a></li>
+        <li data-status="todo" data-for="s11"><a href="#s11"><span class="n"><span>11</span></span>Troubleshooting</a></li>
+      </ol>
+      <p class="hint">Tick each step as you finish. Ticks are saved on this device only.</p>
+    </nav>
+
+    <main class="flow">
+
+      <!-- 0 -->
+      <section class="step" id="s0" data-status="todo">
+        <div class="step-head"><div class="num">0</div><div><h2>What you need</h2><p class="where">Gather these before you start</p></div></div>
+        <div class="step-body">
+          <ul>
+            <li>An <b>Oracle Cloud account</b>, signed in at <a href="https://cloud.oracle.com" target="_blank" rel="noopener">cloud.oracle.com</a>. You already have one; it also runs an older 1 OCPU / 6 GB VM for another project.</li>
+            <li>A <b>DuckDNS account</b>: <a href="https://www.duckdns.org" target="_blank" rel="noopener">duckdns.org</a>, sign in with <b>Google</b>. No card, no email confirmation.</li>
+            <li>An <b>admin passcode</b> you choose: at least 8 characters, 12 or more is better. You will type it once per device, and a device stays signed in for 90 days.</li>
+            <li>A <b>Windows PC</b> with PowerShell (built in) to connect to the server, and your <b>phone</b> for the first sign-in.</li>
+            <li>Optional, for later: a <b>Google AI Studio key</b> (screenshot reading) and a <b>Gmail app password</b> (automatic reminder emails).</li>
+          </ul>
+          <h3>Words you will meet</h3>
+          <p>A <b>VM</b> (instance) is a computer you rent in Oracle's data centre. <b>SSH</b> is the secure way to type commands on it from your PC. <b>DNS</b> turns <code>wasooli.duckdns.org</code> into the VM's address. A <b>security list</b> is Oracle's firewall in front of the VM.</p>
+          <div class="note">Commands in this guide are shown in dark boxes with a <b>Copy</b> button. Parts highlighted in <span class="legend"><span class="ph">yellow</span></span> are placeholders you replace with your own value. Nothing else in a box needs changing.</div>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s0"><span class="t"><b>You're done when</b> you can sign in to Oracle Cloud and DuckDNS, and you have a passcode written down somewhere safe.</span></label></div>
+      </section>
+
+      <!-- 1 -->
+      <section class="step" id="s1" data-status="todo">
+        <div class="step-head"><div class="num">1</div><div><h2>Create the Oracle instance</h2><p class="where">Oracle Cloud console, in a browser (done 22 Sep 2026, about 16:45 PKT)</p></div></div>
+        <div class="step-body">
+          <p>Menu (three lines, top left):</p>
+          <p class="path"><span>Compute</span><span class="sep">›</span><span>Instances</span><span class="sep">›</span><span>Create instance</span></p>
+          <p>Fill the form top to bottom. Leave anything not listed here at its default, including everything under <i>Advanced options</i>.</p>
+          <dl class="field">
+            <dt>Name</dt><dd>wasooli (any name; the VM you built was left as <code>instance-20260922-1643</code>)</dd>
+            <dt>Placement</dt><dd>leave the availability domain Oracle picks</dd>
+            <dt>Image</dt><dd><i>Change image</i> → <b>Canonical Ubuntu</b> → <b>24.04</b>. With the Ampere shape below Oracle uses the <b>aarch64</b> build; "aarch64" or "arm64" next to the image is correct.</dd>
+            <dt>Shape</dt><dd><i>Change shape</i> → <b>Ampere</b> → <b>VM.Standard.A1.Flex</b> → <b>1</b> OCPU, <b>6 GB</b> memory. Look for the "Always Free-eligible" label.</dd>
+            <dt>Networking</dt><dd><b>Create new virtual cloud network</b> (yours became <code>vcn-20260922-1643</code> with subnet <code>subnet-20260922-1643</code>). Keep <b>Assign a public IPv4 address</b> selected.</dd>
+            <dt>SSH keys</dt><dd><b>Generate a key pair for me</b> → <b>Save private key</b>. A file such as <code>ssh-key-2026-09-22.key</code> lands in your Downloads folder. Keep it: it is the only key to the server and Oracle cannot give it to you again.</dd>
+            <dt>Boot volume</dt><dd>default (about 47 GB), free</dd>
+          </dl>
+          <p>Click <b>Create</b>. The instance shows <b>Provisioning</b> for a minute or two, then <b>Running</b>.</p>
+          <div class="note"><b>Always Free allowance.</b> The free Ampere quota is <b>4 OCPUs and 24 GB</b> in total for the whole tenancy, shared by every A1 VM you have. Your other project's VM uses 1 / 6 and Wasooli uses 1 / 6, leaving 2 / 12 spare. Nothing is charged for Always Free resources.</div>
+          <div class="note warn"><b>"Out of capacity" / "Out of host capacity"?</b> Free Ampere servers are popular and a region sometimes has none spare. It is not an account problem. In order: click Create again in 10–30 minutes and again a few hours later; under <i>Placement</i> try another availability domain if your region has more than one; keep the 1 / 6 size (smaller requests succeed more often). You did not hit this on 22 September.</div>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s1"><span class="t"><b>You're done when</b> the instance says <b>Running</b> and the <code>.key</code> file is in your Downloads folder.</span></label></div>
+      </section>
+
+      <!-- 2 -->
+      <section class="step" id="s2" data-status="todo">
+        <div class="step-head"><div class="num">2</div><div><h2>Copy the public IP</h2><p class="where">The instance page</p></div></div>
+        <div class="step-body">
+          <p>On the instance page, under <i>Instance access</i> (or in the <i>Instance information</i> tab), find <b>Public IP address</b> and press <b>Copy</b>. Yours is:</p>
+          <div class="code labelled"><span class="lbl">public IP</span><button class="copy" type="button">Copy</button><pre>141.145.157.7</pre></div>
+          <p>Paste it into a note. You use it in steps 4 and 5. It does not change on a reboot; it only changes if you stop the instance and it was created with an ephemeral address, or if you terminate and recreate the VM.</p>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s2"><span class="t"><b>You're done when</b> the IP is saved in a note you can reach from the PC and the phone.</span></label></div>
+      </section>
+
+      <!-- 3 -->
+      <section class="step" id="s3" data-status="todo">
+        <div class="step-head"><div class="num">3</div><div><h2>Open ports 80 and 443 in Oracle's firewall</h2><p class="where">Oracle Cloud console, starting from the instance page</p></div></div>
+        <div class="step-body">
+          <p>Oracle blocks web traffic to a new VM at the cloud level. You open two doors: <b>80</b> (needed to get the HTTPS certificate) and <b>443</b> (HTTPS itself). Port 22 (SSH) is already open.</p>
+          <p class="path"><span>instance page</span><span class="sep">›</span><span>Attached VNICs</span><span class="sep">›</span><span>subnet link (subnet-20260922-1643)</span><span class="sep">›</span><span>Security Lists</span><span class="sep">›</span><span>Default Security List for vcn-20260922-1643</span><span class="sep">›</span><span>Add Ingress Rules</span></p>
+          <p>Fill the first rule:</p>
+          <dl class="field">
+            <dt>Stateless</dt><dd>leave unticked</dd>
+            <dt>Source type</dt><dd>CIDR</dd>
+            <dt>Source CIDR</dt><dd><code>0.0.0.0/0</code> (anyone on the internet)</dd>
+            <dt>IP protocol</dt><dd>TCP</dd>
+            <dt>Source port range</dt><dd>leave empty</dd>
+            <dt>Destination port range</dt><dd><code>80</code></dd>
+            <dt>Description</dt><dd>HTTP (optional)</dd>
+          </dl>
+          <p>Click <b>+ Another Ingress Rule</b>, repeat exactly with destination port <code>443</code> (description HTTPS), then <b>Add Ingress Rules</b>.</p>
+          <div class="note">There are two firewalls. This one belongs to Oracle's network and only you can open it in the console. The second is inside the VM; the installer in step 6 opens that one itself. If either stays closed the site times out.</div>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s3"><span class="t"><b>You're done when</b> the Default Security List shows ingress rules for TCP <b>22</b>, <b>80</b> and <b>443</b> from 0.0.0.0/0 (plus the ICMP rules Oracle added).</span></label></div>
+      </section>
+
+      <!-- 4 -->
+      <section class="step" id="s4" data-status="todo">
+        <div class="step-head"><div class="num">4</div><div><h2>DuckDNS: two names pointing at the VM</h2><p class="where">duckdns.org, signed in with Google</p></div></div>
+        <div class="step-body">
+          <p>You need two free names on the same IP: one for you to sign in on, one that goes in the links you send to subscribers (so a link never shows where the sign-in page is).</p>
+          <dl class="field">
+            <dt>Admin</dt><dd><code>wasooli.duckdns.org</code></dd>
+            <dt>Links</dt><dd><code>pay-up.duckdns.org</code></dd>
+          </dl>
+          <ol>
+            <li>Under <i>domains</i>, type <code>wasooli</code> and click <b>add domain</b>. Repeat with <code>pay-up</code>.</li>
+            <li><b>Replace the auto-filled IP.</b> DuckDNS fills the <i>current ip</i> box with the address of the computer you are sitting at (your home or office connection), not the VM. Delete it, paste <code>141.145.157.7</code>, and click <b>update ip</b> on each row. This caught you the first time: the name pointed at home and the site did not load until it was changed.</li>
+          </ol>
+          <p>Check from PowerShell on the PC (the replies themselves may time out; only the IP in the first line matters):</p>
+          <div class="code"><button class="copy" type="button">Copy</button><pre>ping wasooli.duckdns.org</pre></div>
+          <div class="code"><button class="copy" type="button">Copy</button><pre>ping pay-up.duckdns.org</pre></div>
+          <p>Or open <a href="https://dnschecker.org" target="_blank" rel="noopener">dnschecker.org</a>, type the name and look for <code>141.145.157.7</code>. DuckDNS is usually live within a minute or two.</p>
+          <div class="note warn"><b>What happened to wasool.duckdns.org.</b> The first install used <code>wasool.duckdns.org</code>. On 23 September you created the two names above and <b>deleted</b> the old one. From that moment the site was unreachable until the installer was re-run with the new names (step 6). If you ever rename again: add the new name first, re-run the installer, then delete the old one.</div>
+          <p>Sign in to DuckDNS once in a while; a name that is never touched can expire after a long time.</p>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s4"><span class="t"><b>You're done when</b> ping or dnschecker shows both names resolving to <code>141.145.157.7</code>.</span></label></div>
+      </section>
+
+      <!-- 5 -->
+      <section class="step" id="s5" data-status="todo">
+        <div class="step-head"><div class="num">5</div><div><h2>Connect from Windows</h2><p class="where">PowerShell on the PC</p></div></div>
+        <div class="step-body">
+          <p>Press <kbd>Win</kbd>+<kbd>X</kbd> and choose <b>Terminal</b> (or <b>Windows PowerShell</b>). The prompt looks like <code>PS C:\Users\Aly Jafferani&gt;</code>. Paste this line and press <kbd>Enter</kbd>. The quotes matter because your Windows user folder has a space in its name:</p>
+          <div class="code wrap-lines labelled"><span class="lbl">PowerShell</span><button class="copy" type="button">Copy</button><pre>ssh -i "$env:USERPROFILE\Downloads\<span class="ph">ssh-key-2026-09-22.key</span>" ubuntu@141.145.157.7</pre></div>
+          <p>Replace the file name only if your key downloaded under a different name (look in Downloads). The user name is always <code>ubuntu</code>.</p>
+          <h3>The fingerprint question</h3>
+          <p>The first time it asks <i>Are you sure you want to continue connecting (yes/no/[fingerprint])?</i> Type <b><code>yes</code></b> in full and press Enter. Typing just <code>y</code> is rejected and asks again.</p>
+          <h3>If it says "UNPROTECTED PRIVATE KEY FILE" / "Permissions are too open"</h3>
+          <p>Windows gives a downloaded file broad permissions and SSH refuses to use it. This happened on your first attempt. Run these two lines, then the ssh line again:</p>
+          <div class="code wrap-lines"><button class="copy" type="button">Copy</button><pre>icacls "$env:USERPROFILE\Downloads\<span class="ph">ssh-key-2026-09-22.key</span>" /inheritance:r</pre></div>
+          <div class="code wrap-lines"><button class="copy" type="button">Copy</button><pre>icacls "$env:USERPROFILE\Downloads\<span class="ph">ssh-key-2026-09-22.key</span>" /grant:r "${env:USERNAME}:R"</pre></div>
+          <h3>What success looks like</h3>
+          <p>A block of Ubuntu welcome text, then a prompt that ends in <code>$</code>:</p>
+          <div class="code labelled"><span class="lbl">you are on the VM when you see this</span><button class="copy" type="button">Copy</button><pre class="out">ubuntu@instance-20260922-1643:~$</pre></div>
+          <div class="note danger"><b>Paste server commands only at the ubuntu prompt.</b> If the connection drops (you saw <code>client_loop: send disconnect: Connection reset</code>) you are back at the <code>PS C:\…&gt;</code> prompt of your own PC. A server command pasted there does something else or fails: the installer's <code>curl</code> line produced an <i>Invoke-WebRequest</i> error because PowerShell has its own <code>curl</code>. Reconnect with the ssh line first, wait for <code>ubuntu@…:~$</code>, then paste.</div>
+          <p>To leave the server later, type <code>exit</code>.</p>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s5"><span class="t"><b>You're done when</b> your PowerShell window shows the <code>ubuntu@instance-…:~$</code> prompt.</span></label></div>
+      </section>
+
+      <!-- 6 -->
+      <section class="step" id="s6" data-status="todo">
+        <div class="step-head"><div class="num">6</div><div><h2>Run the installer</h2><p class="where">At the ubuntu prompt on the VM; 3–5 minutes</p></div></div>
+        <div class="step-body">
+          <p>One line installs everything: Python, git, Caddy (HTTPS), the Wasooli code, the systemd services and timers, the firewall rules, and the settings file. Replace the passcode; keep both domain names as they are:</p>
+          <div class="code wrap-lines labelled"><span class="lbl">on the VM · current command with both names</span><button class="copy" type="button">Copy</button><pre>curl -fsSL https://raw.githubusercontent.com/ssdbank9/SaaS-Payment-Tracker/main/deploy/setup.sh | sudo DOMAIN=wasooli.duckdns.org LINK_DOMAIN=pay-up.duckdns.org ADMIN_PASSCODE='<span class="ph">choose-a-long-passcode</span>' bash</pre></div>
+          <p>Keep the single quotes around the passcode. Avoid a single quote inside it. Nothing is echoed while it runs; you see green <code>==&gt;</code> lines as each part finishes:</p>
+          <div class="code"><button class="copy" type="button">Copy</button><pre class="out">==&gt; Installing packages (python3-venv, git, Caddy)
+==&gt; Fetching Wasooli into /opt/payments-tracker
+==&gt; Writing /etc/payments-tracker.env
+==&gt; Installing systemd units
+==&gt; Configuring Caddy for wasooli.duckdns.org, pay-up.duckdns.org
+==&gt; Opening ports 80 and 443 in iptables
+==&gt; Checking the service
+gunicorn answers on 127.0.0.1:8080: {"app":"wasooli","ok":true,...}
+
+Wasooli is installed.
+
+  Sign in here:   https://wasooli.duckdns.org/x/<span class="ph">Xy7…24 random characters…</span>
+                  Bookmark this. It is the only place the sign-in form exists; the plain
+                  https://wasooli.duckdns.org shows strangers a blank page (also in Settings -&gt; Security).
+  Passcode:       the ADMIN_PASSCODE you set (kept in /etc/payments-tracker.env)
+  Links:          https://pay-up.duckdns.org/c/&lt;token&gt;  (separate address, never shows where you sign in)
+  Data:           /var/lib/payments-tracker (SQLite + receipts; nightly backups in /var/lib/payments-tracker/backups)
+  Updates:        every 5 minutes the VM checks GitHub (main) and restarts on a new commit
+  Emails:         payments-tracker-notify.timer runs daily at 09:00 PKT once SMTP is set in Settings -&gt; Mail
+  Logs:           journalctl -u payments-tracker -f      /      journalctl -u caddy -f</pre></div>
+          <h3>The private sign-in address</h3>
+          <p>The line <b>Sign in here</b> is the only address with a login form. Select it in the terminal, copy it, and bookmark it on the PC and on the phone (send it to yourself by email or WhatsApp). Anyone who only knows <code>wasooli.duckdns.org</code> sees a blank page with the mark and "Nothing to see here." That is by design, not a fault. The address is also shown later in <b>Settings → Security</b>.</p>
+          <h3>Certificate wait</h3>
+          <p>Caddy asks Let's Encrypt for certificates for both names the moment it starts. With DNS already pointing at the VM this takes under a minute. If the installer ends with <i>currently resolves to: nothing yet</i>, DNS has not spread: wait, then run the same line again.</p>
+          <h3>Running it again</h3>
+          <p>The installer is safe to repeat. Every value you leave off the line is kept from the previous run (passcode, secret key, sign-in path, API keys), so:</p>
+          <ul>
+            <li>To change only the passcode: the same line with a new <code>ADMIN_PASSCODE='…'</code>.</li>
+            <li>To change or add a domain: the same line with the new <code>DOMAIN=</code> / <code>LINK_DOMAIN=</code>; the previous admin domain is kept as a redirect unless you add <code>OLD_DOMAIN=</code> (empty) to drop it.</li>
+            <li>To repair after something odd: the same line with nothing but the two domains. It never asks questions when run this way.</li>
+          </ul>
+          <p>The very first install on 22 September used one name only: <code>DOMAIN=wasool.duckdns.org</code>. The re-run on 23 September switched to the two names above.</p>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s6"><span class="t"><b>You're done when</b> the terminal shows "Wasooli is installed." with a <b>Sign in here</b> address, and that address is bookmarked on the PC and the phone.</span></label></div>
+      </section>
+
+      <!-- 7 -->
+      <section class="step" id="s7" data-status="todo">
+        <div class="step-head"><div class="num">7</div><div><h2>First sign-in and Add to home screen</h2><p class="where">Your phone</p></div></div>
+        <div class="step-body">
+          <ol>
+            <li>Open the bookmarked <code>https://wasooli.duckdns.org/x/…</code> address. The padlock shows; the page has the green Wasooli tile and a passcode box.</li>
+            <li>Type the passcode once. The device stays signed in for 90 days (renewed on every visit) and is remembered as a <b>known device</b>, so from now on even the plain <code>wasooli.duckdns.org</code> takes this phone to the sign-in page.</li>
+            <li>A fresh server shows sample users. Replace them with your data: <b>Settings → Your data → Import everything (JSON)</b> with an export from the old copy, or just edit the list.</li>
+            <li><b>Add to home screen.</b> Android Chrome: menu (three dots) → <b>Add to Home screen</b> → Add. iPhone Safari: Share → <b>Add to Home Screen</b>. The icon is the green Wasooli tile, named "Wasooli", and it opens full screen like an app.</li>
+          </ol>
+          <div class="note">Do the same on the PC browser: open the sign-in bookmark, sign in once. If you ever see <b>Too many attempts from this device</b>, that is the per-device lockout (8 wrong passcodes in 15 minutes); wait 15 minutes. It never affects a device that is already signed in.</div>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s7"><span class="t"><b>You're done when</b> the Wasooli icon is on your phone's home screen and opens the user list without asking for the passcode again.</span></label></div>
+      </section>
+
+      <!-- 8 -->
+      <section class="step" id="s8" data-status="todo">
+        <div class="step-head"><div class="num">8</div><div><h2>Settings to fill in on the site</h2><p class="where">Header → Settings; press Save after each block</p></div></div>
+        <div class="step-body">
+          <div class="two">
+            <div class="card"><h3>Packages</h3><p>C at Rs 4,200 monthly is preset. Give <b>C Max</b> its monthly price (it is blank until you do; upgrades from a link use this price) and <b>G</b> its yearly price. Add a package when a new product launches.</p></div>
+            <div class="card"><h3>Billing cycle</h3><p>Starts on day <b>24</b>; reminder day <b>20</b>; reply-by day <b>23</b>; proration basis <b>fixed 30-day month</b>; default rate <b>280</b> PKR per USD. These are already set; check them once.</p></div>
+            <div class="card"><h3>WhatsApp opens in</h3><p>Set to <b>Regular</b> so links do not open WhatsApp Business. If the phone still picks Business: Android Settings → Apps → WhatsApp Business → Open by default → <b>Clear defaults</b>.</p></div>
+            <div class="card"><h3>AI reading (screenshots)</h3><p>Provider <b>Google Gemini</b>. Paste a key from <a href="https://aistudio.google.com" target="_blank" rel="noopener">aistudio.google.com</a>, press <b>Load models</b> (the newest Flash-Lite is preselected), <b>Save</b>. The key stays on the server.</p></div>
+            <div class="card"><h3>Mail (optional)</h3><p>For automatic reminder emails: host <code>smtp.gmail.com</code>, port <code>587</code>, your Gmail address, a Gmail <b>app password</b> (Google account → Security → 2-Step Verification → App passwords), from name Wasooli. Press <b>Send test email to me</b>. The daily job runs at 09:00 PKT.</p></div>
+            <div class="card"><h3>Templates and How to pay</h3><p>The three Queue stage messages (reminder, repeat, final note) and the "How to pay" line are editable. Placeholders such as <code>{name}</code>, <code>{amount}</code>, <code>{link}</code> are filled per user.</p></div>
+          </div>
+          <div class="note"><b>Security block.</b> Settings → Security shows the sign-in address (Copy / Open / <b>Regenerate</b>), <b>Sign out</b> and <b>Sign out everywhere</b> (for a lost phone). The <b>Public base URL</b> field is locked to <code>https://pay-up.duckdns.org</code> because the link domain is set on the server.</div>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s8"><span class="t"><b>You're done when</b> C Max has a price, WhatsApp is set to Regular, and AI reading says "Working (Gemini · gemini-…)".</span></label></div>
+      </section>
+
+      <!-- 9 -->
+      <section class="step" id="s9" data-status="todo">
+        <div class="step-head"><div class="num">9</div><div><h2>Sending links and reading answers</h2><p class="where">Header → Queue, from the 20th of each month</p></div></div>
+        <div class="step-body">
+          <ol>
+            <li>Open <b>Queue</b>. It shows today's stage from the date alone: <b>reminder</b> from the 20th, <b>repeat</b> to anyone silent from the 23rd, and the <b>final note</b> ("your account continues from the 24th") on the 24th.</li>
+            <li>Each row has the finished message with the subscriber's private link on <code>https://pay-up.duckdns.org/c/…</code> and buttons: <b>WhatsApp</b>, <b>Telegram</b> (+ Copy), <b>Email</b>. Tap one, send, and tick <b>Sent</b>.</li>
+            <li>The subscriber's page shows their first name, tier, amount and dates, and three big buttons: <b>Continue</b>, <b>Upgrade to C Max</b> (or Move back to C), <b>Discontinue</b>, plus a note box. Nothing else about the account is visible.</li>
+            <li>Answers appear in the Queue and in the Reminder run / Final notice lists, and are applied once: Continue ticks Confirmed; Upgrade adds a tier change from the next cycle; Discontinue marks the user with a one-tap <b>Confirm cancel</b>.</li>
+          </ol>
+          <p>If a subscriber's link says <i>Link not active</i>, open the Queue once on the site (that stores the link details), then Copy link again and send the fresh one.</p>
+          <div class="note">With Mail set up (step 8), the server emails the day's stage itself at 09:00 PKT to everyone with an email address who has not had it this cycle, and ticks them as sent. WhatsApp and Telegram stay one tap by hand; there is no Meta API involved.</div>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s9"><span class="t"><b>You're done when</b> you have opened one subscriber link on your own phone and seen the three buttons on <code>pay-up.duckdns.org</code>.</span></label></div>
+      </section>
+
+      <!-- 10 -->
+      <section class="step" id="s10" data-status="todo">
+        <div class="step-head"><div class="num">10</div><div><h2>Keeping it running</h2><p class="where">Mostly nothing to do; commands for when you need them (run on the VM, step 5)</p></div></div>
+        <div class="step-body">
+          <h3>Automatic</h3>
+          <ul>
+            <li><b>Updates:</b> every 5 minutes the VM checks GitHub. A change committed to <code>main</code> (for example from Claude Code) is live within 5 minutes; the version badge in the header (v26, v27, …) tells you.</li>
+            <li><b>Backups:</b> every night at <b>03:15</b> a copy of the database is written to <code>/var/lib/payments-tracker/backups/</code> (newest <b>30</b> kept) plus one archive of uploaded receipts.</li>
+            <li><b>Reminder emails:</b> daily at 09:00 PKT, only once Mail is set up.</li>
+            <li><b>Certificates:</b> Caddy renews them itself.</li>
+          </ul>
+          <p>Now and then use <b>Settings → Your data → Export everything (JSON)</b> and keep the file in your cloud drive; it is the copy that is not on the VM.</p>
+          <h3>Check that everything is up</h3>
+          <div class="code"><button class="copy" type="button">Copy</button><pre>sudo systemctl status payments-tracker caddy --no-pager</pre></div>
+          <p>Both should read <code>active (running)</code>. The three timers:</p>
+          <div class="code"><button class="copy" type="button">Copy</button><pre>systemctl list-timers 'payments-tracker*' --no-pager</pre></div>
+          <p>Recent log lines (lockouts show here as <code>login: … locked</code>):</p>
+          <div class="code"><button class="copy" type="button">Copy</button><pre>sudo journalctl -u payments-tracker -n 50 --no-pager</pre></div>
+          <div class="code"><button class="copy" type="button">Copy</button><pre>sudo journalctl -u caddy -n 50 --no-pager</pre></div>
+          <p>Without logging in, any browser can open <code>https://wasooli.duckdns.org/healthz</code>; it answers <code>{"ok": true, "app": "wasooli", "version": "26", …}</code>.</p>
+          <h3>Change the passcode or a domain</h3>
+          <p>Re-run the step 6 line with the new value; everything you leave out is kept:</p>
+          <div class="code wrap-lines"><button class="copy" type="button">Copy</button><pre>curl -fsSL https://raw.githubusercontent.com/ssdbank9/SaaS-Payment-Tracker/main/deploy/setup.sh | sudo ADMIN_PASSCODE='<span class="ph">new-passcode</span>' bash</pre></div>
+          <p>Devices already signed in stay signed in; use <b>Sign out everywhere</b> in Settings → Security if you want them out.</p>
+          <h3>Rotate the sign-in address</h3>
+          <p>Settings → Security → <b>Regenerate</b>. Copy the new address and update the bookmarks on the PC and phone before you sign out anywhere. The new value is kept in the database and wins over the settings file.</p>
+          <h3>Restore a backup</h3>
+          <div class="code wrap-lines"><button class="copy" type="button">Copy</button><pre>ls -1t /var/lib/payments-tracker/backups/</pre></div>
+          <div class="code wrap-lines"><button class="copy" type="button">Copy</button><pre>sudo systemctl stop payments-tracker &amp;&amp; sudo sh -c 'gunzip -c /var/lib/payments-tracker/backups/<span class="ph">tracker-20260923-031500.sqlite3.gz</span> &gt; /var/lib/payments-tracker/tracker.sqlite3' &amp;&amp; sudo chown payments-tracker:payments-tracker /var/lib/payments-tracker/tracker.sqlite3 &amp;&amp; sudo systemctl start payments-tracker</pre></div>
+          <p>Or, without the terminal: Settings → Your data → <b>Import everything (JSON)</b> with an export you kept.</p>
+          <h3>Force an update right now</h3>
+          <div class="code"><button class="copy" type="button">Copy</button><pre>sudo /opt/payments-tracker/deploy/update.sh</pre></div>
+          <h3>If the VM's IP ever changes</h3>
+          <p>Only after a stop/start with an ephemeral address, or a new VM. Sign in to DuckDNS, put the new IP in <b>both</b> rows (<code>wasooli</code> and <code>pay-up</code>), click <b>update ip</b>, then on the VM:</p>
+          <div class="code"><button class="copy" type="button">Copy</button><pre>sudo systemctl restart caddy</pre></div>
+          <p>Update the IP in your ssh line too. On a brand-new VM, repeat steps 3 to 6 and restore a backup or import your JSON export.</p>
+          <h3>Changing the site itself</h3>
+          <p>Open <a href="https://claude.ai/code" target="_blank" rel="noopener">claude.ai/code</a>, pick the repository <code>ssdbank9/SaaS-Payment-Tracker</code>, describe the change in plain words. Claude reads <code>CLAUDE.md</code>, makes and tests the change and commits it; the VM picks it up within 5 minutes. To undo, ask for "revert the last commit". The technical hand-off is <code>docs/HANDOFF.md</code> in the repository.</p>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s10"><span class="t"><b>You're done when</b> the status command shows both services active, the timers list shows three <code>payments-tracker-*</code> timers, and you have one JSON export saved off the VM.</span></label></div>
+      </section>
+
+      <!-- 11 -->
+      <section class="step" id="s11" data-status="todo">
+        <div class="step-head"><div class="num">11</div><div><h2>Troubleshooting</h2><p class="where">Every snag met so far: what you see → why → what to do</p></div></div>
+        <div class="step-body">
+          <div class="tbl"><table>
+            <thead><tr><th>What you see</th><th>Why</th><th>What to do</th></tr></thead>
+            <tbody>
+              <tr><td><code>UNPROTECTED PRIVATE KEY FILE</code> / <code>Permissions are too open</code> when running ssh</td><td>Windows gave the downloaded key broad permissions and SSH refuses it.</td><td>Run the two <code>icacls</code> lines in step 5, then the ssh line again.</td></tr>
+              <tr><td>The fingerprint question keeps coming back</td><td>You typed <code>y</code>.</td><td>Type <code>yes</code> in full.</td></tr>
+              <tr><td><code>Invoke-WebRequest : A parameter cannot be found…</code> after pasting the installer</td><td>You pasted the <code>curl</code> line into PowerShell on your PC, not on the VM (the ssh session had dropped: <code>client_loop: send disconnect: Connection reset</code>).</td><td>Run the ssh line, wait for <code>ubuntu@…:~$</code>, paste again. The installer runs only on the VM.</td></tr>
+              <tr><td>Site never loads right after DuckDNS setup</td><td>DuckDNS auto-filled your home IP instead of the VM's.</td><td>On duckdns.org set <code>141.145.157.7</code> in each row and click update ip (step 4).</td></tr>
+              <tr><td>Site unreachable after renaming (wasool → wasooli)</td><td>The old DuckDNS name was deleted before the installer knew the new one; Caddy still served the old name.</td><td>Re-run the installer with the new <code>DOMAIN=</code> and <code>LINK_DOMAIN=</code> (step 6). Next time add the new name first, re-run, then delete the old one.</td></tr>
+              <tr><td><code>NET::ERR_CERT_AUTHORITY_INVALID</code> on one network only</td><td>A Fortinet firewall on that network (an office or campus connection) inspects HTTPS and replaces the certificate. The site is fine; the same page works on mobile data.</td><td>Use another network, or ask that network's admin to exclude <code>wasooli.duckdns.org</code> and <code>pay-up.duckdns.org</code>. Do not click through the warning.</td></tr>
+              <tr><td>WhatsApp links open WhatsApp Business</td><td>Android remembered Business as the default handler.</td><td>Settings → WhatsApp opens in → <b>Regular</b>. On the phone: Apps → WhatsApp Business → Open by default → <b>Clear defaults</b>.</td></tr>
+              <tr><td>Plain <code>wasooli.duckdns.org</code> shows a blank page with the mark</td><td>By design: the sign-in form exists only at the private <code>/x/…</code> address.</td><td>Use the bookmark, or Settings → Security on a signed-in device to copy it again.</td></tr>
+              <tr><td><code>Too many attempts from this device. Try again in 15 minutes.</code></td><td>8 wrong passcodes from that IP within 15 minutes.</td><td>Wait 15 minutes. Other devices, and anything already signed in, are not affected. Forgot the passcode: re-run the installer with a new <code>ADMIN_PASSCODE</code>.</td></tr>
+              <tr><td>"Out of capacity" when creating the VM</td><td>No free Ampere hosts in that availability domain right now.</td><td>Retry in 10–30 minutes and again later; try another availability domain; keep 1 OCPU / 6 GB.</td></tr>
+              <tr><td>The site keeps loading, then "took too long to respond"</td><td>Ports 80/443 closed in the Security List, or the instance is stopped.</td><td>Redo step 3 on the subnet the VM uses; check the instance says Running.</td></tr>
+              <tr><td>"Your connection is not private" on every network</td><td>DNS did not point at the VM when Caddy asked for the certificate.</td><td>Check step 4; then <code>sudo systemctl restart caddy</code> or re-run the installer.</td></tr>
+              <tr><td>Screenshot reading says it is not set up</td><td>No AI key on the server.</td><td>Settings → AI reading → Google Gemini → paste key → Load models → Save (step 8).</td></tr>
+              <tr><td>No reminder emails arrive</td><td>Mail not configured, or the app password is wrong.</td><td>Settings → Mail → Send test email to me. Then <code>sudo journalctl -u payments-tracker-notify -n 30 --no-pager</code>.</td></tr>
+              <tr><td>Installer says "the service is not answering yet"</td><td>Wasooli did not start; usually a one-off.</td><td><code>sudo journalctl -u payments-tracker -n 50 --no-pager</code>, read the last lines, re-run the installer.</td></tr>
+            </tbody>
+          </table></div>
+          <p>If none of this fits, copy the exact message on screen and the last 50 log lines (step 10) and ask with those; they say what is wrong.</p>
+        </div>
+        <div class="done"><label><input type="checkbox" data-step="s11"><span class="t"><b>You're done when</b> Wasooli opens from your phone with your real data while the PC is off, and a subscriber link opens on <code>pay-up.duckdns.org</code>.</span></label></div>
+      </section>
+
+      <p class="foot">Based on what was actually done on 22–23 September 2026 and on <code>deploy/setup.sh</code>, <code>README.md</code> and <code>docs/HANDOFF.md</code> in the SaaS-Payment-Tracker repository. Oracle Cloud and DuckDNS screen names are as of September 2026 and may move slightly. Print this page or keep the HTML file with your exports.</p>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  var KEY='wasooli-setup-runbook-done';
+  var boxes=document.querySelectorAll('input[data-step]');
+  var total=boxes.length;
+  var fill=document.getElementById('bar-fill'), text=document.getElementById('bar-text');
+  function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){return {};}}
+  function save(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+  function apply(){
+    var done=0, firstTodo=null;
+    boxes.forEach(function(b){
+      var id=b.dataset.step, st=b.checked?'done':'todo';
+      if(b.checked)done++;
+      var sec=document.getElementById(id); if(sec)sec.dataset.status=st;
+      var li=document.querySelector('.steps li[data-for="'+id+'"]'); if(li){li.dataset.status=st; li.classList.remove('current'); if(!b.checked&&!firstTodo)firstTodo=li;}
+    });
+    if(firstTodo)firstTodo.classList.add('current');
+    fill.style.width=(done/total*100)+'%';
+    text.textContent=done+' / '+total;
+  }
+  var saved=load();
+  boxes.forEach(function(b){ b.checked=!!saved[b.dataset.step]; b.addEventListener('change',function(){ var o=load(); o[b.dataset.step]=b.checked; save(o); apply(); }); });
+  apply();
+
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var pre=btn.parentNode.querySelector('pre'); if(!pre)return;
+      var txt=pre.textContent;
+      function ok(){btn.textContent='Copied';btn.dataset.ok='1';setTimeout(function(){btn.textContent='Copy';delete btn.dataset.ok;},1600);}
+      function fallback(){var r=document.createRange();r.selectNodeContents(pre);var s=window.getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy');ok();}catch(e){}}
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(ok,fallback);}
+      else fallback();
+    });
+  });
+})();
+</script>
+</body>
+</html>

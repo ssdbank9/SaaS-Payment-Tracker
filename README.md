@@ -17,6 +17,8 @@ Opening `index.html` directly in a browser also runs the app, but with per-devic
 - `deploy/` - `setup.sh` one-command installer, `update.sh` auto-deploy, `backup.sh`, and the systemd units (service, update, backup and notify timers).
 - `assets/` - the brand: `logo.svg` (mark + wordmark), `mark.svg`, the PNG icons (32, 180, 192, 512 and a 512 maskable) and `manifest.webmanifest`, served by Flask at `/assets/<file>` and `/manifest.webmanifest`.
 - `CHANGELOG.md` - version history.
+- `docs/HANDOFF.md` - the hand-off: current state, architecture, data model, decisions log, operations runbook, security model, known gaps, how to continue in Claude Code.
+- `docs/setup-runbook.html` - the owner's step-by-step of how the server was set up (Oracle VM, ports, DuckDNS, SSH from Windows, installer, settings, keeping it running, troubleshooting); open it in a browser, it prints.
 
 ## Brand
 
@@ -43,6 +45,9 @@ a new report, a fix):
    tests it and commits it to `main`.
 3. Wait up to 5 minutes. The VM checks GitHub every 5 minutes and updates itself; the version badge in the
    header (v26, v27, ...) tells you the new copy is live. Reload the page once.
+
+**Where the history is:** `docs/HANDOFF.md` records every decision, the data model and the operations runbook;
+`docs/setup-runbook.html` is the step-by-step of how the VM was built. Read both before a big change.
 
 **Undo a change:** ask Claude to "revert the last commit" (or, on GitHub, open the commit and press *Revert*).
 The VM picks up the revert the same way, within 5 minutes. Nothing about your data changes when code changes.

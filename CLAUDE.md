@@ -23,6 +23,9 @@ and the same `index.html` is also published as a claude.ai artifact and works br
   (auto-pull every 5 minutes), `backup.sh` (nightly SQLite backup), `systemd/` (units and timers).
 - `assets/` — logo, mark, PNG icons, `manifest.webmanifest`, served by Flask at `/assets/<file>`.
 - `README.md` (owner-facing), `CHANGELOG.md` (one entry per version, newest first).
+- `docs/HANDOFF.md` — the hand-off: current state (VM, domains, paths), decisions log with the reasons, operations
+  runbook, security model, known gaps; read it at the start of a session. `docs/setup-runbook.html` — the owner's
+  step-by-step of how the server was built (a self-contained page; update it when a setup step changes).
 
 ## Deploy pipeline (do not fight it)
 - Push to `main` on GitHub. `payments-tracker-update.timer` runs `deploy/update.sh` on the VM every 5 minutes:
