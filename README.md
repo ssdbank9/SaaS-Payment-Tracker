@@ -32,6 +32,31 @@ Opening `index.html` directly in a browser also runs the app, but with per-devic
 2. Open it locally in a browser to test.
 3. Republish the artifact.
 
+## Making changes
+
+You do not need to edit code yourself. To change anything about the site (a new feature, a wording change,
+a new report, a fix):
+
+1. Open **claude.ai/code** and pick this repository (`ssdbank9/SaaS-Payment-Tracker`).
+2. Describe the change in plain words, for example "add a column for the payment method" or
+   "the Analytics tab should also show costs per user". Claude reads `CLAUDE.md`, makes the change,
+   tests it and commits it to `main`.
+3. Wait up to 5 minutes. The VM checks GitHub every 5 minutes and updates itself; the version badge in the
+   header (v26, v27, ...) tells you the new copy is live. Reload the page once.
+
+**Undo a change:** ask Claude to "revert the last commit" (or, on GitHub, open the commit and press *Revert*).
+The VM picks up the revert the same way, within 5 minutes. Nothing about your data changes when code changes.
+
+**Where your data is:** everything you typed lives on the VM in `/var/lib/payments-tracker/tracker.sqlite3`,
+never in the repository. Nightly backups are in `/var/lib/payments-tracker/backups/` (the newest 30 kept), and
+**Export everything (JSON)** in the app gives you a copy you can keep anywhere. Secrets (passcode, keys) live
+only in `/etc/payments-tracker.env` on the VM.
+
+**Analytics (v26):** the header's **Analytics** button opens a tab with active/cancelled users, monthly recurring
+revenue, collected, costs and net all time, users and money per package, collected vs costs by month with a net
+line, cumulative money made vs cost, and what is outstanding by package and by user. It follows the PKR/USD toggle
+and the default exchange rate, and its totals always equal the Summary tiles.
+
 ## Self-hosting on Oracle Cloud (free)
 
 The same `index.html` runs on your own VM with a small Python server, so it works on your phone even when your desktop is off, keeps the data in SQLite on the VM, and adds one-tap **confirmation links** for your users.

@@ -22,6 +22,7 @@
   --accent:#1f6b4e; --accent-ink:#175a41; --accent-soft:#dcefe8; --accent-line:#8fc9b5; --accent-tint:#f4f9f6;
   --shadow:0 6px 18px rgba(22,26,23,.10), 0 1px 3px rgba(22,26,23,.08);
   --series-2:#eb6834;
+  --chart-1:#159a63; --chart-1-soft:#a8dcc4; --chart-2:#c9682f;
   --good:#166534; --good-bg:#e1f3e6;
   --warn:#8a5a0d; --warn-bg:#faefd6;
   --crit:#a12b22; --crit-bg:#fae3df;
@@ -40,6 +41,7 @@
     --accent:#3fb391; --accent-ink:#78d4b8; --accent-soft:#1a3a31; --accent-line:#2b6e5a; --accent-tint:#151f1a;
     --shadow:0 6px 18px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.4);
     --series-2:#d95926;
+    --chart-1:#3aa885; --chart-1-soft:#2f6e5a; --chart-2:#c97f4f;
     --good:#7fd89a; --good-bg:#17311f;
     --warn:#e3b95e; --warn-bg:#3a2d12;
     --crit:#f0958a; --crit-bg:#3d1f1b;
@@ -56,6 +58,7 @@
   --accent:#3fb391; --accent-ink:#78d4b8; --accent-soft:#1a3a31; --accent-line:#2b6e5a; --accent-tint:#151f1a;
   --shadow:0 6px 18px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.4);
   --series-2:#d95926;
+  --chart-1:#3aa885; --chart-1-soft:#2f6e5a; --chart-2:#c97f4f;
   --good:#7fd89a; --good-bg:#17311f;
   --warn:#e3b95e; --warn-bg:#3a2d12;
   --crit:#f0958a; --crit-bg:#3d1f1b;
@@ -498,6 +501,32 @@ table.costs td.cat{color:var(--ink-2)}
 .foot{margin-top:14px;font-size:12px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;z-index:10;max-width:calc(100vw - 32px);box-shadow:0 4px 16px rgba(0,0,0,.2)}
 
+/* v26: Analytics tab. Chart colours are their own tokens (validated for light and dark): --chart-1 the series green, --chart-1-soft its lighter step for cancelled users, --chart-2 a muted warm for costs. */
+.an-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.an-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:4px}
+#analyticsPanel .tile .sub{border:0;border-radius:0;padding:0;background:none;box-shadow:none;overflow:visible;display:block}
+.an-sec{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.an-sec .bh{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.an-sec .chart-box{margin:6px 0 8px}
+.an-sec table.brk td .s{display:block;font-size:11px;color:var(--muted)}
+.an-sec table.brk td.pos{color:var(--good)} .an-sec table.brk td.neg{color:var(--crit)}
+.an-lists{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.an-lists h3.small{font-size:12px;font-weight:600;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em}
+.chart-legend i.ln{height:2px;width:14px;border-radius:1px;vertical-align:3px;background:var(--ink-2)}
+.chart-box .bar1a{fill:var(--chart-1)} .chart-box .bar1c{fill:var(--chart-1-soft)} .chart-box .bar2a{fill:var(--chart-2)}
+.chart-box .ln1,.chart-box .ln2,.chart-box .ln-net{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart-box .ln1{stroke:var(--chart-1)} .chart-box .ln2{stroke:var(--chart-2)} .chart-box .ln-net{stroke:var(--ink-2)}
+.chart-box .ar1{fill:var(--chart-1);opacity:.1} .chart-box .ar2{fill:var(--chart-2);opacity:.1}
+.chart-box .dot{stroke:var(--surface);stroke-width:2} .chart-box .dot1{fill:var(--chart-1)} .chart-box .dot2{fill:var(--chart-2)} .chart-box .dotn{fill:var(--ink-2)}
+.chart-box .xhair{stroke:var(--line-strong);stroke-width:1} .chart-box .gapline{stroke:var(--ink-2);stroke-width:1}
+.chart-box .ylab{fill:var(--ink);font-size:12px;font-family:var(--sans)}
+.chart-box .dlab{fill:var(--ink-2);font-size:11px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.chart-box .dlab.strong{fill:var(--ink);font-weight:600;font-family:var(--sans)}
+.chart-box .hit{cursor:default;outline:none} .chart-box .hit:hover{fill:var(--ink);fill-opacity:.05} .chart-box .hit:focus-visible{fill:var(--accent);fill-opacity:.12}
+.tip.multi{white-space:pre;text-align:left;line-height:1.45}
+@media (max-width:1000px){ .an-tiles{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (max-width:640px){ .an-tiles{grid-template-columns:1fr 1fr} .an-lists{grid-template-columns:1fr} }
+
 @media (max-width:1000px){ .tiles{grid-template-columns:repeat(3,minmax(0,1fr))} }
 @media (max-width:640px){ .tiles{grid-template-columns:1fr 1fr} .tile .val{font-size:18px} .wrap{padding-top:14px} }
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
@@ -517,8 +546,9 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v25</span>
+      <span class="small muted num" id="app-ver" title="App version">v26</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
+      <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
       <button class="btn" type="button" id="btn-signout" data-act="logout" title="Sign out on this device" hidden>Sign out</button>
     </div>
@@ -531,6 +561,11 @@ table.costs td.cat{color:var(--ink-2)}
   <section class="panel" id="remindRun" hidden aria-label="Reminder run">
     <div class="panel-head"><div><div class="rr-tabs"><h3 id="rr-title">Queue</h3><span class="seg" id="rr-tabs"><button type="button" data-tab="queue" aria-pressed="true">Queue</button><button type="button" data-tab="run" aria-pressed="false">Reminder run</button><button type="button" data-tab="final" aria-pressed="false">Final notice</button></span></div><p class="small muted" id="rr-sub"></p></div><button class="link" type="button" id="rr-close">Close</button></div>
     <div id="rr-body"></div>
+  </section>
+  <!-- v26: Analytics -->
+  <section class="panel" id="analyticsPanel" hidden aria-label="Analytics">
+    <div class="panel-head an-head"><div><h3>Analytics</h3><p class="small muted" id="an-sub"></p></div><div class="chart-legend"><span class="seg" id="an-cur" aria-label="Currency"><button type="button" data-cur="PKR" aria-pressed="true">PKR</button><button type="button" data-cur="USD" aria-pressed="false">USD</button></span><button class="link" type="button" id="an-close">Close</button></div></div>
+    <div id="an-body"></div>
   </section>
 
 
@@ -1427,7 +1462,7 @@ function applyBranding(){const name=appName();const tag=tagline();const custom=n
   const big=markPNG(512,14,letter),mask=markPNG(512,0,letter);const icons=[{src:svg,sizes:'any',type:'image/svg+xml',purpose:'any'}];if(big)icons.push({src:big,sizes:'512x512',type:'image/png',purpose:'any'});if(mask)icons.push({src:mask,sizes:'512x512',type:'image/png',purpose:'maskable'});if(png)icons.push({src:png,sizes:'180x180',type:'image/png'});
   const man={name:name,short_name:name.length>12?name.split(/\s+/)[0].slice(0,12):name,description:tag,start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f3f5f3',theme_color:BRAND_GREEN,icons:icons};
   if(lm)lm.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));}
-function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);$('#s-dim').checked=dimOn();fillQueueSettings();}}
+function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if(!$('#analyticsPanel').hidden)renderAnalytics();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);$('#s-dim').checked=dimOn();fillQueueSettings();}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
   el.textContent=state.mode==='shared'?(state.backend==='api'?'Saved on your server, shared across your devices':'Shared with your team, saves live'):state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
@@ -1579,9 +1614,9 @@ function paymentShares(s,sa){const out=[];const pays=(s.payments||[]).slice().so
     if(rest>1e-9)acc[lastPid]=(acc[lastPid]||0)+rest;
     out.push({p,parts:Object.keys(acc).map(k=>({pid:k,frac:acc[k]/v}))});}
   return out;}
-function renderBreakdown(rb){
-  const today=todayISO();const box=$('#pkgBreak');const ids=Object.keys(state.users);const costIds=Object.keys(state.costs);
-  if(!ids.length&&!costIds.length){box.hidden=true;return;}
+/* v26: the By product figures as data (rows keyed by package id, __none, __one, __shared; totals that match the tiles), shared with the Analytics tab */
+function breakdownRows(rb){
+  const today=todayISO();const ids=Object.keys(state.users);const costIds=Object.keys(state.costs);
   const rows={};const mk=(key,label)=>rows[key]||(rows[key]={key,label,users:new Set(),col:newSum(),cost:newSum(),out:newSum(),npay:0,ncost:0});
   for(const p of packages())mk(p.id,p.name);
   for(const id of ids){const u=state.users[id];const a=analyze(u,today);
@@ -1593,11 +1628,16 @@ function renderBreakdown(rb){
   const shared=mk('__shared','Shared / unassigned');
   for(const id of costIds){const c=state.costs[id];if(!inRange(c.date,rb))continue;const pid=costPkgId(c);const r=pid?mk(pid,pkgName(pid)):shared;sumAdd(r.cost,costTotal(c),c.currency,c.rate);r.ncost++;}
   const order=[...packages().map(p=>p.id),'__none','__one','__shared'].filter(k=>rows[k]&&(rows[k].users.size||rows[k].col.n||rows[k].out.n||rows[k].cost.n||!k.startsWith('__')));
+  let tCol=newSum(),tCost=newSum(),tOut=newSum();const tUsers=new Set();for(const k of Object.keys(rows)){const r=rows[k];tCol=sumMerge(tCol,r.col);tCost=sumMerge(tCost,r.cost);tOut=sumMerge(tOut,r.out);r.users.forEach(x=>tUsers.add(x));}
+  const tNet=sumMerge(tCol,tCost,-1);tNet.n=tCol.n+tCost.n;
+  return {rows,order,tCol,tCost,tOut,tNet,tUsers};
+}
+function renderBreakdown(rb){
+  const box=$('#pkgBreak');if(!Object.keys(state.users).length&&!Object.keys(state.costs).length){box.hidden=true;return;}
+  const {rows,order,tCol,tCost,tOut,tNet,tUsers}=breakdownRows(rb);
   const cell=(S,cls)=>{if(!S.n)return `<td class="r num muted${cls?' '+cls:''}">—</td>`;const x=sumParts(S,'PKR');return `<td class="r num${cls?' '+cls:''}">${esc(x.p)}${x.s?`<span class="s">${esc(x.s)}</span>`:''}</td>`;};
   const netOf=r=>{const n=sumMerge(r.col,r.cost,-1);n.n=r.col.n+r.cost.n;return n;};
   const netCls=n=>!n.n?'':(n.missing?n.pkr+n.usd:n.pkr)<0?'neg':(n.missing?n.pkr+n.usd:n.pkr)>0?'pos':'';
-  let tCol=newSum(),tCost=newSum(),tOut=newSum();const tUsers=new Set();for(const k of Object.keys(rows)){const r=rows[k];tCol=sumMerge(tCol,r.col);tCost=sumMerge(tCost,r.cost);tOut=sumMerge(tOut,r.out);r.users.forEach(x=>tUsers.add(x));}
-  const tNet=sumMerge(tCol,tCost,-1);tNet.n=tCol.n+tCost.n;
   box.hidden=false;
   box.innerHTML=`<div class="bh"><h2>By product</h2><span class="small muted">per package: users · collected in ${esc(rb.label)} (each payment counted for the tier of the periods it covers) · costs tagged to it · net · balance outstanding</span></div><div class="table-wrap" style="border:0"><table class="brk"><thead><tr><th>Product</th><th class="r">Users</th><th class="r">Collected</th><th class="r">Costs</th><th class="r">Net</th><th class="r">Outstanding</th></tr></thead><tbody>${order.map(k=>{const r=rows[k];const n=netOf(r);return `<tr${k==='__shared'?' class="shared"':''}><td>${k==='__none'?'<span class="pill warnp">Package not set</span>':k==='__shared'?`${esc(r.label)} <span class="small muted">(costs without a product)</span>`:esc(r.label)}</td><td class="r num">${k==='__shared'?'<span class="muted">—</span>':r.users.size}</td>${cell(r.col)}${cell(r.cost)}${cell(n,netCls(n))}${cell(r.out)}</tr>`;}).join('')}</tbody><tfoot><tr><td>Total <span class="small muted">(matches the tiles)</span></td><td class="r num">${tUsers.size}</td>${cell(tCol)}${cell(tCost)}${cell(tNet,netCls(tNet))}${cell(tOut)}</tr></tfoot></table></div><p class="small muted" style="margin:6px 0 8px">Tag a cost to a product when adding or editing it (Costs → Product). Costs recorded before this existed stay under Shared until you edit them.</p>`;
 }
@@ -1624,14 +1664,17 @@ function renderTiles(){
 }
 function niceStep(max){if(max<=0)return 1000;const raw=max/4;const mag=Math.pow(10,Math.floor(Math.log10(raw)));const n=raw/mag;const s=n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10;return s*mag;}
 const kfmt=v=>v>=1000?(v/1000).toLocaleString(undefined,{maximumFractionDigits:1})+'k':v.toLocaleString(undefined,{maximumFractionDigits:0});
-function renderChart(){
-  const box=$('#chart');const today=todayISO();const ck=monthKey(today);const cur=ui.chartCur;
-  document.querySelectorAll('#chart-cur button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cur===cur)));
-  const ci=(+ck.slice(0,4))*12+(+ck.slice(5,7)-1);
+/* v26: the last 12 calendar months with collected and costs per month in one currency; shared by the Summary chart and the Analytics tab so both show the same figures */
+function monthlySeries(cur){const today=todayISO();const ck=monthKey(today);const ci=(+ck.slice(0,4))*12+(+ck.slice(5,7)-1);
   const months=Array.from({length:12},(_,i)=>{const t=ci-11+i;return Math.floor(t/12)+'-'+pad((t%12)+1);});
   const col=months.map(()=>0),cost=months.map(()=>0);let skipped=0;
   for(const p of allPayments()){const i=months.indexOf(monthKey(p.date));if(i<0)continue;const v=toCur(p.amount,p.currency,cur,p.rate);if(v==null)skipped++;else col[i]+=v;}
   for(const id in state.costs){const c=state.costs[id];const i=months.indexOf(monthKey(c.date));if(i<0)continue;const v=toCur(costTotal(c),c.currency,cur,c.rate);if(v==null)skipped++;else cost[i]+=v;}
+  return {months,col,cost,skipped,ck};}
+function renderChart(){
+  const box=$('#chart');const today=todayISO();const ck=monthKey(today);const cur=ui.chartCur;
+  document.querySelectorAll('#chart-cur button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cur===cur)));
+  const {months,col,cost,skipped}=monthlySeries(cur);
   $('#chart-note').textContent=`Last 12 months by payment or cost date, in ${cur} equivalents.`+(skipped?` ${skipped} entr${skipped===1?'y':'ies'} in the other currency not shown: set an exchange rate in Settings.`:'');
   const W=Math.max(280,box.clientWidth||560),H=200,pl=56,pr=10,pt=18,pb=26;
   const max=Math.max.apply(null,col.concat(cost,[0]));const step=niceStep(max);const top=Math.max(step,Math.ceil(max/step)*step);
@@ -1650,6 +1693,174 @@ function renderChart(){
   const tip=$('#tip');
   box.querySelectorAll('.hit').forEach(r=>{r.addEventListener('mouseenter',()=>{const i=+r.dataset.i;tip.textContent=`${mLabel(months[i])} · collected ${fmtAmt(col[i],cur)} · costs ${fmtAmt(cost[i],cur)}`;const scale=box.clientWidth/W;tip.style.left=((pl+i*band+band/2)*scale)+'px';tip.style.top=((y(Math.max(col[i],cost[i]))-6)*scale)+'px';tip.hidden=false;});r.addEventListener('mouseleave',()=>{tip.hidden=true;});});
 }
+
+/* ---------- v26: Analytics tab. Every number here is built from the same functions the Summary uses
+   (analyze, allPayments, breakdownRows, monthlySeries), so the tab reconciles with the tiles and the By product table.
+   Charts are inline SVG: thin marks, hairline grid, one tooltip per mark (hover, tap or keyboard focus), a table twin under each. ---------- */
+const ALL_RANGE={from:'0000-00-00',to:'9999-99-99',label:'all time'};
+const anKey=(s,date)=>{const pid=pkgIdAt(s,date);return (pid&&pkgById(pid))?pid:(s.kind==='one-time'?'__one':'__none');};
+const rowLabel=k=>k==='__one'?'One-time items':k==='__none'?'Package not set':k==='__shared'?'Shared / unassigned':pkgName(k);
+function analyticsData(){
+  const today=todayISO();const ids=Object.keys(state.users);const B=breakdownRows(ALL_RANGE);
+  const mrr=newSum();let out=newSum(),activeN=0,cancN=0;const users=[];const pkgMrr={},pkgCanc={};
+  for(const id of ids){const u=state.users[id];const a=analyze(u,today);users.push({id,u,a});out=sumMerge(out,a.balance);
+    if(u.cancel)cancN++;else activeN++;
+    for(const s of u.subscriptions||[]){
+      if(u.cancel){const k=anKey(s,s.end&&s.end<today?s.end:today);(pkgCanc[k]=pkgCanc[k]||new Set()).add(id);continue;}
+      if(s.kind!=='monthly'||s.start>today||(s.end&&s.end<today))continue;
+      const m=effPrice(s,today)/(subCycle(s)==='yearly'?12:1);const k=anKey(s,today);
+      sumAdd(mrr,m,s.currency,null);pkgMrr[k]=pkgMrr[k]||newSum();sumAdd(pkgMrr[k],m,s.currency,null);}}
+  const net=sumMerge(B.tCol,B.tCost,-1);net.n=B.tCol.n+B.tCost.n;
+  const rows=B.order.map(k=>{const r=B.rows[k];const n=sumMerge(r.col,r.cost,-1);n.n=r.col.n+r.cost.n;return {key:k,label:rowLabel(k),active:k==='__shared'?null:r.users.size,cancelled:k==='__shared'?null:(pkgCanc[k]||new Set()).size,mrr:pkgMrr[k]||newSum(),col:r.col,cost:r.cost,net:n,out:r.out};});
+  const owing=users.filter(x=>x.a.balance.n).sort((x,y)=>sortVal(y.a.balance)-sortVal(x.a.balance));
+  return {today,activeN,cancN,mrr,col:B.tCol,cost:B.tCost,net,out,rows,tUsers:B.tUsers.size,owing};
+}
+function cumulativeSeries(cur){
+  const ev=[];let skipped=0;
+  for(const p of allPayments()){const v=toCur(p.amount,p.currency,cur,p.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(p.date),col:v,cost:0});}
+  for(const id in state.costs){const c=state.costs[id];const v=toCur(costTotal(c),c.currency,cur,c.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(c.date),col:0,cost:v});}
+  if(!ev.length)return {months:[],col:[],cost:[],skipped};
+  const idx=k=>(+k.slice(0,4))*12+(+k.slice(5,7)-1);const ck=monthKey(todayISO());
+  const fi=Math.min(idx(ck),...ev.map(e=>idx(e.m))),li=Math.max(idx(ck),...ev.map(e=>idx(e.m)));
+  const months=[];for(let t=fi;t<=li;t++)months.push(Math.floor(t/12)+'-'+pad((t%12)+1));
+  const col=months.map(()=>0),cost=months.map(()=>0);for(const e of ev){const i=idx(e.m)-fi;col[i]+=e.col;cost[i]+=e.cost;}
+  for(let i=1;i<months.length;i++){col[i]+=col[i-1];cost[i]+=cost[i-1];}
+  return {months,col,cost,skipped};
+}
+const chartW=box=>Math.max(280,box.clientWidth||560);
+const cfmt=(v,cur)=>{const a=Math.abs(v);const s=a>=1e6?(a/1e6).toLocaleString(undefined,{maximumFractionDigits:2})+'M':a>=1e4?(a/1e3).toLocaleString(undefined,{maximumFractionDigits:1})+'k':a.toLocaleString(undefined,{maximumFractionDigits:0});return (v<0?'−':'')+(cur==='USD'?'$':'Rs ')+s;};
+const sgn=(v,cur)=>(v>0?'+':'')+cfmt(v,cur);
+/* a bar with its data end rounded (4px) and its baseline end square; dir: 'up' (column) or 'right' (horizontal bar) */
+function barPath(x,y,w,h,dir,cls){if(w<=0||h<=0)return '';const r=Math.min(4,dir==='up'?Math.min(h/2,w/2):Math.min(w/2,h/2));const f=n=>Number(n).toFixed(1);
+  if(dir==='up')return `<path class="${cls}" d="M${f(x)},${f(y+r)} a${r},${r} 0 0 1 ${r},-${r} h${f(w-2*r)} a${r},${r} 0 0 1 ${r},${r} V${f(y+h)} H${f(x)} Z"/>`;
+  return `<path class="${cls}" d="M${f(x)},${f(y)} h${f(w-r)} a${r},${r} 0 0 1 ${r},${r} v${f(h-2*r)} a${r},${r} 0 0 1 -${r},${r} H${f(x)} Z"/>`;}
+/* one tooltip per box; fn(i) -> {text, x, y, hx?} in SVG units (hx moves the crosshair when the chart has one). Hover, tap and keyboard focus all show it. */
+function wireTips(box,W,fn){const tip=box.querySelector('.tip'),xh=box.querySelector('.xhair');if(!tip)return;
+  const hide=()=>{tip.hidden=true;if(xh)xh.setAttribute('visibility','hidden');};
+  const show=el=>{const t=fn(+el.dataset.i);if(!t){hide();return;}tip.textContent=t.text;tip.classList.toggle('multi',t.text.includes('\n'));const sc=box.clientWidth/W;tip.hidden=false;
+    const half=tip.offsetWidth/2,bw=box.clientWidth;const left=Math.min(Math.max(t.x*sc,half),Math.max(half,bw-half));tip.style.left=left+'px';tip.style.top=Math.max(tip.offsetHeight,t.y*sc)+'px';
+    if(xh){if(t.hx!=null){xh.setAttribute('x1',t.hx);xh.setAttribute('x2',t.hx);xh.setAttribute('visibility','visible');}else xh.setAttribute('visibility','hidden');}};
+  box.querySelectorAll('.hit').forEach(el=>{el.addEventListener('pointerenter',()=>show(el));el.addEventListener('pointerleave',hide);el.addEventListener('focus',()=>show(el));el.addEventListener('blur',hide);});}
+const xLabel=(m,i,ck)=>{const p=m.split('-');return (+p[1]===1||i===0)?MONTHS[+p[1]-1]+' ’'+p[0].slice(2):MONTHS[+p[1]-1];};
+/* Users per package: one horizontal bar per package, active users in the series green and cancelled users as a lighter segment after a 2px gap */
+function usersPkgSVG(box,rows){
+  if(!rows.length){box.innerHTML='<p class="small muted" style="padding:8px 0">No users yet.</p>';return;}
+  const W=chartW(box);const labW=Math.min(150,Math.max(72,Math.round(W*0.26)));const pl=labW+10,pr=Math.min(120,Math.round(W*0.3)),rowH=32,pt=6,pb=22;const H=pt+rows.length*rowH+pb;
+  const max=Math.max(1,...rows.map(r=>r.active+r.cancelled));const step=max<=6?1:max<=12?2:max<=30?5:niceStep(max);const top=Math.ceil(max/step)*step;const innerW=W-pl-pr;const x=v=>pl+(v/top)*innerW;const bh=18;
+  const maxCh=Math.max(6,Math.floor(labW/6.6));const trunc=t=>t.length>maxCh?t.slice(0,maxCh-1)+'…':t;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Active and cancelled users per package">`;
+  for(let t=0;t<=top;t+=step){const xx=x(t).toFixed(1);svg+=`<line class="grid-line" x1="${xx}" x2="${xx}" y1="${pt}" y2="${H-pb}"/><text class="tick" x="${xx}" y="${H-7}" text-anchor="middle">${t}</text>`;}
+  svg+=`<line class="baseline" x1="${pl}" x2="${pl}" y1="${pt}" y2="${H-pb}"/>`;
+  rows.forEach((r,i)=>{const y=pt+i*rowH+(rowH-bh)/2;const ya=(y+bh/2+4).toFixed(1);
+    svg+=`<text class="ylab" x="${pl-8}" y="${ya}" text-anchor="end">${esc(trunc(r.label))}</text>`;
+    let cx=pl;const wa=x(r.active)-pl,wc=x(r.cancelled)-pl;
+    if(r.active>0){if(r.cancelled>0)svg+=`<rect class="bar1a" x="${cx}" y="${y}" width="${Math.max(1,wa-2).toFixed(1)}" height="${bh}"/>`;else svg+=barPath(cx,y,wa,bh,'right','bar1a');cx+=wa;}
+    if(r.cancelled>0){svg+=barPath(cx,y,wc,bh,'right','bar1c');cx+=wc;}
+    svg+=`<text class="dlab" x="${(cx+6).toFixed(1)}" y="${ya}">${r.active} active${r.cancelled?` · ${r.cancelled} cancelled`:''}</text>`;
+    svg+=`<rect class="hit" tabindex="0" data-i="${i}" x="0" y="${pt+i*rowH}" width="${W}" height="${rowH}"><title>${esc(r.label)}: ${r.active} active, ${r.cancelled} cancelled</title></rect>`;});
+  svg+='</svg><div class="tip" hidden></div>';box.innerHTML=svg;
+  wireTips(box,W,i=>{const r=rows[i];return {text:`${r.label}\n${r.active} active user${r.active===1?'':'s'}\n${r.cancelled} cancelled`,x:(pl+x(r.active+r.cancelled))/2,y:pt+i*rowH+2};});
+}
+/* Collected vs costs by month with the net line: the same 12 months and numbers as the Summary chart (monthlySeries), plus net = collected - costs */
+function monthlyNetSVG(box,S,cur){
+  const {months,col,cost,ck}=S;const net=months.map((m,i)=>col[i]-cost[i]);
+  const W=chartW(box),H=220,pl=56,pr=64,pt=18,pb=26;
+  const hi=Math.max(...col,...cost,...net,0),lo=Math.min(...net,0);const step=niceStep(Math.max(hi,-lo));const top=Math.max(step,Math.ceil(hi/step)*step),bot=lo<0?-Math.ceil(-lo/step)*step:0;
+  const innerH=H-pt-pb,innerW=W-pl-pr,band=innerW/12,bw=Math.min(14,(band-10)/2);const y=v=>pt+innerH*(top-v)/(top-bot);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Collected, costs and net per month for the last 12 months">`;
+  for(let t=bot;t<=top+1e-9;t+=step){const yy=y(t).toFixed(1);svg+=`<line class="grid-line" x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}"/><text class="tick" x="${pl-6}" y="${(+yy+3.5).toFixed(1)}" text-anchor="end">${t<0?'−':''}${kfmt(Math.abs(t))}</text>`;}
+  svg+=`<line class="baseline" x1="${pl}" x2="${W-pr}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}"/>`;
+  const every=band<30?2:1;const pts=[];
+  months.forEach((m,i)=>{const cx=pl+i*band+band/2;
+    if(col[i]>0)svg+=barPath(cx-bw-1,y(col[i]),bw,Math.max(1,y(0)-y(col[i])),'up','bar1a');
+    if(cost[i]>0)svg+=barPath(cx+1,y(cost[i]),bw,Math.max(1,y(0)-y(cost[i])),'up','bar2a');
+    pts.push([cx,y(net[i])]);
+    if(i%every===(11%every))svg+=`<text class="xlab${m===ck?' cur':''}" x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle">${xLabel(m,i,ck)}</text>`;});
+  let first=months.findIndex((m,i)=>col[i]||cost[i]);if(first<0)first=11;
+  svg+=`<polyline class="ln-net" points="${pts.slice(first).map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}"/>`;
+  pts.forEach((p,i)=>{if(i>=first&&(col[i]||cost[i]||i===11))svg+=`<circle class="dot dotn" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4"/>`;});
+  const last=pts[11];svg+=`<text class="dlab strong" x="${(last[0]+bw+7).toFixed(1)}" y="${(last[1]+4).toFixed(1)}">${esc(sgn(net[11],cur))}</text>`;
+  months.forEach((m,i)=>{svg+=`<rect class="hit" tabindex="0" data-i="${i}" x="${(pl+i*band).toFixed(1)}" y="${pt}" width="${band.toFixed(1)}" height="${innerH}"><title>${mLabel(m)}: collected ${esc(fmtAmt(col[i],cur))}, costs ${esc(fmtAmt(cost[i],cur))}, net ${esc(fmtAmt(net[i],cur))}</title></rect>`;});
+  svg+='</svg><div class="tip" hidden></div>';box.innerHTML=svg;
+  wireTips(box,W,i=>({text:`${mLabel(months[i])}\n${fmtAmt(col[i],cur)} collected\n${fmtAmt(cost[i],cur)} costs\n${fmtAmt(net[i],cur)} net`,x:pl+i*band+band/2,y:Math.min(y(Math.max(col[i],cost[i],net[i]))-8,y(0)-8)}));
+  return net;
+}
+/* Cumulative money made vs cost since the first record: two 2px lines with a 10% wash, end markers, the gap between the two ends labelled */
+function cumulativeSVG(box,C,cur){
+  const {months,col,cost}=C;const n=months.length;
+  if(!n){box.innerHTML='<p class="small muted" style="padding:8px 0">No payments or costs recorded yet.</p>';return null;}
+  const W=chartW(box),H=230,pl=56,pr=Math.min(104,Math.round(W*0.24)),pt=18,pb=26;
+  const hi=Math.max(...col,...cost,0);const step=niceStep(hi);const top=Math.max(step,Math.ceil(hi/step)*step);
+  const innerH=H-pt-pb,innerW=W-pl-pr;const x=i=>n===1?pl+innerW/2:pl+innerW*i/(n-1);const y=v=>pt+innerH*(1-v/top);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Cumulative collected and cumulative costs since the first record">`;
+  for(let t=0;t<=top+1e-9;t+=step){const yy=y(t).toFixed(1);svg+=`<line class="grid-line" x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}"/><text class="tick" x="${pl-6}" y="${(+yy+3.5).toFixed(1)}" text-anchor="end">${kfmt(t)}</text>`;}
+  const line=arr=>arr.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ');
+  const area=arr=>`M${x(0).toFixed(1)},${y(0).toFixed(1)} L${line(arr).replace(/ /g,' L')} L${x(n-1).toFixed(1)},${y(0).toFixed(1)} Z`;
+  svg+=`<path class="ar1" d="${area(col)}"/><path class="ar2" d="${area(cost)}"/>`;
+  svg+=`<line class="xhair" x1="0" x2="0" y1="${pt}" y2="${H-pb}" visibility="hidden"/>`;
+  svg+=`<polyline class="ln2" points="${line(cost)}"/><polyline class="ln1" points="${line(col)}"/>`;
+  const every=Math.max(1,Math.ceil(n/Math.max(2,Math.floor(innerW/52))));
+  months.forEach((m,i)=>{if((n-1-i)%every===0)svg+=`<text class="xlab${i===n-1?' cur':''}" x="${x(i).toFixed(1)}" y="${H-8}" text-anchor="middle">${xLabel(m,i)}</text>`;});
+  const ex=x(n-1),y1=y(col[n-1]),y2=y(cost[n-1]);const gap=col[n-1]-cost[n-1];
+  svg+=`<line class="baseline" x1="${pl}" x2="${W-pr}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}"/>`;
+  svg+=`<circle class="dot dot2" cx="${ex.toFixed(1)}" cy="${y2.toFixed(1)}" r="4"/><circle class="dot dot1" cx="${ex.toFixed(1)}" cy="${y1.toFixed(1)}" r="4"/>`;
+  let ly1=y1+4,ly2=y2+4;if(Math.abs(ly1-ly2)<14){const mid=(ly1+ly2)/2;ly1=y1<=y2?mid-7:mid+7;ly2=y1<=y2?mid+7:mid-7;}
+  svg+=`<text class="dlab" x="${(ex+9).toFixed(1)}" y="${ly1.toFixed(1)}">${esc(cfmt(col[n-1],cur))}</text><text class="dlab" x="${(ex+9).toFixed(1)}" y="${ly2.toFixed(1)}">${esc(cfmt(cost[n-1],cur))}</text>`;
+  if(Math.abs(y1-y2)>=34){const gx=ex-10;svg+=`<line class="gapline" x1="${gx}" x2="${gx}" y1="${Math.min(y1,y2).toFixed(1)}" y2="${Math.max(y1,y2).toFixed(1)}"/><text class="dlab strong" x="${(gx-5).toFixed(1)}" y="${((y1+y2)/2+4).toFixed(1)}" text-anchor="end">${esc(sgn(gap,cur))}</text>`;}
+  const bandW=n===1?innerW:innerW/(n-1);
+  months.forEach((m,i)=>{svg+=`<rect class="hit" tabindex="0" data-i="${i}" x="${(x(i)-bandW/2).toFixed(1)}" y="${pt}" width="${bandW.toFixed(1)}" height="${innerH}"><title>${mLabel(m)}: collected so far ${esc(fmtAmt(col[i],cur))}, costs so far ${esc(fmtAmt(cost[i],cur))}</title></rect>`;});
+  svg+='</svg><div class="tip" hidden></div>';box.innerHTML=svg;
+  wireTips(box,W,i=>({text:`${mLabel(months[i])} (cumulative)\n${fmtAmt(col[i],cur)} collected\n${fmtAmt(cost[i],cur)} costs\n${sgn(col[i]-cost[i],cur)} gap`,x:x(i),y:Math.min(y(col[i]),y(cost[i]))-8,hx:x(i).toFixed(1)}));
+  return gap;
+}
+function renderAnalytics(){
+  const panel=$('#analyticsPanel');if(panel.hidden)return;const cur=ui.chartCur;const D=analyticsData();const other_=other(cur);
+  document.querySelectorAll('#an-cur button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cur===cur)));
+  const val=S=>{const p=sumParts(S,cur);return `<span class="val">${esc(S.n?p.p:fmtAmt(0,cur))}</span><span class="val2">${S.n&&p.s?esc(p.s):(S.n?setRateLink+' to combine':'&nbsp;')}</span>`;};
+  const cellS=(S,cls)=>{if(!S.n)return `<td class="r num muted${cls?' '+cls:''}">—</td>`;const x=sumParts(S,cur);return `<td class="r num${cls?' '+cls:''}">${esc(x.p)}${x.s?`<span class="s">${esc(x.s)}</span>`:''}</td>`;};
+  const netCls=n=>!n.n?'':(n.missing?n.pkr+n.usd:n.pkr)<0?'neg':(n.missing?n.pkr+n.usd:n.pkr)>0?'pos':'';
+  const netV=n=>n.missing?n.pkr+n.usd:n.pkr;
+  const S12=monthlySeries(cur);const C=cumulativeSeries(cur);
+  $('#an-sub').textContent=`All time, as of ${fmtD(D.today,true)} · amounts in ${cur}${cur==='PKR'?' with USD':' with PKR'} equivalents at the default rate${defaultRate()?' (1 USD = Rs '+defaultRate().toLocaleString()+')':' — set one in Settings'}.`;
+  let html=`<section class="an-tiles" aria-label="Headline figures">
+    <div class="tile"><span class="lbl">Active users</span><span class="val">${D.activeN}</span><span class="val2">&nbsp;</span><span class="sub">not cancelled</span></div>
+    <div class="tile"><span class="lbl">Cancelled users</span><span class="val">${D.cancN}</span><span class="val2">&nbsp;</span><span class="sub">${D.owing.filter(x=>x.u.cancel).length?D.owing.filter(x=>x.u.cancel).length+' still owe':'none owe anything'}</span></div>
+    <div class="tile"><span class="lbl">Monthly recurring</span>${val(D.mrr)}<span class="sub">current prices · yearly ÷ 12</span></div>
+    <div class="tile"><span class="lbl">Collected all time</span>${val(D.col)}<span class="sub">${D.col.n} payment${D.col.n===1?'':'s'}</span></div>
+    <div class="tile"><span class="lbl">Costs all time</span>${val(D.cost)}<span class="sub">${D.cost.n} cost entr${D.cost.n===1?'y':'ies'}</span></div>
+    <div class="tile" data-alert="${D.net.n&&netV(D.net)<0?1:0}" data-good="${D.net.n&&!D.net.missing&&D.net.pkr>0?1:0}"><span class="lbl">Net all time</span>${val(D.net)}<span class="sub">collected minus costs</span></div>
+  </section>`;
+  const chartRows=D.rows.filter(r=>r.active!=null&&(r.active||r.cancelled)&&r.key!=='__one');
+  html+=`<section class="an-sec"><div class="bh"><h2>Users per package</h2><div class="chart-legend"><span><i style="background:var(--chart-1)"></i>Active</span><span><i style="background:var(--chart-1-soft)"></i>Cancelled</span></div></div>
+    <div class="chart-box" id="an-users"></div>
+    <div class="table-wrap" style="border:0"><table class="brk"><thead><tr><th>Package</th><th class="r">Active</th><th class="r">Cancelled</th><th class="r">Monthly recurring</th><th class="r">Collected</th><th class="r">Costs</th><th class="r">Net</th></tr></thead><tbody>
+    ${D.rows.map(r=>`<tr${r.key==='__shared'?' class="shared"':''}><td>${r.key==='__none'?'<span class="pill warnp">Package not set</span>':esc(r.label)}${r.key==='__shared'?' <span class="small muted">(costs without a product)</span>':''}</td><td class="r num">${r.active==null?'<span class="muted">—</span>':r.active}</td><td class="r num">${r.cancelled==null?'<span class="muted">—</span>':r.cancelled}</td>${cellS(r.mrr)}${cellS(r.col)}${cellS(r.cost)}${cellS(r.net,netCls(r.net))}</tr>`).join('')}
+    </tbody><tfoot><tr><td>Total <span class="small muted">(matches the tiles)</span></td><td class="r num">${D.activeN}</td><td class="r num">${D.cancN}</td>${cellS(D.mrr)}${cellS(D.col)}${cellS(D.cost)}${cellS(D.net,netCls(D.net))}</tr></tfoot></table></div>
+    <p class="small muted" style="margin:6px 0 0">Active counts users with a running plan on that package (a user with plans on two packages counts once in each, once in the total). Collected is split by the tier each payment covered, as in By product.</p></section>`;
+  html+=`<section class="an-sec"><div class="bh"><h2>Collected vs costs by month</h2><div class="chart-legend"><span><i style="background:var(--chart-1)"></i>Collected</span><span><i style="background:var(--chart-2)"></i>Costs</span><span><i class="ln"></i>Net</span></div></div>
+    <div class="chart-box" id="an-monthly"></div><p class="small muted" id="an-monthly-note"></p><div class="table-wrap" style="border:0"><table class="brk" id="an-monthly-table"></table></div></section>`;
+  html+=`<section class="an-sec"><div class="bh"><h2>Cumulative: money made vs cost</h2><div class="chart-legend"><span><i class="ln" style="background:var(--chart-1)"></i>Collected so far</span><span><i class="ln" style="background:var(--chart-2)"></i>Costs so far</span></div></div>
+    <div class="chart-box" id="an-cum"></div><p class="small muted" id="an-cum-note"></p></section>`;
+  const owe=D.owing.slice(0,5);const pkgOut=D.rows.filter(r=>r.out.n);
+  html+=`<section class="an-sec"><div class="bh"><h2>Outstanding</h2><span class="small muted">balance due now, as on the Outstanding tile</span></div>
+    <div class="tile" style="max-width:320px;margin-bottom:10px" data-alert="${D.out.n?1:0}"><span class="lbl">Total balance due</span>${val(D.out)}<span class="sub">${D.owing.length?`owed by ${D.owing.length} user${D.owing.length===1?'':'s'}`:'nothing outstanding'}</span></div>
+    <div class="an-lists"><div><h3 class="small" style="margin-bottom:4px">By package</h3>${pkgOut.length?`<div class="table-wrap" style="border:0"><table class="brk"><thead><tr><th>Package</th><th class="r">Outstanding</th></tr></thead><tbody>${pkgOut.map(r=>`<tr><td>${esc(r.label)}</td>${cellS(r.out)}</tr>`).join('')}</tbody></table></div>`:'<p class="small muted">Nothing outstanding.</p>'}</div>
+    <div><h3 class="small" style="margin-bottom:4px">By user${D.owing.length>5?' · top 5':''}</h3>${owe.length?`<div class="table-wrap" style="border:0"><table class="brk"><thead><tr><th>User</th><th>Package</th><th class="r">Owes</th></tr></thead><tbody>${owe.map(x=>`<tr><td>${esc(displayName(x.u))}${x.u.cancel?' <span class="small muted">(cancelled)</span>':''}</td><td class="small">${esc([...x.a.pkgIds].map(k=>k?pkgName(k):'not set').filter(Boolean).join(', ')||'—')}</td>${cellS(x.a.balance)}</tr>`).join('')}</tbody></table></div>`:'<p class="small muted">Nobody owes anything.</p>'}</div></div></section>`;
+  $('#an-body').innerHTML=html;
+  usersPkgSVG($('#an-users'),chartRows);
+  const net12=monthlyNetSVG($('#an-monthly'),S12,cur);
+  const gap=cumulativeSVG($('#an-cum'),C,cur);
+  /* the 12-month table: cumulative net runs from the first record, so its last row equals the gap on the cumulative chart */
+  const cumMap={};C.months.forEach((m,i)=>{cumMap[m]=C.col[i]-C.cost[i];});let lastCum=0;
+  const rows12=S12.months.map((m,i)=>{if(cumMap[m]!=null)lastCum=cumMap[m];else{const before=C.months.filter(x=>x<m);if(before.length)lastCum=cumMap[before[before.length-1]];}return {m,col:S12.col[i],cost:S12.cost[i],net:net12[i],cum:lastCum};});
+  const firstRec=C.months.length?C.months[0]:S12.months[0];const shown12=rows12.filter(r=>r.m>=firstRec||r.col||r.cost);
+  const t12=rows12.reduce((a,r)=>({col:a.col+r.col,cost:a.cost+r.cost,net:a.net+r.net}),{col:0,cost:0,net:0});
+  const nz=v=>v?esc(fmtAmt(v,cur)):'<span class="muted">—</span>';const ncls=v=>v<0?' neg':v>0?' pos':'';
+  $('#an-monthly-table').innerHTML=`<thead><tr><th>Month</th><th class="r">Collected</th><th class="r">Costs</th><th class="r">Net</th><th class="r">Cumulative net</th></tr></thead><tbody>${shown12.map(r=>`<tr${r.m===S12.ck?' style="font-weight:600"':''}><td>${esc(mLabel(r.m))}</td><td class="r num">${nz(r.col)}</td><td class="r num">${nz(r.cost)}</td><td class="r num${ncls(r.net)}">${nz(r.net)}</td><td class="r num${ncls(r.cum)}">${C.months.length&&r.m>=C.months[0]?esc(fmtAmt(r.cum,cur)):'<span class="muted">—</span>'}</td></tr>`).join('')}</tbody><tfoot><tr><td>Last 12 months${shown12.length<12?` <span class="small muted">(${12-shown12.length} empty month${12-shown12.length===1?'':'s'} before ${esc(mLabel(shown12[0].m))} not listed)</span>`:''}</td><td class="r num">${esc(fmtAmt(t12.col,cur))}</td><td class="r num">${esc(fmtAmt(t12.cost,cur))}</td><td class="r num${ncls(t12.net)}">${esc(fmtAmt(t12.net,cur))}</td><td class="r num muted">since ${C.months.length?esc(mLabel(C.months[0])):'—'}</td></tr></tfoot>`;
+  $('#an-monthly-note').textContent=`By payment or cost date, in ${cur} equivalents; the line is net (collected minus costs) and its last value is labelled.`+(S12.skipped?` ${S12.skipped} entr${S12.skipped===1?'y':'ies'} in the other currency not shown: set an exchange rate in Settings.`:'');
+  $('#an-cum-note').textContent=C.months.length?`Running totals from ${mLabel(C.months[0])} to ${mLabel(C.months[C.months.length-1])}: ${fmtAmt(C.col[C.months.length-1],cur)} collected against ${fmtAmt(C.cost[C.months.length-1],cur)} of costs, a gap of ${sgn(gap,cur)}${gap>=0?' in your favour':' (costs ahead)'}.`+(C.skipped?` ${C.skipped} entr${C.skipped===1?'y':'ies'} without a rate left out.`:''):'';
+}
+function openAnalytics(){showPanel('analyticsPanel');renderAnalytics();$('#analyticsPanel').scrollIntoView({behavior:'smooth',block:'start'});}
 
 function visibleRows(today){
   const q=ui.search.trim().toLowerCase();
@@ -2059,7 +2270,8 @@ function updCostConv(){const cur=$('#c-cur').value;const t=(Number($('#c-cost').
 
 /* ---------- events ---------- */
 function toast(msg,ms){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms||3400);}
-function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel'])$('#'+p).hidden=p!==id;syncSettingsBtn();}
+function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel','analyticsPanel'])$('#'+p).hidden=p!==id;syncSettingsBtn();syncAnalyticsBtn();}
+function syncAnalyticsBtn(){const b=$('#btn-analytics');if(b)b.setAttribute('aria-expanded',String(!$('#analyticsPanel').hidden));}
 function syncSettingsBtn(){const open=!$('#settingsPanel').hidden;const b=$('#btn-settings');b.innerHTML=open?'<span class="glyph" aria-hidden="true">‹</span>Home':'Settings';b.setAttribute('aria-expanded',String(open));b.title=open?'Back to the user list':'Open settings';}
 function closeSettings(){$('#settingsPanel').hidden=true;syncSettingsBtn();window.scrollTo({top:0,behavior:'smooth'});}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
@@ -2172,6 +2384,10 @@ function bind(){
   $('#io-close').addEventListener('click',()=>{$('#ioPanel').hidden=true;});
   $('#btn-settings').addEventListener('click',()=>{$('#settingsPanel').hidden?openSettings():closeSettings();});
   $('#btn-reminders').addEventListener('click',()=>{if($('#remindRun').hidden){ui.rrTab='queue';ui.qStage=null;openRemindRun();}else $('#remindRun').hidden=true;});
+  /* v26: Analytics */
+  $('#btn-analytics').addEventListener('click',()=>{if($('#analyticsPanel').hidden)openAnalytics();else{$('#analyticsPanel').hidden=true;syncAnalyticsBtn();window.scrollTo({top:0,behavior:'smooth'});}});
+  $('#an-close').addEventListener('click',()=>{$('#analyticsPanel').hidden=true;syncAnalyticsBtn();window.scrollTo({top:0,behavior:'smooth'});});
+  $('#an-cur').addEventListener('click',e=>{const b=e.target.closest('button[data-cur]');if(!b)return;ui.chartCur=b.dataset.cur;savePrefs();renderChart();renderAnalytics();});
   $('#remindBannerBtn').addEventListener('click',()=>{ui.rrTab=$('#remindBanner').dataset.kind==='final'?'final':'queue';ui.qStage=null;openRemindRun();});
   $('#rr-tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;ui.rrTab=b.dataset.tab;renderRemindRun();});
   $('#rr-body').addEventListener('toggle',e=>{if(e.target&&e.target.matches&&e.target.matches('details.except'))ui.exceptOpen=e.target.open;},true);
@@ -2221,7 +2437,7 @@ function bind(){
     else if(b.dataset.act==='reset-no'){$('#reset-wrap').innerHTML='<button class="btn sm danger" type="button" id="btn-reset">Reset data</button>';}
   });
   $('#range').addEventListener('change',e=>{ui.range=e.target.value;savePrefs();renderTiles();});
-  $('#chart-cur').addEventListener('click',e=>{const b=e.target.closest('button[data-cur]');if(!b)return;ui.chartCur=b.dataset.cur;savePrefs();renderChart();});
+  $('#chart-cur').addEventListener('click',e=>{const b=e.target.closest('button[data-cur]');if(!b)return;ui.chartCur=b.dataset.cur;savePrefs();renderChart();renderAnalytics();});
   $('#search').addEventListener('input',e=>{ui.search=e.target.value;renderTable();});
   $('#sort').addEventListener('change',e=>{ui.sort=e.target.value;ui.dir=1;savePrefs();renderTable();});
   const toggleFilter=()=>{ui.filterUnpaid=!ui.filterUnpaid;renderTable();};
@@ -2405,7 +2621,7 @@ function bind(){
   $('#btn-export-costs').addEventListener('click',()=>exportCSV(buildCostsCSV(),'costs','importCostMsg','exportCostText'));
   $('#btn-import').addEventListener('click',importUsersCSV);
   $('#btn-import-costs').addEventListener('click',importCostsCSV);
-  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(renderChart,120);});
+  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{renderChart();renderAnalytics();},120);});
 }
 
 /* ---------- quick add: one free-form line per user ---------- */
