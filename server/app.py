@@ -5,6 +5,7 @@ store behind /api/docs that mirrors the claude.ai artifact ``db`` capability,
 receipt uploads, optional Claude screenshot reading, and public one-tap
 choice pages at /c/<token> (Continue / Upgrade / Discontinue for the coming cycle).
 """
+import hmac
 import json
 import os
 import re
@@ -14,6 +15,8 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from flask import Flask, Response, abort, jsonify, redirect, render_template, request, send_from_directory, session, url_for
+from flask.sessions import SecureCookieSessionInterface
+from itsdangerous import URLSafeTimedSerializer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import auth  # noqa: E402
@@ -24,7 +27,7 @@ import notify  # noqa: E402
 
 APP_NAME = "Wasooli"
 TAGLINE = "Know who's paid."
-VERSION = "24"
+VERSION = "25"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
@@ -34,6 +37,20 @@ BRAND_FILE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,60}\.(svg|png|webmanif
 APP_TZ = ZoneInfo(os.environ.get("APP_TZ", "Asia/Karachi"))
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 ASSET_EXT = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif"}
+HOST_RE = re.compile(r"^[a-z0-9.-]+$")
+
+
+def _host_env(name):
+    v = os.environ.get(name, "").strip().lower()
+    v = re.sub(r"^https?://", "", v).split("/")[0].split(":")[0]
+    return v if HOST_RE.match(v) else ""
+
+
+DOMAIN = _host_env("DOMAIN")            # the admin address (where the owner signs in)
+LINK_DOMAIN = _host_env("LINK_DOMAIN")  # v25: optional separate address for the subscribers' /c/<token> pages
+OLD_DOMAIN = _host_env("OLD_DOMAIN")    # v25: a previous admin address, kept as a redirect to DOMAIN
+LINK_BASE = ("https://" + LINK_DOMAIN) if LINK_DOMAIN else ""
+LINK_HOST_OK = re.compile(r"^/(c/[A-Za-z0-9_-]+/?|assets/[^/]+|healthz|manifest\.webmanifest)$")
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"))
 _secret = os.environ.get("SECRET_KEY", "")
@@ -44,14 +61,32 @@ if not auth.ADMIN_PASSCODE:
     print("WARNING: ADMIN_PASSCODE is not set; nobody can log in.", file=sys.stderr)
 app.config.update(
     SECRET_KEY=_secret,
+    APP_NAME=APP_NAME,
     SESSION_COOKIE_NAME="wasool_session",
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "1") == "1",
-    PERMANENT_SESSION_LIFETIME=timedelta(days=60),
+    PERMANENT_SESSION_LIFETIME=timedelta(days=auth.SESSION_DAYS),  # v25: 90 days, renewed on every request (SESSION_REFRESH_EACH_REQUEST)
     MAX_CONTENT_LENGTH=12 * 1024 * 1024,
     JSON_SORT_KEYS=False,
 )
+
+
+class RotatingSessionInterface(SecureCookieSessionInterface):
+    """v25: signs the session cookie with a key derived from SECRET_KEY and a version kept in the data
+    store, so "Sign out everywhere" can invalidate every session without touching the env file."""
+
+    def get_signing_serializer(self, app):
+        key = auth.signing_key(app.config["SECRET_KEY"])
+        if not key:
+            return None
+        return URLSafeTimedSerializer(key, salt=self.salt, serializer=self.serializer,
+                                      signer_kwargs={"key_derivation": self.key_derivation, "digest_method": self.digest_method})
+
+
+app.session_interface = RotatingSessionInterface()
+if not auth.admin_path():
+    print("WARNING: ADMIN_PATH is not set; the sign-in form stays at /login (visible to anyone). deploy/update.sh adds one on the VM.", file=sys.stderr)
 
 _index_cache = {"mtime": None, "html": ""}
 
@@ -63,7 +98,8 @@ def index_html():
         with open(INDEX_PATH, encoding="utf-8") as f:
             html = f.read()
         marker = '<meta charset="utf-8">'
-        inject = marker + '\n<script>window.__PT_SERVER__={app:%s,version:%s};</script>' % (json.dumps(APP_NAME), json.dumps(VERSION))
+        cfg = {"app": APP_NAME, "version": VERSION, "linkBase": LINK_BASE, "sessionDays": auth.SESSION_DAYS}
+        inject = marker + '\n<script>window.__PT_SERVER__=%s;</script>' % json.dumps(cfg)
         html = html.replace(marker, inject, 1) if marker in html else inject + html
         _index_cache.update(mtime=st.st_mtime, html=html)
     return _index_cache["html"]
@@ -78,8 +114,31 @@ def headers(resp):
     return resp
 
 
+def request_host():
+    return (request.host or "").split(":")[0].lower()
+
+
+def on_link_host():
+    return bool(LINK_DOMAIN) and request_host() == LINK_DOMAIN
+
+
+def neutral(status=200):
+    return auth.neutral_page(APP_NAME, status)
+
+
 @app.before_request
-def csrf_guard():
+def host_and_csrf_guard():
+    # v25: the link address serves only the subscribers' pages and what they need; nothing admin-shaped exists there
+    if on_link_host() and not LINK_HOST_OK.match(request.path):
+        return neutral(404)
+    # v25: a previous admin address forwards to the current one; the owner's known device lands on the sign-in page
+    if OLD_DOMAIN and DOMAIN and request_host() == OLD_DOMAIN:
+        target = "https://" + DOMAIN
+        if request.path == "/" and auth.known_device(app):
+            return redirect(target + auth.login_path())
+        if request.path.startswith("/c/"):
+            return redirect((LINK_BASE or target) + request.full_path.rstrip("?"), 307 if request.method == "POST" else 302)
+        return redirect(target + (request.full_path.rstrip("?") if request.path != "/" else "/"))
     if request.path.startswith("/api/"):
         auth.require_same_origin_header()
 
@@ -89,28 +148,54 @@ def csrf_guard():
 @app.get("/")
 @auth.login_required
 def home():
-    return Response(index_html(), mimetype="text/html")
+    resp = Response(index_html(), mimetype="text/html")
+    if not auth.known_device(app):  # a session from before v25: mark this browser as the owner's so / keeps finding the sign-in page
+        auth.set_device_cookie(app, resp)
+    return resp
 
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
+def _login_view():
     if auth.is_logged_in():
         return redirect(url_for("home"))
-    error = ""
+    error, status = "", 200
     if request.method == "POST":
-        ok, error = auth.attempt_login(request.form.get("passcode", ""))
+        ok, error, status = auth.attempt_login(request.form.get("passcode", ""))
         if ok:
             nxt = request.args.get("next") or "/"
             if not nxt.startswith("/") or nxt.startswith("//"):
                 nxt = "/"
-            return redirect(nxt)
-    return render_template("login.html", app_name=APP_NAME, tagline=TAGLINE, error=error, configured=bool(auth.ADMIN_PASSCODE)), (401 if error else 200)
+            return auth.set_device_cookie(app, redirect(nxt))
+    resp = Response(render_template("login.html", app_name=APP_NAME, tagline=TAGLINE, error=error, configured=bool(auth.ADMIN_PASSCODE),
+                                    session_days=auth.SESSION_DAYS, action=auth.login_path()), status=status)
+    if status == 429:
+        resp.headers["Retry-After"] = "60" if "minute." in error else str(auth.LOCK_MINUTES * 60)
+    return resp
+
+
+@app.route("/x/<path_secret>", methods=["GET", "POST"])
+def login_hidden(path_secret):
+    """v25: the sign-in form lives only here; any other /x/... is the neutral 404."""
+    p = auth.admin_path()
+    if not p or not hmac.compare_digest(path_secret.encode("utf-8"), p.encode("utf-8")):
+        return neutral(404)
+    return _login_view()
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Kept for servers without ADMIN_PATH (local runs). With one set, this address shows nothing;
+    a known device is sent on to the real sign-in page."""
+    if not auth.admin_path():
+        return _login_view()
+    if auth.is_logged_in() or auth.known_device(app):
+        return redirect(auth.login_path() if not auth.is_logged_in() else url_for("home"))
+    return neutral(200)
 
 
 @app.post("/logout")
 def logout():
     auth.logout()
-    return redirect(url_for("login"))
+    return redirect(auth.login_path())
 
 
 @app.get("/healthz")
@@ -119,7 +204,50 @@ def healthz():
         v = db.version()
     except Exception as e:  # pragma: no cover
         return jsonify({"ok": False, "app": "wasooli", "error": str(e)}), 500
-    return jsonify({"ok": True, "app": "wasooli", "version": VERSION, "docs_version": v, "claude": claude_read.enabled(), "reading": reading_provider() if reading_enabled() else ""})
+    return jsonify({"ok": True, "app": "wasooli", "version": VERSION, "docs_version": v, "claude": claude_read.enabled(),
+                    "reading": reading_provider() if reading_enabled() else "", "linkBase": LINK_BASE})
+
+
+# ---------- security (v25): the private sign-in address, sign out, sign out everywhere ----------
+
+def sign_in_url():
+    p = auth.admin_path()
+    if not p:
+        return ""
+    if DOMAIN:
+        return "https://%s/x/%s" % (DOMAIN, p)
+    return "%s://%s/x/%s" % ("https" if request.is_secure else "http", request.host, p)  # local runs
+
+
+def security_payload():
+    return {"signInUrl": sign_in_url(), "hasAdminPath": bool(auth.admin_path()), "sessionDays": auth.SESSION_DAYS,
+            "linkBase": LINK_BASE, "linkDomain": LINK_DOMAIN, "domain": DOMAIN, "oldDomain": OLD_DOMAIN,
+            "secretVersion": auth.secret_version(), "lockout": {"failures": auth.MAX_FAILURES, "minutes": auth.LOCK_MINUTES}}
+
+
+@app.get("/api/security")
+@auth.login_required
+def api_security():
+    return jsonify(security_payload())
+
+
+@app.post("/api/security/regenerate-path")
+@auth.login_required
+def api_security_regenerate():
+    p = auth.regenerate_admin_path()
+    db.audit("admin", "security.path", "regenerated", auth.client_ip())
+    print("security: sign-in address regenerated (…/x/%s…)" % p[:4], file=sys.stderr)
+    return jsonify(security_payload())
+
+
+@app.post("/api/security/signout-all")
+@auth.login_required
+def api_security_signout_all():
+    v = auth.rotate_secret()
+    auth.logout()
+    db.audit("admin", "security.signout_all", "secret version %d" % v, auth.client_ip())
+    resp = jsonify({"ok": True, "secretVersion": v, "signInUrl": sign_in_url(), "loginPath": auth.login_path()})
+    return auth.set_device_cookie(app, resp)  # this browser stays a known device; every session is gone
 
 
 # ---------- brand assets (v24): public, so the phone can fetch the icons and manifest for "Add to home screen" ----------
@@ -540,6 +668,8 @@ def _plans(card, packages):
 def confirm(token):
     if not TOKEN_RE.match(token):
         abort(404)
+    if LINK_DOMAIN and not on_link_host():  # v25: the subscribers' pages live on the link address only
+        return redirect(LINK_BASE + request.full_path.rstrip("?"), 307 if request.method == "POST" else 302)
     ctx = _confirm_context(token)
     if not ctx:
         return render_template("confirm.html", app_name=APP_NAME, tagline=TAGLINE, missing=True), 404
@@ -601,7 +731,9 @@ def confirm(token):
 def not_found(_e):
     if request.path.startswith("/api/"):
         return jsonify({"error": "not_found"}), 404
-    return render_template("confirm.html", app_name=APP_NAME, tagline=TAGLINE, missing=True), 404
+    if request.path.startswith("/c/"):
+        return render_template("confirm.html", app_name=APP_NAME, tagline=TAGLINE, missing=True), 404
+    return neutral(404)  # v25: no hint of anything else living here
 
 
 @app.errorhandler(413)

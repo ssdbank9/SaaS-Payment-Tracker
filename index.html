@@ -162,6 +162,16 @@ table.fn label.chk .when{color:var(--muted);font-family:var(--mono);font-size:11
 table.fn tr[data-deact="1"] td{opacity:.65}
 table.fn tr[data-deact="1"] td.st,table.fn tr[data-deact="1"] td.who{opacity:1}
 .banner[data-kind="final"]{background:var(--crit-bg);border-color:var(--crit)}
+.banner[data-kind="security"]{background:var(--accent-soft);border-color:var(--accent)}
+.banner .banner-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.banner code.mono{word-break:break-all;font-size:12px}
+/* v25: Settings → Security */
+.sec-url{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0 4px}
+.sec-url code{font-family:var(--mono);font-size:13px;word-break:break-all;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:6px 10px;flex:1 1 260px;min-width:0}
+.sec-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:8px}
+@media (min-width:760px){.sec-grid{grid-template-columns:1fr 1fr}}
+.sec-item h4{margin:0 0 4px;font-size:14px;font-weight:600}
+.sec-item p{margin:0 0 8px}
 details.except{position:relative}
 details.except summary{cursor:pointer;font-size:12px;font-weight:500;color:var(--accent-ink);padding:5px 10px;border:1px solid var(--line-strong);border-radius:4px;background:var(--surface);list-style:none;white-space:nowrap}
 details.except summary::-webkit-details-marker{display:none}
@@ -507,11 +517,15 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v24</span>
+      <span class="small muted num" id="app-ver" title="App version">v25</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
+      <button class="btn" type="button" id="btn-signout" data-act="logout" title="Sign out on this device" hidden>Sign out</button>
     </div>
   </header>
+
+  <!-- v25: shown once per browser when the server reports the private sign-in address, so the owner bookmarks it -->
+  <div class="banner" id="secBanner" hidden role="status" data-kind="security"><span><b>Your private sign-in address is ready.</b> The old address now shows a blank page to anyone who is not signed in, so bookmark this one: <code class="mono" id="secBannerUrl"></code></span><span class="banner-acts"><button class="btn sm" type="button" id="secBannerCopy">Copy</button><button class="btn sm" type="button" id="secBannerOpen">Settings → Security</button><button class="link sm" type="button" id="secBannerHide">Got it</button></span></div>
 
   <div class="banner" id="remindBanner" hidden role="status"><span id="remindBannerText"></span><button class="btn sm primary" type="button" id="remindBannerBtn">Open reminder run</button></div>
   <section class="panel" id="remindRun" hidden aria-label="Reminder run">
@@ -550,7 +564,7 @@ table.costs td.cat{color:var(--ink-2)}
         <label class="f">Reading model<select id="s-model"><option value="quick">Quick (cheapest, fastest)</option><option value="default">Default (more careful)</option></select></label>
         <span class="small muted" style="align-self:center">The Claude model that reads statement screenshots, pasted statement text and Quick add lines. <b>Quick</b> is the cheapest and fastest and is enough for clean screenshots; switch to <b>Default</b> if it misreads amounts or dates.</span>
         <label class="f">Public base URL <span class="muted">(for confirmation links)</span><input id="s-base-url" type="url" placeholder="https://wasooli.example.com" autocomplete="off" inputmode="url"></label>
-        <span class="small muted" style="align-self:center" id="s-base-url-help">Where your self-hosted copy of this app runs. Each user gets a private page at <code>{base}/c/{token}</code> where they choose Continue, Upgrade to C Max (or Move back to C) or Discontinue for the coming cycle; the answer shows in the Queue and Reminder run and is applied to their record. On the self-hosted server this is filled in from the address bar; in the claude.ai copy, paste your server address here to put links into reminders.</span>
+        <span class="small muted" style="align-self:center" id="s-base-url-help"><span id="s-base-url-link" hidden><b>Set on the server:</b> links use <code id="s-base-url-link-val"></code> (LINK_DOMAIN), a separate address that never shows where you sign in. </span>Where your self-hosted copy of this app runs. Each user gets a private page at <code>{base}/c/{token}</code> where they choose Continue, Upgrade to C Max (or Move back to C) or Discontinue for the coming cycle; the answer shows in the Queue and Reminder run and is applied to their record. On the self-hosted server this is filled in from the address bar; in the claude.ai copy, paste your server address here to put links into reminders.</span>
         <label class="f">Default exchange rate (PKR per 1 USD)<input id="s-rate" type="number" min="0" step="0.01" class="num" placeholder="280"></label>
         <span class="small muted" style="align-self:center">Payments and costs saved without their own rate use this default, so changing it here re-values all of them in the summary tiles and chart. An entry with its own rate keeps it. Rows in the tables always show each entry's own currency; the tiles amalgamate into PKR and USD.</span>
         <label class="f">Billing cycle starts on day <span class="muted">(of each month)</span><input id="s-cycle-day" type="number" min="1" max="31" step="1" class="num" placeholder="24" required></label>
@@ -617,6 +631,28 @@ table.costs td.cat{color:var(--ink-2)}
           <label class="f">Send test to <span class="muted">(your address)</span><input id="m-test-to" type="email" placeholder="me@example.com" autocomplete="off"></label>
         </div>
         <div class="form-actions" style="margin-top:8px"><button class="btn" type="button" id="m-save">Save mail settings</button><button class="btn" type="button" id="m-test">Send test email to me</button><span class="small muted" id="m-msg"></span></div>
+      </div>
+      <div style="margin-top:16px" id="securityBlock" hidden>
+        <div class="block-head" style="margin-bottom:2px"><h3>Security</h3></div>
+        <div class="sec-item">
+          <h4>Your private sign-in address</h4>
+          <p class="small muted" id="sec-url-help">The sign-in form exists only at this address. Anyone who opens your domain without it sees a blank page, so bookmark it or add it to your home screen. Your signed-in phones and computers are remembered and find it from the plain address by themselves.</p>
+          <div class="sec-url"><code id="sec-url">…</code><button class="btn sm" type="button" id="sec-copy">Copy</button><a class="btn sm" id="sec-open" href="/" target="_blank" rel="noopener">Open</a></div>
+          <div class="form-actions" style="margin-top:6px"><button class="link sm" type="button" id="sec-regen">Regenerate the address</button><span class="small muted" id="sec-msg"></span></div>
+        </div>
+        <div class="sec-grid">
+          <div class="sec-item">
+            <h4>This device</h4>
+            <p class="small muted" id="sec-session-help">You stay signed in for 90 days, longer while you keep using the tracker.</p>
+            <button class="btn sm" type="button" data-act="logout">Sign out</button>
+          </div>
+          <div class="sec-item">
+            <h4>Every device</h4>
+            <p class="small muted">Ends every signed-in session at once (a lost phone, a shared computer). You sign in again here afterwards.</p>
+            <button class="btn sm" type="button" id="sec-signout-all">Sign out everywhere</button>
+          </div>
+        </div>
+        <p class="small muted" style="margin-top:10px" id="sec-lock-help">Wrong passcodes lock only the device that typed them (8 tries in 15 minutes), and a flood of attempts from many devices is slowed down together; your own signed-in devices are never affected.</p>
       </div>
       <div style="margin-top:14px" id="dataBlock">
         <div class="block-head" style="margin-bottom:2px"><h3>Your data</h3></div>
@@ -854,7 +890,7 @@ const DEFAULT_REMIND_DAY=20,DEFAULT_REPLY_DAY=23;
 const tplOf=t=>(!t||t===OLD_TPL)?DEFAULT_TPL:String(t);
 const clampDay=(v,d)=>{const n=Math.round(Number(v));return n>=1&&n<=31?n:d;};
 const SCHEMA=11;
-const APP_VERSION='24';
+const APP_VERSION='25';
 const DEFAULT_ANCHOR='2026-07-24';
 const DEFAULT_PACKAGES=[{id:'pkg_c',name:'C',cycle:'monthly',price:4200,currency:'PKR',description:''},{id:'pkg_cmax',name:'C Max',cycle:'monthly',price:null,currency:'',description:'C package, Max plan'},{id:'pkg_g',name:'G',cycle:'yearly',price:null,currency:'',description:'Annual package'}];
 const CYCLES={monthly:{label:'Monthly',per:'/mo',months:1},yearly:{label:'Yearly',per:'/yr',months:12},'one-time':{label:'One-time',per:'',months:0}};
@@ -1110,7 +1146,10 @@ function reminderText(u,a,today,mode,tplOverride,x){
 /* ---------- confirmation links (self-hosted server) ---------- */
 const firstName=u=>{const n=String(u.name||'').trim().split(/\s+/)[0];return n||'there';};
 function newToken(){const b=new Uint8Array(16);crypto.getRandomValues(b);let t='';for(const x of b)t+=String.fromCharCode(x);return btoa(t).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
-function publicBase(){return pubBaseRaw(state.settings.publicBaseUrl)||(state.backend==='api'?location.origin:'');}
+/* v25: what the self-hosted server told the page (linkBase = https://LINK_DOMAIN when set; the subscribers' links then always use it) */
+const serverCfg=()=>(typeof window!=='undefined'&&window.__PT_SERVER__&&typeof window.__PT_SERVER__==='object')?window.__PT_SERVER__:{};
+const serverLinkBase=()=>state.backend==='api'?pubBaseRaw(serverCfg().linkBase):'';
+function publicBase(){return serverLinkBase()||pubBaseRaw(state.settings.publicBaseUrl)||(state.backend==='api'?location.origin:'');}
 const confirmLinkFor=tok=>{const b=publicBase();return b&&TOKEN_RE.test(tok||'')?b+'/c/'+tok:'';};
 const confirmLink=u=>confirmLinkFor(u&&u.confirmToken);
 const tokenPending={};
@@ -2024,7 +2063,7 @@ function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','rem
 function syncSettingsBtn(){const open=!$('#settingsPanel').hidden;const b=$('#btn-settings');b.innerHTML=open?'<span class="glyph" aria-hidden="true">‹</span>Home':'Settings';b.setAttribute('aria-expanded',String(open));b.title=open?'Back to the user list':'Open settings';}
 function closeSettings(){$('#settingsPanel').hidden=true;syncSettingsBtn();window.scrollTo({top:0,behavior:'smooth'});}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
-function openSettings(){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);if(state.backend==='api')$('#s-base-url').placeholder=location.origin;fillQueueSettings();$('#s-wa-app').value=waApp();$('#s-dim').checked=dimOn();$('#mailBlock').hidden=state.backend!=='api';$('#aiBlock').hidden=state.backend!=='api';if(state.backend==='api'){loadMailSettings();loadAiSettings();}ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
+function openSettings(){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);{const lb=serverLinkBase(),bu=$('#s-base-url');if(state.backend==='api')bu.placeholder=lb||location.origin;bu.disabled=!!lb;bu.title=lb?'Set on the server (LINK_DOMAIN in /etc/payments-tracker.env)':'';$('#s-base-url-link').hidden=!lb;if(lb)$('#s-base-url-link-val').textContent=lb;}fillQueueSettings();$('#s-wa-app').value=waApp();$('#s-dim').checked=dimOn();$('#mailBlock').hidden=state.backend!=='api';$('#aiBlock').hidden=state.backend!=='api';$('#securityBlock').hidden=state.backend!=='api';if(state.backend==='api'){loadMailSettings();loadAiSettings();loadSecurity(true);}ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
 function fillQueueSettings(){$('#s-q1').value=queueTplOf(1);$('#s-q2').value=queueTplOf(2);$('#s-q3').value=queueTplOf(3);$('#s-payhow').value=payHowOf();}
 /* v21: the billing anchor is edited as "day of the month" + "yearly month"; the hidden #s-anchor carries the date they make (year kept from the current anchor) */
 function anchorFrom(day,month){const y=+anchor().slice(0,4);const m=Math.min(12,Math.max(1,Math.round(Number(month))||+anchor().slice(5,7)));const d=clampDay(day,cycleDay());return toISO(new Date(y,m-1,Math.min(d,daysIn(y,m-1))));}
@@ -2057,6 +2096,18 @@ function renderAiStatus(j){aiUI.info=j||null;const st=$('#ai-status'),key=$('#ai
   if(document.activeElement!==$('#ai-provider'))$('#ai-provider').value=p;
   if(!aiUI.models.length)fillGeminiModels([],g.model||'');else if(g.model&&geminiModelValue()!==g.model)fillGeminiModels(aiUI.models,g.model);
   showProviderFields();}
+/* v25: Settings → Security: the private sign-in address (from the server), Sign out, Sign out everywhere; plus a one-time banner per browser */
+const secUI={info:null,loaded:false};
+const SEC_SEEN='pt-signin-seen';
+function markSecSeen(){try{if(secUI.info&&secUI.info.signInUrl)localStorage.setItem(SEC_SEEN,secUI.info.signInUrl);}catch(e){}}
+async function copySecUrl(msg){const u=secUI.info&&secUI.info.signInUrl;if(!u)return;try{await navigator.clipboard.writeText(u);toast('Sign-in address copied.');if(msg)msg.textContent='Copied.';}catch(e){if(msg)msg.textContent=u;else toast(u);}}
+function renderSecurity(){const j=secUI.info||{};const url=$('#sec-url'),open=$('#sec-open');
+  if(j.signInUrl){url.textContent=j.signInUrl;open.href=j.signInUrl;open.hidden=false;$('#sec-copy').disabled=false;$('#sec-regen').disabled=false;}
+  else{url.textContent=j.hasAdminPath===false?'Being set up: the server adds it on its next update (a few minutes). Check back here.':'…';open.hidden=true;$('#sec-copy').disabled=true;$('#sec-regen').disabled=true;}
+  const d=Number(j.sessionDays)||Number(serverCfg().sessionDays)||90;$('#sec-session-help').textContent=`You stay signed in for ${d} days, longer while you keep using the tracker.`;
+  const lk=j.lockout||{};if(lk.failures)$('#sec-lock-help').textContent=`Wrong passcodes lock only the device that typed them (${lk.failures} tries in ${lk.minutes} minutes), and a flood of attempts from many devices is slowed down together; your own signed-in devices are never affected.`;}
+function renderSecBanner(){const j=secUI.info;const b=$('#secBanner');if(!j||!j.signInUrl){b.hidden=true;return;}let seen='';try{seen=localStorage.getItem(SEC_SEEN)||'';}catch(e){}if(seen===j.signInUrl){b.hidden=true;return;}$('#secBannerUrl').textContent=j.signInUrl;b.hidden=false;}
+async function loadSecurity(force){if(state.backend!=='api')return;if(secUI.loaded&&!force){renderSecurity();return;}try{secUI.info=await apiJSON('/api/security');secUI.loaded=true;}catch(e){secUI.info=secUI.info||{};$('#sec-msg').textContent=e.code==='unauthorized'?'':'Could not load the security settings.';}renderSecurity();renderSecBanner();}
 async function loadAiSettings(){const msg=$('#ai-msg');try{const j=await apiJSON('/api/ai-settings');renderAiStatus(j);
     msg.textContent=j.configured?(j.provider==='anthropic'&&j.source==='env'?'Using the key from /etc/payments-tracker.env.':''):(j.provider==='gemini'&&j.gemini&&j.gemini.hasKey?'Press Load models, pick one and Save.':'Choose a provider, paste its key and press Save; pictures in Costs → Import from screenshot then read as soon as they are picked.');}
   catch(e){msg.textContent='Could not load the AI settings.';}}
@@ -2343,7 +2394,14 @@ function bind(){
   $('#btn-export').addEventListener('click',()=>exportCSV(buildUsersCSV(),'payments','importMsg','exportText'));
   $('#btn-export-all').addEventListener('click',exportAll);
   $('#import-all-file').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];e.target.value='';importAll(f);});
-  document.addEventListener('click',e=>{const b=e.target.closest('button[data-act="logout"]');if(!b)return;b.disabled=true;fetch('/logout',{method:'POST',credentials:'same-origin'}).finally(()=>{location.href='/login';});});
+  document.addEventListener('click',e=>{const b=e.target.closest('button[data-act="logout"]');if(!b)return;b.disabled=true;fetch('/logout',{method:'POST',credentials:'same-origin'}).then(r=>{location.href=(r&&r.url)||(secUI.info&&secUI.info.signInUrl)||'/';}).catch(()=>{location.href='/';});});
+  /* v25: Settings → Security and the one-time banner */
+  $('#sec-copy').addEventListener('click',()=>copySecUrl($('#sec-msg')));
+  $('#secBannerCopy').addEventListener('click',()=>copySecUrl(null));
+  $('#secBannerOpen').addEventListener('click',()=>{markSecSeen();openSettings();setTimeout(()=>{$('#securityBlock').scrollIntoView({behavior:'smooth',block:'start'});},50);});
+  $('#secBannerHide').addEventListener('click',()=>{markSecSeen();$('#secBanner').hidden=true;});
+  $('#sec-regen').addEventListener('click',async()=>{const msg=$('#sec-msg');if(!confirm('Make a new sign-in address? The current one stops working at once. Your signed-in devices stay signed in and still find the new address from the plain domain; update your bookmark afterwards.'))return;msg.textContent='Making a new address…';try{const j=await apiJSON('/api/security/regenerate-path',apiBody('POST',{}));secUI.info=j;renderSecurity();markSecSeen();msg.textContent='New address ready. Update your bookmark.';toast('Sign-in address regenerated.');}catch(e){msg.textContent='Could not regenerate: '+(e.message||e.code||'error');}});
+  $('#sec-signout-all').addEventListener('click',async()=>{if(!confirm('Sign out on every device, including this one? You will sign in again with your passcode.'))return;try{const j=await apiJSON('/api/security/signout-all',apiBody('POST',{}));location.href=(j&&j.loginPath)||'/';}catch(e){toast('Could not sign out everywhere: '+(e.message||e.code||'error'));}});
   $('#btn-export-costs').addEventListener('click',()=>exportCSV(buildCostsCSV(),'costs','importCostMsg','exportCostText'));
   $('#btn-import').addEventListener('click',importUsersCSV);
   $('#btn-import-costs').addEventListener('click',importCostsCSV);
@@ -2755,7 +2813,7 @@ async function importCostsCSV(){
 
 /* ---------- api backend: the self-hosted server's /api/docs store, same interface as the artifact db ---------- */
 const API={version:-1,timer:null,listeners:[]};
-async function apiFetch(path,opts){const o=Object.assign({credentials:'same-origin'},opts||{});o.headers=Object.assign({'X-Requested-With':'wasool'},o.headers||{});const r=await fetch(path,o);if(r.status===401){location.href='/login?next='+encodeURIComponent(location.pathname);throw {code:'unauthorized'};}return r;}
+async function apiFetch(path,opts){const o=Object.assign({credentials:'same-origin'},opts||{});o.headers=Object.assign({'X-Requested-With':'wasool'},o.headers||{});const r=await fetch(path,o);if(r.status===401){location.href=(secUI.info&&secUI.info.signInUrl)||'/';throw {code:'unauthorized'};}return r;}
 async function apiJSON(path,opts){const r=await apiFetch(path,opts);let j=null;try{j=await r.json();}catch(e){}if(!r.ok)throw Object.assign({code:(j&&j.error)||('http_'+r.status),status:r.status},j||{});return j;}
 const apiBody=(method,body)=>({method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
 async function apiPut(path,body){const j=await apiJSON('/api/docs/'+path,apiBody('PUT',body));apiTouch();return j;}
@@ -2778,7 +2836,7 @@ async function initApi(){
   state.backend='api';db=makeApiDb();downloads=null;assets=makeApiAssets();
   let info=null;try{const r=await apiFetch('/api/read-image');if(r.ok)info=await r.json();}catch(e){}
   sample=info&&info.enabled?makeApiSample(info):null;canImage=!!sample;updateShotCaption();
-  state.mode='shared';render();subscribe();apiSchedule();refreshConfirmations();
+  state.mode='shared';$('#btn-signout').hidden=false;render();subscribe();apiSchedule();refreshConfirmations();loadSecurity(false);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)apiTouch();});
 }
 /* ---------- boot ---------- */

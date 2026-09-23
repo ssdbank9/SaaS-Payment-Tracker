@@ -357,6 +357,19 @@ def failed_logins(ip, minutes=15):
         con.close()
 
 
+def login_attempts_since(seconds=60):
+    """v25: every attempt from every IP in the last N seconds (the global brake)."""
+    con = connect()
+    try:
+        row = con.execute(
+            "SELECT COUNT(*) AS n FROM login_attempts WHERE at >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', ?)",
+            ("-%d seconds" % int(seconds),),
+        ).fetchone()
+        return row["n"]
+    finally:
+        con.close()
+
+
 def audit(actor, action, detail="", ip=""):
     try:
         with tx() as con:

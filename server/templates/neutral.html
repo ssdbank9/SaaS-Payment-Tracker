@@ -1,0 +1,8 @@
+{% extends "_base.html" %}
+{# v25: what anyone who is not signed in sees at the admin address, and every unknown path. One mark, one line, no hints. #}
+{% block title %}{{ app_name }}{% endblock %}
+{% block body %}
+<main class="card" style="text-align:center;padding:28px 20px">
+  <p class="lead" style="color:var(--ink-2)">Nothing to see here.</p>
+</main>
+{% endblock %}

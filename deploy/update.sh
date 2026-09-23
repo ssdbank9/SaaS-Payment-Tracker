@@ -6,6 +6,7 @@ set -euo pipefail
 APP_DIR=${APP_DIR:-/opt/payments-tracker}
 SERVICE=${SERVICE:-payments-tracker}
 BRANCH=${BRANCH:-main}
+ENV_FILE=${ENV_FILE:-/etc/payments-tracker.env}
 cd "$APP_DIR"
 
 # Make sure every unit in deploy/systemd is installed and every timer is enabled, even when
@@ -29,11 +30,32 @@ ensure_units() {
   return 0
 }
 
-git fetch --quiet origin "$BRANCH" || { echo "update: fetch failed (offline?)"; ensure_units; exit 0; }
+# v25: settings a newer version needs get a default appended to the env file, so the running VM picks them up
+# on its next pull without anyone touching the file. ADMIN_PATH is the secret part of the sign-in address
+# (https://DOMAIN/x/<ADMIN_PATH>); the app shows it in Settings -> Security. Restarts the service when it added one.
+ensure_env() {
+  [ -f "$ENV_FILE" ] || return 0
+  local added=0
+  if ! grep -q '^ADMIN_PATH=' "$ENV_FILE"; then
+    local p; p=$(head -c 18 /dev/urandom | base64 | tr '+/' '-_' | tr -d '=\n')
+    printf '\n# v25: the sign-in form lives only at https://<DOMAIN>/x/$ADMIN_PATH (shown in Settings -> Security)\nADMIN_PATH=%s\n' "$p" >> "$ENV_FILE"
+    echo "update: added ADMIN_PATH to $ENV_FILE"; added=1
+  fi
+  if ! grep -q '^SESSION_DAYS=' "$ENV_FILE"; then
+    printf '# how long a signed-in device stays signed in (renewed on every visit)\nSESSION_DAYS=90\n' >> "$ENV_FILE"; added=1
+  fi
+  if [ "$added" = 1 ]; then
+    systemctl restart "$SERVICE" && echo "update: restarted $SERVICE for the new env settings"
+  fi
+  return 0
+}
+
+git fetch --quiet origin "$BRANCH" || { echo "update: fetch failed (offline?)"; ensure_units; ensure_env; exit 0; }
 local_sha=$(git rev-parse HEAD)
 remote_sha=$(git rev-parse "origin/$BRANCH")
 if [ "$local_sha" = "$remote_sha" ]; then
   ensure_units
+  ensure_env
   exit 0
 fi
 echo "update: $local_sha -> $remote_sha"
@@ -46,5 +68,6 @@ if [ "$req_before" != "$req_after" ]; then
 fi
 ensure_units
 chmod +x deploy/*.sh
-systemctl restart "$SERVICE"
+if [ -f "$ENV_FILE" ] && ! grep -q '^ADMIN_PATH=' "$ENV_FILE"; then SERVICE_RESTART_DONE=1; ensure_env; else SERVICE_RESTART_DONE=0; fi
+[ "${SERVICE_RESTART_DONE:-0}" = 1 ] || systemctl restart "$SERVICE"
 echo "update: restarted $SERVICE at $(git rev-parse --short HEAD)"

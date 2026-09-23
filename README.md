@@ -40,19 +40,36 @@ The same `index.html` runs on your own VM with a small Python server, so it work
 
 1. An **Oracle Cloud Always Free** compute instance: shape *VM.Standard.A1.Flex* (Ampere, arm64), image *Ubuntu 22.04 or 24.04*, any size (1 OCPU / 6 GB is plenty). Note its public IP.
 2. In the instance's **VCN → subnet → Security List** (or its Network Security Group) add two ingress rules: TCP **80** and TCP **443** from `0.0.0.0/0`. Oracle blocks these at the cloud level by default; the installer opens the VM's own firewall but cannot touch this one.
-3. A subdomain: an **A record** such as `wasooli.yourdomain.com → <public IP>` at your DNS provider. HTTPS is automatic once it resolves.
+3. A subdomain: an **A record** such as `wasooli.duckdns.org → <public IP>` at your DNS provider (a free DuckDNS name works). HTTPS is automatic once it resolves. Optionally a second name for the subscribers' links, e.g. `pay-up.duckdns.org`, pointing at the same IP (see *Two addresses* below).
 4. SSH access as the `ubuntu` user.
 
 ### The one command
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ssdbank9/SaaS-Payment-Tracker/main/deploy/setup.sh \
-  | sudo DOMAIN=wasooli.yourdomain.com ADMIN_PASSCODE='a-long-passcode-you-will-type-once' bash
+  | sudo DOMAIN=wasooli.duckdns.org ADMIN_PASSCODE='a-long-passcode-you-will-type-once' bash
 ```
 
-It installs `python3-venv`, `git` and Caddy (official apt repo), clones this repository to `/opt/payments-tracker`, creates a virtualenv with the pinned `server/requirements.txt`, writes `/etc/payments-tracker.env` (passcode, a generated `SECRET_KEY`, `DATA_DIR=/var/lib/payments-tracker`, `DOMAIN`), installs the systemd units, writes `/etc/caddy/Caddyfile` with `reverse_proxy 127.0.0.1:8080` (Caddy fetches and renews the certificate), opens ports 80/443 in iptables and persists them with `netfilter-persistent`, starts everything and prints a health check plus the steps left to do. Re-running it is safe; it repairs the install or changes the domain and passcode. Leave `ADMIN_PASSCODE`/`DOMAIN` off the command line and it asks for them.
+It installs `python3-venv`, `git` and Caddy (official apt repo), clones this repository to `/opt/payments-tracker`, creates a virtualenv with the pinned `server/requirements.txt`, writes `/etc/payments-tracker.env` (passcode, a generated `SECRET_KEY`, a generated `ADMIN_PATH`, `SESSION_DAYS=90`, `DATA_DIR=/var/lib/payments-tracker`, `DOMAIN`, optional `LINK_DOMAIN` / `OLD_DOMAIN`), installs the systemd units, writes `/etc/caddy/Caddyfile` with `reverse_proxy 127.0.0.1:8080` for every host (Caddy fetches and renews the certificates), opens ports 80/443 in iptables and persists them with `netfilter-persistent`, starts everything and prints a health check, **your private sign-in address** and the steps left to do. Re-running it is safe: every value you leave off the command line is kept from the existing env file (passcode, `SECRET_KEY`, `ADMIN_PATH`, API keys, lines you added by hand), so it repairs the install or changes just the domain. It never prompts when piped from `curl`; a missing `DOMAIN` or `ADMIN_PASSCODE` on a first install is an error that names the variable.
 
-Then open `https://wasooli.yourdomain.com` on your phone, sign in with the passcode (the session lasts 60 days) and use *Add to Home Screen*: the server serves `/manifest.webmanifest` and the icons under `/assets`, so the phone shows the Wasooli mark with the name "Wasooli" and opens it like an app. Nothing here depends on your desktop being on.
+Then open the sign-in address it printed (`https://wasooli.duckdns.org/x/<ADMIN_PATH>`) on your phone, sign in with the passcode and use *Add to Home Screen*: the server serves `/manifest.webmanifest` and the icons under `/assets`, so the phone shows the Wasooli mark with the name "Wasooli" and opens it like an app. Nothing here depends on your desktop being on.
+
+### Who can reach it (v25)
+
+- **Hidden sign-in.** The login form exists only at `https://<DOMAIN>/x/<ADMIN_PATH>` (`ADMIN_PATH` in `/etc/payments-tracker.env`, 24 random characters). The plain domain, `/login` and any other path show strangers a neutral page: the mark and "Nothing to see here.", nothing else. Every successful login also sets a signed **known-device** cookie for a year, so on your own phone or PC the plain `https://<DOMAIN>` redirects to the sign-in page by itself; it contains nothing that helps anyone log in. The address is shown in **Settings → Security** (Copy / Open / Regenerate) and printed at the end of `setup.sh`; a VM that updated itself to v25 gets an `ADMIN_PATH` appended by `deploy/update.sh` and shows a one-time banner asking you to bookmark it. Regenerate keeps the new value in the database (it wins over the env file).
+- **Lockout per visitor.** Eight wrong passcodes in 15 minutes lock the IP that typed them (`429` with `Retry-After`), never anyone else and never your signed-in devices; a flood from many addresses is slowed down together (`LOGIN_GLOBAL_PER_MINUTE`, default 60). Lockouts are logged with the IP (`journalctl -u payments-tracker`).
+- **Stay signed in.** A signed-in device stays signed in for `SESSION_DAYS` (default 90), renewed on every visit. **Sign out** is in the header and in Settings → Security; **Sign out everywhere** ends every session at once (a lost phone) by rotating the signing key version kept in the database, so nothing in the env file changes.
+
+### Two addresses: one for you, one for the links
+
+Subscriber links used to carry your admin domain, which invited passcode guesses. Give them their own name (a second free DuckDNS name pointing at the same IP) and re-run the installer with `LINK_DOMAIN`; nothing else changes:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ssdbank9/SaaS-Payment-Tracker/main/deploy/setup.sh \
+  | sudo DOMAIN=wasooli.duckdns.org LINK_DOMAIN=pay-up.duckdns.org bash
+```
+
+Caddy then serves both names to the same app and the app tells them apart by the Host header: on `pay-up.duckdns.org` only `/c/<token>`, `/assets/*`, `/healthz` and the manifest exist and everything else is the neutral 404; on `wasooli.duckdns.org` everything works as before and `/c/<token>` redirects to the link address. Every link the page and `notify.py` build uses `https://pay-up.duckdns.org/...` automatically (the **Public base URL** setting is locked while `LINK_DOMAIN` is set). Changing `DOMAIN` keeps the passcode, `ADMIN_PATH` and AI/mail settings; the previous domain is kept as `OLD_DOMAIN` and redirects to the new one (your known device lands on the sign-in page), or pass `OLD_DOMAIN=` to drop it.
 
 ### How updates deploy
 
@@ -89,7 +106,7 @@ Paste an Anthropic API key in Settings → **AI reading** (kept on the server, m
 ### Operations
 
 - Service: `sudo systemctl status payments-tracker`, logs `journalctl -u payments-tracker -f`, Caddy logs `journalctl -u caddy -f`.
-- Change the passcode: edit `/etc/payments-tracker.env`, then `sudo systemctl restart payments-tracker`.
-- Health: `https://<domain>/healthz` (no login) returns `{"ok": true, "app": "wasooli", ...}`.
-- Login is rate limited (8 failures per IP per 15 minutes); state-changing API calls need the `X-Requested-With: wasool` header the page sends; the admin cookie is HttpOnly, Secure, SameSite=Lax.
+- Change the passcode: edit `/etc/payments-tracker.env`, then `sudo systemctl restart payments-tracker`. Env keys: `DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `LOGIN_GLOBAL_PER_MINUTE`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`; new keys get defaults when absent.
+- Health: `https://<domain>/healthz` (no login) returns `{"ok": true, "app": "wasooli", "linkBase": "https://<LINK_DOMAIN>", ...}`.
+- Login is rate limited per IP (8 failures per 15 minutes, plus the global brake); state-changing API calls need the `X-Requested-With: wasool` header the page sends; the admin cookie is HttpOnly, Secure, SameSite=Lax and lasts `SESSION_DAYS`.
 - Everything lives in `/var/lib/payments-tracker`; the code in `/opt/payments-tracker` is disposable.
