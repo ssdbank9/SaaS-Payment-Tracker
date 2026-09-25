@@ -1,8 +1,8 @@
 # Wasooli hand-off
 
-Written 2026-09-23 at v26. This is the document to read first when picking the project up again in
-Claude Code, another LLM or by hand. `CLAUDE.md` is the short working guide for a coding session; this file
-records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
+Written 2026-09-23 at v26, updated 2026-09-25 at v28. This is the document to read first when picking the project
+up again in Claude Code, another AI coding tool or by hand. `AGENTS.md` is the working guide for a coding session
+(every tool reads it, see section 10); this file records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
 built is `docs/setup-runbook.html` (open it in a browser; it prints).
 
 ## 1. Purpose and who
@@ -16,14 +16,14 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
   Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.
 - **Repo:** `ssdbank9/SaaS-Payment-Tracker` on GitHub, branch `main`. Pushing to `main` is the release.
 
-## 2. Current state (2026-09-23)
+## 2. Current state (2026-09-25, v28)
 
 | Item | Value |
 | --- | --- |
 | Admin site | `https://wasooli.duckdns.org` (plain root shows a blank neutral page on purpose) |
 | Sign-in form | `https://wasooli.duckdns.org/x/<ADMIN_PATH>` (printed by the installer; Settings → Security) |
 | Subscriber links | `https://pay-up.duckdns.org/c/<token>` (`LINK_DOMAIN`) |
-| Health check | `https://wasooli.duckdns.org/healthz` → `{"ok": true, "app": "wasooli", "version": "26", "linkBase": "https://pay-up.duckdns.org", ...}` |
+| Health check | `https://wasooli.duckdns.org/healthz` → `{"ok": true, "app": "wasooli", "version": "28", "linkBase": "https://pay-up.duckdns.org", ...}` |
 | VM | Oracle Cloud Always Free, `VM.Standard.A1.Flex`, 1 OCPU / 6 GB, Ubuntu 24.04 aarch64, public IP `141.145.157.7`, created 2026-09-22 ~11:45 UTC in VCN `vcn-20260922-1643` / subnet `subnet-20260922-1643` |
 | Cloud firewall | Default Security List of that subnet: default rules (TCP 22, ICMP) plus TCP 80 and TCP 443 from `0.0.0.0/0` added by the owner |
 | DNS | DuckDNS (owner signed in with Google): `wasooli.duckdns.org` and `pay-up.duckdns.org` → `141.145.157.7`. The first name `wasool.duckdns.org` was deleted on 2026-09-23 |
@@ -32,8 +32,8 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
 | Data on VM | `/var/lib/payments-tracker/tracker.sqlite3` plus `assets/` (uploaded receipts) and `backups/` |
 | Secrets on VM | `/etc/payments-tracker.env` (`DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`); AI and mail keys typed in Settings live in the SQLite `meta` table |
 | Services | `payments-tracker.service` (gunicorn on 127.0.0.1:8080), `caddy` (HTTPS for all three hosts), timers `payments-tracker-update` (5 min), `payments-tracker-backup` (03:15 daily), `payments-tracker-notify` (04:00 UTC = 09:00 PKT daily) |
-| Versions | badge `v26` in `index.html`, `VERSION = "26"` in `server/app.py`, top entry `## v26` in `CHANGELOG.md` |
-| Repo head | `da50e25` "Analytics tab; CLAUDE.md and README guide for making changes (v26)" |
+| Versions | badge `v28` in `index.html`, `VERSION = "28"` in `server/app.py`, top entry `## v28` in `CHANGELOG.md` |
+| Repo head | the v28 commit "Refunds; AGENTS.md hand-off for other AI tools (v28)" (check with `git log -1`) |
 | claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: same `index.html`, kept identical in code, but retired as the place where data lives |
 
 **How updates deploy.** `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: `git fetch`,
@@ -88,7 +88,10 @@ SQLite tables (`server/db.py`): `docs(path, json, updated_at)`, `confirmations`,
     `prorationBasis|DaysOverride|RateOverride|AmountOverride` (older per-plan overrides, still read),
     `tierHistory[{from,packageId,price,currency,note,via}]` (C ↔ C Max from a cycle start),
     `periodOverrides{periodStart:{amount?,packageId?,note,at}}` (hand-set amount and/or package for one period, v27; absent = computed),
-    `payments[{id,date,amount,currency,rate,note}]`. One-time items carry `total` and `due`.
+    `payments[{id,date,amount,currency,rate,note}]`, `refunds[{id,date,amount,currency,rate,note}]` (v28; absent =
+    none). One-time items carry `total` and `due`. A `periodOverrides` entry marked `fromRefund` is derived by
+    `settleRefunds` (a cancelled user's period that a refund made short counts at what was kept) and is recomputed
+    whenever a refund is saved or removed.
   - `reminders{}` holds per-cycle ticks: reminded, confirmed, final notice, Except list, and Queue `sent`
     records `{stage, cycleStart, channel, at}`.
 - `costs/<id>`: `date, description, category, packageId` (`''` = shared), `currency, cost, tax, rate, receipt,
@@ -101,9 +104,11 @@ SQLite tables (`server/db.py`): `docs(path, json, updated_at)`, `confirmations`,
   password), `ai` (provider, keys, Gemini model), `docs_version`.
 
 **Periods are computed, never stored.** `analyzeMonthly` walks cycle periods from the plan start, applies
-payments as credit in order and yields paid / partial / unpaid / upcoming, balance and next due. `analyze(u,
+payments minus refunds as credit in order and yields paid / partial / unpaid / upcoming, balance and next due. `analyze(u,
 today)` aggregates a user. `breakdownRows`, `monthlySeries` and `analyticsData` build Summary and Analytics
 from those same functions, so totals reconcile by construction. Any new money figure must reuse them.
+Since v28 revenue in a month is its payments minus its refunds (by refund date) and Net = collected − refunds − costs
+(`netSum`); a refund is counted for the plan's package on the refund date.
 
 **Migration rule.** `SCHEMA = 11` in `index.html`. `maybeSeedShared` seeds an empty store; the migrate block
 upgrades an old one. Both are lease-guarded via `meta/schema`, write settings first and the marker last, are
@@ -141,6 +146,8 @@ owner's real records. New versions since v18 have needed no migration (absent = 
 | 24 | 09-23 | Renamed Wasooli with logo and icons; period tiles wrap on phones; retroactive-edit warning; dimmed settled rows | "wasool" was taken / awkward; unpaid rows must stand out |
 | 25 | 09-23 | Per-IP lockout, hidden sign-in path, 90-day sessions, `LINK_DOMAIN` | A stranger could lock the owner out; links carried the admin domain |
 | 26 | 09-23 | Analytics tab; `CLAUDE.md`; README "Making changes" | Owner asked for graphs of users per package and money vs cost, and a way to change the site himself |
+| 27 | 09-25 | One month on another package; Paid up to → Clear; Cancel reachable on phones; Resume with a date and cancellation history | Owner bills single months as C Max; iPhone date pickers cannot clear; the Cancel button was off-screen |
+| 28 | 09-25 | Refunds (reduce revenue, net and the plan's credit; optional cancel; shown in history); `AGENTS.md` for any AI tool | Owner wants exact revenue and profit after money given back, and to continue with Codex or other tools |
 
 ## 6. Decisions log
 
@@ -165,6 +172,8 @@ owner's real records. New versions since v18 have needed no migration (absent = 
 | Data lives only on the server; artifact retired as a store but kept identical in code | 09-23 | One source of truth; the artifact stays a demo | Two-way sync |
 | Future changes through Claude Code connected to the repo; VM self-updates | 09-23 | Owner does not edit code; pushing is deploying | Manual `git pull` on the VM; CI pipeline |
 | Slack routines (20th and 23rd nudges) left in place but ignored | 09-23 | Owner leaving Slack; the notify timer covers the emails | Deleting them (harmless either way) |
+| Refund = its own record on the plan, dated when the money went back; it lowers revenue in that month and the plan's credit | 09-25 | Revenue and profit must be exact; a refunded month is no longer paid for | A negative payment (confuses the history and the payment count); lowering the period amount (hides the money that came and went) |
+| `AGENTS.md` is the one guide; `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` only point to it | 09-25 | Every AI coding tool reads one of these names; one source cannot drift | Copies of the same text per tool |
 
 ## 7. Operations runbook
 
@@ -266,28 +275,59 @@ both DuckDNS names to the new IP, then `sudo systemctl restart caddy`.
 - **Certificate for `pay-up.duckdns.org`** was issued when the installer was re-run with `LINK_DOMAIN` on
   2026-09-23; if it ever fails, `journalctl -u caddy` says why (usually DNS not yet pointing at the VM).
 - The claude.ai artifact still exists and still works browser-locally; it is not the data store and is not
-  updated automatically by the VM pipeline (republishing is a manual step in `CLAUDE.md`).
+  updated automatically by the VM pipeline (republishing is a manual step for Claude, see `CLAUDE.md`). Another AI
+  tool cannot republish it; it then simply lags behind the repo, which is harmless.
 
-## 10. How to continue in Claude Code or another LLM
+**Known follow-ups (not built yet)**
 
-1. Open claude.ai/code, pick `ssdbank9/SaaS-Payment-Tracker`, and read `CLAUDE.md` first (architecture,
-   data model, conventions, the local run and Playwright recipe, the UI checklist). Then this file for context.
-2. **Verification recipe** (from `CLAUDE.md`): create the venv, run Flask locally with `ADMIN_PATH=TestPath`,
-   sign in at `/x/TestPath`, run a Playwright pass at 1400px and 390px in light and dark with
-   `localStorage['pt-today']` pinned; no new console errors; money totals reconcile with the Summary tiles.
-3. **Every change** bumps the badge in `index.html`, `VERSION` in `server/app.py` and adds a `## vNN` entry to
-   `CHANGELOG.md`, in the same commit. Docs-only changes do not bump.
-4. **Commit and push rules:** commit straight to `main`, imperative summary ending in `(vNN)`, short body,
-   never force-push, no PRs. Pushing deploys within 5 minutes.
-5. **Never touch the owner's data as part of a code change.** Migrations add defaults and never overwrite or
-   delete records. Do not run SQL against the VM's database except to read.
-6. **Do not rename** unit names, env keys, URL paths (`/api/docs`, `/c/<token>`, `/x/<path>`, `/healthz`) or
-   data paths; the running VM depends on them.
-7. New env keys need a default in code and an `ensure_env` line in `deploy/update.sh` if the VM must pick them
-   up without a manual step.
-8. Keep `index.html` and the claude.ai artifact identical if you republish the artifact; otherwise leave the
-   artifact alone.
-9. When the owner reports a problem, ask for the exact message and `journalctl -u payments-tracker -n 50`.
+- A plan that starts or resumes mid-cycle shows its next due date as the cycle start rather than the date billing
+  actually starts from, in places that read the cycle date.
+- The link page's "Upgrade to C Max" offer ignores a month that is already billed as C Max through a period override
+  (v27), so it can still offer the upgrade for that month.
+- Refunds (v28): the Summary's 12-month bar chart still draws collected before refunds (refunds are in its tooltip,
+  and in the Analytics net line, tables and cumulative chart). A refund on a one-time item raises what is left to pay;
+  if the sale is undone, the owner also edits the item's total. A refund is counted for the plan's package on the
+  refund date, not for the package a single month was billed as. For a cancelled user, "kept after refund" period
+  amounts replace a hand-set amount on the same period, and they stay if the user is later resumed (they are
+  recomputed, and removed, only when a refund on that plan is saved or removed while the user is cancelled).
+  "Also cancel" in the refund form uses the normal cancellation, so it ends all of that user's plans.
+
+## 10. Continuing with another AI tool
+
+Everything a coding assistant needs is in the repository. Which file each tool reads:
+
+| Tool | Reads | What it contains |
+| --- | --- | --- |
+| OpenAI Codex (CLI, IDE, cloud), Cursor, Jules, Aider, Windsurf, Zed, Amp and most others | `AGENTS.md` | the full guide |
+| Claude Code (claude.ai/code, CLI) | `CLAUDE.md` | imports `AGENTS.md` (`@AGENTS.md`) plus the artifact republish note |
+| Gemini CLI | `GEMINI.md` | one line: follow `AGENTS.md` |
+| GitHub Copilot (chat, coding agent) | `.github/copilot-instructions.md` | one line: follow `AGENTS.md` |
+
+If a tool does not pick up a file on its own, start the session with: "Read AGENTS.md and docs/HANDOFF.md first
+and follow them." Edit `AGENTS.md` when the rules change; the other three only point to it.
+
+**The one rule: pushing to `main` deploys.** The VM pulls `main` every 5 minutes and restarts; there is no staging
+and no review step. A tool must run the local check in `AGENTS.md` (Flask + a browser pass at 390px and 1400px,
+light and dark, no console errors) before it pushes, and must never force-push.
+
+**How to hand over:**
+
+1. Give the tool access to the GitHub repository `ssdbank9/SaaS-Payment-Tracker` with permission to push to `main`
+   (Codex: connect GitHub in its settings; Cursor, Aider, Gemini CLI: clone the repo on your computer and sign in
+   to GitHub there; Copilot: open the repo on github.com).
+2. Describe the change in plain words, as you do with Claude. Ask it to bump the version (badge, `VERSION`,
+   CHANGELOG) and to tell you the new version number.
+3. **Check it is live:** after up to 5 minutes, reload the site and look at the small `vNN` badge in the header next
+   to "Saved on your server", or open `https://wasooli.duckdns.org/healthz` and read `"version"`. The number must
+   match what the tool told you.
+4. **Roll back:** tell the tool "revert the last commit and push" (`git revert HEAD`, then `git push`), or on
+   GitHub open the commit and press *Revert*. The VM picks up the revert within 5 minutes. Your data is never touched
+   by a code change or a revert.
+
+**Rules every tool must keep** (all in `AGENTS.md`): never reset, re-seed or edit the owner's data; never rename env
+keys, unit names, URL paths, data paths or stored units; never force-push; keep `index.html` a single file with no
+build step; bump badge + `VERSION` + CHANGELOG together; migrations only add defaults; no secrets in the repo.
+When the owner reports a problem, ask for the exact message and `journalctl -u payments-tracker -n 50`.
 
 ## 11. Owner preferences
 

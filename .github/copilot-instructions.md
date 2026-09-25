@@ -1,0 +1,1 @@
+Follow [AGENTS.md](../AGENTS.md) at the repository root: it is the working guide for this repository. Pushing to `main` deploys the live site within 5 minutes, so verify locally first and never force-push.

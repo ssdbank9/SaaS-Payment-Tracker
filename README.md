@@ -17,7 +17,7 @@ Opening `index.html` directly in a browser also runs the app, but with per-devic
 - `deploy/` - `setup.sh` one-command installer, `update.sh` auto-deploy, `backup.sh`, and the systemd units (service, update, backup and notify timers).
 - `assets/` - the brand: `logo.svg` (mark + wordmark), `mark.svg`, the PNG icons (32, 180, 192, 512 and a 512 maskable) and `manifest.webmanifest`, served by Flask at `/assets/<file>` and `/manifest.webmanifest`.
 - `CHANGELOG.md` - version history.
-- `docs/HANDOFF.md` - the hand-off: current state, architecture, data model, decisions log, operations runbook, security model, known gaps, how to continue in Claude Code.
+- `docs/HANDOFF.md` - the hand-off: current state, architecture, data model, decisions log, operations runbook, security model, known gaps, how to continue in Claude Code or another AI tool.
 - `docs/setup-runbook.html` - the owner's step-by-step of how the server was set up (Oracle VM, ports, DuckDNS, SSH from Windows, installer, settings, keeping it running, troubleshooting); open it in a browser, it prints.
 
 ## Brand
@@ -41,10 +41,14 @@ a new report, a fix):
 
 1. Open **claude.ai/code** and pick this repository (`ssdbank9/SaaS-Payment-Tracker`).
 2. Describe the change in plain words, for example "add a column for the payment method" or
-   "the Analytics tab should also show costs per user". Claude reads `CLAUDE.md`, makes the change,
+   "the Analytics tab should also show costs per user". Claude reads `AGENTS.md`, makes the change,
    tests it and commits it to `main`.
 3. Wait up to 5 minutes. The VM checks GitHub every 5 minutes and updates itself; the version badge in the
    header (v26, v27, ...) tells you the new copy is live. Reload the page once.
+
+**Using another AI tool (Codex, Cursor, Gemini CLI, Copilot…):** the same works with any of them. They read
+`AGENTS.md` (the working guide); `docs/HANDOFF.md` section 10 says which file each tool reads, how to check the
+version badge after a change and how to undo one.
 
 **Where the history is:** `docs/HANDOFF.md` records every decision, the data model and the operations runbook;
 `docs/setup-runbook.html` is the step-by-step of how the VM was built. Read both before a big change.

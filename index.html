@@ -225,7 +225,7 @@ table.fn td.st .ans{display:flex;margin-top:2px}
 .sum-head label{margin-left:auto}
 .cycle-note{font-size:12px;color:var(--ink-2);padding:3px 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
 .cycle-note b{color:var(--ink);font-weight:600}
-.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:12px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0;text-align:left;color:inherit;font:inherit}
 .tile .lbl{font-size:12px;color:var(--ink-2)}
 .tile .val{font-size:22px;font-weight:600;letter-spacing:-.01em;line-height:1.2;overflow-wrap:anywhere}
@@ -417,6 +417,14 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .pays th{font-weight:600;color:var(--accent-ink);font-size:11px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--accent-line)}
 .pays td.note{white-space:normal;color:var(--ink-2)}
 .pays tr:last-child td{border-bottom:0}
+/* v28: refunds in the payment history, the tables and the tiles: negative amounts in the critical colour */
+.pays tr.refund-row td{background:var(--crit-bg)}
+.pays tr.refund-row td.amt,.refund,table.brk td.refund{color:var(--crit)}
+.pays .tag.refund-tag{display:inline-block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--crit);border:1px solid var(--crit);border-radius:3px;padding:0 4px;margin-right:4px;vertical-align:1px}
+.refund-form .cover{color:var(--ink-2)}
+.refund-form label.f.chk{align-self:center}
+/* v28: on a phone the history's Edit / Remove wrap under each other instead of running past the card's edge */
+@media (max-width:700px){.pays td:last-child{white-space:normal}.pays td:last-child .link{display:inline-block;margin:0 6px 2px 0}.pays td.num{white-space:normal}}
 .pay-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;align-items:end}
 
 /* costs */
@@ -518,7 +526,7 @@ table.costs td.cat{color:var(--ink-2)}
 /* v26: Analytics tab. Chart colours are their own tokens (validated for light and dark): --chart-1 the series green, --chart-1-soft its lighter step for cancelled users, --chart-2 a muted warm for costs. */
 .an-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .an-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:4px}
-#analyticsPanel .tile .sub{border:0;border-radius:0;padding:0;background:none;box-shadow:none;overflow:visible;display:block}
+#analyticsPanel .tile .sub,.tiles .tile .sub{border:0;border-radius:0;padding:0;background:none;box-shadow:none;overflow:visible;display:block}
 .an-sec{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
 .an-sec .bh{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
 .an-sec .chart-box{margin:6px 0 8px}
@@ -560,7 +568,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v27</span>
+      <span class="small muted num" id="app-ver" title="App version">v28</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -590,8 +598,9 @@ table.costs td.cat{color:var(--ink-2)}
   </div>
   <section class="tiles" aria-label="Summary">
     <div class="tile"><span class="lbl">Collected</span><span class="val" id="t-col">—</span><span class="val2" id="t-col2">&nbsp;</span><span class="sub" id="t-col-sub">&nbsp;</span></div>
+    <div class="tile" id="tile-ref"><span class="lbl">Refunds</span><span class="val" id="t-ref">—</span><span class="val2" id="t-ref2">&nbsp;</span><span class="sub" id="t-ref-sub">&nbsp;</span></div>
     <div class="tile"><span class="lbl">Costs</span><span class="val" id="t-cost">—</span><span class="val2" id="t-cost2">&nbsp;</span><span class="sub" id="t-cost-sub">&nbsp;</span></div>
-    <div class="tile" id="tile-net"><span class="lbl">Net</span><span class="val" id="t-net">—</span><span class="val2" id="t-net2">&nbsp;</span><span class="sub" id="t-net-sub">collected minus costs</span></div>
+    <div class="tile" id="tile-net"><span class="lbl">Net</span><span class="val" id="t-net">—</span><span class="val2" id="t-net2">&nbsp;</span><span class="sub" id="t-net-sub">collected minus refunds and costs</span></div>
     <div class="tile" id="tile-out"><span class="lbl">Outstanding balance</span><span class="val" id="t-out">—</span><span class="val2" id="t-out2">&nbsp;</span><span class="sub" id="t-out-sub">&nbsp;</span></div>
     <button class="tile" id="tile-unpaid" type="button" title="Show only users who are overdue or due today"><span class="lbl">Not paid</span><span class="val" id="t-unpaid">0</span><span class="val2">&nbsp;</span><span class="sub" id="t-unpaid-sub">&nbsp;</span></button>
   </section>
@@ -1023,7 +1032,7 @@ function prorateCalc(s,full,days,total){const ov=Number(s.prorationDaysOverride)
    v27: the entry may also carry packageId: that one period is billed at another package (its price, less the plan's discount, prorated like
    any first period) unless an amount is set too; absent = the plan's normal package. An entry may hold a packageId and no amount. ---------- */
 const PKG_ID_RE=/^[A-Za-z0-9_-]{1,60}$/;
-function normPeriodOverrides(o){const out={};if(!o||typeof o!=='object'||Array.isArray(o))return out;for(const k in o){const v=o[k];if(!isDateKey(k)||!v||typeof v!=='object')continue;const a=v.amount==null||v.amount===''?NaN:Number(v.amount);const hasA=isFinite(a)&&a>=0;const pid=PKG_ID_RE.test(String(v.packageId||''))?String(v.packageId):'';if(!hasA&&!pid)continue;const e={};if(hasA)e.amount=Math.round(a*100)/100;if(pid)e.packageId=pid;e.note=String(v.note||'').trim().slice(0,140);e.at=String(v.at||'').slice(0,40);out[k]=e;}return out;}
+function normPeriodOverrides(o){const out={};if(!o||typeof o!=='object'||Array.isArray(o))return out;for(const k in o){const v=o[k];if(!isDateKey(k)||!v||typeof v!=='object')continue;const a=v.amount==null||v.amount===''?NaN:Number(v.amount);const hasA=isFinite(a)&&a>=0;const pid=PKG_ID_RE.test(String(v.packageId||''))?String(v.packageId):'';if(!hasA&&!pid)continue;const e={};if(hasA)e.amount=Math.round(a*100)/100;if(pid)e.packageId=pid;e.note=String(v.note||'').trim().slice(0,140);e.at=String(v.at||'').slice(0,40);if(v.fromRefund)e.fromRefund=true;out[k]=e;}return out;}
 /* the hand-set amount of a period (null = none); v27: an entry with only a packageId is not an amount */
 const periodOverride=(s,st)=>{const v=s&&s.periodOverrides&&s.periodOverrides[st];return v&&v.amount!=null&&v.amount!==''&&isFinite(Number(v.amount))&&Number(v.amount)>=0?v:null;};
 /* v27: the package one period is billed at when it differs from the plan's own for that date (null = the normal package; a package deleted from Settings is ignored) */
@@ -1095,6 +1104,8 @@ function normalizeUser(b,id){
     else{sub.total=Number(s.total)||0;sub.due=normDate(s.due);}
     for(const p of s.payments||[]){const d=normDate(p.date);if(!d)continue;sub.payments.push({id:p.id||newId('p'),date:d,amount:Number(p.amount)||0,currency:p.currency?normCur(p.currency):cur,rate:normRate(p.rate),note:String(p.note||'')});}
     sub.payments.sort((a,b)=>a.date.localeCompare(b.date));
+    /* v28: refunds given back on this plan [{id,date,amount,currency,rate,note}]; absent = none (nothing is written for plans without one) */
+    if(Array.isArray(s.refunds)){const rf=[];for(const r of s.refunds){const d=normDate(r&&r.date);const amt=Number(r&&r.amount);if(!d||!(amt>0))continue;rf.push({id:r.id||newId('r'),date:d,amount:amt,currency:r.currency?normCur(r.currency):cur,rate:normRate(r.rate),note:String(r.note||'')});}if(rf.length)sub.refunds=rf.sort((a,b)=>a.date.localeCompare(b.date));}
     u.subscriptions.push(sub);
   }
   return u;
@@ -1114,7 +1125,13 @@ function priceAt(s,date){const ps=(s.prices||[]).slice().sort((a,b)=>a.from.loca
 function pkgPeriodPrice(s,pid,es){let v=switchPrice(s,pid,es);if(v==null){const p=pkgById(pid);if(p&&p.price!=null&&p.currency&&p.currency!==s.currency){const c=toCur(p.price,p.currency,s.currency,null);if(c!=null&&isFinite(c)&&c>0)v=s.currency==='PKR'?Math.round(c):Math.round(c*100)/100;}}return v;}
 function periodFull(s,st,es){const pid=periodPkg(s,st);if(pid){const v=pkgPeriodPrice(s,pid,es);return {full:v!=null?applyDiscount(s,v):effPrice(s,es),pid};}return {full:effPrice(s,es),pid:null};}
 function periodIndexAt(s,date){if(date<s.start)return -1;let k=0;while(pStart(s,k+1)<=date){k++;if(k>2400)break;}return k;}
-function paidInPlanCur(s){let t=0,unconv=0;for(const p of s.payments||[]){const v=toCur(p.amount,p.currency||s.currency,s.currency,p.rate);if(v==null)unconv++;else t+=v;}return {t,unconv};}
+function paidInPlanCur(s){let t=0,unconv=0;for(const p of s.payments||[]){const v=toCur(p.amount,p.currency||s.currency,s.currency,p.rate);if(v==null)unconv++;else t+=v;}
+  /* v28: a refund takes money back out of the plan's credit, so the period it paid for shows as unpaid again (unless it is not billed) */
+  for(const r of s.refunds||[]){const v=toCur(r.amount,r.currency||s.currency,s.currency,r.rate);if(v==null)unconv++;else t-=v;}return {t,unconv};}
+/* v28: what a plan's refunds come to in the plan's currency */
+function refundedInPlanCur(s){let t=0;for(const r of s.refunds||[]){const v=toCur(r.amount,r.currency||s.currency,s.currency,r.rate);if(v!=null)t+=v;}return t;}
+/* v28: the product a refund is taken off: the plan's package on the refund date (one-time items: their own product) */
+const refundKey=(s,r)=>{const pid=s.kind==='one-time'?s.packageId:pkgIdAt(s,r.date);return (pid&&pkgById(pid))?pid:(s.kind==='one-time'?'__one':'__none');};
 function analyzeMonthly(s,today){
   const pc=paidInPlanCur(s);const paid=pc.t;const active=k=>!s.end||pStart(s,k)<=s.end;
   const curIdx=periodIndexAt(s,today);
@@ -1168,6 +1185,7 @@ function analyze(u,today){
     const a=s.kind==='one-time'?analyzeOneTime(s,today):analyzeMonthly(s,today);sa[s.id]=a;
     const pid=pkgIdAt(s,today);const tm=a.kind==='monthly'?tierMarkHTML(s,today):'';const shown=a.kind==='monthly'&&a.tiered?a.curPrice:a.price;
     for(const p of s.payments||[])sumAdd(totals,p.amount,p.currency||s.currency,p.rate);
+    for(const r of s.refunds||[])sumAdd(totals,-r.amount,r.currency||s.currency,r.rate);
     if(a.kind==='monthly'){if(a.overdueAmount>0)sumAdd(balance,a.overdueAmount,s.currency,null);if(a.cycleDue>0)sumAdd(cycleDue,a.cycleDue,s.currency,null);if(a.cyclePaid)cyclePaid=true;}else if(a.remaining>0)sumAdd(balance,a.remaining,s.currency,null);
     const r=RANK[a.status];if(r<rank){rank=r;status=a.status;}
     if(a.kind==='monthly'){
@@ -1464,6 +1482,9 @@ function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||
 function rangeBounds(){const today=todayISO();if(ui.range==='month')return {from:today.slice(0,7)+'-01',to:today,label:mLabel(monthKey(today))};if(ui.range==='30d')return {from:addDays(today,-29),to:today,label:'last 30 days'};return {from:'0000-00-00',to:'9999-99-99',label:'all time'};}
 const inRange=(d,rb)=>d>=rb.from&&d<=rb.to;
 function allPayments(){const out=[];for(const id in state.users)for(const s of state.users[id].subscriptions||[])for(const p of s.payments||[])out.push({date:p.date,amount:p.amount,currency:p.currency||s.currency,rate:p.rate});return out;}
+/* v28: every refund, dated when the money went back; revenue for a month = its payments minus its refunds */
+function allRefunds(){const out=[];for(const id in state.users)for(const s of state.users[id].subscriptions||[])for(const r of s.refunds||[])out.push({date:r.date,amount:r.amount,currency:r.currency||s.currency,rate:r.rate});return out;}
+const anyRefunds=()=>{for(const id in state.users)for(const s of state.users[id].subscriptions||[])if((s.refunds||[]).length)return true;return false;};
 const costTotal=c=>(Number(c.cost)||0)+(Number(c.tax)||0);
 
 /* ---------- rendering ---------- */
@@ -1642,32 +1663,39 @@ function paymentShares(s,sa){const out=[];const pays=(s.payments||[]).slice().so
     if(rest>1e-9)acc[lastPid]=(acc[lastPid]||0)+rest;
     out.push({p,parts:Object.keys(acc).map(k=>({pid:k,frac:acc[k]/v}))});}
   return out;}
+/* v28: a refunds table cell: the amount given back, shown negative in the critical colour */
+function refTd(S,primary){if(!S.n)return `<td class="r num muted">—</td>`;const x=sumParts(S,primary);return `<td class="r num refund">\u2212${esc(x.p)}${x.s?`<span class="s">\u2212${esc(x.s)}</span>`:''}</td>`;}
+/* v28: net (profit) = collected - refunds - costs, as one sum */
+function netSum(col,ref,cost){const n=sumMerge(sumMerge(col,ref,-1),cost,-1);n.n=col.n+ref.n+cost.n;return n;}
 /* v26: the By product figures as data (rows keyed by package id, __none, __one, __shared; totals that match the tiles), shared with the Analytics tab */
 function breakdownRows(rb){
   const today=todayISO();const ids=Object.keys(state.users);const costIds=Object.keys(state.costs);
-  const rows={};const mk=(key,label)=>rows[key]||(rows[key]={key,label,users:new Set(),col:newSum(),cost:newSum(),out:newSum(),npay:0,ncost:0});
+  const rows={};const mk=(key,label)=>rows[key]||(rows[key]={key,label,users:new Set(),col:newSum(),ref:newSum(),cost:newSum(),out:newSum(),npay:0,nref:0,ncost:0});
   for(const p of packages())mk(p.id,p.name);
   for(const id of ids){const u=state.users[id];const a=analyze(u,today);
     for(const s of u.subscriptions||[]){const sa=a.sa[s.id];const pid=pkgIdAt(s,today);const key=(pid&&pkgById(pid))?pid:(s.kind==='one-time'?'__one':'__none');const r=mk(key,key==='__one'?'One-time items':key==='__none'?'Package not set':pkgName(key));
       if(!u.cancel&&(s.kind==='monthly'?sa.status!=='ended':sa.remaining>0))r.users.add(id);
       for(const sh of paymentShares(s,sa)){const pay=sh.p;if(!inRange(pay.date,rb))continue;const cur=pay.currency||s.currency;let counted=false;
         for(const part of sh.parts){const k=(part.pid&&pkgById(part.pid))?part.pid:(s.kind==='one-time'?'__one':'__none');const rr=mk(k,k==='__one'?'One-time items':k==='__none'?'Package not set':pkgName(k));sumAdd(rr.col,pay.amount*part.frac,cur,pay.rate);if(!counted){rr.npay++;counted=true;}}}
+      /* v28: refunds are taken off the product of the plan on the refund date, in the range of the refund date */
+      for(const rf of s.refunds||[]){if(!inRange(rf.date,rb))continue;const k=refundKey(s,rf);const rr=mk(k,k==='__one'?'One-time items':k==='__none'?'Package not set':pkgName(k));sumAdd(rr.ref,rf.amount,rf.currency||s.currency,rf.rate);rr.nref++;}
       if(s.kind==='monthly'){if(sa.overdueAmount>0)sumAdd(r.out,sa.overdueAmount,s.currency,null);}else if(sa.remaining>0)sumAdd(r.out,sa.remaining,s.currency,null);}}
   const shared=mk('__shared','Shared / unassigned');
   for(const id of costIds){const c=state.costs[id];if(!inRange(c.date,rb))continue;const pid=costPkgId(c);const r=pid?mk(pid,pkgName(pid)):shared;sumAdd(r.cost,costTotal(c),c.currency,c.rate);r.ncost++;}
-  const order=[...packages().map(p=>p.id),'__none','__one','__shared'].filter(k=>rows[k]&&(rows[k].users.size||rows[k].col.n||rows[k].out.n||rows[k].cost.n||!k.startsWith('__')));
-  let tCol=newSum(),tCost=newSum(),tOut=newSum();const tUsers=new Set();for(const k of Object.keys(rows)){const r=rows[k];tCol=sumMerge(tCol,r.col);tCost=sumMerge(tCost,r.cost);tOut=sumMerge(tOut,r.out);r.users.forEach(x=>tUsers.add(x));}
-  const tNet=sumMerge(tCol,tCost,-1);tNet.n=tCol.n+tCost.n;
-  return {rows,order,tCol,tCost,tOut,tNet,tUsers};
+  const order=[...packages().map(p=>p.id),'__none','__one','__shared'].filter(k=>rows[k]&&(rows[k].users.size||rows[k].col.n||rows[k].ref.n||rows[k].out.n||rows[k].cost.n||!k.startsWith('__')));
+  let tCol=newSum(),tRef=newSum(),tCost=newSum(),tOut=newSum();const tUsers=new Set();for(const k of Object.keys(rows)){const r=rows[k];tCol=sumMerge(tCol,r.col);tRef=sumMerge(tRef,r.ref);tCost=sumMerge(tCost,r.cost);tOut=sumMerge(tOut,r.out);r.users.forEach(x=>tUsers.add(x));}
+  const tNet=netSum(tCol,tRef,tCost);
+  return {rows,order,tCol,tRef,tCost,tOut,tNet,tUsers};
 }
 function renderBreakdown(rb){
   const box=$('#pkgBreak');if(!Object.keys(state.users).length&&!Object.keys(state.costs).length){box.hidden=true;return;}
-  const {rows,order,tCol,tCost,tOut,tNet,tUsers}=breakdownRows(rb);
+  const {rows,order,tCol,tRef,tCost,tOut,tNet,tUsers}=breakdownRows(rb);const showRef=anyRefunds();
   const cell=(S,cls)=>{if(!S.n)return `<td class="r num muted${cls?' '+cls:''}">—</td>`;const x=sumParts(S,'PKR');return `<td class="r num${cls?' '+cls:''}">${esc(x.p)}${x.s?`<span class="s">${esc(x.s)}</span>`:''}</td>`;};
-  const netOf=r=>{const n=sumMerge(r.col,r.cost,-1);n.n=r.col.n+r.cost.n;return n;};
+  const netOf=r=>netSum(r.col,r.ref,r.cost);
   const netCls=n=>!n.n?'':(n.missing?n.pkr+n.usd:n.pkr)<0?'neg':(n.missing?n.pkr+n.usd:n.pkr)>0?'pos':'';
+  const refCell=S=>showRef?refTd(S,'PKR'):'';
   box.hidden=false;
-  box.innerHTML=`<div class="bh"><h2>By product</h2><span class="small muted">per package: users · collected in ${esc(rb.label)} (each payment counted for the tier of the periods it covers) · costs tagged to it · net · balance outstanding</span></div><div class="table-wrap" style="border:0"><table class="brk"><thead><tr><th>Product</th><th class="r">Users</th><th class="r">Collected</th><th class="r">Costs</th><th class="r">Net</th><th class="r">Outstanding</th></tr></thead><tbody>${order.map(k=>{const r=rows[k];const n=netOf(r);return `<tr${k==='__shared'?' class="shared"':''}><td>${k==='__none'?'<span class="pill warnp">Package not set</span>':k==='__shared'?`${esc(r.label)} <span class="small muted">(costs without a product)</span>`:esc(r.label)}</td><td class="r num">${k==='__shared'?'<span class="muted">—</span>':r.users.size}</td>${cell(r.col)}${cell(r.cost)}${cell(n,netCls(n))}${cell(r.out)}</tr>`;}).join('')}</tbody><tfoot><tr><td>Total <span class="small muted">(matches the tiles)</span></td><td class="r num">${tUsers.size}</td>${cell(tCol)}${cell(tCost)}${cell(tNet,netCls(tNet))}${cell(tOut)}</tr></tfoot></table></div><p class="small muted" style="margin:6px 0 8px">Tag a cost to a product when adding or editing it (Costs → Product). Costs recorded before this existed stay under Shared until you edit them.</p>`;
+  box.innerHTML=`<div class="bh"><h2>By product</h2><span class="small muted">per package: users · collected in ${esc(rb.label)} (each payment counted for the tier of the periods it covers)${showRef?' · refunds given back':''} · costs tagged to it · net${showRef?' (collected − refunds − costs)':''} · balance outstanding</span></div><div class="table-wrap" style="border:0"><table class="brk"><thead><tr><th>Product</th><th class="r">Users</th><th class="r">Collected</th>${showRef?'<th class="r">Refunds</th>':''}<th class="r">Costs</th><th class="r">Net</th><th class="r">Outstanding</th></tr></thead><tbody>${order.map(k=>{const r=rows[k];const n=netOf(r);return `<tr${k==='__shared'?' class="shared"':''}><td>${k==='__none'?'<span class="pill warnp">Package not set</span>':k==='__shared'?`${esc(r.label)} <span class="small muted">(costs without a product)</span>`:esc(r.label)}</td><td class="r num">${k==='__shared'?'<span class="muted">—</span>':r.users.size}</td>${cell(r.col)}${refCell(r.ref)}${cell(r.cost)}${cell(n,netCls(n))}${cell(r.out)}</tr>`;}).join('')}</tbody><tfoot><tr><td>Total <span class="small muted">(matches the tiles)</span></td><td class="r num">${tUsers.size}</td>${cell(tCol)}${refCell(tRef)}${cell(tCost)}${cell(tNet,netCls(tNet))}${cell(tOut)}</tr></tfoot></table></div><p class="small muted" style="margin:6px 0 8px">Tag a cost to a product when adding or editing it (Costs → Product). Costs recorded before this existed stay under Shared until you edit them.</p>`;
 }
 function setTile(id,S,primary,alertNeg){
   const p=sumParts(S,primary);$('#'+id).textContent=S.n?p.p:fmtAmt(0,primary);
@@ -1675,13 +1703,15 @@ function setTile(id,S,primary,alertNeg){
 }
 function renderTiles(){
   const today=todayISO();const ids=Object.keys(state.users);const rb=rangeBounds();
-  const col=newSum(),cost=newSum();let out=newSum(),unpaid=0,overdueUsers=0,soon=0,withBal=0,ncost=0,npay=0;
+  const col=newSum(),cost=newSum(),ref=newSum();let out=newSum(),unpaid=0,overdueUsers=0,soon=0,withBal=0,ncost=0,npay=0,nref=0;
   for(const p of allPayments())if(inRange(p.date,rb)){sumAdd(col,p.amount,p.currency,p.rate);npay++;}
+  for(const r of allRefunds())if(inRange(r.date,rb)){sumAdd(ref,r.amount,r.currency,r.rate);nref++;}
   for(const id in state.costs){const c=state.costs[id];if(inRange(c.date,rb)){sumAdd(cost,costTotal(c),c.currency,c.rate);ncost++;}}
   let cancOwe=newSum(),cancN=0,activeN=0;
   for(const id of ids){const u=state.users[id];const a=analyze(u,today);out=sumMerge(out,a.balance);if(a.balance.n)withBal++;if(a.unpaid)unpaid++;if(a.status==='overdue'||(a.status==='cancelled'&&a.unpaid))overdueUsers++;if(a.status==='due-soon')soon++;if(u.cancel){if(a.balance.n){cancOwe=sumMerge(cancOwe,a.balance);cancN++;}}else activeN++;}
-  const net=sumMerge(col,cost,-1);net.n=col.n+cost.n;
+  const net=netSum(col,ref,cost);
   setTile('t-col',col,'PKR');$('#t-col-sub').textContent=`${npay} payment${npay===1?'':'s'} · ${rb.label}`;
+  setTile('t-ref',ref,'PKR');if(ref.n){$('#t-ref').textContent='\u2212'+$('#t-ref').textContent;const rp=sumParts(ref,'PKR');if(rp.s)$('#t-ref2').textContent='\u2212'+rp.s;}$('#t-ref-sub').textContent=nref?`${nref} refund${nref===1?'':'s'} · ${rb.label} · taken off Net`:`none · ${rb.label}`;$('#tile-ref').dataset.alert=nref?'1':'0';
   setTile('t-cost',cost,'PKR');$('#t-cost-sub').textContent=`${ncost} cost entr${ncost===1?'y':'ies'} · ${rb.label}`;
   setTile('t-net',net,'PKR');$('#tile-net').dataset.alert=net.n&&(net.missing?net.pkr+net.usd<0:net.pkr<0)?'1':'0';$('#tile-net').dataset.good=net.n&&!net.missing&&net.pkr>0?'1':'0';
   setTile('t-out',out,'PKR');$('#t-out-sub').textContent=withBal?`owed by ${withBal} user${withBal===1?'':'s'}`+(cancN?` · incl. ${ownText(cancOwe,'PKR')} from ${cancN} cancelled`:''):(ids.length?'nothing outstanding':' ');$('#tile-out').dataset.alert=withBal?'1':'0';
@@ -1695,14 +1725,17 @@ const kfmt=v=>v>=1000?(v/1000).toLocaleString(undefined,{maximumFractionDigits:1
 /* v26: the last 12 calendar months with collected and costs per month in one currency; shared by the Summary chart and the Analytics tab so both show the same figures */
 function monthlySeries(cur){const today=todayISO();const ck=monthKey(today);const ci=(+ck.slice(0,4))*12+(+ck.slice(5,7)-1);
   const months=Array.from({length:12},(_,i)=>{const t=ci-11+i;return Math.floor(t/12)+'-'+pad((t%12)+1);});
-  const col=months.map(()=>0),cost=months.map(()=>0);let skipped=0;
+  const col=months.map(()=>0),cost=months.map(()=>0),ref=months.map(()=>0);let skipped=0;
   for(const p of allPayments()){const i=months.indexOf(monthKey(p.date));if(i<0)continue;const v=toCur(p.amount,p.currency,cur,p.rate);if(v==null)skipped++;else col[i]+=v;}
+  /* v28: refunds count in the month of the refund date */
+  for(const r of allRefunds()){const i=months.indexOf(monthKey(r.date));if(i<0)continue;const v=toCur(r.amount,r.currency,cur,r.rate);if(v==null)skipped++;else ref[i]+=v;}
   for(const id in state.costs){const c=state.costs[id];const i=months.indexOf(monthKey(c.date));if(i<0)continue;const v=toCur(costTotal(c),c.currency,cur,c.rate);if(v==null)skipped++;else cost[i]+=v;}
-  return {months,col,cost,skipped,ck};}
+  const net=months.map((m,i)=>col[i]-ref[i]-cost[i]);
+  return {months,col,ref,cost,net,skipped,ck};}
 function renderChart(){
   const box=$('#chart');const today=todayISO();const ck=monthKey(today);const cur=ui.chartCur;
   document.querySelectorAll('#chart-cur button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cur===cur)));
-  const {months,col,cost,skipped}=monthlySeries(cur);
+  const {months,col,ref,cost,skipped}=monthlySeries(cur);
   $('#chart-note').textContent=`Last 12 months by payment or cost date, in ${cur} equivalents.`+(skipped?` ${skipped} entr${skipped===1?'y':'ies'} in the other currency not shown: set an exchange rate in Settings.`:'');
   const W=Math.max(280,box.clientWidth||560),H=200,pl=56,pr=10,pt=18,pb=26;
   const max=Math.max.apply(null,col.concat(cost,[0]));const step=niceStep(max);const top=Math.max(step,Math.ceil(max/step)*step);
@@ -1719,7 +1752,7 @@ function renderChart(){
   });
   svg+='</svg><div class="tip" id="tip" hidden></div>';box.innerHTML=svg;
   const tip=$('#tip');
-  box.querySelectorAll('.hit').forEach(r=>{r.addEventListener('mouseenter',()=>{const i=+r.dataset.i;tip.textContent=`${mLabel(months[i])} · collected ${fmtAmt(col[i],cur)} · costs ${fmtAmt(cost[i],cur)}`;const scale=box.clientWidth/W;tip.style.left=((pl+i*band+band/2)*scale)+'px';tip.style.top=((y(Math.max(col[i],cost[i]))-6)*scale)+'px';tip.hidden=false;});r.addEventListener('mouseleave',()=>{tip.hidden=true;});});
+  box.querySelectorAll('.hit').forEach(r=>{r.addEventListener('mouseenter',()=>{const i=+r.dataset.i;tip.textContent=`${mLabel(months[i])} · collected ${fmtAmt(col[i],cur)}${ref[i]?` · refunds ${fmtAmt(-ref[i],cur)}`:''} · costs ${fmtAmt(cost[i],cur)}`;const scale=box.clientWidth/W;tip.style.left=((pl+i*band+band/2)*scale)+'px';tip.style.top=((y(Math.max(col[i],cost[i]))-6)*scale)+'px';tip.hidden=false;});r.addEventListener('mouseleave',()=>{tip.hidden=true;});});
 }
 
 /* ---------- v26: Analytics tab. Every number here is built from the same functions the Summary uses
@@ -1738,14 +1771,15 @@ function analyticsData(){
       if(s.kind!=='monthly'||s.start>today||(s.end&&s.end<today))continue;
       const m=effPrice(s,today)/(subCycle(s)==='yearly'?12:1);const k=anKey(s,today);
       sumAdd(mrr,m,s.currency,null);pkgMrr[k]=pkgMrr[k]||newSum();sumAdd(pkgMrr[k],m,s.currency,null);}}
-  const net=sumMerge(B.tCol,B.tCost,-1);net.n=B.tCol.n+B.tCost.n;
-  const rows=B.order.map(k=>{const r=B.rows[k];const n=sumMerge(r.col,r.cost,-1);n.n=r.col.n+r.cost.n;return {key:k,label:rowLabel(k),active:k==='__shared'?null:r.users.size,cancelled:k==='__shared'?null:(pkgCanc[k]||new Set()).size,mrr:pkgMrr[k]||newSum(),col:r.col,cost:r.cost,net:n,out:r.out};});
+  const net=netSum(B.tCol,B.tRef,B.tCost);
+  const rows=B.order.map(k=>{const r=B.rows[k];const n=netSum(r.col,r.ref,r.cost);return {key:k,label:rowLabel(k),active:k==='__shared'?null:r.users.size,cancelled:k==='__shared'?null:(pkgCanc[k]||new Set()).size,mrr:pkgMrr[k]||newSum(),col:r.col,ref:r.ref,cost:r.cost,net:n,out:r.out};});
   const owing=users.filter(x=>x.a.balance.n).sort((x,y)=>sortVal(y.a.balance)-sortVal(x.a.balance));
-  return {today,activeN,cancN,mrr,col:B.tCol,cost:B.tCost,net,out,rows,tUsers:B.tUsers.size,owing};
+  return {today,activeN,cancN,mrr,col:B.tCol,ref:B.tRef,cost:B.tCost,net,out,rows,tUsers:B.tUsers.size,owing};
 }
 function cumulativeSeries(cur){
   const ev=[];let skipped=0;
   for(const p of allPayments()){const v=toCur(p.amount,p.currency,cur,p.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(p.date),col:v,cost:0});}
+  for(const r of allRefunds()){const v=toCur(r.amount,r.currency,cur,r.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(r.date),col:-v,cost:0});}
   for(const id in state.costs){const c=state.costs[id];const v=toCur(costTotal(c),c.currency,cur,c.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(c.date),col:0,cost:v});}
   if(!ev.length)return {months:[],col:[],cost:[],skipped};
   const idx=k=>(+k.slice(0,4))*12+(+k.slice(5,7)-1);const ck=monthKey(todayISO());
@@ -1791,7 +1825,7 @@ function usersPkgSVG(box,rows){
 }
 /* Collected vs costs by month with the net line: the same 12 months and numbers as the Summary chart (monthlySeries), plus net = collected - costs */
 function monthlyNetSVG(box,S,cur){
-  const {months,col,cost,ck}=S;const net=months.map((m,i)=>col[i]-cost[i]);
+  const {months,col,ref,cost,ck,net}=S;
   const W=chartW(box),H=220,pl=56,pr=64,pt=18,pb=26;
   const hi=Math.max(...col,...cost,...net,0),lo=Math.min(...net,0);const step=niceStep(Math.max(hi,-lo));const top=Math.max(step,Math.ceil(hi/step)*step),bot=lo<0?-Math.ceil(-lo/step)*step:0;
   const innerH=H-pt-pb,innerW=W-pl-pr,band=innerW/12,bw=Math.min(14,(band-10)/2);const y=v=>pt+innerH*(top-v)/(top-bot);
@@ -1804,13 +1838,13 @@ function monthlyNetSVG(box,S,cur){
     if(cost[i]>0)svg+=barPath(cx+1,y(cost[i]),bw,Math.max(1,y(0)-y(cost[i])),'up','bar2a');
     pts.push([cx,y(net[i])]);
     if(i%every===(11%every))svg+=`<text class="xlab${m===ck?' cur':''}" x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle">${xLabel(m,i,ck)}</text>`;});
-  let first=months.findIndex((m,i)=>col[i]||cost[i]);if(first<0)first=11;
+  let first=months.findIndex((m,i)=>col[i]||ref[i]||cost[i]);if(first<0)first=11;
   svg+=`<polyline class="ln-net" points="${pts.slice(first).map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}"/>`;
-  pts.forEach((p,i)=>{if(i>=first&&(col[i]||cost[i]||i===11))svg+=`<circle class="dot dotn" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4"/>`;});
+  pts.forEach((p,i)=>{if(i>=first&&(col[i]||ref[i]||cost[i]||i===11))svg+=`<circle class="dot dotn" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4"/>`;});
   const last=pts[11];svg+=`<text class="dlab strong" x="${(last[0]+bw+7).toFixed(1)}" y="${(last[1]+4).toFixed(1)}">${esc(sgn(net[11],cur))}</text>`;
-  months.forEach((m,i)=>{svg+=`<rect class="hit" tabindex="0" data-i="${i}" x="${(pl+i*band).toFixed(1)}" y="${pt}" width="${band.toFixed(1)}" height="${innerH}"><title>${mLabel(m)}: collected ${esc(fmtAmt(col[i],cur))}, costs ${esc(fmtAmt(cost[i],cur))}, net ${esc(fmtAmt(net[i],cur))}</title></rect>`;});
+  months.forEach((m,i)=>{svg+=`<rect class="hit" tabindex="0" data-i="${i}" x="${(pl+i*band).toFixed(1)}" y="${pt}" width="${band.toFixed(1)}" height="${innerH}"><title>${mLabel(m)}: collected ${esc(fmtAmt(col[i],cur))}${ref[i]?`, refunds ${esc(fmtAmt(-ref[i],cur))}`:''}, costs ${esc(fmtAmt(cost[i],cur))}, net ${esc(fmtAmt(net[i],cur))}</title></rect>`;});
   svg+='</svg><div class="tip" hidden></div>';box.innerHTML=svg;
-  wireTips(box,W,i=>({text:`${mLabel(months[i])}\n${fmtAmt(col[i],cur)} collected\n${fmtAmt(cost[i],cur)} costs\n${fmtAmt(net[i],cur)} net`,x:pl+i*band+band/2,y:Math.min(y(Math.max(col[i],cost[i],net[i]))-8,y(0)-8)}));
+  wireTips(box,W,i=>({text:`${mLabel(months[i])}\n${fmtAmt(col[i],cur)} collected${ref[i]?`\n${fmtAmt(-ref[i],cur)} refunds`:''}\n${fmtAmt(cost[i],cur)} costs\n${fmtAmt(net[i],cur)} net`,x:pl+i*band+band/2,y:Math.min(y(Math.max(col[i],cost[i],net[i]))-8,y(0)-8)}));
   return net;
 }
 /* Cumulative money made vs cost since the first record: two 2px lines with a 10% wash, end markers, the gap between the two ends labelled */
@@ -1848,26 +1882,27 @@ function renderAnalytics(){
   const cellS=(S,cls)=>{if(!S.n)return `<td class="r num muted${cls?' '+cls:''}">—</td>`;const x=sumParts(S,cur);return `<td class="r num${cls?' '+cls:''}">${esc(x.p)}${x.s?`<span class="s">${esc(x.s)}</span>`:''}</td>`;};
   const netCls=n=>!n.n?'':(n.missing?n.pkr+n.usd:n.pkr)<0?'neg':(n.missing?n.pkr+n.usd:n.pkr)>0?'pos':'';
   const netV=n=>n.missing?n.pkr+n.usd:n.pkr;
+  const showRef=anyRefunds();const refS=S=>showRef?refTd(S,cur):'';
   const S12=monthlySeries(cur);const C=cumulativeSeries(cur);
   $('#an-sub').textContent=`All time, as of ${fmtD(D.today,true)} · amounts in ${cur}${cur==='PKR'?' with USD':' with PKR'} equivalents at the default rate${defaultRate()?' (1 USD = Rs '+defaultRate().toLocaleString()+')':' — set one in Settings'}.`;
   let html=`<section class="an-tiles" aria-label="Headline figures">
     <div class="tile"><span class="lbl">Active users</span><span class="val">${D.activeN}</span><span class="val2">&nbsp;</span><span class="sub">not cancelled</span></div>
     <div class="tile"><span class="lbl">Cancelled users</span><span class="val">${D.cancN}</span><span class="val2">&nbsp;</span><span class="sub">${D.owing.filter(x=>x.u.cancel).length?D.owing.filter(x=>x.u.cancel).length+' still owe':'none owe anything'}</span></div>
     <div class="tile"><span class="lbl">Monthly recurring</span>${val(D.mrr)}<span class="sub">current prices · yearly ÷ 12</span></div>
-    <div class="tile"><span class="lbl">Collected all time</span>${val(D.col)}<span class="sub">${D.col.n} payment${D.col.n===1?'':'s'}</span></div>
+    <div class="tile"><span class="lbl">Collected all time</span>${val(D.col)}<span class="sub">${D.col.n} payment${D.col.n===1?'':'s'}${D.ref.n?` · <span class="refund">${D.ref.n} refund${D.ref.n===1?'':'s'} \u2212${esc(sumParts(D.ref,cur).p)}</span>`:''}</span></div>
     <div class="tile"><span class="lbl">Costs all time</span>${val(D.cost)}<span class="sub">${D.cost.n} cost entr${D.cost.n===1?'y':'ies'}</span></div>
-    <div class="tile" data-alert="${D.net.n&&netV(D.net)<0?1:0}" data-good="${D.net.n&&!D.net.missing&&D.net.pkr>0?1:0}"><span class="lbl">Net all time</span>${val(D.net)}<span class="sub">collected minus costs</span></div>
+    <div class="tile" data-alert="${D.net.n&&netV(D.net)<0?1:0}" data-good="${D.net.n&&!D.net.missing&&D.net.pkr>0?1:0}"><span class="lbl">Net all time</span>${val(D.net)}<span class="sub">collected minus ${D.ref.n?'refunds and ':''}costs</span></div>
   </section>`;
   const chartRows=D.rows.filter(r=>r.active!=null&&(r.active||r.cancelled)&&r.key!=='__one');
   html+=`<section class="an-sec"><div class="bh"><h2>Users per package</h2><div class="chart-legend"><span><i style="background:var(--chart-1)"></i>Active</span><span><i style="background:var(--chart-1-soft)"></i>Cancelled</span></div></div>
     <div class="chart-box" id="an-users"></div>
-    <div class="table-wrap" style="border:0"><table class="brk"><thead><tr><th>Package</th><th class="r">Active</th><th class="r">Cancelled</th><th class="r">Monthly recurring</th><th class="r">Collected</th><th class="r">Costs</th><th class="r">Net</th></tr></thead><tbody>
-    ${D.rows.map(r=>`<tr${r.key==='__shared'?' class="shared"':''}><td>${r.key==='__none'?'<span class="pill warnp">Package not set</span>':esc(r.label)}${r.key==='__shared'?' <span class="small muted">(costs without a product)</span>':''}</td><td class="r num">${r.active==null?'<span class="muted">—</span>':r.active}</td><td class="r num">${r.cancelled==null?'<span class="muted">—</span>':r.cancelled}</td>${cellS(r.mrr)}${cellS(r.col)}${cellS(r.cost)}${cellS(r.net,netCls(r.net))}</tr>`).join('')}
-    </tbody><tfoot><tr><td>Total <span class="small muted">(matches the tiles)</span></td><td class="r num">${D.activeN}</td><td class="r num">${D.cancN}</td>${cellS(D.mrr)}${cellS(D.col)}${cellS(D.cost)}${cellS(D.net,netCls(D.net))}</tr></tfoot></table></div>
-    <p class="small muted" style="margin:6px 0 0">Active counts users with a running plan on that package (a user with plans on two packages counts once in each, once in the total). Collected is split by the tier each payment covered, as in By product.</p></section>`;
+    <div class="table-wrap" style="border:0"><table class="brk"><thead><tr><th>Package</th><th class="r">Active</th><th class="r">Cancelled</th><th class="r">Monthly recurring</th><th class="r">Collected</th>${showRef?'<th class="r">Refunds</th>':''}<th class="r">Costs</th><th class="r">Net</th></tr></thead><tbody>
+    ${D.rows.map(r=>`<tr${r.key==='__shared'?' class="shared"':''}><td>${r.key==='__none'?'<span class="pill warnp">Package not set</span>':esc(r.label)}${r.key==='__shared'?' <span class="small muted">(costs without a product)</span>':''}</td><td class="r num">${r.active==null?'<span class="muted">—</span>':r.active}</td><td class="r num">${r.cancelled==null?'<span class="muted">—</span>':r.cancelled}</td>${cellS(r.mrr)}${cellS(r.col)}${refS(r.ref)}${cellS(r.cost)}${cellS(r.net,netCls(r.net))}</tr>`).join('')}
+    </tbody><tfoot><tr><td>Total <span class="small muted">(matches the tiles)</span></td><td class="r num">${D.activeN}</td><td class="r num">${D.cancN}</td>${cellS(D.mrr)}${cellS(D.col)}${refS(D.ref)}${cellS(D.cost)}${cellS(D.net,netCls(D.net))}</tr></tfoot></table></div>
+    <p class="small muted" style="margin:6px 0 0">Active counts users with a running plan on that package (a user with plans on two packages counts once in each, once in the total). Collected is split by the tier each payment covered, as in By product.${showRef?' A refund is taken off the package the plan was on that day; Net is collected minus refunds minus costs.':''}</p></section>`;
   html+=`<section class="an-sec"><div class="bh"><h2>Collected vs costs by month</h2><div class="chart-legend"><span><i style="background:var(--chart-1)"></i>Collected</span><span><i style="background:var(--chart-2)"></i>Costs</span><span><i class="ln"></i>Net</span></div></div>
     <div class="chart-box" id="an-monthly"></div><p class="small muted" id="an-monthly-note"></p><div class="table-wrap" style="border:0"><table class="brk" id="an-monthly-table"></table></div></section>`;
-  html+=`<section class="an-sec"><div class="bh"><h2>Cumulative: money made vs cost</h2><div class="chart-legend"><span><i class="ln" style="background:var(--chart-1)"></i>Collected so far</span><span><i class="ln" style="background:var(--chart-2)"></i>Costs so far</span></div></div>
+  html+=`<section class="an-sec"><div class="bh"><h2>Cumulative: money made vs cost</h2><div class="chart-legend"><span><i class="ln" style="background:var(--chart-1)"></i>Collected so far${anyRefunds()?' (after refunds)':''}</span><span><i class="ln" style="background:var(--chart-2)"></i>Costs so far</span></div></div>
     <div class="chart-box" id="an-cum"></div><p class="small muted" id="an-cum-note"></p></section>`;
   const owe=D.owing.slice(0,5);const pkgOut=D.rows.filter(r=>r.out.n);
   html+=`<section class="an-sec"><div class="bh"><h2>Outstanding</h2><span class="small muted">balance due now, as on the Outstanding tile</span></div>
@@ -1880,13 +1915,13 @@ function renderAnalytics(){
   const gap=cumulativeSVG($('#an-cum'),C,cur);
   /* the 12-month table: cumulative net runs from the first record, so its last row equals the gap on the cumulative chart */
   const cumMap={};C.months.forEach((m,i)=>{cumMap[m]=C.col[i]-C.cost[i];});let lastCum=0;
-  const rows12=S12.months.map((m,i)=>{if(cumMap[m]!=null)lastCum=cumMap[m];else{const before=C.months.filter(x=>x<m);if(before.length)lastCum=cumMap[before[before.length-1]];}return {m,col:S12.col[i],cost:S12.cost[i],net:net12[i],cum:lastCum};});
-  const firstRec=C.months.length?C.months[0]:S12.months[0];const shown12=rows12.filter(r=>r.m>=firstRec||r.col||r.cost);
-  const t12=rows12.reduce((a,r)=>({col:a.col+r.col,cost:a.cost+r.cost,net:a.net+r.net}),{col:0,cost:0,net:0});
+  const rows12=S12.months.map((m,i)=>{if(cumMap[m]!=null)lastCum=cumMap[m];else{const before=C.months.filter(x=>x<m);if(before.length)lastCum=cumMap[before[before.length-1]];}return {m,col:S12.col[i],ref:S12.ref[i],cost:S12.cost[i],net:net12[i],cum:lastCum};});
+  const firstRec=C.months.length?C.months[0]:S12.months[0];const shown12=rows12.filter(r=>r.m>=firstRec||r.col||r.ref||r.cost);
+  const t12=rows12.reduce((a,r)=>({col:a.col+r.col,ref:a.ref+r.ref,cost:a.cost+r.cost,net:a.net+r.net}),{col:0,ref:0,cost:0,net:0});
   const nz=v=>v?esc(fmtAmt(v,cur)):'<span class="muted">—</span>';const ncls=v=>v<0?' neg':v>0?' pos':'';
-  $('#an-monthly-table').innerHTML=`<thead><tr><th>Month</th><th class="r">Collected</th><th class="r">Costs</th><th class="r">Net</th><th class="r">Cumulative net</th></tr></thead><tbody>${shown12.map(r=>`<tr${r.m===S12.ck?' style="font-weight:600"':''}><td>${esc(mLabel(r.m))}</td><td class="r num">${nz(r.col)}</td><td class="r num">${nz(r.cost)}</td><td class="r num${ncls(r.net)}">${nz(r.net)}</td><td class="r num${ncls(r.cum)}">${C.months.length&&r.m>=C.months[0]?esc(fmtAmt(r.cum,cur)):'<span class="muted">—</span>'}</td></tr>`).join('')}</tbody><tfoot><tr><td>Last 12 months${shown12.length<12?` <span class="small muted">(${12-shown12.length} empty month${12-shown12.length===1?'':'s'} before ${esc(mLabel(shown12[0].m))} not listed)</span>`:''}</td><td class="r num">${esc(fmtAmt(t12.col,cur))}</td><td class="r num">${esc(fmtAmt(t12.cost,cur))}</td><td class="r num${ncls(t12.net)}">${esc(fmtAmt(t12.net,cur))}</td><td class="r num muted">since ${C.months.length?esc(mLabel(C.months[0])):'—'}</td></tr></tfoot>`;
-  $('#an-monthly-note').textContent=`By payment or cost date, in ${cur} equivalents; the line is net (collected minus costs) and its last value is labelled.`+(S12.skipped?` ${S12.skipped} entr${S12.skipped===1?'y':'ies'} in the other currency not shown: set an exchange rate in Settings.`:'');
-  $('#an-cum-note').textContent=C.months.length?`Running totals from ${mLabel(C.months[0])} to ${mLabel(C.months[C.months.length-1])}: ${fmtAmt(C.col[C.months.length-1],cur)} collected against ${fmtAmt(C.cost[C.months.length-1],cur)} of costs, a gap of ${sgn(gap,cur)}${gap>=0?' in your favour':' (costs ahead)'}.`+(C.skipped?` ${C.skipped} entr${C.skipped===1?'y':'ies'} without a rate left out.`:''):'';
+  $('#an-monthly-table').innerHTML=`<thead><tr><th>Month</th><th class="r">Collected</th>${showRef?'<th class="r">Refunds</th>':''}<th class="r">Costs</th><th class="r">Net</th><th class="r">Cumulative net</th></tr></thead><tbody>${shown12.map(r=>`<tr${r.m===S12.ck?' style="font-weight:600"':''}><td>${esc(mLabel(r.m))}</td><td class="r num">${nz(r.col)}</td>${showRef?`<td class="r num${r.ref?' refund':''}">${r.ref?esc(fmtAmt(-r.ref,cur)):nz(0)}</td>`:''}<td class="r num">${nz(r.cost)}</td><td class="r num${ncls(r.net)}">${nz(r.net)}</td><td class="r num${ncls(r.cum)}">${C.months.length&&r.m>=C.months[0]?esc(fmtAmt(r.cum,cur)):'<span class="muted">—</span>'}</td></tr>`).join('')}</tbody><tfoot><tr><td>Last 12 months${shown12.length<12?` <span class="small muted">(${12-shown12.length} empty month${12-shown12.length===1?'':'s'} before ${esc(mLabel(shown12[0].m))} not listed)</span>`:''}</td><td class="r num">${esc(fmtAmt(t12.col,cur))}</td>${showRef?`<td class="r num${t12.ref?' refund':''}">${esc(fmtAmt(-t12.ref,cur))}</td>`:''}<td class="r num">${esc(fmtAmt(t12.cost,cur))}</td><td class="r num${ncls(t12.net)}">${esc(fmtAmt(t12.net,cur))}</td><td class="r num muted">since ${C.months.length?esc(mLabel(C.months[0])):'—'}</td></tr></tfoot>`;
+  $('#an-monthly-note').textContent=`By payment or cost date, in ${cur} equivalents; the line is net (collected minus ${showRef?'refunds and ':''}costs) and its last value is labelled.`+(S12.skipped?` ${S12.skipped} entr${S12.skipped===1?'y':'ies'} in the other currency not shown: set an exchange rate in Settings.`:'');
+  $('#an-cum-note').textContent=C.months.length?`Running totals from ${mLabel(C.months[0])} to ${mLabel(C.months[C.months.length-1])}: ${fmtAmt(C.col[C.months.length-1],cur)} collected${showRef?' after refunds':''} against ${fmtAmt(C.cost[C.months.length-1],cur)} of costs, a gap of ${sgn(gap,cur)}${gap>=0?' in your favour':' (costs ahead)'}.`+(C.skipped?` ${C.skipped} entr${C.skipped===1?'y':'ies'} without a rate left out.`:''):'';
 }
 function openAnalytics(){showPanel('analyticsPanel');renderAnalytics();$('#analyticsPanel').scrollIntoView({behavior:'smooth',block:'start'});}
 
@@ -1953,7 +1988,9 @@ function renderRemindAll(rows,today){
 }
 const curSelect=(id,name,val)=>`<select id="${id}" name="${name}"><option value="PKR"${val==='PKR'?' selected':''}>PKR (Rs)</option><option value="USD"${val==='USD'?' selected':''}>USD ($)</option></select>`;
 function payRows(s){
-  const rows=(s.payments||[]).slice().sort((x,y)=>y.date.localeCompare(x.date)).map(p=>{const pc=p.currency||s.currency;return `<tr><td class="num">${esc(p.date)}</td><td class="num">${esc(fmtAmt(p.amount,pc))}${rateNote(p.rate)}</td><td class="note">${esc(p.note||'')}</td><td><button class="link" type="button" data-act="pay-edit" data-sub="${s.id}" data-pay="${p.id}">Edit</button> <button class="link danger" type="button" data-act="pay-remove" data-sub="${s.id}" data-pay="${p.id}">Remove</button></td></tr>`;}).join('');
+  /* v28: refunds sit in the same history, newest first, marked Refund with a negative amount */
+  const items=(s.payments||[]).map(p=>({r:false,x:p})).concat((s.refunds||[]).map(r=>({r:true,x:r}))).sort((a,b)=>b.x.date.localeCompare(a.x.date)||(a.r===b.r?0:a.r?-1:1));
+  const rows=items.map(({r,x:p})=>{const pc=p.currency||s.currency;if(r)return `<tr class="refund-row"><td class="num">${esc(p.date)}</td><td class="num amt">${esc(fmtAmt(-p.amount,pc))}${rateNote(p.rate)}</td><td class="note"><span class="tag refund-tag">Refund</span>${esc(p.note||'')}</td><td><button class="link" type="button" data-act="refund-edit" data-sub="${s.id}" data-ref="${p.id}">Edit</button> <button class="link danger" type="button" data-act="refund-remove" data-sub="${s.id}" data-ref="${p.id}">Remove</button></td></tr>`;return `<tr><td class="num">${esc(p.date)}</td><td class="num">${esc(fmtAmt(p.amount,pc))}${rateNote(p.rate)}</td><td class="note">${esc(p.note||'')}</td><td><button class="link" type="button" data-act="pay-edit" data-sub="${s.id}" data-pay="${p.id}">Edit</button> <button class="link danger" type="button" data-act="pay-remove" data-sub="${s.id}" data-pay="${p.id}">Remove</button></td></tr>`;}).join('');
   return rows?`<table class="pays"><thead><tr><th>Date</th><th>Amount</th><th>Note</th><th></th></tr></thead><tbody>${rows}</tbody></table>`:'<p class="small muted" style="margin-top:8px">No payments recorded yet.</p>';
 }
 function payForm(id,s,sa,today,defAmt,open,edit){
@@ -1973,6 +2010,61 @@ function payForm(id,s,sa,today,defAmt,open,edit){
     <div class="cover" data-role="cover"></div>
   </form>`;
 }
+/* ---------- v28: refunds. Money given back is a refund on the plan: {id,date,amount,currency,rate,note} in s.refunds.
+   It is taken off revenue in the month of its date (Summary, By product, Analytics) and off the plan's credit, so the period it paid for
+   shows as unpaid again. For a cancelled user the periods up to the last day that refunds un-paid are counted at what the user kept
+   (a period amount marked fromRefund), so a refund on leaving does not leave a balance; removing the refund removes those. ---------- */
+function refundForm(id,u,s,today,open,edit){
+  const e=edit||null;const canCx=!u.cancel&&s.kind==='monthly'&&!e;const first=esc((displayName(u).split(/\s+/)[0])||'this user');
+  const lastPay=(s.payments||[]).slice().sort((a,b)=>b.date.localeCompare(a.date))[0];
+  return `<form class="refund-form" data-id="${id}" data-sub="${s.id}" ${(open||e)?'':'hidden'} novalidate>
+    <input type="hidden" name="refId" value="${e?esc(e.id):''}">
+    <p class="small" style="margin-bottom:6px"><b>${e?'Edit refund':'Refund'}</b> <span class="muted">· money you gave back to ${first}. It comes off revenue in the month of its date and off what this plan has paid.${e?' Editing the refund recorded on '+esc(e.date)+'.':''}</span></p>
+    <div class="pay-row">
+      <label class="f">Refund date<input id="rf-date-${s.id}" name="date" type="date" required value="${e?esc(e.date):today}"></label>
+      <label class="f">Refunded in${curSelect('rf-cur-'+s.id,'currency',e?(e.currency||s.currency):s.currency)}</label>
+      <label class="f">Amount<input id="rf-amount-${s.id}" name="amount" type="number" min="0" step="0.01" required inputmode="decimal" value="${e?e.amount:''}" placeholder="${lastPay?'e.g. '+esc(String(lastPay.amount)):''}"></label>
+      <label class="f">Rate <span class="muted">(blank = default${defaultRate()?' '+defaultRate().toLocaleString():''})</span><input id="rf-rate-${s.id}" name="rate" type="number" min="0" step="0.0001" class="num" value="${e&&e.rate?e.rate:''}" placeholder="${defaultRate()?defaultRate():'set in Settings'}"></label>
+      <label class="f">Reason / note <span class="muted">(optional)</span><input id="rf-note-${s.id}" name="note" type="text" value="${e?esc(e.note||''):''}" placeholder="e.g. left mid-cycle, sent back via NayaPay"></label>
+      ${canCx?`<label class="f chk"><input id="rf-cx-${s.id}" name="alsoCancel" type="checkbox">Also cancel ${first}</label>
+      <label class="f" data-role="rf-last" hidden>Last day<input id="rf-last-${s.id}" name="lastDay" type="date"></label>`:''}
+      <span class="form-actions" style="margin:0"><button class="btn danger sm" type="submit">${e?'Save changes':'Save refund'}</button><button class="link" type="button" data-act="refund-cancel" data-sub="${s.id}">Cancel</button></span>
+    </div>
+    <div class="cover" data-role="rcover"></div>
+  </form>`;
+}
+/* the period amounts a refund set for a cancelled user (marked fromRefund) are derived, not typed: they are cleared and worked out again
+   from all of the plan's refunds whenever a refund is saved or removed, and for a user who is not cancelled there are none */
+function clearRefundSettles(s){const po=s.periodOverrides;if(!po)return;for(const k of Object.keys(po))if(po[k]&&po[k].fromRefund)delete po[k];}
+/* periods up to the cancelled user's last day that were paid before the refunds and are short after them: count them at what was kept */
+function settleRefunds(u,s,today){
+  clearRefundSettles(s);if(!u.cancel||s.kind!=='monthly'||!(s.refunds||[]).length)return [];
+  const base=clone(s);delete base.refunds;
+  const before=analyzeMonthly(base,today),after=analyzeMonthly(s,today);const out=[];
+  for(const p of after.periods){if(p.st>u.cancel.lastDay)break;if(p.state!=='partial'&&p.state!=='unpaid')continue;const b=before.periods.find(x=>x.k===p.k);if(!b||b.state!=='paid')continue;
+    setPeriodOverride(s,p.st,p.covered,'kept after refund');s.periodOverrides[p.st].fromRefund=true;out.push({st:p.st,en:p.en,kept:p.covered});}
+  return out;}
+/* what the refund form will do, in words, before Save */
+function refundPreview(u,s,f,today){
+  const n=Number(f.amount)||0;if(n<=0)return '';const pc=f.currency;const rate=normRate(f.rate);
+  const c=conv(n,pc,rate);let txt=fmtAmt(-n,pc)+(c.ok&&pc!==s.currency?' ≈ '+fmtAmt(-(pc==='USD'?c.pkr:c.usd),other(pc)):'')+` comes off revenue for ${mLabel(monthKey(isDateKey(f.date)?f.date:today))}`;
+  const inPlan=toCur(n,pc,s.currency,rate);if(inPlan==null)return txt+'. Set an exchange rate so it can count against this plan.';
+  const base=clone(s);base.refunds=(base.refunds||[]).filter(r=>r.id!==f.refId);
+  const sim=clone(base);sim.refunds=(sim.refunds||[]).concat([{id:f.refId||'__new',date:f.date||today,amount:n,currency:pc,rate}]);
+  if(s.kind!=='monthly'){const b=analyzeOneTime(base,today),a=analyzeOneTime(sim,today);return txt+`. Paid on ${s.name||'this item'} goes from ${fmtAmt(b.paid,s.currency)} to ${fmtAmt(a.paid,s.currency)}; remaining ${fmtAmt(a.remaining,s.currency)}. If the sale is undone, also edit the item's total.`;}
+  const b=analyzeMonthly(base,today);
+  const cx=f.alsoCancel&&isDateKey(f.lastDay)?f.lastDay:(u.cancel?u.cancel.lastDay:null);
+  if(cx&&(!sim.end||sim.end>cx))sim.end=cx;
+  const a=analyzeMonthly(sim,today);
+  const pt=x=>x.kPaid?fmtD(x.paidThrough,true):'nothing';
+  txt+=`. Paid through ${pt(b)} → ${pt(a)}`;
+  if(cx){const uu={cancel:{lastDay:cx}};const tmp=clone(sim);const kept=settleRefunds(uu,tmp,today);const a2=analyzeMonthly(tmp,today);
+    txt+=`. ${f.alsoCancel?'Cancelled':'Cancelled user'} · last day ${fmtD(cx,true)}: nothing is billed after it`;
+    if(kept.length)txt+=`; ${kept.map(k=>`${fmtD(k.st)} – ${fmtD(k.en)} counts as ${fmtAmt(k.kept,s.currency)} kept`).join(', ')}`;
+    txt+=a2.overdueAmount>0?`; still owed ${fmtAmt(a2.overdueAmount,s.currency)}.`:'; nothing owed.';}
+  else{const short=a.periods.filter(p=>(p.state==='unpaid'||p.state==='partial')&&p.st<=today&&!((b.periods.find(x=>x.k===p.k)||{}).state!=='paid'));
+    txt+=short.length?`; ${short.map(p=>`${fmtD(p.st)} – ${fmtD(p.en)}`).join(', ')} shows as unpaid again (${fmtAmt(a.overdueAmount,s.currency)} owed). Tick "Also cancel" if they are leaving.`:'.';}
+  return txt;}
 function uptoForm(id,s,sa,today,open){
   if(!sa.nextDue)return '';
   const opts=[];for(let k=sa.kPaid;k<sa.kPaid+12;k++){const p=periodAmt(s,k);if(s.end&&p.st>s.end)break;opts.push(`<option value="${k}">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}</option>`);}
@@ -2056,12 +2148,13 @@ async function saveAmtForm(form){const id=form.dataset.id,sid=form.dataset.sub,s
   closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok)toast(back?`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`:`${displayName(u)}: ${fmtD(st)} period ${pn?'billed as '+pn+' at ':'set to '}${fmtAmt(amount,s.currency)}${note?' · '+note:''}${amount<listed?` (${fmtAmt(listed-amount,s.currency)} off)`:amount>listed?` (${fmtAmt(amount-listed,s.currency)} more)`:''}.`);}
 /* v27: past cancellations that were resumed: the gap in which nothing was billed */
 function cancelHistHTML(u){const h=u.cancelHistory||[];if(!h.length)return '';return `<p class="cancel-hist">${h.map(x=>{const gap=x.resumedOn&&dayDiff(x.lastDay,x.resumedOn)>1;return `Cancelled · last day <b>${esc(fmtD(x.lastDay,true))}</b>${x.resumedOn?` · resumed <b>${esc(fmtD(x.resumedOn,true))}</b>`:''}${gap?` · not billed ${esc(fmtD(addDays(x.lastDay,1)))} – ${esc(fmtD(addDays(x.resumedOn,-1)))}`:''}${x.reason?` · ${esc(x.reason)}`:''}`;}).join('<br>')}</p>`;}
+const refundEditOf=s=>{const rid=(ui.refundEdit||{})[s.id];return rid?(s.refunds||[]).find(x=>x.id===rid)||null:null;};
 function detailHTML(id,u,a,today){
   const open=ui.open[id]||{};const subs=u.subscriptions||[];
   let subsHtml='';
   for(const s of subs){
     const sa=a.sa[s.id];const payOpen=open['pay:'+s.id];
-    const unconvNote=sa.unconv?`<span class="err">${sa.unconv} payment${sa.unconv===1?'':'s'} in the other currency need an exchange rate to count</span>`:'';
+    const unconvNote=sa.unconv?`<span class="err">${sa.unconv} payment${sa.unconv===1?'':'s'} or refund${sa.unconv===1?'':'s'} in the other currency need an exchange rate to count</span>`:'';
     if(s.kind==='monthly'){
       const hist=(s.prices||[]).slice().sort((x,y)=>x.from.localeCompare(y.from));
       const histTxt=hist.length>1?hist.map(p=>`${esc(fmtAmt(p.price,s.currency))} from ${esc(fmtD(p.from,true))} <button class="link sm" type="button" data-act="price-edit" data-sub="${s.id}" data-from="${p.from}">edit</button> <button class="link sm danger" type="button" data-act="price-remove" data-sub="${s.id}" data-from="${p.from}">remove</button>`).join(' → '):'';
@@ -2094,16 +2187,18 @@ function detailHTML(id,u,a,today){
           <div class="sub-line"><span class="pkg-badge" title="Package / tier">${esc(pkgName(sa.curPkgId)||planLabel(s))}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="kind">${subCycle(s)} · ${s.currency}</span><span class="num">${s.discount?`${esc(fmtAmt(shownList,s.currency))}<span class="muted">${perOf(s)}</span> · ${esc(discountLabel(s))} = <b>${esc(fmtAmt(shownPrice,s.currency))}</b>`:`${esc(fmtAmt(shownPrice,s.currency))}<span class="muted">${perOf(s)}</span>`}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>${tierBadgeHTML(s,today)}
           <span class="sub-acts"><button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>
           ${sa.nextDue?`<button class="btn sm" type="button" data-act="toggle" data-key="upto:${s.id}" title="Record payment for every period up to a chosen cycle or date">Paid up to…</button>`:''}
+          ${(s.payments||[]).length?`<button class="btn sm" type="button" data-act="toggle" data-key="refund:${s.id}" title="Record money given back: it comes off revenue and off this plan's credit">Refund</button>`:''}
           <button class="btn sm" type="button" data-act="toggle" data-key="price:${s.id}">Change price</button>
           ${canTier?`<button class="btn sm" type="button" data-act="toggle" data-key="tier:${s.id}" title="Move this plan to another tier with the same billing cycle (for example C ↔ C Max) from a chosen cycle">Change tier</button>`:''}
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
         </div>
         <div class="sub-body">
-        <div class="sub-facts"><span>Started <b>${esc(fmtD(s.start,true))}</b></span>${s.end?`<span>Ends <b>${esc(fmtD(s.end,true))}</b></span>`:''}<span>Paid through <b>${sa.kPaid?esc(fmtD(sa.paidThrough,true)):'nothing yet'}</b></span>${sa.nextDue?(sa.nextDue>today?`<span>Next due <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}${sa.nextCredit>0?` <span class="muted">(after ${esc(fmtAmt(sa.nextCredit,s.currency))} credit)</span>`:''}</span>`:sa.nextCredit>0?`<span>Remaining on the current period <b>${esc(fmtAmt(nextPr,s.currency))}</b></span>`:`<span>Unpaid since <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}</span>`):''}<span>Total paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>${yearFacts}${dueByFact}${s.waiveFirst?'<span>First partial period <b>waived</b></span>':s.prorate===false?'<span>First period <b>not prorated</b></span>':''}${unconvNote}</div>
+        <div class="sub-facts"><span>Started <b>${esc(fmtD(s.start,true))}</b></span>${s.end?`<span>Ends <b>${esc(fmtD(s.end,true))}</b></span>`:''}<span>Paid through <b>${sa.kPaid?esc(fmtD(sa.paidThrough,true)):'nothing yet'}</b></span>${sa.nextDue?(sa.nextDue>today?`<span>Next due <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}${sa.nextCredit>0?` <span class="muted">(after ${esc(fmtAmt(sa.nextCredit,s.currency))} credit)</span>`:''}</span>`:sa.nextCredit>0?`<span>Remaining on the current period <b>${esc(fmtAmt(nextPr,s.currency))}</b></span>`:`<span>Unpaid since <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}</span>`):''}${(s.refunds||[]).length?`<span>Paid in <b>${esc(fmtAmt(sa.paid+refundedInPlanCur(s),s.currency))}</b> · refunded <b class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</b> · kept <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`:`<span>Total paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`}${yearFacts}${dueByFact}${s.waiveFirst?'<span>First partial period <b>waived</b></span>':s.prorate===false?'<span>First period <b>not prorated</b></span>':''}${unconvNote}</div>
         ${histTxt?`<div class="hist">Price history: ${histTxt}</div>`:''}${tierHist}
         <div class="periods">${cells}</div>
         ${payForm(id,s,sa,today,nextPr,payOpen,payEdit)}
         ${uptoForm(id,s,sa,today,open['upto:'+s.id])}
+        ${refundForm(id,u,s,today,open['refund:'+s.id],refundEditOf(s))}
         ${sa.periods[0]&&sa.periods[0].prorated?`<form class="days-form" data-id="${id}" data-sub="${s.id}" ${open['days:'+s.id]?'':'hidden'} novalidate>
           <div class="pay-row">
             <label class="f">Days charged for ${esc(fmtD(sa.periods[0].es))} – ${esc(fmtD(sa.periods[0].en))}<input id="dy-days-${s.id}" name="days" type="number" min="1" max="366" step="1" required value="${sa.periods[0].daysCharged}"></label>
@@ -2150,11 +2245,13 @@ function detailHTML(id,u,a,today){
           ${acctLine(u,s)}
           <div class="sub-line"><span class="pkg-badge" title="Package / product">${esc(pkgName(s.packageId)||'One-time')}</span><span class="name">${esc(s.name)}</span><span class="kind">one-time · ${s.currency}</span><span class="num">${esc(fmtAmt(s.total,s.currency))}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>
           <span class="sub-acts">${sa.remaining>0?`<button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>`:''}
+          ${(s.payments||[]).length?`<button class="btn sm" type="button" data-act="toggle" data-key="refund:${s.id}" title="Record money given back: it comes off revenue and off what this item has paid">Refund</button>`:''}
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
         </div>
         <div class="sub-body">
-        <div class="sub-facts"><span>Paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span><span>Remaining <b>${esc(fmtAmt(sa.remaining,s.currency))}</b></span><span>Due <b>${s.due?esc(fmtD(s.due,true)):'no date'}</b></span>${unconvNote}</div>
+        <div class="sub-facts"><span>Paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b>${(s.refunds||[]).length?` <span class="muted">(after <span class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</span> refunded)</span>`:''}</span><span>Remaining <b>${esc(fmtAmt(sa.remaining,s.currency))}</b></span><span>Due <b>${s.due?esc(fmtD(s.due,true)):'no date'}</b></span>${unconvNote}</div>
         ${payForm(id,s,sa,today,sa.remaining,payOpen,(ui.payEdit||{})[s.id]?(s.payments||[]).find(x=>x.id===ui.payEdit[s.id]):null)}
+        ${refundForm(id,u,s,today,open['refund:'+s.id],refundEditOf(s))}
         <form class="subedit-form" data-id="${id}" data-sub="${s.id}" ${open['edit:'+s.id]?'':'hidden'} novalidate>
           <div class="pay-row">
             <label class="f">Package / product<select id="se-pkg-${s.id}" name="packageId">${pkgOptions(s.packageId||'','None')}</select></label>
@@ -2245,6 +2342,14 @@ function wireDetail(id,today){
     [amt,curEl,rateEl].forEach(el=>el.addEventListener('input',upd));upd();
     const monthsEl=form.querySelector('[name=months]');
     if(monthsEl&&s.kind==='monthly'){monthsEl.addEventListener('input',()=>{const n=Math.floor(Number(monthsEl.value));if(!(n>=1))return;const sa=analyzeMonthly(s,today);const plan=coverPlan(s,sa,sa.kPaid+n-1);const total=plan.reduce((t,p)=>t+p.due,0);curEl.value=s.currency;amt.value=String(total);const noteEl=form.querySelector('[name=note]');if(noteEl&&!noteEl.value)noteEl.value='paid '+n+' month'+(n===1?'':'s')+' · up to '+fmtD(plan[plan.length-1].en,true);upd();});}
+  });
+  det.querySelectorAll('.refund-form').forEach(form=>{
+    const s=(u.subscriptions||[]).find(x=>x.id===form.dataset.sub);if(!s)return;const q=n=>form.querySelector(`[name=${n}]`);
+    const cxEl=q('alsoCancel'),lastEl=q('lastDay'),lastWrap=form.querySelector('[data-role=rf-last]'),cover=form.querySelector('[data-role=rcover]');let lastTouched=false;
+    const upd=()=>{const f={refId:q('refId').value,date:q('date').value,amount:q('amount').value,currency:q('currency').value,rate:q('rate').value,alsoCancel:!!(cxEl&&cxEl.checked),lastDay:lastEl?lastEl.value:''};
+      if(cxEl){lastWrap.hidden=!cxEl.checked;if(cxEl.checked&&!lastTouched){/* default last day: the last day still paid for after this refund */const sim=clone(s);const n=Number(f.amount)||0;if(n>0)sim.refunds=(sim.refunds||[]).concat([{id:'__new',date:f.date||today,amount:n,currency:f.currency,rate:normRate(f.rate)}]);const a=analyzeMonthly(sim,today);lastEl.value=a.kPaid?a.paidThrough:today;f.lastDay=lastEl.value;}}
+      cover.textContent=refundPreview(u,s,f,today);};
+    if(lastEl)lastEl.addEventListener('input',()=>{lastTouched=true;});form.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',upd));if(cxEl)cxEl.addEventListener('change',upd);upd();
   });
   det.querySelectorAll('.upto-form').forEach(form=>{
     const s=(u.subscriptions||[]).find(x=>x.id===form.dataset.sub);if(!s||s.kind!=='monthly')return;
@@ -2403,7 +2508,7 @@ function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)
 function openAdd(){showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
 function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';}
 function updAddConv(){const cur=$('#a-cur').value;const cyEl=$('#a-cycle');const cy=cyEl?cyEl.value:'monthly';$('#a-price-lbl').textContent=`${cy==='one-time'?'Total amount':cy==='yearly'?'Yearly price':'Monthly price'} (${cur==='USD'?'$':'Rs'})`;const n=Number($('#a-price').value)||0;const c=conv(n,cur,null);$('#a-conv').textContent=n?`${fmtAmt(n,cur)}${CYCLES[cy].per}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`:' (set an exchange rate in Settings to see the other currency)'):'The first billing period starts on the join date. One-time items and more plans can be added from the user\'s row.';}
-function toggleOpen(id,key){ui.open[id]=ui.open[id]||{};ui.open[id][key]=!ui.open[id][key];if(!ui.open[id][key]){if(key==='cancel')delete ui.cancelPre[id];const sid=key.split(':')[1];if(sid&&ui.priceEdit)delete ui.priceEdit[sid];if(sid&&ui.payEdit)delete ui.payEdit[sid];}renderTable();}
+function toggleOpen(id,key){ui.open[id]=ui.open[id]||{};ui.open[id][key]=!ui.open[id][key];if(!ui.open[id][key]){if(key==='cancel')delete ui.cancelPre[id];const sid=key.split(':')[1];if(sid&&ui.priceEdit)delete ui.priceEdit[sid];if(sid&&ui.payEdit)delete ui.payEdit[sid];if(sid&&ui.refundEdit)delete ui.refundEdit[sid];}renderTable();}
 const validPhone=raw=>{const d=digits(raw);return d===''||(d.length>=7&&d.length<=15);};
 const validAmt=v=>v!==''&&isFinite(Number(v))&&Number(v)>=0;
 
@@ -2531,6 +2636,9 @@ function bind(){
     const act=e.target.closest('[data-act]');if(!act)return;const A=act.dataset.act,sid=act.dataset.sub;
     if(A==='toggle')toggleOpen(id,act.dataset.key);
     else if(A==='pay-edit'){ui.payEdit=ui.payEdit||{};ui.payEdit[sid]=act.dataset.pay;renderTable();}
+    else if(A==='refund-edit'){ui.refundEdit=ui.refundEdit||{};ui.refundEdit[sid]=act.dataset.ref;ui.open[id]=Object.assign({},ui.open[id],{['refund:'+sid]:true});renderTable();}
+    else if(A==='refund-cancel'){if(ui.refundEdit)delete ui.refundEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['refund:'+sid]:false});renderTable();}
+    else if(A==='refund-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const r=(s.refunds||[]).find(x=>x.id===act.dataset.ref);s.refunds=(s.refunds||[]).filter(x=>x.id!==act.dataset.ref);if(!s.refunds.length)delete s.refunds;settleRefunds(u,s,todayISO());if(ui.refundEdit)delete ui.refundEdit[sid];const ok=await persistUser(id,u);if(ok&&r)toast(`Removed the ${fmtAmt(r.amount,r.currency||s.currency)} refund dated ${r.date}.`);}
     else if(A==='pay-edit-cancel'){if(ui.payEdit)delete ui.payEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['pay:'+sid]:false});renderTable();}
     else if(A==='price-edit'){ui.priceEdit=ui.priceEdit||{};ui.priceEdit[sid]=act.dataset.from;ui.open[id]=Object.assign({},ui.open[id],{['price:'+sid]:true});renderTable();}
     else if(A==='days-reset'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;s.prorationDaysOverride=null;s.prorationRateOverride=null;s.prorationAmountOverride=null;setPeriodOverride(s,pStart(s,0),null);ui.open[id]=Object.assign({},ui.open[id],{['days:'+sid]:false});const ok=await persistUser(id,u);if(ok)toast('First period back to actual days.');}
@@ -2559,6 +2667,18 @@ function bind(){
       if(!validAmt(amtRaw)||Number(amtRaw)<=0){toast('Enter the amount paid.');return;}
       const payId=val('payId');s.payments=(s.payments||[]).filter(p=>p.id!==payId&&p.date!==date);s.payments.push({id:payId||newId('p'),date,amount:Number(amtRaw),currency:pc,rate,note});if(ui.payEdit)delete ui.payEdit[s.id];closeKey('pay:'+s.id);
       const ok=await persistUser(id,u);if(ok)toast(`${fmtAmt(Number(amtRaw),pc)} on ${fmtD(date,true)} saved for ${displayName(u)}.`);
+    }else if(form.classList.contains('refund-form')){
+      const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const date=val('date'),amtRaw=val('amount'),note=val('note').trim(),pc=normCur(val('currency')),rate=normRate(val('rate'));
+      if(!isDateKey(date)){toast('Pick the refund date.');return;}
+      if(!validAmt(amtRaw)||Number(amtRaw)<=0){toast('Enter the amount refunded.');return;}
+      const cxEl=form.querySelector('[name=alsoCancel]');const alsoCancel=!!(cxEl&&cxEl.checked)&&!u.cancel;const lastDay=val('lastDay');
+      if(alsoCancel&&!isDateKey(lastDay)){toast('Pick the last day for the cancellation.');return;}
+      const refId=val('refId');const rid=refId||newId('r');
+      s.refunds=(s.refunds||[]).filter(r=>r.id!==rid);s.refunds.push({id:rid,date,amount:Number(amtRaw),currency:pc,rate,note});
+      if(alsoCancel)applyCancel(u,lastDay,'Refunded',note);
+      const kept=settleRefunds(u,s,todayISO());
+      if(ui.refundEdit)delete ui.refundEdit[s.id];closeKey('refund:'+s.id);
+      const ok=await persistUser(id,u);if(ok)toast(`Refund ${fmtAmt(-Number(amtRaw),pc)} on ${fmtD(date,true)} saved for ${displayName(u)}`+(alsoCancel?` · cancelled, last day ${fmtD(lastDay,true)}`:'')+(kept.length?` · ${kept.length} period${kept.length===1?'':'s'} counted at what was kept`:'')+'.');
     }else if(form.classList.contains('upto-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s||s.kind!=='monthly')return;const date=val('date'),amtRaw=val('amount');const k=Number(val('target'));
       if(!isDateKey(date)){toast('Pick the payment date.');return;}
