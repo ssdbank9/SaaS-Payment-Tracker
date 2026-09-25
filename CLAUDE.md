@@ -43,11 +43,11 @@ and the same `index.html` is also published as a claude.ai artifact and works br
 - `settings/main`: `rate` (default PKR per USD), `packages` `[{id,name,cycle,price,currency,description}]`,
   `anchor` + `cycleDay` (the shared billing cycle), `remindDay`, `replyDay`, message templates,
   `appName`, `tagline`, `publicBaseUrl`, `waApp`, `dimSettled`, AI/mail settings live server-side in `meta`.
-- User: `name, email, phone, telegram, joinDate, notes, subscriptions[], reminders{}, cancel, discontinue,
+- User: `name, email, phone, telegram, joinDate, notes, subscriptions[], reminders{}, cancel, cancelHistory[] (v27), discontinue,
   confirmToken`. Subscription (plan): `kind` monthly|one-time, `cycle` monthly|yearly, `packageId`, `currency`,
   `start`, `end`, `prorate`, `waiveFirst`, `prices[{from,price}]`, `discount`, `dueBy`,
   `tierHistory[{from,packageId,price,currency,note,via}]` (C ↔ C Max switches from a cycle start),
-  `periodOverrides{periodStart:{amount,note,at}}` (hand-set amount for one period),
+  `periodOverrides{periodStart:{amount?,packageId?,note,at}}` (hand-set amount and/or package for one period),
   `payments[{id,date,amount,currency,rate,note}]`. One-time items have `total` and `due`.
 - Periods are computed, never stored: `analyzeMonthly` walks cycle periods from `pStart`, applies payments
   as credit in order, and yields paid/partial/unpaid/upcoming states, balance, next due. `analyze(u, today)`

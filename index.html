@@ -318,6 +318,17 @@ tr.detail>td{background:var(--accent-soft);padding:0 10px 12px;white-space:norma
 .detail-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline;margin-bottom:12px}
 .detail-head .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
 .detail-head .meta b{color:var(--ink);font-weight:500}
+/* v27: the action row wraps. It used to be one unwrapped line inside the card (which hides overflow), so on a phone the last button,
+   Cancel subscription, sat past the right edge for everyone whose contact buttons had longer labels. Account actions form their own group. */
+.detail-acts{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:flex-end;min-width:0;max-width:100%}
+.detail-acts .grp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}
+@media (max-width:760px){.detail-acts{justify-content:flex-start;width:100%}.detail-acts .btn.sm{min-height:36px;padding:6px 12px;font-size:13px}}
+.cancel-hist{font-size:12px;color:var(--ink-2);margin:-4px 0 10px}
+.cancel-hist b{color:var(--ink);font-weight:500}
+.date-clear{display:flex;gap:6px;align-items:center;min-width:0}
+.date-clear input{flex:1 1 auto;min-width:0}
+.date-clear .btn{flex:0 0 auto}
+@media (max-width:700px){.upto-form .upto-date{grid-column:1/-1}}
 .block{border-top:1px solid var(--accent-line);padding-top:12px;margin-top:12px}
 .block-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px;flex-wrap:wrap}
 .block-head h3,.detail-card form.block>h3{font-size:12px;font-weight:600;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.06em}
@@ -381,7 +392,10 @@ label.f.chk input{width:15px;height:15px;margin:0}
 /* v24: period tiles wrap two per row below 700px so every period is visible without sideways scrolling */
 @media (max-width:700px){.periods{grid-template-columns:repeat(2,minmax(0,1fr))}.cell.editing{grid-column:1/-1}}
 .amt-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;align-items:end;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line-strong);text-align:left}
-.amt-form .form-actions,.amt-form .d,.amt-form .amt-plan{grid-column:1/-1}
+.amt-form .form-actions,.amt-form .d,.amt-form .amt-plan,.amt-form .amt-pkg{grid-column:1/-1}
+.amt-form .amt-pkg select{max-width:100%}
+.cell .tag.pkgov{border-style:dashed}
+.cell .pkg-line b{color:var(--ink);font-weight:600}
 .amt-form .amt-plan{font-weight:600;font-size:12px;color:var(--ink)}
 /* v24: what a hand-set amount would do to the plan, shown before Save */
 .amt-form .amt-warn{grid-column:1/-1;display:flex;gap:4px 10px;flex-wrap:wrap;align-items:baseline;background:var(--warn-bg);border:1px solid var(--warn);border-radius:4px;padding:6px 9px;font:12px/1.45 var(--sans);color:var(--ink)}
@@ -546,7 +560,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v26</span>
+      <span class="small muted num" id="app-ver" title="App version">v27</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -1005,10 +1019,18 @@ function prorateCalc(s,full,days,total){const ov=Number(s.prorationDaysOverride)
 /* ---------- v22: an amount set by hand for one period (a discount or a correction), per plan, keyed by the period start:
    periodOverrides: {'YYYY-MM-DD': {amount, note, at}}. Absent = the computed amount. It becomes the period's amount everywhere
    (balance, credit carried, totals, the per-product table, {amount} in the messages, the link-page document and so the public page and the emails);
-   recorded payments are untouched. The first-period "Amount charged" field writes the same entry for the first period start. ---------- */
-function normPeriodOverrides(o){const out={};if(!o||typeof o!=='object'||Array.isArray(o))return out;for(const k in o){const v=o[k];if(!isDateKey(k)||!v||typeof v!=='object')continue;const a=Number(v.amount);if(!isFinite(a)||a<0)continue;out[k]={amount:Math.round(a*100)/100,note:String(v.note||'').trim().slice(0,140),at:String(v.at||'').slice(0,40)};}return out;}
-const periodOverride=(s,st)=>{const v=s&&s.periodOverrides&&s.periodOverrides[st];return v&&isFinite(Number(v.amount))&&Number(v.amount)>=0?v:null;};
-function setPeriodOverride(s,st,amount,note){s.periodOverrides=normPeriodOverrides(s.periodOverrides);if(amount==null)delete s.periodOverrides[st];else s.periodOverrides[st]={amount:Math.round(Number(amount)*100)/100,note:String(note||'').trim().slice(0,140),at:new Date().toISOString()};}
+   recorded payments are untouched. The first-period "Amount charged" field writes the same entry for the first period start.
+   v27: the entry may also carry packageId: that one period is billed at another package (its price, less the plan's discount, prorated like
+   any first period) unless an amount is set too; absent = the plan's normal package. An entry may hold a packageId and no amount. ---------- */
+const PKG_ID_RE=/^[A-Za-z0-9_-]{1,60}$/;
+function normPeriodOverrides(o){const out={};if(!o||typeof o!=='object'||Array.isArray(o))return out;for(const k in o){const v=o[k];if(!isDateKey(k)||!v||typeof v!=='object')continue;const a=v.amount==null||v.amount===''?NaN:Number(v.amount);const hasA=isFinite(a)&&a>=0;const pid=PKG_ID_RE.test(String(v.packageId||''))?String(v.packageId):'';if(!hasA&&!pid)continue;const e={};if(hasA)e.amount=Math.round(a*100)/100;if(pid)e.packageId=pid;e.note=String(v.note||'').trim().slice(0,140);e.at=String(v.at||'').slice(0,40);out[k]=e;}return out;}
+/* the hand-set amount of a period (null = none); v27: an entry with only a packageId is not an amount */
+const periodOverride=(s,st)=>{const v=s&&s.periodOverrides&&s.periodOverrides[st];return v&&v.amount!=null&&v.amount!==''&&isFinite(Number(v.amount))&&Number(v.amount)>=0?v:null;};
+/* v27: the package one period is billed at when it differs from the plan's own for that date (null = the normal package; a package deleted from Settings is ignored) */
+function periodPkg(s,st){const v=s&&s.periodOverrides&&s.periodOverrides[st];const pid=v&&v.packageId;if(!pid||!pkgById(pid))return null;const es=st<s.start?s.start:st;return pid===pkgIdAt(s,es)?null:pid;}
+/* amount = null clears the amount; pkg: undefined keeps the stored package, null or '' clears it. Nothing left = the entry goes. */
+function setPeriodOverride(s,st,amount,note,pkg){s.periodOverrides=normPeriodOverrides(s.periodOverrides);const prev=s.periodOverrides[st]||{};const pid=pkg===undefined?(prev.packageId||''):(PKG_ID_RE.test(String(pkg||''))?String(pkg):'');
+  if(amount==null&&!pid){delete s.periodOverrides[st];return;}const e={};if(amount!=null)e.amount=Math.round(Number(amount)*100)/100;if(pid)e.packageId=pid;e.note=String(note==null?(prev.note||''):note).trim().slice(0,140);e.at=new Date().toISOString();s.periodOverrides[st]=e;}
 /* "10%" = that much off the computed amount; a plain number = that much off; blank or nonsense = no change */
 function discountTo(txt,base){const t=String(txt||'').trim().replace(/,/g,'');if(!t)return null;const m=t.match(/^(\d+(?:\.\d+)?)\s*%$/);if(m)return Math.max(0,Math.round(base*(1-Math.min(100,Number(m[1]))/100)*100)/100);const n=Number(t);return isFinite(n)&&n>=0?Math.max(0,Math.round((base-n)*100)/100):null;}
 const remindDay=()=>clampDay(state.settings.remindDay,DEFAULT_REMIND_DAY);const replyDay=()=>clampDay(state.settings.replyDay,DEFAULT_REPLY_DAY);
@@ -1058,6 +1080,8 @@ const normTg=v=>{let t=String(v||'').trim().replace(/^(?:https?:\/\/)?(?:www\.)?
 function normalizeUser(b,id){
   const u={id,name:String(b.name||'').trim(),email:String(b.email||'').trim(),phone:digits(b.phone),telegram:normTg(b.telegram),joinDate:normDate(b.joinDate)||todayISO(),notes:String(b.notes||'').trim(),createdAt:b.createdAt||'',subscriptions:[],reminders:{},cancel:null,discontinue:null,confirmToken:TOKEN_RE.test(String(b.confirmToken||''))?String(b.confirmToken):''};
   if(b.cancel&&typeof b.cancel==='object'&&normDate(b.cancel.lastDay))u.cancel={lastDay:normDate(b.cancel.lastDay),reason:String(b.cancel.reason||'').trim(),note:String(b.cancel.note||'').trim(),at:normDate(b.cancel.at)||''};
+  /* v27: earlier cancellations that were resumed, kept as history (absent = none) */
+  u.cancelHistory=Array.isArray(b.cancelHistory)?b.cancelHistory.filter(x=>x&&typeof x==='object'&&normDate(x.lastDay)).map(x=>({lastDay:normDate(x.lastDay),reason:String(x.reason||'').trim(),note:String(x.note||'').trim(),at:normDate(x.at)||'',resumedOn:normDate(x.resumedOn)||'',resumedAt:normDate(x.resumedAt)||''})).slice(-50):[];
   /* v20: a Discontinue chosen on the link page, waiting for the owner to confirm the cancellation */
   if(b.discontinue&&typeof b.discontinue==='object'&&normDate(b.discontinue.cycleStart))u.discontinue={cycleStart:normDate(b.discontinue.cycleStart),at:String(b.discontinue.at||'').slice(0,40),planIds:Array.isArray(b.discontinue.planIds)?b.discontinue.planIds.map(String).slice(0,20):[],note:String(b.discontinue.note||'').trim().slice(0,500)};
   const rm=b.reminders&&typeof b.reminders==='object'?b.reminders:{};for(const k in rm){if(!isDateKey(k))continue;const v=rm[k]||{};const r={reminded:normDate(v.reminded),confirmed:normDate(v.confirmed),final:normDate(v.final),skipped:normDate(v.skipped)};
@@ -1075,7 +1099,7 @@ function normalizeUser(b,id){
   }
   return u;
 }
-function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,telegram:n.telegram||'',joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{},cancel:n.cancel||null,discontinue:n.discontinue||null,confirmToken:n.confirmToken||''};}
+function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,telegram:n.telegram||'',joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{},cancel:n.cancel||null,cancelHistory:n.cancelHistory||[],discontinue:n.discontinue||null,confirmToken:n.confirmToken||''};}
 function normalizeCost(b,id){return {id,date:normDate(b.date)||todayISO(),description:String(b.description||'').trim(),category:String(b.category||'').trim(),packageId:String(b.packageId||'').trim(),currency:normCur(b.currency),cost:Number(b.cost)||0,tax:Number(b.tax)||0,rate:normRate(b.rate),source:String(b.source||''),receipt:String(b.receipt||''),createdAt:b.createdAt||''};}
 /* v21: the product a cost pays for; '' = shared / unassigned (every cost recorded before v21 stays shared) */
 const costPkgId=c=>(c&&c.packageId&&pkgById(c.packageId))?c.packageId:'';
@@ -1085,6 +1109,10 @@ function cleanCost(c){const n=normalizeCost(c,c.id);delete n.id;n.createdAt=n.cr
 
 /* ---------- billing analysis ---------- */
 function priceAt(s,date){const ps=(s.prices||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));let p=ps.length?ps[0].price:0,pf='';for(const x of ps){if(x.from<=date){p=x.price;pf=x.from;}else break;}const t=tierAt(s,date);return t&&t.from>=pf?t.price:p;}
+/* v27: the full (unprorated) price of the period starting st: the plan's own price, or, when the period is billed at another package,
+   that package's price in the plan's currency (switchPrice, else the package default converted at the default rate), less the plan's discount */
+function pkgPeriodPrice(s,pid,es){let v=switchPrice(s,pid,es);if(v==null){const p=pkgById(pid);if(p&&p.price!=null&&p.currency&&p.currency!==s.currency){const c=toCur(p.price,p.currency,s.currency,null);if(c!=null&&isFinite(c)&&c>0)v=s.currency==='PKR'?Math.round(c):Math.round(c*100)/100;}}return v;}
+function periodFull(s,st,es){const pid=periodPkg(s,st);if(pid){const v=pkgPeriodPrice(s,pid,es);return {full:v!=null?applyDiscount(s,v):effPrice(s,es),pid};}return {full:effPrice(s,es),pid:null};}
 function periodIndexAt(s,date){if(date<s.start)return -1;let k=0;while(pStart(s,k+1)<=date){k++;if(k>2400)break;}return k;}
 function paidInPlanCur(s){let t=0,unconv=0;for(const p of s.payments||[]){const v=toCur(p.amount,p.currency||s.currency,s.currency,p.rate);if(v==null)unconv++;else t+=v;}return {t,unconv};}
 function analyzeMonthly(s,today){
@@ -1092,7 +1120,7 @@ function analyzeMonthly(s,today){
   const curIdx=periodIndexAt(s,today);
   const periods=[];let credit=paid,k=0,kPaid=0;
   while(active(k)&&k<2400){
-    const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=effPrice(s,es);
+    const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const pf=periodFull(s,st,es);const full=pf.full;
     const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;
     const waived=k===0&&s.waiveFirst===true&&es>st;const pa=prorateCalc(s,full,days,total);const listed=waived?0:(prorated?pa.amt:full);const ov=periodOverride(s,st);const pr=ov?ov.amount:listed;
     let stt,covered;
@@ -1100,7 +1128,7 @@ function analyzeMonthly(s,today){
     else if(credit+1e-9>=pr){stt='paid';covered=pr;credit-=pr;kPaid=k+1;}
     else if(credit>0){stt=st<=today?'partial':'upcoming';covered=credit;credit=0;}
     else{stt=st<=today?'unpaid':'upcoming';covered=0;}
-    periods.push({k,st,en,es,pr,full,pkgId:pkgIdAt(s,es),prorated:prorated&&!waived,waived,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0,listed,custom:!!ov,note:ov?ov.note:''});
+    periods.push({k,st,en,es,pr,full,pkgId:pf.pid||pkgIdAt(s,es),pkgOv:!!pf.pid,prorated:prorated&&!waived,waived,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0,listed,custom:!!ov,note:ov?ov.note:''});
     if(stt!=='paid'&&stt!=='waived'&&k>curIdx)break;
     if(stt==='paid'&&pr<=0&&k>curIdx+1)break;
     k++;
@@ -1129,7 +1157,7 @@ function analyzeOneTime(s,today){
   return {kind:'one-time',paid,unconv:pc.unconv,remaining,nextDue:remaining>0?s.due||null:null,amountDue:remaining,status,cur:s.currency,overdue:status==='overdue'?1:0};
 }
 /* amount of one cycle period of a plan (first period may be prorated or waived), and what is still owed per period from the first unpaid one up to a target period */
-function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=effPrice(s,es);const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;const ov=periodOverride(s,st);return {k,st,en,es,pr:ov?ov.amount:(waived?0:(prorated?prorateCalc(s,full,days,total).amt:full))};}
+function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=periodFull(s,st,es).full;const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;const ov=periodOverride(s,st);return {k,st,en,es,pr:ov?ov.amount:(waived?0:(prorated?prorateCalc(s,full,days,total).amt:full))};}
 function coverPlan(s,sa,targetK){const out=[];for(let k=sa.kPaid;k<=targetK&&k<sa.kPaid+240;k++){const p=periodAmt(s,k);const ex=(sa.periods||[]).find(x=>x.k===k);const cov=ex?ex.covered:0;out.push({k,st:p.st,en:p.en,pr:p.pr,credit:cov,due:Math.max(0,p.pr-cov)});}return out;}
 const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,paid:5,ended:5,cancelled:5,nosub:6};
 function analyze(u,today){
@@ -1208,8 +1236,8 @@ function switchFor(s,cs){const cur=pkgIdAt(s,cs);const curName=pkgName(cur)||'';
   return {packageId:t.id,name:t.name,label,choice,price,priceText:price!=null?fmtAmt(price,s.currency)+perOf(s):''};}
 function cycleCard(u,a,cs,today){const ce=cycleEndOf(cs);const replyBy=dayOnOrBefore(addDays(cs,-1),replyDay());const plans=[];
   for(const s of u.subscriptions||[]){if(s.kind!=='monthly'||subCycle(s)!=='monthly')continue;if(s.end&&s.end<cs)continue;if(s.start>ce)continue;const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly')continue;
-    const p=(sa.periods||[]).find(x=>x.st===cs);const price=effPrice(s,cs);const amount=p?Math.max(0,p.pr-p.covered):price;const paid=!!p&&(p.state==='paid'||p.state==='waived');const ac=acctParts(u,s);const tier=pkgName(pkgIdAt(s,cs))||planLabel(s,cs);
-    plans.push({planId:s.id,label:ac.label||tier,custom:!!(p&&p.custom),amountNote:p&&p.custom?p.note:'',acct:[ac.label,ac.email].filter(Boolean).join(' · '),pkgId:pkgIdAt(s,cs),tier,price,priceText:fmtAmt(price,s.currency)+perOf(s),currency:s.currency,amount,amountText:fmtAmt(amount,s.currency),paid,switch:switchFor(s,cs)});}
+    const p=(sa.periods||[]).find(x=>x.st===cs);const price=effPrice(s,cs);const amount=p?Math.max(0,p.pr-p.covered):price;const paid=!!p&&(p.state==='paid'||p.state==='waived');const ac=acctParts(u,s);const cpid=p&&p.pkgId?p.pkgId:pkgIdAt(s,cs);const tier=pkgName(cpid)||planLabel(s,cs);
+    plans.push({planId:s.id,label:ac.label||tier,custom:!!(p&&p.custom),amountNote:p&&p.custom?p.note:'',acct:[ac.label,ac.email].filter(Boolean).join(' · '),pkgId:cpid,tier,price,priceText:fmtAmt(price,s.currency)+perOf(s),currency:s.currency,amount,amountText:fmtAmt(amount,s.currency),paid,switch:switchFor(s,cs)});}
   const due=plans.filter(p=>!p.paid&&p.amount>0);const S=newSum();for(const p of due)sumAdd(S,p.amount,p.currency,null);
   let amountText=due.length?ownText(S,plans[0].currency):(plans.length?'nothing (already paid)':'—');if(due.length>1)amountText+=' ('+due.map(p=>`${p.amountText} ${p.label}`).join(' + ')+')';
   const tiers=plans.map(p=>p.tier).filter((x,i,arr)=>x&&arr.indexOf(x)===i);const first=plans.find(p=>p.switch);
@@ -1285,7 +1313,7 @@ function emailControl(u,a,today,label,mode,x){
 }
 const tgLink=u=>{const t=normTg(u.telegram);if(!t)return '';const d=digits(t);return /^\+?[\d\s\-()]+$/.test(t)&&d.length>=7?'https://t.me/+'+d:'https://t.me/'+encodeURIComponent(t);};
 function telegramControl(u,label,ch){const href=tgLink(u);if(!href)return `<button class="btn sm" type="button" disabled title="Add a Telegram handle in Edit user">add Telegram</button>`;return `<a class="btn sm" href="${esc(href)}" target="_blank" rel="noopener noreferrer"${ch?' data-ch="telegram"':''} title="Opens the Telegram chat; the message is not prefilled">${label||'Telegram'}</a>`;}
-function cyclePkgs(u,a){const out=[];const nc=nextCycleStart(todayISO());for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.cycleDue>0){const n=pkgName(pkgIdAt(s,nc));if(n&&!out.includes(n))out.push(n);}}return out;}
+function cyclePkgs(u,a){const out=[];const nc=nextCycleStart(todayISO());for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.cycleDue>0){const cp=(sa.periods||[]).find(x=>x.st===nc);const n=pkgName(cp&&cp.pkgId?cp.pkgId:pkgIdAt(s,nc));if(n&&!out.includes(n))out.push(n);}}return out;}
 function remBadge(u,key){const r=remState(u,key);if(r.confirmed)return `<span class="rem-badge" data-k="confirmed">✓ confirmed ${esc(fmtD(r.confirmed))}</span>`;if(r.reminded)return `<span class="rem-badge" data-k="reminded">✓ reminded ${esc(fmtD(r.reminded))}</span>`;return '';}
 
 /* ---------- seed + migration ---------- */
@@ -1951,7 +1979,7 @@ function uptoForm(id,s,sa,today,open){
   return `<form class="upto-form" data-id="${id}" data-sub="${s.id}" ${open?'':'hidden'} novalidate>
     <div class="pay-row">
       <label class="f">Paid up to (cycle)<select id="up-target-${s.id}" name="target">${opts.join('')}</select></label>
-      <label class="f">or a date<input id="up-date-${s.id}" name="upToDate" type="date" min="${esc(s.start)}"></label>
+      <label class="f upto-date">or a date<span class="date-clear"><input id="up-date-${s.id}" name="upToDate" type="date" min="${esc(s.start)}"><button class="btn sm" type="button" data-role="upto-clear" disabled title="Remove the date and go back to the first unpaid cycle" aria-label="Clear the paid-up-to date">Clear</button></span></label>
       <label class="f">Payment date<input id="up-when-${s.id}" name="date" type="date" required value="${today}"></label>
       <label class="f">Total (${s.currency})<input id="up-amount-${s.id}" name="amount" type="number" min="0" step="0.01" required></label>
       <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button><button class="link" type="button" data-act="toggle" data-key="upto:${s.id}">Cancel</button></span>
@@ -1984,20 +2012,27 @@ function tierForm(id,s,sa,today,open){
   </form>`;
 }
 /* v22: the inline "edit amount" form, shared by the period boxes and the Queue rows. ctx = detail | queue decides which state closes it. */
-function amtFormHTML(id,s,p,ctx,label){const cur=s.currency;const ov=periodOverride(s,p.st);const credit=p.state!=='paid'&&p.state!=='waived'&&p.covered>0?p.covered:0;
-  return `<form class="amt-form" data-id="${esc(id)}" data-sub="${esc(s.id)}" data-start="${p.st}" data-ctx="${ctx}" data-listed="${p.listed}" data-credit="${credit}" data-cur="${cur}" novalidate>
+/* v27: the computed amount of period k if it were billed at package pid ('' = the plan's normal package), ignoring any hand-set amount */
+function listedWith(s,k,pid){const st=pStart(s,k);const sim=Object.assign({},s,{periodOverrides:Object.assign({},s.periodOverrides||{})});if(pid)sim.periodOverrides[st]={packageId:pid,note:''};else delete sim.periodOverrides[st];return periodAmt(sim,k).pr;}
+function amtPkgOptions(s,p){const es=p.es||p.st;const base=pkgIdAt(s,es);const sel=periodPkg(s,p.st)||'';const cur=s.currency;
+  const opts=[`<option value="" data-listed="${listedWith(s,p.k,'')}"${sel?'':' selected'}>${esc(pkgName(base)||'Plan price')} · plan's package (${esc(fmtAmt(listedWith(s,p.k,''),cur))})</option>`];
+  for(const x of packages()){if(x.id===base||x.cycle!==subCycle(s))continue;const ok=pkgPeriodPrice(s,x.id,es)!=null;const l=listedWith(s,p.k,x.id);opts.push(`<option value="${esc(x.id)}" data-listed="${l}"${sel===x.id?' selected':''}>${esc(x.name)}${ok?` (${esc(fmtAmt(l,cur))})`:' (no price set · type the amount)'}</option>`);}
+  return {html:opts.join(''),n:opts.length,base:listedWith(s,p.k,''),sel};}
+function amtFormHTML(id,s,p,ctx,label){const cur=s.currency;const ov=periodOverride(s,p.st);const credit=p.state!=='paid'&&p.state!=='waived'&&p.covered>0?p.covered:0;const po=amtPkgOptions(s,p);const any=!!(ov||po.sel);const ent=(s.periodOverrides||{})[p.st]||{};
+  return `<form class="amt-form" data-id="${esc(id)}" data-sub="${esc(s.id)}" data-start="${p.st}" data-ctx="${ctx}" data-listed="${p.listed}" data-base="${po.base}" data-credit="${credit}" data-cur="${cur}" novalidate>
     ${label?`<span class="amt-plan">${esc(label)}</span>`:''}
+    ${po.n>1?`<label class="f amt-pkg">Package for this period<select name="pkg" aria-label="Package for ${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}">${po.html}</select></label>`:''}
     <label class="f">Amount for ${esc(fmtD(p.st))} – ${esc(fmtD(p.en))} (${cur})<input name="amount" type="number" min="0" step="0.01" required value="${p.pr}" aria-label="Amount for ${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}"></label>
     <label class="f">Discount <span class="muted">(10% or 500 off)</span><input name="disc" type="text" inputmode="decimal" placeholder="e.g. 10%" autocomplete="off" aria-label="Discount"></label>
-    <label class="f">Note <span class="muted">(optional)</span><input name="note" type="text" maxlength="140" placeholder="e.g. Eid discount, correction" value="${esc(ov?ov.note:'')}" aria-label="Note"></label>
+    <label class="f">Note <span class="muted">(optional)</span><input name="note" type="text" maxlength="140" placeholder="e.g. Eid discount, correction" value="${esc(ent.note||'')}" aria-label="Note"></label>
     <span class="amt-warn" data-role="amt-warn" role="status" hidden></span>
-    <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button>${ov?`<button class="link sm" type="button" data-act="amt-reset">Reset to computed (${esc(fmtAmt(p.listed,cur))})</button>`:''}<button class="link sm" type="button" data-act="amt-cancel">Cancel</button></span>
-    <span class="d">Computed ${esc(fmtAmt(p.listed,cur))}${ov?` · currently set to ${esc(fmtAmt(p.pr,cur))}`:''}${credit?` · ${esc(fmtAmt(credit,cur))} credit already applies, so the message says <b data-role="net">${esc(fmtAmt(Math.max(0,p.pr-credit),cur))}</b>`:''}. Recorded payments stay as they are.</span></form>`;}
+    <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button>${any?`<button class="link sm" type="button" data-act="amt-reset" title="Clears the amount and the package set for this period">Reset to computed (${esc(fmtAmt(po.base,cur))})</button>`:''}<button class="link sm" type="button" data-act="amt-cancel">Cancel</button></span>
+    <span class="d">Computed <span data-role="computed">${esc(fmtAmt(p.listed,cur))}</span>${po.n>1?' for the chosen package (its price drives the amount unless you type another)':''}${ov?` · currently set to ${esc(fmtAmt(p.pr,cur))}`:''}${credit?` · ${esc(fmtAmt(credit,cur))} credit already applies, so the message says <b data-role="net">${esc(fmtAmt(Math.max(0,p.pr-credit),cur))}</b>`:''}. Recorded payments stay as they are.</span></form>`;}
 /* v24: before Save, what the typed amount would do to this plan: a period that stops being covered (and by how much), an Overdue
    status, a paid-through date that moves back. Computed on a copy of the plan; nothing is stored until Save. */
 function amtPreview(form){const warn=form.querySelector('[data-role=amt-warn]');if(!warn)return;const u=state.users[form.dataset.id];const s0=u&&(u.subscriptions||[]).find(x=>x.id===form.dataset.sub);const st=form.dataset.start;
   const raw=String((form.querySelector('[name=amount]')||{}).value||'').trim();if(!s0||s0.kind!=='monthly'||!isDateKey(st)||!validAmt(raw)){warn.hidden=true;return;}
-  const amount=Math.round(Number(raw)*100)/100;const today=todayISO();const before=analyzeMonthly(s0,today);const sim=clone(s0);setPeriodOverride(sim,st,amount,'');if(pStart(sim,0)===st)sim.prorationAmountOverride=null;const after=analyzeMonthly(sim,today);
+  const amount=Math.round(Number(raw)*100)/100;const today=todayISO();const before=analyzeMonthly(s0,today);const sim=clone(s0);const pkgSel=form.querySelector('[name=pkg]');const pkg=pkgSel?pkgSel.value:(periodPkg(s0,st)||'');const same=Math.abs(amount-Number(form.dataset.listed))<0.005;setPeriodOverride(sim,st,same?null:amount,'',pkg||null);if(!same&&pStart(sim,0)===st)sim.prorationAmountOverride=null;const after=analyzeMonthly(sim,today);
   /* periods that were covered before and are not after (the simulation stops listing periods after the first shortfall, so a missing one counts too) */
   const cur=s0.currency;const lost=[];for(const b of before.periods){if(b.state!=='paid'&&b.state!=='waived')continue;const p=after.periods.find(x=>x.st===b.st);if(!p)lost.push({st:b.st,en:b.en,short:b.pr});else if(p.state!=='paid'&&p.state!=='waived'&&p.covered<p.pr)lost.push({st:p.st,en:p.en,short:p.pr-p.covered});}
   const worse=RANK[after.status]<RANK[before.status]&&['overdue','due-today','open'].includes(after.status);const moved=after.paidThrough<before.paidThrough;
@@ -2010,12 +2045,17 @@ function amtPreview(form){const warn=form.querySelector('[data-role=amt-warn]');
 function closeAmtForm(id,sid,st,ctx){if(ctx==='queue')delete ui.qOpen[id];else if(ui.open[id])ui.open[id]['amt:'+sid+':'+st]=false;}
 /* persist and show the change at once (the server poll would repeat the same render a moment later) */
 async function commitUser(id,u){const ok=await persistUser(id,u);if(ok&&db){state.users[id]=normalizeUser(cleanUser(Object.assign({},clone(u),{id})),id);render();}return ok;}
-async function resetPeriodOverride(id,sid,st,ctx){if(!state.users[id])return;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return;setPeriodOverride(s,st,null);if(pStart(s,0)===st)s.prorationAmountOverride=null;closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok)toast(`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`);}
+async function resetPeriodOverride(id,sid,st,ctx){if(!state.users[id])return;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return;setPeriodOverride(s,st,null,'',null);if(pStart(s,0)===st)s.prorationAmountOverride=null;closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok)toast(`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`);}
 async function saveAmtForm(form){const id=form.dataset.id,sid=form.dataset.sub,st=form.dataset.start,ctx=form.dataset.ctx;if(!state.users[id]||!isDateKey(st))return;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return;
   const amtEl=form.querySelector('[name=amount]'),noteEl=form.querySelector('[name=note]');const raw=String(amtEl.value||'').trim();if(!validAmt(raw)){toast('Enter the amount for this period (0 or more).');amtEl.focus();return;}
-  const amount=Math.round(Number(raw)*100)/100;const note=String(noteEl.value||'').trim().slice(0,140);const listed=Number(form.dataset.listed);const back=amount===listed&&!note;
-  if(back)setPeriodOverride(s,st,null);else{setPeriodOverride(s,st,amount,note);if(pStart(s,0)===st)s.prorationAmountOverride=null;}
-  closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok)toast(back?`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`:`${displayName(u)}: ${fmtD(st)} period set to ${fmtAmt(amount,s.currency)}${note?' · '+note:''}${amount<listed?` (${fmtAmt(listed-amount,s.currency)} off)`:amount>listed?` (${fmtAmt(amount-listed,s.currency)} more)`:''}.`);}
+  const amount=Math.round(Number(raw)*100)/100;const note=String(noteEl.value||'').trim().slice(0,140);const listed=Number(form.dataset.listed);
+  /* v27: a chosen package is stored with the period; its price drives the amount, so an amount equal to it is not kept as a custom amount */
+  const pkgEl=form.querySelector('[name=pkg]');const pkg=pkgEl?pkgEl.value:(periodPkg(s,st)||'');const same=Math.abs(amount-listed)<0.005;const back=!pkg&&same&&!note;const setAmt=!back&&!(pkg&&same);
+  if(back)setPeriodOverride(s,st,null,'',null);else setPeriodOverride(s,st,setAmt?amount:null,note,pkg||null);if(setAmt&&pStart(s,0)===st)s.prorationAmountOverride=null;
+  const pn=pkg?pkgName(pkg):'';
+  closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok)toast(back?`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`:`${displayName(u)}: ${fmtD(st)} period ${pn?'billed as '+pn+' at ':'set to '}${fmtAmt(amount,s.currency)}${note?' · '+note:''}${amount<listed?` (${fmtAmt(listed-amount,s.currency)} off)`:amount>listed?` (${fmtAmt(amount-listed,s.currency)} more)`:''}.`);}
+/* v27: past cancellations that were resumed: the gap in which nothing was billed */
+function cancelHistHTML(u){const h=u.cancelHistory||[];if(!h.length)return '';return `<p class="cancel-hist">${h.map(x=>{const gap=x.resumedOn&&dayDiff(x.lastDay,x.resumedOn)>1;return `Cancelled · last day <b>${esc(fmtD(x.lastDay,true))}</b>${x.resumedOn?` · resumed <b>${esc(fmtD(x.resumedOn,true))}</b>`:''}${gap?` · not billed ${esc(fmtD(addDays(x.lastDay,1)))} – ${esc(fmtD(addDays(x.resumedOn,-1)))}`:''}${x.reason?` · ${esc(x.reason)}`:''}`;}).join('<br>')}</p>`;}
 function detailHTML(id,u,a,today){
   const open=ui.open[id]||{};const subs=u.subscriptions||[];
   let subsHtml='';
@@ -2029,7 +2069,7 @@ function detailHTML(id,u,a,today){
       const yearFacts=yearly&&cp?`<span>This year (${esc(fmtD(cp.st,true))} – ${esc(fmtD(cp.en,true))}): paid <b>${esc(fmtAmt(cp.covered,s.currency))}</b> of ${esc(fmtAmt(cp.pr,s.currency))} · remaining <b>${esc(fmtAmt(Math.max(0,cp.pr-cp.covered),s.currency))}</b></span>`:'';
       const dueByFact=s.dueBy?`<span>Remaining due by <b>${esc(fmtD(s.dueBy,true))}</b></span>`:'';
       const lastPaid=sa.periods.filter(p=>p.state==='paid').pop();
-      const tierTag=p=>sa.tiered&&p.pkgId?` <span class="tag tier">${esc(pkgName(p.pkgId))}</span>`:'';
+      const tierTag=p=>p.pkgOv&&p.pkgId?` <span class="tag tier pkgov" title="Billed at ${esc(pkgName(p.pkgId))} for this period only">${esc(pkgName(p.pkgId))}</span>`:sa.tiered&&p.pkgId?` <span class="tag tier">${esc(pkgName(p.pkgId))}</span>`:'';
       const cells=sa.periods.map(p=>{const fkey='amt:'+s.id+':'+p.st;const editing=!!open[fkey];const pro=p.prorated?`<span class="d">${p.daysCharged} day${p.daysCharged===1?'':'s'} × ${esc(fmtAmt(p.rate,s.currency))} = ${esc(fmtAmt(p.computed,s.currency))}${p.amtOverride&&!p.custom?` → charged ${esc(fmtAmt(p.pr,s.currency))}`:''}${p.discounted&&!p.custom?' <span class="tag">discounted</span>':''}</span><span class="d muted">${p.basisDays===30?'30-day month':p.total+'-day cycle'}${p.override?` · days set by hand (actual ${p.days})`:''}${p.rateOverride?' · rate set by hand':''} · <button class="link sm" type="button" data-act="toggle" data-key="days:${s.id}">edit days / rate</button></span>`:'';let a;
         let extra='';if(p.state==='waived'){a='Waived · '+esc(fmtD(p.es))+' – '+esc(fmtD(p.en));extra=`<span class="d">${p.days} stub day${p.days===1?'':'s'} free · billing starts ${esc(fmtD(addDays(p.en,1)))}</span>`;}else if(p.state==='paid'){a=esc(fmtAmt(p.pr,s.currency));if(p===lastPaid&&p.creditAfter>0&&sa.nextDue)extra=`<span class="d">paid ${esc(fmtAmt(p.pr+p.creditAfter,s.currency))} · credit ${esc(fmtAmt(p.creditAfter,s.currency))} carried</span>`;}
         else if(p.state==='partial')a=esc(fmtAmt(p.covered,s.currency))+' of '+esc(fmtAmt(p.pr,s.currency));
@@ -2037,8 +2077,10 @@ function detailHTML(id,u,a,today){
         else{a='Upcoming · '+esc(fmtAmt(p.pr-p.covered,s.currency));if(p.covered>0)extra=`<span class="d">${esc(fmtAmt(p.pr,s.currency))} less ${esc(fmtAmt(p.covered,s.currency))} credit</span>`;}
         /* v22: a set amount shows the computed one struck through with the note; current and upcoming periods get "edit amount" */
         const custom=p.custom?`<span class="d custom-line" title="Computed ${esc(fmtAmt(p.listed,s.currency))} · set to ${esc(fmtAmt(p.pr,s.currency))}${p.note?' · '+esc(p.note):''}"><s>${esc(fmtAmt(p.listed,s.currency))}</s> → <b>${esc(fmtAmt(p.pr,s.currency))}</b>${p.note?` · ${esc(p.note)}`:''}</span>`:'';
-        const canEdit=p.en>=today&&!u.cancel;const editLink=canEdit&&!editing?`<span class="d"><button class="link sm" type="button" data-act="toggle" data-key="${fkey}" title="Set the amount for this period by hand (discount or correction)">edit amount</button></span>`:'';
-        return `<div class="cell${editing?' editing':''}" data-state="${p.state}" data-custom="${p.custom?'1':'0'}"><span class="m">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}${p.prorated?' <span class="tag">prorated</span>':''}${tierTag(p)}${p.custom?' <span class="tag custom" title="Amount set by hand">custom</span>':''}</span><span class="a">${a}</span>${pro}${extra}${custom}${editLink}${editing?amtFormHTML(id,s,p,'detail',''):''}</div>`;}).join('');
+        /* v27: a period billed at another package says which one, next to the plan's own */
+        const pkgLine=p.pkgOv?`<span class="d pkg-line">Billed as <b>${esc(pkgName(p.pkgId))}</b> this period · plan is ${esc(pkgName(pkgIdAt(s,p.es))||'its own price')}${!p.custom&&((s.periodOverrides||{})[p.st]||{}).note?' · '+esc(s.periodOverrides[p.st].note):''}</span>`:'';
+        const canEdit=p.en>=today&&!u.cancel;const editLink=canEdit&&!editing?`<span class="d"><button class="link sm" type="button" data-act="toggle" data-key="${fkey}" title="Set the amount or the package for this period by hand (discount, correction, or one month on another package)">edit amount / package</button></span>`:'';
+        return `<div class="cell${editing?' editing':''}" data-state="${p.state}" data-custom="${p.custom?'1':'0'}"><span class="m">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}${p.prorated?' <span class="tag">prorated</span>':''}${tierTag(p)}${p.custom?' <span class="tag custom" title="Amount set by hand">custom</span>':''}</span><span class="a">${a}</span>${pro}${extra}${custom}${pkgLine}${editLink}${editing?amtFormHTML(id,s,p,'detail',''):''}</div>`;}).join('');
       const nextPr=sa.nextDue?sa.nextAmount:sa.price;
       const pe=(ui.priceEdit||{})[s.id]||null;const pePrice=pe?(hist.find(x=>x.from===pe)||{}).price:null;
       const defFrom=pe||sa.nextDue||pStart(s,Math.max(0,sa.curIdx));
@@ -2130,9 +2172,9 @@ function detailHTML(id,u,a,today){
   }
   return `<div class="detail-head">
       <div class="meta"><span>Joined <b>${esc(fmtD(u.joinDate,true))}</b></span>${u.cancel?`<span>Last day <b>${esc(fmtD(u.cancel.lastDay,true))}</b></span>`:''}${u.email&&u.name?`<span>Email <b class="num">${esc(u.email)}</b></span>`:''}<span>WhatsApp <b>${u.phone?esc(fmtPhone(u.phone)):'not set'}</b></span>${u.telegram?`<span>Telegram <b>${esc(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram)}</b></span>`:''}<span>Method / notes <b>${u.notes?esc(u.notes):'—'}</b></span><span>Total paid <b>${esc(ownText(a.totals,a.mainCur))}</b></span></div>
-      <span style="display:flex;gap:12px;align-items:center">${u.cancel?'':remindControl(u,a,today,'Remind on WhatsApp')+emailControl(u,a,today,'Email')+telegramControl(u,'Telegram')}<button class="link" type="button" data-act="toggle" data-key="edit">Edit user</button>${u.cancel?`<button class="btn sm primary" type="button" data-act="toggle" data-key="react">Reactivate</button>`:`<button class="link danger" type="button" data-act="toggle" data-key="cancel">Cancel subscription</button>`}</span>
+      <div class="detail-acts">${u.cancel?'':`<span class="grp">${remindControl(u,a,today,'Remind on WhatsApp')+emailControl(u,a,today,'Email')+telegramControl(u,'Telegram')}</span>`}<span class="grp"><button class="btn sm" type="button" data-act="toggle" data-key="edit">Edit user</button>${u.cancel?`<button class="btn sm primary" type="button" data-act="toggle" data-key="react" aria-expanded="${open.react?'true':'false'}">Resume subscription</button>`:`<button class="btn sm danger" type="button" data-act="toggle" data-key="cancel" aria-expanded="${open.cancel?'true':'false'}">Cancel subscription</button>`}</span></div>
     </div>
-    ${discNote(id,u)}${u.cancel?`<p class="cancel-note"><b>Cancelled</b> · last day ${esc(fmtD(u.cancel.lastDay,true))}${u.cancel.reason?` · ${esc(u.cancel.reason)}`:''}${u.cancel.note?` · ${esc(u.cancel.note)}`:''} · ${a.balance.n?'still owes '+esc(ownText(a.balance,a.mainCur))+' for periods before the last day':'settled, nothing owed'}. No further periods or reminders.</p>`:''}
+    ${discNote(id,u)}${cancelHistHTML(u)}${u.cancel?`<p class="cancel-note"><b>Cancelled</b> · last day ${esc(fmtD(u.cancel.lastDay,true))}${u.cancel.reason?` · ${esc(u.cancel.reason)}`:''}${u.cancel.note?` · ${esc(u.cancel.note)}`:''} · ${a.balance.n?'still owes '+esc(ownText(a.balance,a.mainCur))+' for periods before the last day':'settled, nothing owed'}. No further periods or reminders.</p>`:''}
     <form class="block cancel-form" data-id="${id}" ${open.cancel&&!u.cancel?'':'hidden'} novalidate>
       <h3 style="margin-bottom:8px">Cancel subscription</h3>
       <div class="form-grid">
@@ -2144,12 +2186,12 @@ function detailHTML(id,u,a,today){
       <div class="form-actions"><button class="btn danger" type="submit">Confirm cancellation</button><button class="link" type="button" data-act="toggle" data-key="cancel">Keep subscription</button><span class="err" data-role="cancel-err"></span></div>
     </form>
     <form class="block react-form" data-id="${id}" ${open.react&&u.cancel?'':'hidden'} novalidate>
-      <h3 style="margin-bottom:8px">Reactivate</h3>
+      <h3 style="margin-bottom:8px">Resume subscription</h3>
       <div class="form-grid">
-        <label class="f">New start date<input id="rx-start-${id}" name="start" type="date" required value="${today}"></label>
+        <label class="f">Resume from<input id="rx-start-${id}" name="start" type="date" required value="${today}" min="${esc(u.joinDate)}"></label>
       </div>
-      <p class="small muted" style="margin-top:6px">If the last day was yesterday or later, the old plans simply continue. Otherwise a fresh plan starts on this date for each package the user had (same price and currency), prorated from then; the old plans and payments stay as history.</p>
-      <div class="form-actions"><button class="btn primary" type="submit">Reactivate</button><button class="link" type="button" data-act="toggle" data-key="react">Cancel</button><span class="err" data-role="react-err"></span></div>
+      <p class="small muted" style="margin-top:6px">Billing restarts on this date, prorated up to the next cycle, on the same package, price and currency.${u.cancel?` Nothing is billed from ${esc(fmtD(addDays(u.cancel.lastDay,1),true))} to the day before; resuming on or before ${esc(fmtD(addDays(u.cancel.lastDay,1)))} simply continues the old plans.`:''} Old plans, payments and the cancellation stay as history.</p>
+      <div class="form-actions"><button class="btn primary" type="submit">Resume</button><button class="link" type="button" data-act="toggle" data-key="react">Keep cancelled</button><span class="err" data-role="react-err"></span></div>
     </form>
     <div class="block-head"><h3>Plans and payments</h3><div class="legend"><span class="k-paid">Paid</span><span class="k-partial">Partial</span><span class="k-unpaid">Unpaid</span><span class="k-upcoming">Upcoming</span></div><button class="btn sm" type="button" data-act="toggle" data-key="addsub">Add plan or one-time item</button></div>
     <div class="subs">${subsHtml||'<p class="small muted">No plan yet. Add a monthly plan to start tracking billing periods, or a one-time item for a single amount.</p>'}</div>
@@ -2216,8 +2258,12 @@ function wireDetail(id,today){
       if(credit)txt+=` The ${fmtAmt(credit.credit,s.currency)} credit already carried reduces the first period only.`;
       if(Number(amt.value)!==total&&Number(amt.value)>0)txt+=` <span class="muted">Different total: one payment of ${fmtAmt(Number(amt.value),s.currency)} will be recorded with the note "paid up to ${fmtD(last.en,true)}"; periods fill in order and any extra carries as credit.</span>`;
       plan.innerHTML=txt;};
+    /* v27: Clear takes the typed date away (iPhone date pickers have no clear of their own) and puts the default cycle back */
+    const clearBtn=form.querySelector('[data-role=upto-clear]');const def=sel.options.length?sel.options[0].value:'';
+    const clearDate=()=>{dateEl.value='';sel.querySelectorAll('option[data-extra]').forEach(o=>o.remove());if(def!=='')sel.value=def;if(clearBtn)clearBtn.disabled=true;auto=true;compute();};
+    if(clearBtn)clearBtn.addEventListener('click',()=>{clearDate();dateEl.focus();});
     sel.addEventListener('change',()=>{auto=true;compute();});
-    dateEl.addEventListener('change',()=>{const d=dateEl.value;if(!isDateKey(d))return;let k=periodIndexAt(s,d);if(k<sa.kPaid){k=sa.kPaid;}const has=[...sel.options].some(o=>Number(o.value)===k);if(!has){const p=periodAmt(s,k);sel.insertAdjacentHTML('beforeend',`<option value="${k}">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}</option>`);}sel.value=String(k);auto=true;compute();});
+    dateEl.addEventListener('change',()=>{const d=dateEl.value;if(!isDateKey(d)){clearDate();return;}if(clearBtn)clearBtn.disabled=false;let k=periodIndexAt(s,d);if(k<sa.kPaid){k=sa.kPaid;}const has=[...sel.options].some(o=>Number(o.value)===k);if(!has){const p=periodAmt(s,k);sel.insertAdjacentHTML('beforeend',`<option value="${k}" data-extra="1">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}</option>`);}sel.value=String(k);auto=true;compute();});
     amt.addEventListener('input',()=>{auto=false;compute();});
     form.querySelector('[name=date]').addEventListener('change',compute);
     compute();
@@ -2403,6 +2449,8 @@ function bind(){
   $('#rr-body').addEventListener('submit',async e=>{const form=e.target.closest('form.amt-form');if(!form)return;e.preventDefault();await saveAmtForm(form);});
   /* v22: the Discount field fills the amount; the amount field updates the "message says" figure */
   document.addEventListener('input',e=>{const el=e.target;const form=el&&el.closest?el.closest('form.amt-form'):null;if(!form)return;
+    /* v27: a new package moves the amount with it unless an amount was typed by hand (a discount is re-applied to the new price) */
+    if(el.name==='pkg'){const o=el.selectedOptions[0];const nl=Number(o&&o.dataset.listed);if(isFinite(nl)){const amtEl=form.querySelector('[name=amount]');const d=form.querySelector('[name=disc]');const was=Math.abs((Number(amtEl.value)||0)-Number(form.dataset.listed))<0.005;form.dataset.listed=String(nl);const c=form.querySelector('[data-role=computed]');if(c)c.textContent=fmtAmt(nl,form.dataset.cur);if(d&&d.value.trim()){const v=discountTo(d.value,nl);if(v!=null)amtEl.value=v;}else if(was)amtEl.value=nl;}}
     if(el.name==='disc'){const v=discountTo(el.value,Number(form.dataset.listed));if(v!=null)form.querySelector('[name=amount]').value=v;}
     const net=form.querySelector('[data-role=net]');if(net){const credit=Number(form.dataset.credit)||0;net.textContent=fmtAmt(Math.max(0,(Number(form.querySelector('[name=amount]').value)||0)-credit),form.dataset.cur);}
     amtPreview(form);});
@@ -2563,14 +2611,20 @@ function bind(){
       applyCancel(u,lastDay,reason,note);closeKey('cancel');delete ui.cancelPre[id];
       const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} cancelled · last day ${fmtD(lastDay,true)}.`);
     }else if(form.classList.contains('react-form')){
-      setErr('react-err','');const start=val('start');if(!isDateKey(start)){setErr('react-err','Pick the new start date.');return;}
+      setErr('react-err','');const start=val('start');if(!isDateKey(start)){setErr('react-err','Pick the date to resume from.');return;}
+      /* v27: Resume (was Reactivate). Only the plans the cancellation ended come back (a plan ended earlier on purpose stays ended); a resume
+         after a gap starts a fresh plan on the chosen date for the package in force on the last day, so nothing is billed for the gap, and
+         the cancellation is kept in cancelHistory so the gap stays visible. */
+      const c=u.cancel;const ld=c&&c.lastDay;let ended=u.subscriptions.filter(s=>s.kind==='monthly'&&s.end&&(!ld||s.end===ld));if(!ended.length)ended=u.subscriptions.filter(s=>s.kind==='monthly'&&s.end);
       const seen={};const fresh=[];let resumed=0;
-      for(const s of u.subscriptions){if(s.kind==='monthly'&&s.end&&addDays(s.end,1)>=start){s.end=null;resumed++;const key=s.packageId||('label:'+(s.name||''));seen[key]=1;}}
-      for(const s of u.subscriptions.slice().reverse()){if(s.kind!=='monthly'||!s.end)continue;const key=s.packageId||('label:'+(s.name||''));if(seen[key])continue;seen[key]=1;
-        fresh.push({id:newId('s'),kind:'monthly',cycle:subCycle(s)==='yearly'?'yearly':'monthly',name:s.name||'',packageId:s.packageId||null,currency:s.currency,start,end:null,prorate:true,dueBy:null,prices:[{from:start,price:priceAt(s,s.end)}],payments:[]});}
+      for(const s of ended){if(addDays(s.end,1)>=start){s.end=null;resumed++;const key=(pkgIdAt(s,addDays(start,-1))||s.packageId)||('label:'+(s.name||''));seen[key]=1;}}
+      for(const s of ended.slice().reverse()){if(!s.end)continue;const pid=pkgIdAt(s,s.end)||s.packageId||null;const key=pid||('label:'+(s.name||''));if(seen[key])continue;seen[key]=1;
+        const np={id:newId('s'),kind:'monthly',cycle:subCycle(s)==='yearly'?'yearly':'monthly',name:s.name||'',packageId:pid,currency:s.currency,start,end:null,prorate:true,dueBy:null,prices:[{from:start,price:priceAt(s,s.end)}],payments:[]};if(s.discount)np.discount=clone(s.discount);fresh.push(np);}
       if(!fresh.length&&!resumed){const p=defaultPkg();fresh.push({id:newId('s'),kind:'monthly',cycle:p&&p.cycle==='yearly'?'yearly':'monthly',name:'',packageId:p?p.id:null,currency:p&&p.currency?p.currency:'PKR',start,end:null,prorate:true,dueBy:null,prices:[{from:start,price:p&&p.price!=null?p.price:0}],payments:[]});}
+      if(c){u.cancelHistory=(u.cancelHistory||[]).concat([Object.assign({},c,{resumedOn:start,resumedAt:todayISO()})]);}
       u.subscriptions.push(...fresh.reverse());u.cancel=null;closeKey('react');
-      const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} reactivated from ${fmtD(start,true)}.`);
+      const gap=ld&&dayDiff(ld,start)>1?dayDiff(ld,start)-1:0;
+      const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} resumed from ${fmtD(start,true)}${gap?` · ${gap} day${gap===1?'':'s'} not billed (${fmtD(addDays(ld,1))} – ${fmtD(addDays(start,-1))})`:''}.`);
     }else if(form.classList.contains('edit-form')){
       setErr('edit-err','');const name=val('name').trim(),email=val('email').trim(),join=val('joinDate'),phone=val('phone'),notes=val('notes').trim();
       if(!name&&!email){setErr('edit-err','Enter a name or an email.');return;}

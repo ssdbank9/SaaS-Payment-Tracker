@@ -82,12 +82,12 @@ SQLite tables (`server/db.py`): `docs(path, json, updated_at)`, `confirmations`,
   `payHow`, `appName`, `tagline`, `readModel`, `publicBaseUrl` (ignored while `LINK_DOMAIN` is set), `waApp`
   (`regular` | `business` | `ask`), `dimSettled`.
 - `users/<id>`: `name, email, phone, telegram, joinDate, notes, subscriptions[], reminders{}, cancel,
-  discontinue, confirmToken`.
+  cancelHistory[{lastDay,reason,note,at,resumedOn,resumedAt}] (v27, resumed cancellations), discontinue, confirmToken`.
   - Subscription (plan): `id, kind` (monthly | one-time), `cycle` (monthly | yearly), `packageId`, `currency`,
     `start`, `end`, `prorate`, `waiveFirst`, `prices[{from,price}]`, `discount`, `dueBy`,
     `prorationBasis|DaysOverride|RateOverride|AmountOverride` (older per-plan overrides, still read),
     `tierHistory[{from,packageId,price,currency,note,via}]` (C ↔ C Max from a cycle start),
-    `periodOverrides{periodStart:{amount,note,at}}` (hand-set amount for one period; absent = computed),
+    `periodOverrides{periodStart:{amount?,packageId?,note,at}}` (hand-set amount and/or package for one period, v27; absent = computed),
     `payments[{id,date,amount,currency,rate,note}]`. One-time items carry `total` and `due`.
   - `reminders{}` holds per-cycle ticks: reminded, confirmed, final notice, Except list, and Queue `sent`
     records `{stage, cycleStart, channel, at}`.
