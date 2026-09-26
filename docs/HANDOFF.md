@@ -1,6 +1,6 @@
 # Wasooli hand-off
 
-Written 2026-09-23 at v26, updated 2026-09-25 at v28. This is the document to read first when picking the project
+Written 2026-09-23 at v26, updated 2026-09-26 at v29. This is the document to read first when picking the project
 up again in Claude Code, another AI coding tool or by hand. `AGENTS.md` is the working guide for a coding session
 (every tool reads it, see section 10); this file records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
 built is `docs/setup-runbook.html` (open it in a browser; it prints).
@@ -16,14 +16,14 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
   Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.
 - **Repo:** `ssdbank9/SaaS-Payment-Tracker` on GitHub, branch `main`. Pushing to `main` is the release.
 
-## 2. Current state (2026-09-25, v28)
+## 2. Current state (2026-09-26, v29)
 
 | Item | Value |
 | --- | --- |
 | Admin site | `https://wasooli.duckdns.org` (plain root shows a blank neutral page on purpose) |
 | Sign-in form | `https://wasooli.duckdns.org/x/<ADMIN_PATH>` (printed by the installer; Settings → Security) |
 | Subscriber links | `https://pay-up.duckdns.org/c/<token>` (`LINK_DOMAIN`) |
-| Health check | `https://wasooli.duckdns.org/healthz` → `{"ok": true, "app": "wasooli", "version": "28", "linkBase": "https://pay-up.duckdns.org", ...}` |
+| Health check | `https://wasooli.duckdns.org/healthz` → `{"ok": true, "app": "wasooli", "version": "29", "linkBase": "https://pay-up.duckdns.org", ...}` |
 | VM | Oracle Cloud Always Free, `VM.Standard.A1.Flex`, 1 OCPU / 6 GB, Ubuntu 24.04 aarch64, public IP `141.145.157.7`, created 2026-09-22 ~11:45 UTC in VCN `vcn-20260922-1643` / subnet `subnet-20260922-1643` |
 | Cloud firewall | Default Security List of that subnet: default rules (TCP 22, ICMP) plus TCP 80 and TCP 443 from `0.0.0.0/0` added by the owner |
 | DNS | DuckDNS (owner signed in with Google): `wasooli.duckdns.org` and `pay-up.duckdns.org` → `141.145.157.7`. The first name `wasool.duckdns.org` was deleted on 2026-09-23 |
@@ -32,8 +32,8 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
 | Data on VM | `/var/lib/payments-tracker/tracker.sqlite3` plus `assets/` (uploaded receipts) and `backups/` |
 | Secrets on VM | `/etc/payments-tracker.env` (`DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`); AI and mail keys typed in Settings live in the SQLite `meta` table |
 | Services | `payments-tracker.service` (gunicorn on 127.0.0.1:8080), `caddy` (HTTPS for all three hosts), timers `payments-tracker-update` (5 min), `payments-tracker-backup` (03:15 daily), `payments-tracker-notify` (04:00 UTC = 09:00 PKT daily) |
-| Versions | badge `v28` in `index.html`, `VERSION = "28"` in `server/app.py`, top entry `## v28` in `CHANGELOG.md` |
-| Repo head | the v28 commit "Refunds; AGENTS.md hand-off for other AI tools (v28)" (check with `git log -1`) |
+| Versions | badge `v29` in `index.html`, `VERSION = "29"` in `server/app.py`, top entry `## v29` in `CHANGELOG.md` |
+| Repo head | the v29 commit "v29: one-tap Record payment and Paid-for-month dashboard labels" (check with `git log -1`) |
 | claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: same `index.html`, kept identical in code, but retired as the place where data lives |
 
 **How updates deploy.** `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: `git fetch`,
@@ -104,7 +104,10 @@ SQLite tables (`server/db.py`): `docs(path, json, updated_at)`, `confirmations`,
   password), `ai` (provider, keys, Gemini model), `docs_version`.
 
 **Periods are computed, never stored.** `analyzeMonthly` walks cycle periods from the plan start, applies
-payments minus refunds as credit in order and yields paid / partial / unpaid / upcoming, balance and next due. `analyze(u,
+payments minus refunds as credit in order and yields paid / partial / unpaid / upcoming, balance and next due.
+Since v29 `analyze(u, today)` also returns `statusA`, the plan analysis whose status the user's pill shows;
+`statusLabel` / `statusHint` / `periodMonth` turn a plan or user analysis into "Paid for Oct" and its tooltip, and
+`recTarget(s, sa)` is the one period (or one-time remainder) the Record payment question is about. `analyze(u,
 today)` aggregates a user. `breakdownRows`, `monthlySeries` and `analyticsData` build Summary and Analytics
 from those same functions, so totals reconcile by construction. Any new money figure must reuse them.
 Since v28 revenue in a month is its payments minus its refunds (by refund date) and Net = collected − refunds − costs
@@ -148,6 +151,7 @@ owner's real records. New versions since v18 have needed no migration (absent = 
 | 26 | 09-23 | Analytics tab; `CLAUDE.md`; README "Making changes" | Owner asked for graphs of users per package and money vs cost, and a way to change the site himself |
 | 27 | 09-25 | One month on another package; Paid up to → Clear; Cancel reachable on phones; Resume with a date and cancellation history | Owner bills single months as C Max; iPhone date pickers cannot clear; the Cancel button was off-screen |
 | 28 | 09-25 | Refunds (reduce revenue, net and the plan's credit; optional cancel; shown in history); `AGENTS.md` for any AI tool | Owner wants exact revenue and profit after money given back, and to continue with Codex or other tools |
+| 29 | 09-26 | One-tap Record payment (question on the period box, big Yes, Different amount); every save redraws at once; same-day payments both kept; status pills say "Paid for Oct" / "Paid to Nov" / "Overdue for Sep – Oct" | Owner found recording a payment counter-intuitive (edit → save → record, and Paid appearing late) and wanted the dashboard to name the month |
 
 ## 6. Decisions log
 
@@ -174,6 +178,9 @@ owner's real records. New versions since v18 have needed no migration (absent = 
 | Slack routines (20th and 23rd nudges) left in place but ignored | 09-23 | Owner leaving Slack; the notify timer covers the emails | Deleting them (harmless either way) |
 | Refund = its own record on the plan, dated when the money went back; it lowers revenue in that month and the plan's credit | 09-25 | Revenue and profit must be exact; a refunded month is no longer paid for | A negative payment (confuses the history and the payment count); lowering the period amount (hides the money that came and went) |
 | `AGENTS.md` is the one guide; `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` only point to it | 09-25 | Every AI coding tool reads one of these names; one source cannot drift | Copies of the same text per tool |
+| Record payment = a yes/no question on the period that needs money next, recording exactly what that period owes; the full form only for edits | 09-26 | The owner records on a phone; the old header form (date, currency, amount, rate, note, months) plus "edit amount" on the box made him edit and save before recording | Auto-recording without a question (a mis-tap would store money); a bottom sheet (inline keeps the period in view) |
+| A period is "for" the month its cycle starts in (24 Oct – 23 Nov = "Oct"); one function `periodMonth` decides | 09-26 | Matches how the owner talks about "October's payment", the reminder on the 20th and the cycle starting the 24th | Naming the month with most days (Nov); showing both dates on the pill (too wide on a phone; the dates are the tooltip) |
+| Every save puts the user into `state` and renders at once (`persistUser`) | 09-26 | Waiting for the poll of `/api/version` made Save look like it did nothing for up to 4 s (30 s in a background tab) | Keep `commitUser` only for the amount form; shorten the poll |
 
 ## 7. Operations runbook
 
@@ -282,11 +289,17 @@ both DuckDNS names to the new IP, then `sudo systemctl restart caddy`.
 
 - A plan that starts or resumes mid-cycle shows its next due date as the cycle start rather than the date billing
   actually starts from, in places that read the cycle date.
+- Record payment (v29) asks only for the period that needs money next (credit is applied in period order, so a payment cannot be
+  aimed at a later month). A plan with no next period (ended) still opens the old full payment form from its header button.
+  "Paid up to…" and editing a payment still use the older multi-field forms. Status pills are longer now ("Overdue for Sep – Oct"),
+  which widens the Status column on the phone's scrolling table.
+- The "for 24 Oct – 23 Nov 2026" note the one-tap flow writes is the period's dates at the time of recording; if the cycle day or
+  the plan's start is changed afterwards, the note keeps the old dates (payments themselves are re-applied correctly).
 - The link page's "Upgrade to C Max" offer ignores a month that is already billed as C Max through a period override
   (v27), so it can still offer the upgrade for that month.
 - Refunds (v28): the Summary's 12-month bar chart still draws collected before refunds (refunds are in its tooltip,
-  and in the Analytics net line, tables and cumulative chart). A refund on a one-time item raises what is left to pay;
-  if the sale is undone, the owner also edits the item's total. A refund is counted for the plan's package on the
+  and in the Analytics net line, tables and cumulative chart). Refunding a one-time item does not lower its total: it raises
+  what is left to pay; if the sale is undone, the owner also edits the item's total. A refund is counted for the plan's package on the
   refund date, not for the package a single month was billed as. For a cancelled user, "kept after refund" period
   amounts replace a hand-set amount on the same period, and they stay if the user is later resumed (they are
   recomputed, and removed, only when a refund on that plan is saved or removed while the user is cancelled).

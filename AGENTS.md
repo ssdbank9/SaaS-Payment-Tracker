@@ -68,6 +68,13 @@ Write user-facing text in plain, factual words; no emojis.
   `periodOverrides{periodStart:{amount?,packageId?,note,at,fromRefund?}}` (hand-set amount and/or package for one period),
   `payments[{id,date,amount,currency,rate,note}]`,
   `refunds[{id,date,amount,currency,rate,note}]` (v28; absent = none). One-time items have `total` and `due`.
+- Recording a payment (v29): `recTarget(s, sa)` picks the one period that needs money next (credit is applied in period order)
+  and what it owes; `recBoxHTML` draws the question ("Record Rs 4,200 for 24 Oct – 23 Nov?", Yes / Different amount / Not now) inside
+  that period's box or under a one-time item; `recordPayment` appends `{id,date,amount,currency,rate:null,note}` and saves through
+  `persistUser`, which puts the user into `state` and renders at once on every backend (do not wait for the poll). The older
+  `.pay-form` remains for editing a payment and for a plan with no next period. Status pills come from `statusLabel(a)` with
+  `periodMonth(st, en, cycle)` ("Paid for Oct", "Paid to Nov", "Overdue for Sep – Oct", "Paid for 2026–27"); a user analysis
+  carries `statusA`, the plan that set its status.
 - Periods are computed, never stored. `paidInPlanCur` is payments minus refunds (the plan's credit);
   `analyzeMonthly` walks cycle periods from `pStart`, applies that credit in order and yields
   paid/partial/unpaid/upcoming states, balance and next due. `analyze(u, today)` aggregates a user.

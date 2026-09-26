@@ -395,6 +395,22 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .amt-form .form-actions,.amt-form .d,.amt-form .amt-plan,.amt-form .amt-pkg{grid-column:1/-1}
 .amt-form .amt-pkg select{max-width:100%}
 .cell .tag.pkgov{border-style:dashed}
+/* v29: one-tap Record payment: the period box's own button, the question with a big Yes, and the compact "different amount" form */
+.cell .rec-cta{margin-top:4px}
+.cell .btn.rec{width:100%;min-height:36px;font-size:13px;white-space:normal}
+.rec-box{margin-top:6px;padding-top:8px;border-top:1px dashed var(--line-strong);text-align:left;display:flex;flex-direction:column;gap:6px}
+.sub-body>.rec-box{margin-top:10px;padding:10px;border:1px solid var(--accent-line);border-radius:6px;background:var(--accent-tint)}
+.rec-box .rec-q{font-family:var(--sans);font-size:15px;color:var(--ink);margin:0;line-height:1.35}
+.rec-box .rec-q b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600}
+.rec-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.rec-acts .btn{min-height:44px;font-size:15px;padding:8px 16px;white-space:normal}
+.rec-acts .rec-yes{flex:1 1 100%}
+.rec-acts .link{font-size:13px;min-height:44px;display:inline-flex;align-items:center;padding:0 8px}
+.rec-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;align-items:end;margin-top:4px;padding-top:8px;border-top:1px dashed var(--line)}
+.rec-form .rec-amt input{font-size:18px;min-height:44px;font-family:var(--mono)}
+.rec-form .rec-note,.rec-form .form-actions,.rec-form .d{grid-column:1/-1}
+.rec-form .form-actions .btn{min-height:44px;font-size:15px;flex:1 1 auto}
+@media (max-width:700px){.rec-acts .btn{flex:1 1 100%}}
 .cell .pkg-line b{color:var(--ink);font-weight:600}
 .amt-form .amt-plan{font-weight:600;font-size:12px;color:var(--ink)}
 /* v24: what a hand-set amount would do to the plan, shown before Save */
@@ -568,7 +584,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v28</span>
+      <span class="small muted num" id="app-ver" title="App version">v29</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -830,7 +846,7 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     <h3>No users yet</h3>
     <div class="steps">
       <div class="step"><span class="n">1</span><p><b>Add a user</b> with their name or email, the day they joined, their package or product, the currency they pay in and the price. The first billing period starts on the join date.</p></div>
-      <div class="step"><span class="n">2</span><p><b>Record payments</b> from the user's row. Each full payment covers one billing period; the table shows how far each user is paid through.</p></div>
+      <div class="step"><span class="n">2</span><p><b>Record payments</b> from the user's row: tap Record payment on the month that needs it and say Yes to the amount shown, or pick a different amount. Each full payment covers one billing period; the status says which month is paid for.</p></div>
     </div>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn primary" type="button" id="empty-add">Add your first user</button><button class="btn" type="button" id="empty-quick">Quick add several</button></div>
   </section>
@@ -1179,7 +1195,7 @@ function coverPlan(s,sa,targetK){const out=[];for(let k=sa.kPaid;k<=targetK&&k<s
 const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,paid:5,ended:5,cancelled:5,nosub:6};
 function analyze(u,today){
   const subs=u.subscriptions||[];const sa={};const totals=newSum(),balance=newSum(),due=newSum(),cycleDue=newSum();let cyclePaid=false;
-  let status='nosub',rank=99,paidThrough=null,nextDue=null,overdue=0;const planParts=[],duePlans=[],duePkgs=[];const pkgIds=new Set();
+  let status='nosub',rank=99,paidThrough=null,nextDue=null,overdue=0,statusA=null;const planParts=[],duePlans=[],duePkgs=[];const pkgIds=new Set();
   const mainSub=subs.find(s=>s.kind==='monthly'&&subCycle(s)==='monthly'&&(!s.end||s.end>=today))||subs.find(s=>s.kind==='monthly'&&(!s.end||s.end>=today))||subs[0];const mainCur=mainSub?mainSub.currency:'PKR';
   for(const s of subs){
     const a=s.kind==='one-time'?analyzeOneTime(s,today):analyzeMonthly(s,today);sa[s.id]=a;
@@ -1187,7 +1203,8 @@ function analyze(u,today){
     for(const p of s.payments||[])sumAdd(totals,p.amount,p.currency||s.currency,p.rate);
     for(const r of s.refunds||[])sumAdd(totals,-r.amount,r.currency||s.currency,r.rate);
     if(a.kind==='monthly'){if(a.overdueAmount>0)sumAdd(balance,a.overdueAmount,s.currency,null);if(a.cycleDue>0)sumAdd(cycleDue,a.cycleDue,s.currency,null);if(a.cyclePaid)cyclePaid=true;}else if(a.remaining>0)sumAdd(balance,a.remaining,s.currency,null);
-    const r=RANK[a.status];if(r<rank){rank=r;status=a.status;}
+    /* v29: statusA is the plan whose status the user's pill shows; among plans of equal rank the one paid the least far ahead */
+    const r=RANK[a.status];if(r<rank||(r===rank&&statusA&&a.kind==='monthly'&&statusA.kind==='monthly'&&a.paidThrough<statusA.paidThrough)){rank=r;status=a.status;statusA=a;}
     if(a.kind==='monthly'){
       if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&a.kPaid>0&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),tier:tm,price:shown,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id,note:u.cancel&&s.end?'until '+fmtD(s.end):(s.discount?discountLabel(s):undefined)});pkgIds.add(pid||'');}
       else if(a.status==='upcoming'){planParts.push({name:planLabel(s),tier:tm,price:shown,cur:s.currency,per:perOf(s),note:'starts '+fmtD(s.start),noPkg:!s.packageId,subId:s.id});pkgIds.add(pid||'');}
@@ -1197,11 +1214,29 @@ function analyze(u,today){
     if(['overdue','due-today','due-soon'].includes(a.status)){sumAdd(due,a.amountDue,s.currency,null);duePlans.push(planLabel(s));if(pid)duePkgs.push(pkgName(pid));overdue+=a.overdue;}
   }
   if(!subs.length)status='nosub';
-  if(u.cancel){status='cancelled';nextDue=null;const cd=newSum();return {sa,totals,balance,due:balance,cycleDue:cd,cyclePaid:false,mainCur,status,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:u.cancel,unpaid:balance.n>0,needsReminder:false};}
+  if(u.cancel){status='cancelled';nextDue=null;const cd=newSum();return {sa,totals,balance,due:balance,cycleDue:cd,cyclePaid:false,mainCur,status,statusA,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:u.cancel,unpaid:balance.n>0,needsReminder:false};}
   if(!due.n){for(const s of subs){const a=sa[s.id];if(a.kind==='monthly'&&a.status!=='ended')sumAdd(due,a.amountDue,s.currency,null);}}
-  return {sa,totals,balance,due,cycleDue,cyclePaid,mainCur,status,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:null,unpaid:status==='overdue'||status==='due-today',needsReminder:['overdue','due-today','due-soon'].includes(status)||cycleDue.n>0,settled:!balance.n&&(status==='current'||status==='paid'||status==='ended')};
+  return {sa,totals,balance,due,cycleDue,cyclePaid,mainCur,status,statusA,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:null,unpaid:status==='overdue'||status==='due-today',needsReminder:['overdue','due-today','due-soon'].includes(status)||cycleDue.n>0,settled:!balance.n&&(status==='current'||status==='paid'||status==='ended')};
 }
-function statusLabel(a){switch(a.status){case 'cancelled':return a.balance&&a.balance.n?'Cancelled · owes':'Cancelled · settled';case 'overdue':return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';case 'due-today':return 'Due today';case 'due-soon':return 'Due soon';case 'current':return 'Current';case 'open':return 'Open balance';case 'upcoming':return 'Starts later';case 'ended':return 'Ended';case 'paid':return 'Paid';default:return 'No plan';}}
+/* v29: the month a billing period is "for": the month its cycle starts in (24 Oct – 23 Nov is "Oct"; the year is added when it is not this year).
+   A yearly period reads "2026–27" (or "2026" when it stays inside one year). Change this one function to name periods another way. */
+function periodMonth(st,en,cycle){if(!isDateKey(st))return '';const a=st.split('-');if(cycle==='yearly'){const b=isDateKey(en)?en.split('-'):a;return a[0]===b[0]?a[0]:a[0]+'–'+b[0].slice(2);}return MONTHS[+a[1]-1]+(a[0]!==todayISO().slice(0,4)?' '+a[0]:'');}
+/* the period the status pill names: the last paid one when paid up (ahead = paid past the current period), the first unpaid one when money is owed.
+   Works on a plan analysis (has periods) or on a user analysis (statusA = the plan that set the user's status). */
+function statusPeriod(a){const m=a&&a.periods?a:(a&&a.statusA&&a.statusA.periods?a.statusA:null);if(!m)return null;const ps=m.periods||[];
+  if(m.status==='current'){const p=ps[m.kPaid-1];return p&&p.state==='paid'?{p,last:p,m,ahead:m.kPaid-1>m.curIdx}:null;}
+  if(m.status==='overdue'||m.status==='due-today'||m.status==='open'){const od=ps.filter(p=>p.state==='unpaid'||p.state==='partial');return od.length?{p:od[0],last:od[od.length-1],m}:null;}
+  return null;}
+const perMonth=(x,p)=>periodMonth(p.st,p.en,x.m.cycle);
+function statusLabel(a){switch(a.status){case 'cancelled':return a.balance&&a.balance.n?'Cancelled · owes':'Cancelled · settled';
+  case 'overdue':{const x=statusPeriod(a);if(!x)return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';const f=perMonth(x,x.p),l=perMonth(x,x.last);return 'Overdue for '+(f===l?f:f+' – '+l);}
+  case 'due-today':{const x=statusPeriod(a);return x?'Due today for '+perMonth(x,x.p):'Due today';}
+  case 'due-soon':return 'Due soon';
+  case 'current':{const x=statusPeriod(a);return x?(x.ahead?'Paid to ':'Paid for ')+perMonth(x,x.p):'Current';}
+  case 'open':{const x=statusPeriod(a);return x?'Open balance for '+perMonth(x,x.p):'Open balance';}
+  case 'upcoming':return 'Starts later';case 'ended':return 'Ended';case 'paid':return 'Paid';default:return 'No plan';}}
+/* v29: the pill's tooltip: the exact dates behind "Paid for Oct" */
+function statusHint(a){const x=statusPeriod(a);if(!x)return '';return (a.status==='current'?'Paid through ':'Owed for ')+fmtCycle(x.p.st,x.last.en);}
 const displayName=u=>u.name||u.email||'(unnamed)';
 
 /* ---------- reminders ---------- */
@@ -1470,7 +1505,10 @@ function saveLocal(){try{localStorage.setItem('pt-data',JSON.stringify({users:st
 function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;}catch(e){}}
 function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur}));}catch(e){}}
 function dbErr(e){const c=e&&e.code;if(c==='quota_exceeded')return 'Storage is full: delete some entries before adding more.';if(c==='invalid_argument')return 'You do not have permission to change shared data.';if(c==='resource_exhausted')return 'Too many changes at once; wait a moment and try again.';return 'Could not save ('+(c||'unknown')+'). Try again.';}
-async function persistUser(id,u){const body=cleanUser(Object.assign({},u,{id}));if(db){try{await db.collection('users').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}else{state.users[id]=normalizeUser(body,id);saveLocal();render();}return true;}
+/* v29: the saved user goes into state and is drawn at once on every backend. Before, on the server the page only wrote the document and
+   waited for the next poll of /api/version to fetch the list again, so a recorded payment showed as paid only when that round trip had
+   finished (4 s, 30 s in a background tab, or never if the poll failed), which made Save look as if it had done nothing. */
+async function persistUser(id,u){const body=cleanUser(Object.assign({},u,{id}));if(db){try{await db.collection('users').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}state.users[id]=normalizeUser(clone(body),id);render();}else{state.users[id]=normalizeUser(body,id);saveLocal();render();}return true;}
 async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.users[id];saveLocal();render();}return true;}
 async function persistCost(id,c){const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}else{state.costs[id]=normalizeCost(body,id);saveLocal();render();}return true;}
 async function removeCost(id){if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.costs[id];saveLocal();render();}return true;}
@@ -1963,7 +2001,7 @@ function renderTable(){
   for(const r of rows){
     const {u,a,id}=r;const exp=ui.expanded===id;const late=a.status==='overdue';
     const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):(a.planParts.length&&!u.cancel?'nothing yet':'—');
-    const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?'<span class="muted">paid</span>':'<span class="muted">—</span>');
+    const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?`<span class="muted">paid for ${esc(periodMonth(nextCycleStart(today),null,'monthly'))}</span>`:'<span class="muted">—</span>');
     html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}" data-settled="${dimOn()&&a.settled?1:0}">
       <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${contactLine(u)}</td>
       <td class="plan">${planCell(a)}</td>
@@ -1972,7 +2010,7 @@ function renderTable(){
       <td class="r">${ndTxt}</td>
       <td class="r">${ownHTML(a.totals,a.mainCur,fmtAmt(0,a.mainCur))}</td>
       <td class="r${a.balance.n?' late':''}">${ownHTML(a.balance,a.mainCur)}</td>
-      <td><span class="pill" data-status="${a.status}">${statusLabel(a)}</span>${discBadge(u)}</td>
+      <td><span class="pill" data-status="${a.status}" title="${esc(statusHint(a))}">${statusLabel(a)}</span>${discBadge(u)}</td>
       <td>${a.needsReminder?`<span class="remind-pair">${remindControl(u,a,today)}${emailControl(u,a,today)}${u.telegram?telegramControl(u):''}</span>`:'<span class="muted">—</span>'}${remBadge(u,nextCycleStart(today))}</td>
       <td><span class="chev">›</span></td>
     </tr>`;
@@ -2119,7 +2157,7 @@ function amtFormHTML(id,s,p,ctx,label){const cur=s.currency;const ov=periodOverr
     <label class="f">Note <span class="muted">(optional)</span><input name="note" type="text" maxlength="140" placeholder="e.g. Eid discount, correction" value="${esc(ent.note||'')}" aria-label="Note"></label>
     <span class="amt-warn" data-role="amt-warn" role="status" hidden></span>
     <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button>${any?`<button class="link sm" type="button" data-act="amt-reset" title="Clears the amount and the package set for this period">Reset to computed (${esc(fmtAmt(po.base,cur))})</button>`:''}<button class="link sm" type="button" data-act="amt-cancel">Cancel</button></span>
-    <span class="d">Computed <span data-role="computed">${esc(fmtAmt(p.listed,cur))}</span>${po.n>1?' for the chosen package (its price drives the amount unless you type another)':''}${ov?` · currently set to ${esc(fmtAmt(p.pr,cur))}`:''}${credit?` · ${esc(fmtAmt(credit,cur))} credit already applies, so the message says <b data-role="net">${esc(fmtAmt(Math.max(0,p.pr-credit),cur))}</b>`:''}. Recorded payments stay as they are.</span></form>`;}
+    <span class="d"><b>This changes what is owed for the period; it does not record a payment</b> (use Record payment for that). Computed <span data-role="computed">${esc(fmtAmt(p.listed,cur))}</span>${po.n>1?' for the chosen package (its price drives the amount unless you type another)':''}${ov?` · currently set to ${esc(fmtAmt(p.pr,cur))}`:''}${credit?` · ${esc(fmtAmt(credit,cur))} credit already applies, so the message says <b data-role="net">${esc(fmtAmt(Math.max(0,p.pr-credit),cur))}</b>`:''}. Recorded payments stay as they are.</span></form>`;}
 /* v24: before Save, what the typed amount would do to this plan: a period that stops being covered (and by how much), an Overdue
    status, a paid-through date that moves back. Computed on a copy of the plan; nothing is stored until Save. */
 function amtPreview(form){const warn=form.querySelector('[data-role=amt-warn]');if(!warn)return;const u=state.users[form.dataset.id];const s0=u&&(u.subscriptions||[]).find(x=>x.id===form.dataset.sub);const st=form.dataset.start;
@@ -2136,7 +2174,7 @@ function amtPreview(form){const warn=form.querySelector('[data-role=amt-warn]');
   warn.innerHTML=`<span>${txt}.</span><button class="link sm" type="button" data-act="amt-restore" title="Put the computed amount back in the box (nothing is saved until you press Save)">Reset to computed (${esc(fmtAmt(Number(form.dataset.listed),cur))})</button>`;warn.hidden=false;}
 function closeAmtForm(id,sid,st,ctx){if(ctx==='queue')delete ui.qOpen[id];else if(ui.open[id])ui.open[id]['amt:'+sid+':'+st]=false;}
 /* persist and show the change at once (the server poll would repeat the same render a moment later) */
-async function commitUser(id,u){const ok=await persistUser(id,u);if(ok&&db){state.users[id]=normalizeUser(cleanUser(Object.assign({},clone(u),{id})),id);render();}return ok;}
+async function commitUser(id,u){return persistUser(id,u);} /* v29: persistUser now renders at once itself */
 async function resetPeriodOverride(id,sid,st,ctx){if(!state.users[id])return;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return;setPeriodOverride(s,st,null,'',null);if(pStart(s,0)===st)s.prorationAmountOverride=null;closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok)toast(`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`);}
 async function saveAmtForm(form){const id=form.dataset.id,sid=form.dataset.sub,st=form.dataset.start,ctx=form.dataset.ctx;if(!state.users[id]||!isDateKey(st))return;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return;
   const amtEl=form.querySelector('[name=amount]'),noteEl=form.querySelector('[name=note]');const raw=String(amtEl.value||'').trim();if(!validAmt(raw)){toast('Enter the amount for this period (0 or more).');amtEl.focus();return;}
@@ -2149,6 +2187,40 @@ async function saveAmtForm(form){const id=form.dataset.id,sid=form.dataset.sub,s
 /* v27: past cancellations that were resumed: the gap in which nothing was billed */
 function cancelHistHTML(u){const h=u.cancelHistory||[];if(!h.length)return '';return `<p class="cancel-hist">${h.map(x=>{const gap=x.resumedOn&&dayDiff(x.lastDay,x.resumedOn)>1;return `Cancelled · last day <b>${esc(fmtD(x.lastDay,true))}</b>${x.resumedOn?` · resumed <b>${esc(fmtD(x.resumedOn,true))}</b>`:''}${gap?` · not billed ${esc(fmtD(addDays(x.lastDay,1)))} – ${esc(fmtD(addDays(x.resumedOn,-1)))}`:''}${x.reason?` · ${esc(x.reason)}`:''}`;}).join('<br>')}</p>`;}
 const refundEditOf=s=>{const rid=(ui.refundEdit||{})[s.id];return rid?(s.refunds||[]).find(x=>x.id===rid)||null:null;};
+/* ---------- v29: one-tap Record payment. The plan's Record payment button and the period box's own button open the same question,
+   "Record Rs 4,200 for 24 Oct – 23 Nov?", on the first period that still needs money (credit is applied in period order, so that is the
+   only period a payment can go to). Yes records what that period actually owes (after discount, proration, a hand-set amount or package,
+   and any credit already applied), dated today, in the plan's currency at the default rate. "Different amount" opens amount, currency,
+   date and note. Nothing has to be edited or saved first; the row, the box and the totals redraw as soon as the payment is stored. ---------- */
+function recTarget(s,sa){if(!sa)return null;if(s.kind!=='monthly')return sa.remaining>0?{st:'item',owed:sa.remaining,label:s.name||'this item'}:null;if(!sa.nextDue)return null;const p=(sa.periods||[]).find(x=>x.st===sa.nextDue);if(!p)return null;const owed=Math.round(Math.max(0,p.pr-p.covered)*100)/100;return owed>0?{st:p.st,owed,p,label:fmtCycle(p.st,p.en)}:null;}
+function recBoxHTML(id,u,s,t,today,more){const cur=s.currency;const p=t.p;
+  const facts=p?(p.covered>0?`${fmtAmt(p.pr,cur)} for the period less ${fmtAmt(p.covered,cur)} already paid toward it`:p.custom?`amount set by hand for this period${p.note?' · '+p.note:''}`:p.pkgOv?`billed as ${pkgName(p.pkgId)} this period`:p.prorated?`${p.daysCharged} day${p.daysCharged===1?'':'s'} prorated`:s.discount?`${fmtAmt(p.listed,cur)} less ${discountLabel(s)}`:''):`what is left of ${fmtAmt(s.total,cur)}`;
+  return `<div class="rec-box" data-sub="${esc(s.id)}" role="group" aria-label="Record payment">
+    <p class="rec-q">Record <b>${esc(fmtAmt(t.owed,cur))}</b> for ${esc(t.label)}?</p>
+    <p class="d">Dated today, ${esc(fmtD(today,true))}${facts?' · '+esc(facts):''}.</p>
+    <div class="rec-acts"><button class="btn primary rec-yes" type="button" data-act="rec-yes" data-sub="${esc(s.id)}" data-start="${esc(t.st)}">Yes, record ${esc(fmtAmt(t.owed,cur))}</button><button class="btn" type="button" data-act="rec-more" data-sub="${esc(s.id)}" aria-expanded="${more?'true':'false'}">Different amount</button><button class="link" type="button" data-act="rec-cancel" data-sub="${esc(s.id)}">Not now</button></div>
+    ${more?`<form class="rec-form" data-id="${esc(id)}" data-sub="${esc(s.id)}" data-start="${esc(t.st)}" data-label="${esc(t.label)}" novalidate>
+      <label class="f rec-amt">Amount<input name="amount" type="number" min="0" step="0.01" required inputmode="decimal" value="${t.owed}" aria-label="Amount paid"></label>
+      <label class="f">Paid in${curSelect('rc-cur-'+s.id,'currency',cur)}</label>
+      <label class="f">Date<input name="date" type="date" required value="${today}"></label>
+      <label class="f rec-note">Note <span class="muted">(optional)</span><input name="note" type="text" maxlength="140" placeholder="e.g. NayaPay ref, USDT tx"></label>
+      <span class="form-actions" style="margin:0"><button class="btn primary" type="submit">Record</button></span>
+      <span class="d">Less than what is owed is kept as a partial payment; more carries forward as credit. A payment in the other currency counts at the default rate; use Edit in the payment history to set a rate.</span>
+    </form>`:''}
+  </div>`;}
+async function recordPayment(id,sid,pay){if(!state.users[id])return false;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return false;
+  s.payments=(s.payments||[]).concat([{id:newId('p'),date:pay.date,amount:pay.amount,currency:pay.currency,rate:pay.rate||null,note:pay.note||''}]);
+  ui.open[id]=Object.assign({},ui.open[id],{['rec:'+sid]:false,['recmore:'+sid]:false});
+  const ok=await persistUser(id,u);
+  if(ok){const sa=analyze(state.users[id]||u,todayISO()).sa[sid];toast(`${fmtAmt(pay.amount,pay.currency)} recorded for ${displayName(u)}${sa?' · '+statusLabel(sa):''}.`);}
+  return ok;}
+async function saveRecForm(form){const id=form.dataset.id,sid=form.dataset.sub;const v=n=>{const el=form.querySelector(`[name=${n}]`);return el?String(el.value||''):'';};
+  const date=v('date'),raw=v('amount').trim(),pc=normCur(v('currency')),note=v('note').trim().slice(0,140);
+  if(!isDateKey(date)){toast('Pick the payment date.');return;}
+  if(!validAmt(raw)||Number(raw)<=0){toast('Enter the amount paid.');const a=form.querySelector('[name=amount]');if(a)a.focus();return;}
+  const b=form.querySelector('button[type=submit]');if(b)b.disabled=true;
+  const ok=await recordPayment(id,sid,{date,amount:Math.round(Number(raw)*100)/100,currency:pc,rate:null,note:note||(form.dataset.start!=='item'?'for '+form.dataset.label:'')});
+  if(!ok&&b)b.disabled=false;}
 function detailHTML(id,u,a,today){
   const open=ui.open[id]||{};const subs=u.subscriptions||[];
   let subsHtml='';
@@ -2163,7 +2235,8 @@ function detailHTML(id,u,a,today){
       const dueByFact=s.dueBy?`<span>Remaining due by <b>${esc(fmtD(s.dueBy,true))}</b></span>`:'';
       const lastPaid=sa.periods.filter(p=>p.state==='paid').pop();
       const tierTag=p=>p.pkgOv&&p.pkgId?` <span class="tag tier pkgov" title="Billed at ${esc(pkgName(p.pkgId))} for this period only">${esc(pkgName(p.pkgId))}</span>`:sa.tiered&&p.pkgId?` <span class="tag tier">${esc(pkgName(p.pkgId))}</span>`:'';
-      const cells=sa.periods.map(p=>{const fkey='amt:'+s.id+':'+p.st;const editing=!!open[fkey];const pro=p.prorated?`<span class="d">${p.daysCharged} day${p.daysCharged===1?'':'s'} × ${esc(fmtAmt(p.rate,s.currency))} = ${esc(fmtAmt(p.computed,s.currency))}${p.amtOverride&&!p.custom?` → charged ${esc(fmtAmt(p.pr,s.currency))}`:''}${p.discounted&&!p.custom?' <span class="tag">discounted</span>':''}</span><span class="d muted">${p.basisDays===30?'30-day month':p.total+'-day cycle'}${p.override?` · days set by hand (actual ${p.days})`:''}${p.rateOverride?' · rate set by hand':''} · <button class="link sm" type="button" data-act="toggle" data-key="days:${s.id}">edit days / rate</button></span>`:'';let a;
+      const rt=recTarget(s,sa);const recOpen=open['rec:'+s.id]||'';const recMore=!!open['recmore:'+s.id];
+      const cells=sa.periods.map(p=>{const fkey='amt:'+s.id+':'+p.st;const rec=recOpen===p.st;const editing=!!open[fkey]||rec;const pro=p.prorated?`<span class="d">${p.daysCharged} day${p.daysCharged===1?'':'s'} × ${esc(fmtAmt(p.rate,s.currency))} = ${esc(fmtAmt(p.computed,s.currency))}${p.amtOverride&&!p.custom?` → charged ${esc(fmtAmt(p.pr,s.currency))}`:''}${p.discounted&&!p.custom?' <span class="tag">discounted</span>':''}</span><span class="d muted">${p.basisDays===30?'30-day month':p.total+'-day cycle'}${p.override?` · days set by hand (actual ${p.days})`:''}${p.rateOverride?' · rate set by hand':''} · <button class="link sm" type="button" data-act="toggle" data-key="days:${s.id}">edit days / rate</button></span>`:'';let a;
         let extra='';if(p.state==='waived'){a='Waived · '+esc(fmtD(p.es))+' – '+esc(fmtD(p.en));extra=`<span class="d">${p.days} stub day${p.days===1?'':'s'} free · billing starts ${esc(fmtD(addDays(p.en,1)))}</span>`;}else if(p.state==='paid'){a=esc(fmtAmt(p.pr,s.currency));if(p===lastPaid&&p.creditAfter>0&&sa.nextDue)extra=`<span class="d">paid ${esc(fmtAmt(p.pr+p.creditAfter,s.currency))} · credit ${esc(fmtAmt(p.creditAfter,s.currency))} carried</span>`;}
         else if(p.state==='partial')a=esc(fmtAmt(p.covered,s.currency))+' of '+esc(fmtAmt(p.pr,s.currency));
         else if(p.state==='unpaid')a='Unpaid · '+esc(fmtAmt(p.pr,s.currency));
@@ -2173,7 +2246,10 @@ function detailHTML(id,u,a,today){
         /* v27: a period billed at another package says which one, next to the plan's own */
         const pkgLine=p.pkgOv?`<span class="d pkg-line">Billed as <b>${esc(pkgName(p.pkgId))}</b> this period · plan is ${esc(pkgName(pkgIdAt(s,p.es))||'its own price')}${!p.custom&&((s.periodOverrides||{})[p.st]||{}).note?' · '+esc(s.periodOverrides[p.st].note):''}</span>`:'';
         const canEdit=p.en>=today&&!u.cancel;const editLink=canEdit&&!editing?`<span class="d"><button class="link sm" type="button" data-act="toggle" data-key="${fkey}" title="Set the amount or the package for this period by hand (discount, correction, or one month on another package)">edit amount / package</button></span>`:'';
-        return `<div class="cell${editing?' editing':''}" data-state="${p.state}" data-custom="${p.custom?'1':'0'}"><span class="m">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}${p.prorated?' <span class="tag">prorated</span>':''}${tierTag(p)}${p.custom?' <span class="tag custom" title="Amount set by hand">custom</span>':''}</span><span class="a">${a}</span>${pro}${extra}${custom}${pkgLine}${editLink}${editing?amtFormHTML(id,s,p,'detail',''):''}</div>`;}).join('');
+        /* v29: the period that needs money next carries its own Record payment button; tapping it (or the plan's button) opens the question in this box */
+        const recBtn=rt&&rt.st===p.st&&!rec?`<span class="rec-cta"><button class="btn primary rec" type="button" data-act="rec" data-sub="${s.id}" data-start="${p.st}">Record payment</button></span>`:'';
+        const recBox=rec&&rt&&rt.st===p.st?recBoxHTML(id,u,s,rt,today,recMore):'';
+        return `<div class="cell${editing?' editing':''}" data-state="${p.state}" data-custom="${p.custom?'1':'0'}"><span class="m">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}${p.prorated?' <span class="tag">prorated</span>':''}${tierTag(p)}${p.custom?' <span class="tag custom" title="Amount set by hand">custom</span>':''}</span><span class="a">${a}</span>${pro}${extra}${custom}${pkgLine}${recBtn}${editLink}${recBox}${open[fkey]?amtFormHTML(id,s,p,'detail',''):''}</div>`;}).join('');
       const nextPr=sa.nextDue?sa.nextAmount:sa.price;
       const pe=(ui.priceEdit||{})[s.id]||null;const pePrice=pe?(hist.find(x=>x.from===pe)||{}).price:null;
       const defFrom=pe||sa.nextDue||pStart(s,Math.max(0,sa.curIdx));
@@ -2184,8 +2260,8 @@ function detailHTML(id,u,a,today){
       subsHtml+=`<div class="sub" data-sub="${s.id}" data-settled="${dimOn()&&!u.cancel&&sa.status==='current'?1:0}">
         <div class="sub-head">
           ${acctLine(u,s)}
-          <div class="sub-line"><span class="pkg-badge" title="Package / tier">${esc(pkgName(sa.curPkgId)||planLabel(s))}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="kind">${subCycle(s)} · ${s.currency}</span><span class="num">${s.discount?`${esc(fmtAmt(shownList,s.currency))}<span class="muted">${perOf(s)}</span> · ${esc(discountLabel(s))} = <b>${esc(fmtAmt(shownPrice,s.currency))}</b>`:`${esc(fmtAmt(shownPrice,s.currency))}<span class="muted">${perOf(s)}</span>`}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>${tierBadgeHTML(s,today)}
-          <span class="sub-acts"><button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>
+          <div class="sub-line"><span class="pkg-badge" title="Package / tier">${esc(pkgName(sa.curPkgId)||planLabel(s))}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="kind">${subCycle(s)} · ${s.currency}</span><span class="num">${s.discount?`${esc(fmtAmt(shownList,s.currency))}<span class="muted">${perOf(s)}</span> · ${esc(discountLabel(s))} = <b>${esc(fmtAmt(shownPrice,s.currency))}</b>`:`${esc(fmtAmt(shownPrice,s.currency))}<span class="muted">${perOf(s)}</span>`}</span><span class="pill" data-status="${sa.status}" title="${esc(statusHint(sa))}">${esc(statusLabel(sa))}</span>${tierBadgeHTML(s,today)}
+          <span class="sub-acts">${rt?`<button class="btn sm primary" type="button" data-act="rec" data-sub="${s.id}" data-start="${rt.st}" aria-expanded="${recOpen===rt.st?'true':'false'}">Record payment</button>`:`<button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>`}
           ${sa.nextDue?`<button class="btn sm" type="button" data-act="toggle" data-key="upto:${s.id}" title="Record payment for every period up to a chosen cycle or date">Paid up to…</button>`:''}
           ${(s.payments||[]).length?`<button class="btn sm" type="button" data-act="toggle" data-key="refund:${s.id}" title="Record money given back: it comes off revenue and off this plan's credit">Refund</button>`:''}
           <button class="btn sm" type="button" data-act="toggle" data-key="price:${s.id}">Change price</button>
@@ -2244,12 +2320,13 @@ function detailHTML(id,u,a,today){
         <div class="sub-head">
           ${acctLine(u,s)}
           <div class="sub-line"><span class="pkg-badge" title="Package / product">${esc(pkgName(s.packageId)||'One-time')}</span><span class="name">${esc(s.name)}</span><span class="kind">one-time · ${s.currency}</span><span class="num">${esc(fmtAmt(s.total,s.currency))}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>
-          <span class="sub-acts">${sa.remaining>0?`<button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>`:''}
+          <span class="sub-acts">${sa.remaining>0?`<button class="btn sm primary" type="button" data-act="rec" data-sub="${s.id}" data-start="item" aria-expanded="${open['rec:'+s.id]==='item'?'true':'false'}">Record payment</button>`:''}
           ${(s.payments||[]).length?`<button class="btn sm" type="button" data-act="toggle" data-key="refund:${s.id}" title="Record money given back: it comes off revenue and off what this item has paid">Refund</button>`:''}
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
         </div>
         <div class="sub-body">
         <div class="sub-facts"><span>Paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b>${(s.refunds||[]).length?` <span class="muted">(after <span class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</span> refunded)</span>`:''}</span><span>Remaining <b>${esc(fmtAmt(sa.remaining,s.currency))}</b></span><span>Due <b>${s.due?esc(fmtD(s.due,true)):'no date'}</b></span>${unconvNote}</div>
+        ${open['rec:'+s.id]==='item'&&sa.remaining>0?recBoxHTML(id,u,s,recTarget(s,sa),today,!!open['recmore:'+s.id]):''}
         ${payForm(id,s,sa,today,sa.remaining,payOpen,(ui.payEdit||{})[s.id]?(s.payments||[]).find(x=>x.id===ui.payEdit[s.id]):null)}
         ${refundForm(id,u,s,today,open['refund:'+s.id],refundEditOf(s))}
         <form class="subedit-form" data-id="${id}" data-sub="${s.id}" ${open['edit:'+s.id]?'':'hidden'} novalidate>
@@ -2635,6 +2712,11 @@ function bind(){
     const det=e.target.closest('tr.detail');if(!det)return;const id=det.dataset.id;
     const act=e.target.closest('[data-act]');if(!act)return;const A=act.dataset.act,sid=act.dataset.sub;
     if(A==='toggle')toggleOpen(id,act.dataset.key);
+    /* v29: one-tap Record payment */
+    else if(A==='rec'){const k='rec:'+sid;const was=(ui.open[id]||{})[k];const st=act.dataset.start;ui.open[id]=Object.assign({},ui.open[id],{[k]:was===st?false:st,['recmore:'+sid]:false});renderTable();if(was!==st){const box=document.querySelector(`tr.detail[data-id="${id}"] .rec-box[data-sub="${sid}"]`);if(box){box.scrollIntoView({behavior:'smooth',block:'nearest'});const y=box.querySelector('.rec-yes');if(y)y.focus({preventScroll:true});}}}
+    else if(A==='rec-more'){ui.open[id]=Object.assign({},ui.open[id],{['recmore:'+sid]:true});renderTable();const f=document.querySelector(`tr.detail[data-id="${id}"] .rec-form[data-sub="${sid}"] [name=amount]`);if(f){f.focus();f.select();}}
+    else if(A==='rec-cancel'){ui.open[id]=Object.assign({},ui.open[id],{['rec:'+sid]:false,['recmore:'+sid]:false});renderTable();}
+    else if(A==='rec-yes'){const u0=state.users[id];const s0=u0&&(u0.subscriptions||[]).find(x=>x.id===sid);if(!s0)return;const t=recTarget(s0,analyze(u0,todayISO()).sa[sid]);if(!t||t.st!==act.dataset.start){toast('This period has changed since the box was drawn; check it again.');renderTable();return;}act.disabled=true;act.textContent='Recording…';await recordPayment(id,sid,{date:todayISO(),amount:t.owed,currency:s0.currency,rate:null,note:t.p?'for '+t.label:''});}
     else if(A==='pay-edit'){ui.payEdit=ui.payEdit||{};ui.payEdit[sid]=act.dataset.pay;renderTable();}
     else if(A==='refund-edit'){ui.refundEdit=ui.refundEdit||{};ui.refundEdit[sid]=act.dataset.ref;ui.open[id]=Object.assign({},ui.open[id],{['refund:'+sid]:true});renderTable();}
     else if(A==='refund-cancel'){if(ui.refundEdit)delete ui.refundEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['refund:'+sid]:false});renderTable();}
@@ -2657,7 +2739,7 @@ function bind(){
   });
   tbody.addEventListener('keydown',e=>{const row=e.target.closest('tr.row');if(row&&(e.key==='Enter'||e.key===' ')&&e.target===row){e.preventDefault();row.click();}});
   tbody.addEventListener('submit',async e=>{
-    e.preventDefault();const form=e.target;if(form.classList.contains('amt-form')){await saveAmtForm(form);return;}const id=form.dataset.id;if(!state.users[id])return;const u=clone(state.users[id]);u.subscriptions=u.subscriptions||[];
+    e.preventDefault();const form=e.target;if(form.classList.contains('amt-form')){await saveAmtForm(form);return;}if(form.classList.contains('rec-form')){await saveRecForm(form);return;}const id=form.dataset.id;if(!state.users[id])return;const u=clone(state.users[id]);u.subscriptions=u.subscriptions||[];
     const val=n=>{const el=form.querySelector(`[name=${n}]`);return el?el.value:'';};
     const setErr=(role,msg)=>{const el=form.querySelector(`[data-role=${role}]`);if(el)el.textContent=msg;else if(msg)toast(msg);};
     const closeKey=k=>{ui.open[id]=Object.assign({},ui.open[id],{[k]:false});};
@@ -2665,7 +2747,7 @@ function bind(){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const date=val('date'),amtRaw=val('amount'),note=val('note').trim(),pc=normCur(val('currency')),rate=normRate(val('rate'));
       if(!isDateKey(date)){toast('Pick the payment date.');return;}
       if(!validAmt(amtRaw)||Number(amtRaw)<=0){toast('Enter the amount paid.');return;}
-      const payId=val('payId');s.payments=(s.payments||[]).filter(p=>p.id!==payId&&p.date!==date);s.payments.push({id:payId||newId('p'),date,amount:Number(amtRaw),currency:pc,rate,note});if(ui.payEdit)delete ui.payEdit[s.id];closeKey('pay:'+s.id);
+      const payId=val('payId');/* v29: only the payment being edited is replaced; two payments on one day (two periods paid the same day) both stay */s.payments=(s.payments||[]).filter(p=>p.id!==payId);s.payments.push({id:payId||newId('p'),date,amount:Number(amtRaw),currency:pc,rate,note});if(ui.payEdit)delete ui.payEdit[s.id];closeKey('pay:'+s.id);
       const ok=await persistUser(id,u);if(ok)toast(`${fmtAmt(Number(amtRaw),pc)} on ${fmtD(date,true)} saved for ${displayName(u)}.`);
     }else if(form.classList.contains('refund-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const date=val('date'),amtRaw=val('amount'),note=val('note').trim(),pc=normCur(val('currency')),rate=normRate(val('rate'));
