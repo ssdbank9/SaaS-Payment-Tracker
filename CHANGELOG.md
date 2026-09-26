@@ -2,6 +2,13 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v31 - 2026-09-26
+
+- **Accounts per person on the dashboard.** Each row in the user list now starts its plan column with how many active accounts the person has and which packages they are: "3 accounts [C ×2] [G]" for Haroon, "1 account [C]" for most. The column is now headed "Accounts · plan"; the plan and price lines stay underneath. An account is a monthly or yearly plan that is still running (a plan that starts later counts; an ended plan does not). A cancelled user shows no accounts. The package is the one the current month is billed as, so a month switched to C Max (a tier change, or "Package for this period") shows C Max; hovering that chip says "C account billed as C Max for Sep".
+- **One-time items are not counted as accounts.** A one-time item still being paid is shown after the chips as "+ 1 one-time", and its line stays in the plan column as before.
+- **Active accounts bar** under the Summary tiles: the total number of active accounts and the count per package, for example "Active accounts 7 · C 5 · C Max 1 · G 1 · held by 5 active users · 1 one-time item not counted". It does not depend on the Range. Tap a package to show only the users who hold it (the Package filter above the list changes to match, and the page scrolls to the list); tap it again to show everyone.
+- The Users column in By product and the Active users per package in Analytics now come from the same accounts, so they reconcile: C 5 accounts held by 4 users shows 4 under C. A user whose C plan is billed as C Max this month counts under C Max for this month (before, under C). One-time items still count their users as before. Server VERSION and the badge are 31.
+
 ## v30 - 2026-09-26
 
 - **Due dates on plans that start or resume mid-cycle** now show the day billing actually starts. A plan started (or resumed, v27) on 10 Sep inside the 24 Aug – 23 Sep cycle says "Unpaid since Sep 10, 2026" (or "Next due Sep 10"), its first period box reads "Sep 10 – Sep 23 · prorated", and the Record payment question, the Paid up to… list, the pill's tooltip and the reminder text use the same day. Before, all of these read the cycle start (24 Aug), a date before the plan existed. Decision: the due date of a prorated first period is the plan's start date (money is first due the day the plan starts); a full period's due date is still its cycle start, so the two agree for every period that starts on the billing day. The month a period is "for" (the pill's "Overdue for Aug") is unchanged: the month its cycle starts in.

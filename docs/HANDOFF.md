@@ -16,14 +16,14 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
   Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.
 - **Repo:** `ssdbank9/SaaS-Payment-Tracker` on GitHub, branch `main`. Pushing to `main` is the release.
 
-## 2. Current state (2026-09-26, v30)
+## 2. Current state (2026-09-26, v31)
 
 | Item | Value |
 | --- | --- |
 | Admin site | `https://wasooli.duckdns.org` (plain root shows a blank neutral page on purpose) |
 | Sign-in form | `https://wasooli.duckdns.org/x/<ADMIN_PATH>` (printed by the installer; Settings → Security) |
 | Subscriber links | `https://pay-up.duckdns.org/c/<token>` (`LINK_DOMAIN`) |
-| Health check | `https://wasooli.duckdns.org/healthz` → `{"ok": true, "app": "wasooli", "version": "30", "linkBase": "https://pay-up.duckdns.org", ...}` |
+| Health check | `https://wasooli.duckdns.org/healthz` → `{"ok": true, "app": "wasooli", "version": "31", "linkBase": "https://pay-up.duckdns.org", ...}` |
 | VM | Oracle Cloud Always Free, `VM.Standard.A1.Flex`, 1 OCPU / 6 GB, Ubuntu 24.04 aarch64, public IP `141.145.157.7`, created 2026-09-22 ~11:45 UTC in VCN `vcn-20260922-1643` / subnet `subnet-20260922-1643` |
 | Cloud firewall | Default Security List of that subnet: default rules (TCP 22, ICMP) plus TCP 80 and TCP 443 from `0.0.0.0/0` added by the owner |
 | DNS | DuckDNS (owner signed in with Google): `wasooli.duckdns.org` and `pay-up.duckdns.org` → `141.145.157.7`. The first name `wasool.duckdns.org` was deleted on 2026-09-23 |
@@ -32,8 +32,8 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
 | Data on VM | `/var/lib/payments-tracker/tracker.sqlite3` plus `assets/` (uploaded receipts) and `backups/` |
 | Secrets on VM | `/etc/payments-tracker.env` (`DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`); AI and mail keys typed in Settings live in the SQLite `meta` table |
 | Services | `payments-tracker.service` (gunicorn on 127.0.0.1:8080), `caddy` (HTTPS for all three hosts), timers `payments-tracker-update` (5 min), `payments-tracker-backup` (03:15 daily), `payments-tracker-notify` (04:00 UTC = 09:00 PKT daily) |
-| Versions | badge `v30` in `index.html`, `VERSION = "30"` in `server/app.py`, top entry `## v30` in `CHANGELOG.md` |
-| Repo head | the v30 commit "Fix due dates, C Max offer, refund totals and chart, extend one-tap Record payment (v30)" (check with `git log -1`) |
+| Versions | badge `v31` in `index.html`, `VERSION = "31"` in `server/app.py`, top entry `## v31` in `CHANGELOG.md` |
+| Repo head | the v31 commit "Show accounts and packages per user on the dashboard (v31)" (check with `git log -1`) |
 | claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: same `index.html`, kept identical in code, but retired as the place where data lives |
 
 **How updates deploy.** `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: `git fetch`,
@@ -153,6 +153,7 @@ owner's real records. New versions since v18 have needed no migration (absent = 
 | 28 | 09-25 | Refunds (reduce revenue, net and the plan's credit; optional cancel; shown in history); `AGENTS.md` for any AI tool | Owner wants exact revenue and profit after money given back, and to continue with Codex or other tools |
 | 29 | 09-26 | One-tap Record payment (question on the period box, big Yes, Different amount); every save redraws at once; same-day payments both kept; status pills say "Paid for Oct" / "Paid to Nov" / "Overdue for Sep – Oct" | Owner found recording a payment counter-intuitive (edit → save → record, and Paid appearing late) and wanted the dashboard to name the month |
 | 30 | 09-26 | Mid-cycle / resumed plans show the real due date (plan start, not cycle start); link page offers no upgrade for a cycle already billed as C Max by hand; Summary and Analytics bars are collected after refunds; a refund lowers a one-time item's total; Record payment on every unpaid / upcoming box (a later box = one payment per period), ended plans get the short box, Paid up to… asks "Record N payments totalling Rs X (Aug, Sep and Oct)?"; long pills wrap on phones | Owner asked for the five open follow-ups from v27–v29 in one go |
+| 31 | 09-26 | Each user row shows its active accounts and packages ("3 accounts · C ×2 · G"); an Active accounts bar under the tiles counts accounts per package and filters the list by package; By product / Analytics users per package come from the same accounts | Owner asked to see on the front page how many accounts each person has and which category. One-time items are not accounts (shown as "+ 1 one-time"); a month billed as C Max counts as C Max |
 
 ## 6. Decisions log
 

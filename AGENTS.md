@@ -83,6 +83,10 @@ Write user-facing text in plain, factual words; no emojis.
   `periodOverrides` and lookups) and `nextDue` (the day money is due: `max(nextSt, s.start)`, so a plan started or resumed mid-cycle
   is due on its start date). `pFrom(p)` / `perLabel(p)` give the day a period is billed from (its `es` when prorated or waived).
   Never compare `nextDue` with a period's `st`; use `nextSt`.
+- Accounts (v31): `analyze(u)` returns `accounts[{sid,pid,base,ov,per}]`, one per plan still running (monthly or yearly, not ended;
+  none for a cancelled user; one-time items are not accounts, `oneOpen` counts those still being paid). `pid` is the package the
+  current period is billed as (`curP.pkgId`: tier switch or one-month package). `acctHTML` draws the row's "3 accounts [C ×2] [G]",
+  `accountSummary` the Active accounts bar, and `breakdownRows` takes its Users per package from the same list.
 - Periods are computed, never stored. `paidInPlanCur` is payments minus refunds (the plan's credit);
   `analyzeMonthly` walks cycle periods from `pStart`, applies that credit in order and yields
   paid/partial/unpaid/upcoming states, balance and next due. `analyze(u, today)` aggregates a user.

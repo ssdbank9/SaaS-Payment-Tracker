@@ -287,6 +287,21 @@ td.who .em{display:block;font-family:var(--mono);font-size:12px;color:var(--mute
 td.who .ct{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);white-space:normal;line-height:1.35;margin-top:1px}
 td.plan{max-width:250px;overflow:hidden;text-overflow:ellipsis}
 td.plan .l2{display:block;font-size:12px;color:var(--muted)}
+/* v31: accounts per user at the top of the plan cell, and the Active accounts bar under the tiles */
+td.plan .acct{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-2);margin-bottom:2px}
+td.plan .acct b{color:var(--ink);font-weight:600}
+.ak{display:inline-block;font-size:11px;font-weight:600;line-height:17px;padding:0 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);white-space:nowrap}
+.ak[data-ov="1"]{box-shadow:inset 0 0 0 1px var(--accent-line)}
+.ak[data-pkg="__none"]{background:var(--warn-bg);color:var(--warn)}
+.acct-bar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin-bottom:12px}
+.acct-bar .lbl{font-size:12px;color:var(--ink-2)}
+.acct-bar .acct-n{font-size:20px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums;margin-right:4px}
+.acct-chip{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:4px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+.acct-chip b{font-weight:600;font-variant-numeric:tabular-nums}
+.acct-chip:hover{border-color:var(--line-strong)}
+.acct-chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
+.acct-chip:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.acct-bar .note{font-size:12px;color:var(--muted)}
 td .chev{display:inline-block;transition:transform .15s;color:var(--muted)}
 tr.row[aria-expanded="true"] .chev{transform:rotate(90deg)}
 td.late{color:var(--crit);font-weight:500}
@@ -587,7 +602,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v30</span>
+      <span class="small muted num" id="app-ver" title="App version">v31</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -623,6 +638,8 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="tile" id="tile-out"><span class="lbl">Outstanding balance</span><span class="val" id="t-out">—</span><span class="val2" id="t-out2">&nbsp;</span><span class="sub" id="t-out-sub">&nbsp;</span></div>
     <button class="tile" id="tile-unpaid" type="button" title="Show only users who are overdue or due today"><span class="lbl">Not paid</span><span class="val" id="t-unpaid">0</span><span class="val2">&nbsp;</span><span class="sub" id="t-unpaid-sub">&nbsp;</span></button>
   </section>
+  <!-- v31: active accounts per package; a package button filters the user list -->
+  <div class="acct-bar" id="acctBar" hidden aria-label="Active accounts per package"></div>
   <div class="pkg-break" id="pkgBreak" hidden></div>
   <div class="chart-card">
     <div class="chart-head"><h2>Collected vs costs by month</h2><div class="chart-legend"><span><i style="background:var(--accent)"></i>Collected</span><span><i style="background:var(--series-2)"></i>Costs</span><span class="seg" id="chart-cur"><button type="button" data-cur="PKR" aria-pressed="true">PKR</button><button type="button" data-cur="USD" aria-pressed="false">USD</button></span></div></div>
@@ -859,7 +876,7 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
       <thead>
         <tr>
           <th data-sort="name">User <span class="arrow"></span></th>
-          <th>Plan</th>
+          <th>Accounts · plan</th>
           <th data-sort="joined">Joined <span class="arrow"></span></th>
           <th>Paid through</th>
           <th data-sort="due" id="th-due">Due next cycle <span class="arrow"></span></th>
@@ -1203,27 +1220,31 @@ const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,pai
 function analyze(u,today){
   const subs=u.subscriptions||[];const sa={};const totals=newSum(),balance=newSum(),due=newSum(),cycleDue=newSum();let cyclePaid=false;
   let status='nosub',rank=99,paidThrough=null,nextDue=null,overdue=0,statusA=null;const planParts=[],duePlans=[],duePkgs=[];const pkgIds=new Set();
+  /* v31: accounts = the user's plans that are still running (monthly or yearly, not ended; one that starts later counts), none for a cancelled user.
+     pid is the package the current period is billed as (a tier switch or a one-month package, v27), base the plan's own package. oneOpen = one-time items still being paid. */
+  const accounts=[];let oneOpen=0;
   const mainSub=subs.find(s=>s.kind==='monthly'&&subCycle(s)==='monthly'&&(!s.end||s.end>=today))||subs.find(s=>s.kind==='monthly'&&(!s.end||s.end>=today))||subs[0];const mainCur=mainSub?mainSub.currency:'PKR';
   for(const s of subs){
     const a=s.kind==='one-time'?analyzeOneTime(s,today):analyzeMonthly(s,today);sa[s.id]=a;
-    const pid=pkgIdAt(s,today);const tm=a.kind==='monthly'?tierMarkHTML(s,today):'';const shown=a.kind==='monthly'&&a.tiered?a.curPrice:a.price;
+    const pid=pkgIdAt(s,today);const tm=a.kind==='monthly'?tierMarkHTML(s,today):'';const cp=a.kind==='monthly'&&a.curP&&a.curP.pkgId?a.curP.pkgId:pid;
+    if(!u.cancel){if(a.kind==='monthly'){if(a.status!=='ended')accounts.push({sid:s.id,pid:cp||'',base:pid||'',ov:!!(a.curP&&a.curP.pkgOv),per:a.curP?periodMonth(a.curP.st,a.curP.en,a.cycle):''});}else if(a.remaining>0)oneOpen++;}const shown=a.kind==='monthly'&&a.tiered?a.curPrice:a.price;
     for(const p of s.payments||[])sumAdd(totals,p.amount,p.currency||s.currency,p.rate);
     for(const r of s.refunds||[])sumAdd(totals,-r.amount,r.currency||s.currency,r.rate);
     if(a.kind==='monthly'){if(a.overdueAmount>0)sumAdd(balance,a.overdueAmount,s.currency,null);if(a.cycleDue>0)sumAdd(cycleDue,a.cycleDue,s.currency,null);if(a.cyclePaid)cyclePaid=true;}else if(a.remaining>0)sumAdd(balance,a.remaining,s.currency,null);
     /* v29: statusA is the plan whose status the user's pill shows; among plans of equal rank the one paid the least far ahead */
     const r=RANK[a.status];if(r<rank||(r===rank&&statusA&&a.kind==='monthly'&&statusA.kind==='monthly'&&a.paidThrough<statusA.paidThrough)){rank=r;status=a.status;statusA=a;}
     if(a.kind==='monthly'){
-      if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&a.kPaid>0&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),tier:tm,price:shown,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id,note:u.cancel&&s.end?'until '+fmtD(s.end):(s.discount?discountLabel(s):undefined)});pkgIds.add(pid||'');}
-      else if(a.status==='upcoming'){planParts.push({name:planLabel(s),tier:tm,price:shown,cur:s.currency,per:perOf(s),note:'starts '+fmtD(s.start),noPkg:!s.packageId,subId:s.id});pkgIds.add(pid||'');}
+      if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&a.kPaid>0&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),tier:tm,price:shown,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id,note:u.cancel&&s.end?'until '+fmtD(s.end):(s.discount?discountLabel(s):undefined)});pkgIds.add(u.cancel?(pid||''):(cp||''));}
+      else if(a.status==='upcoming'){planParts.push({name:planLabel(s),tier:tm,price:shown,cur:s.currency,per:perOf(s),note:'starts '+fmtD(s.start),noPkg:!s.packageId,subId:s.id});pkgIds.add(u.cancel?(pid||''):(cp||''));}
       else if(u.cancel&&s.end){planParts.push({name:planLabel(s,s.end),tier:tm,price:priceAt(s,s.end),cur:s.currency,per:perOf(s),note:'until '+fmtD(s.end),subId:s.id});if(pid)pkgIds.add(pid);}
     }else if(a.remaining>0){planParts.push({name:planLabel(s),price:a.remaining,cur:s.currency,per:'',note:'left of '+fmtAmt(a.total,s.currency)});if(pid)pkgIds.add(pid);}
     if(a.nextDue&&!['ended','paid','upcoming'].includes(a.status)){if(!nextDue||a.nextDue<nextDue)nextDue=a.nextDue;}
     if(['overdue','due-today','due-soon'].includes(a.status)){sumAdd(due,a.amountDue,s.currency,null);duePlans.push(planLabel(s));if(pid)duePkgs.push(pkgName(pid));overdue+=a.overdue;}
   }
   if(!subs.length)status='nosub';
-  if(u.cancel){status='cancelled';nextDue=null;const cd=newSum();return {sa,totals,balance,due:balance,cycleDue:cd,cyclePaid:false,mainCur,status,statusA,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:u.cancel,unpaid:balance.n>0,needsReminder:false};}
+  if(u.cancel){status='cancelled';nextDue=null;const cd=newSum();return {sa,totals,balance,due:balance,cycleDue:cd,cyclePaid:false,mainCur,status,statusA,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,accounts,oneOpen,cancel:u.cancel,unpaid:balance.n>0,needsReminder:false};}
   if(!due.n){for(const s of subs){const a=sa[s.id];if(a.kind==='monthly'&&a.status!=='ended')sumAdd(due,a.amountDue,s.currency,null);}}
-  return {sa,totals,balance,due,cycleDue,cyclePaid,mainCur,status,statusA,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,cancel:null,unpaid:status==='overdue'||status==='due-today',needsReminder:['overdue','due-today','due-soon'].includes(status)||cycleDue.n>0,settled:!balance.n&&(status==='current'||status==='paid'||status==='ended')};
+  return {sa,totals,balance,due,cycleDue,cyclePaid,mainCur,status,statusA,paidThrough,nextDue,overdue,planParts,duePlans,duePkgs,pkgIds,accounts,oneOpen,cancel:null,unpaid:status==='overdue'||status==='due-today',needsReminder:['overdue','due-today','due-soon'].includes(status)||cycleDue.n>0,settled:!balance.n&&(status==='current'||status==='paid'||status==='ended')};
 }
 /* v29: the month a billing period is "for": the month its cycle starts in (24 Oct – 23 Nov is "Oct"; the year is added when it is not this year).
    A yearly period reads "2026–27" (or "2026" when it stays inside one year). Change this one function to name periods another way. */
@@ -1724,7 +1745,8 @@ function breakdownRows(rb){
   for(const p of packages())mk(p.id,p.name);
   for(const id of ids){const u=state.users[id];const a=analyze(u,today);
     for(const s of u.subscriptions||[]){const sa=a.sa[s.id];const pid=pkgIdAt(s,today);const key=(pid&&pkgById(pid))?pid:(s.kind==='one-time'?'__one':'__none');const r=mk(key,key==='__one'?'One-time items':key==='__none'?'Package not set':pkgName(key));
-      if(!u.cancel&&(s.kind==='monthly'?sa.status!=='ended':sa.remaining>0))r.users.add(id);
+      /* v31: a monthly plan counts its user under the package of its account this period (a.accounts), the same list the dashboard's Active accounts bar counts */
+      if(s.kind==='monthly'){const ac=a.accounts.find(x=>x.sid===s.id);if(ac){const k=acctKey(ac.pid);mk(k,rowLabel(k)).users.add(id);}}else if(!u.cancel&&sa.remaining>0)r.users.add(id);
       for(const sh of paymentShares(s,sa)){const pay=sh.p;if(!inRange(pay.date,rb))continue;const cur=pay.currency||s.currency;let counted=false;
         for(const part of sh.parts){const k=(part.pid&&pkgById(part.pid))?part.pid:(s.kind==='one-time'?'__one':'__none');const rr=mk(k,k==='__one'?'One-time items':k==='__none'?'Package not set':pkgName(k));sumAdd(rr.col,pay.amount*part.frac,cur,pay.rate);if(!counted){rr.npay++;counted=true;}}}
       /* v28: refunds are taken off the product of the plan on the refund date, in the range of the refund date */
@@ -1995,12 +2017,29 @@ function visibleRows(today){
   }[ui.sort]||(()=>0);
   rows.sort((x,y)=>ui.dir*cmp(x,y));return rows;
 }
+/* v31: accounts per package. acctKey: a package id, or __none when the plan has no (known) package */
+const acctKey=pid=>(pid&&pkgById(pid))?pid:'__none';
+const acctName=k=>k==='__none'?'not set':pkgName(k);
+function acctCounts(list){const c={};for(const x of list){const k=acctKey(x.pid);c[k]=(c[k]||0)+1;}return [...packages().map(p=>p.id),'__none'].filter(k=>c[k]).map(k=>({k,n:c[k],ov:list.filter(x=>acctKey(x.pid)===k&&x.ov)}));}
+/* the line at the top of a user's plan cell: "3 accounts [C ×2] [G]", plus one-time items still being paid */
+function acctHTML(a){const n=(a.accounts||[]).length,o=a.oneOpen||0;if(!n&&!o)return '';
+  const chips=acctCounts(a.accounts).map(x=>`<span class="ak" data-pkg="${esc(x.k)}"${x.ov.length?` data-ov="1" title="${esc(x.ov.map(v=>(pkgName(v.base)||'Plan')+' account billed as '+acctName(x.k)+' for '+v.per).join('; '))}"`:''}>${esc(acctName(x.k))}${x.n>1?' \u00d7'+x.n:''}</span>`).join('');
+  return `<span class="acct">${n?`<span><b>${n}</b> account${n===1?'':'s'}</span>${chips}`:''}${o?`<span class="muted">${n?'+ ':''}${o} one-time</span>`:''}</span>`;}
+/* v31: every active account across users; users per package come from the same accounts (they reconcile with By product and Analytics) */
+function accountSummary(){const today=todayISO();const all=[],holders={};let one=0;const users=new Set();
+  for(const id in state.users){const a=analyze(state.users[id],today);one+=a.oneOpen;for(const x of a.accounts){all.push(x);const k=acctKey(x.pid);(holders[k]=holders[k]||new Set()).add(id);users.add(id);}}
+  return {n:all.length,rows:acctCounts(all).map(x=>Object.assign(x,{users:holders[x.k].size})),users:users.size,one};}
+function renderAcctBar(){const bar=$('#acctBar');const ids=Object.keys(state.users);const loading=state.mode==='connecting'||(state.mode==='shared'&&!state.loaded);bar.hidden=loading||!ids.length;if(bar.hidden)return;
+  const S=accountSummary();const fv=k=>k==='__none'?'none':k;
+  bar.innerHTML=`<span class="lbl">Active accounts</span><span class="acct-n">${S.n}</span>${S.rows.map(r=>`<button type="button" class="acct-chip" data-pkg="${esc(fv(r.k))}" aria-pressed="${ui.pkgFilter===fv(r.k)}" title="${esc(`${r.n} ${acctName(r.k)} account${r.n===1?'':'s'} held by ${r.users} user${r.users===1?'':'s'}`+(ui.pkgFilter===fv(r.k)?' · tap to show all packages':' · tap to list them'))}"><span>${esc(acctName(r.k))}</span><b>${r.n}</b></button>`).join('')}<span class="note">held by ${S.users} active user${S.users===1?'':'s'}${S.one?` · ${S.one} one-time item${S.one===1?'':'s'} not counted`:''}</span>`;}
 function planCell(a){
-  if(!a.planParts.length)return '<span class="muted">—</span>';
+  const top=acctHTML(a);
+  if(!a.planParts.length)return top||'<span class="muted">—</span>';
   const line=p=>p.noPkg?`<span class="pill warnp" title="Pick a package for this plan">Package not set</span> <span class="muted">${esc(fmtAmt(p.price,p.cur))}${p.per}</span><span class="l2"><select class="pkg-quick" data-sub="${esc(p.subId)}" aria-label="Set package">${pkgOptions('','Set package…')}</select></span>`:`${esc(p.name)}${p.tier||''} · ${esc(fmtAmt(p.price,p.cur))}${p.per}${p.note?` <span class="muted">(${esc(p.note)})</span>`:''}`;
-  return line(a.planParts[0])+(a.planParts.length>1?`<span class="l2">${a.planParts.slice(1).map(line).join(' / ')}</span>`:'');
+  return top+line(a.planParts[0])+(a.planParts.length>1?`<span class="l2">${a.planParts.slice(1).map(line).join(' / ')}</span>`:'');
 }
 function renderTable(){
+  renderAcctBar();
   const today=todayISO();const ids=Object.keys(state.users);
   const loading=state.mode==='connecting'||(state.mode==='shared'&&!state.loaded);
   $('#loading').hidden=!loading;$('#empty').hidden=loading||ids.length>0;$('#tableWrap').hidden=loading||ids.length===0;$('#costsSec').hidden=loading;
@@ -2723,6 +2762,8 @@ function bind(){
   document.querySelector('#table thead').addEventListener('click',e=>{const th=e.target.closest('th[data-sort]');if(!th)return;if(ui.sort===th.dataset.sort)ui.dir=-ui.dir;else{ui.sort=th.dataset.sort;ui.dir=1;}savePrefs();renderTable();});
 
   $('#pkgFilter').addEventListener('change',e=>{ui.pkgFilter=e.target.value;renderTable();});
+  /* v31: a package in the Active accounts bar filters the list to it (tap again for all); accounts are active users' plans, so Status goes to active */
+  $('#acctBar').addEventListener('click',e=>{const b=e.target.closest('.acct-chip');if(!b)return;const k=b.dataset.pkg;const on=ui.pkgFilter!==k;ui.pkgFilter=on?k:'all';$('#pkgFilter').value=ui.pkgFilter;if(on&&ui.statusFilter==='cancelled')ui.statusFilter='active';renderTable();if(on)$('.toolbar').scrollIntoView({behavior:'smooth',block:'start'});});
   $('#statusFilter').addEventListener('change',e=>{ui.statusFilter=e.target.value;renderTable();});
   $('#tbody').addEventListener('change',async e=>{
     const sel=e.target.closest('select.pkg-quick');if(!sel||!sel.value)return;const row=sel.closest('tr.row');if(!row)return;
