@@ -27,7 +27,7 @@ import notify  # noqa: E402
 
 APP_NAME = "Wasooli"
 TAGLINE = "Know who's paid."
-VERSION = "29"
+VERSION = "30"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
@@ -660,7 +660,9 @@ def _plans(card, packages):
                 cur = str(p.get("tier") or "")
                 sw["label"] = ("Move back to %s" % sw["name"]) if re.search(r"max", cur, re.I) else ("Upgrade to %s" % sw["name"]) if re.search(r"max", sw["name"], re.I) else ("Change to %s" % sw["name"])
         out.append({"planId": str(p.get("planId") or ""), "label": p.get("label") or p.get("tier") or "Plan", "acct": p.get("acct") or "", "tier": p.get("tier") or "",
-                    "amountText": p.get("amountText") or "", "paid": bool(p.get("paid")), "priceText": p.get("priceText") or "", "switch": sw})
+                    "amountText": p.get("amountText") or "", "paid": bool(p.get("paid")), "priceText": p.get("priceText") or "", "switch": sw,
+                    # v30: a cycle billed as another package by hand has no switch; the admin page sends the reason instead
+                    "switchNote": str(p.get("switchNote") or "")[:120]})
     return out
 
 

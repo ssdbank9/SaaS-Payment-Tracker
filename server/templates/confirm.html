@@ -56,7 +56,7 @@ label.f{margin-top:12px}
     <input type="hidden" name="planId" value="{{ plan_id }}">
     <div class="choices">
       <button class="choice continue" type="submit" name="choice" value="continue">Continue<small>Keep my {{ p.tier or 'current' }} plan as it is</small></button>
-      {% if p.switch %}<button class="choice switch" type="submit" name="choice" value="{{ p.switch.choice or 'upgrade' }}">{{ p.switch.label }}<small>{% if p.switch.priceText %}{{ p.switch.priceText }} {% endif %}from {{ due_date }}</small></button>{% endif %}
+      {% if p.switch %}<button class="choice switch" type="submit" name="choice" value="{{ p.switch.choice or 'upgrade' }}">{{ p.switch.label }}<small>{% if p.switch.priceText %}{{ p.switch.priceText }} {% endif %}from {{ due_date }}</small></button>{% elif p.switchNote %}<p class="hint" style="margin:0">{{ p.switchNote }}</p>{% endif %}
       <button class="choice discontinue" type="submit" name="choice" value="discontinue">Discontinue<small>Stop after the current period</small></button>
     </div>
     <label class="f">Note <span style="font-weight:400;color:var(--muted)">(optional)</span><textarea name="note" maxlength="500" placeholder="e.g. paid via NayaPay, or when you will pay"></textarea></label>

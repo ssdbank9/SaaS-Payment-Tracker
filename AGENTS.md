@@ -68,13 +68,21 @@ Write user-facing text in plain, factual words; no emojis.
   `periodOverrides{periodStart:{amount?,packageId?,note,at,fromRefund?}}` (hand-set amount and/or package for one period),
   `payments[{id,date,amount,currency,rate,note}]`,
   `refunds[{id,date,amount,currency,rate,note}]` (v28; absent = none). One-time items have `total` and `due`.
-- Recording a payment (v29): `recTarget(s, sa)` picks the one period that needs money next (credit is applied in period order)
-  and what it owes; `recBoxHTML` draws the question ("Record Rs 4,200 for 24 Oct – 23 Nov?", Yes / Different amount / Not now) inside
-  that period's box or under a one-time item; `recordPayment` appends `{id,date,amount,currency,rate:null,note}` and saves through
-  `persistUser`, which puts the user into `state` and renders at once on every backend (do not wait for the poll). The older
-  `.pay-form` remains for editing a payment and for a plan with no next period. Status pills come from `statusLabel(a)` with
-  `periodMonth(st, en, cycle)` ("Paid for Oct", "Paid to Nov", "Overdue for Sep – Oct", "Paid for 2026–27"); a user analysis
-  carries `statusA`, the plan that set its status.
+- Recording a payment (v29, extended v30): `recTarget(s, sa, st)` builds the question for a period box (`st` = its cycle start;
+  default the period that needs money next; `'item'` for a one-time item). For the next-due period it is one payment of what that
+  period still owes; for a later unpaid / upcoming period it is one payment per period from the next-due one through it (`coverPlan`;
+  credit is applied in period order, so money cannot skip a month), the same thing Paid up to… records. `recBoxHTML` draws it
+  ("Record Rs 4,200 for 24 Oct – 23 Nov?" or "Record 2 payments totalling Rs 8,400 for Sep and Oct?", Yes / Different amount / Not now);
+  `recPayments` turns a multi-period answer into `[{date,amount,currency,rate:null,note}]`; `recordPayment(id, sid, payOrList)` appends and
+  saves through `persistUser`, which puts the user into `state` and renders at once on every backend (do not wait for the poll).
+  `recNoneHTML` is the box for a plan with nothing owed (ended / paid ahead). Paid up to… (`uptoForm`) shows the same question after the
+  cycle is picked (`data-act="upto-yes"`); its total / date / note fields sit behind Different amount. The older `.pay-form` is only for
+  editing a payment. Status pills come from `statusLabel(a)` with `periodMonth(st, en, cycle)` ("Paid for Oct", "Paid to Nov",
+  "Overdue for Sep – Oct", "Paid for 2026–27"); a user analysis carries `statusA`, the plan that set its status.
+- Due dates (v30): a plan analysis has `nextSt` (the cycle start of the period that needs money next; the key for period boxes,
+  `periodOverrides` and lookups) and `nextDue` (the day money is due: `max(nextSt, s.start)`, so a plan started or resumed mid-cycle
+  is due on its start date). `pFrom(p)` / `perLabel(p)` give the day a period is billed from (its `es` when prorated or waived).
+  Never compare `nextDue` with a period's `st`; use `nextSt`.
 - Periods are computed, never stored. `paidInPlanCur` is payments minus refunds (the plan's credit);
   `analyzeMonthly` walks cycle periods from `pStart`, applies that credit in order and yields
   paid/partial/unpaid/upcoming states, balance and next due. `analyze(u, today)` aggregates a user.
@@ -82,7 +90,9 @@ Write user-facing text in plain, factual words; no emojis.
   from the same functions, so numbers reconcile by construction. Net is `netSum(collected, refunds, costs)`.
   Reuse these; do not recompute money elsewhere.
 - Refunds (v28): revenue in a month is its payments minus its refunds (by refund date); a refund is attributed to the
-  plan's package on the refund date. For a cancelled user, `settleRefunds` sets `periodOverrides` marked
+  plan's package on the refund date. `monthlySeries` returns `col` (paid in), `ref` and `colNet` (= col − ref, the bars both charts
+  draw, v30). A refund on a one-time item lowers the item's total (v30: `analyzeOneTime` returns `total` = listed − refunded, `listed`,
+  `refunded`; `paid` is what was kept); a refund on a monthly plan makes the month owed again. For a cancelled user, `settleRefunds` sets `periodOverrides` marked
   `fromRefund` so a period a refund made short counts at what was kept; those entries are derived and re-computed
   whenever a refund is saved or removed.
 - Costs: `date, description, category, packageId ('' = shared), currency, cost, tax, rate, receipt, source`.

@@ -16,14 +16,14 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
   Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.
 - **Repo:** `ssdbank9/SaaS-Payment-Tracker` on GitHub, branch `main`. Pushing to `main` is the release.
 
-## 2. Current state (2026-09-26, v29)
+## 2. Current state (2026-09-26, v30)
 
 | Item | Value |
 | --- | --- |
 | Admin site | `https://wasooli.duckdns.org` (plain root shows a blank neutral page on purpose) |
 | Sign-in form | `https://wasooli.duckdns.org/x/<ADMIN_PATH>` (printed by the installer; Settings → Security) |
 | Subscriber links | `https://pay-up.duckdns.org/c/<token>` (`LINK_DOMAIN`) |
-| Health check | `https://wasooli.duckdns.org/healthz` → `{"ok": true, "app": "wasooli", "version": "29", "linkBase": "https://pay-up.duckdns.org", ...}` |
+| Health check | `https://wasooli.duckdns.org/healthz` → `{"ok": true, "app": "wasooli", "version": "30", "linkBase": "https://pay-up.duckdns.org", ...}` |
 | VM | Oracle Cloud Always Free, `VM.Standard.A1.Flex`, 1 OCPU / 6 GB, Ubuntu 24.04 aarch64, public IP `141.145.157.7`, created 2026-09-22 ~11:45 UTC in VCN `vcn-20260922-1643` / subnet `subnet-20260922-1643` |
 | Cloud firewall | Default Security List of that subnet: default rules (TCP 22, ICMP) plus TCP 80 and TCP 443 from `0.0.0.0/0` added by the owner |
 | DNS | DuckDNS (owner signed in with Google): `wasooli.duckdns.org` and `pay-up.duckdns.org` → `141.145.157.7`. The first name `wasool.duckdns.org` was deleted on 2026-09-23 |
@@ -32,8 +32,8 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
 | Data on VM | `/var/lib/payments-tracker/tracker.sqlite3` plus `assets/` (uploaded receipts) and `backups/` |
 | Secrets on VM | `/etc/payments-tracker.env` (`DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`); AI and mail keys typed in Settings live in the SQLite `meta` table |
 | Services | `payments-tracker.service` (gunicorn on 127.0.0.1:8080), `caddy` (HTTPS for all three hosts), timers `payments-tracker-update` (5 min), `payments-tracker-backup` (03:15 daily), `payments-tracker-notify` (04:00 UTC = 09:00 PKT daily) |
-| Versions | badge `v29` in `index.html`, `VERSION = "29"` in `server/app.py`, top entry `## v29` in `CHANGELOG.md` |
-| Repo head | the v29 commit "v29: one-tap Record payment and Paid-for-month dashboard labels" (check with `git log -1`) |
+| Versions | badge `v30` in `index.html`, `VERSION = "30"` in `server/app.py`, top entry `## v30` in `CHANGELOG.md` |
+| Repo head | the v30 commit "Fix due dates, C Max offer, refund totals and chart, extend one-tap Record payment (v30)" (check with `git log -1`) |
 | claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: same `index.html`, kept identical in code, but retired as the place where data lives |
 
 **How updates deploy.** `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: `git fetch`,
@@ -152,6 +152,7 @@ owner's real records. New versions since v18 have needed no migration (absent = 
 | 27 | 09-25 | One month on another package; Paid up to → Clear; Cancel reachable on phones; Resume with a date and cancellation history | Owner bills single months as C Max; iPhone date pickers cannot clear; the Cancel button was off-screen |
 | 28 | 09-25 | Refunds (reduce revenue, net and the plan's credit; optional cancel; shown in history); `AGENTS.md` for any AI tool | Owner wants exact revenue and profit after money given back, and to continue with Codex or other tools |
 | 29 | 09-26 | One-tap Record payment (question on the period box, big Yes, Different amount); every save redraws at once; same-day payments both kept; status pills say "Paid for Oct" / "Paid to Nov" / "Overdue for Sep – Oct" | Owner found recording a payment counter-intuitive (edit → save → record, and Paid appearing late) and wanted the dashboard to name the month |
+| 30 | 09-26 | Mid-cycle / resumed plans show the real due date (plan start, not cycle start); link page offers no upgrade for a cycle already billed as C Max by hand; Summary and Analytics bars are collected after refunds; a refund lowers a one-time item's total; Record payment on every unpaid / upcoming box (a later box = one payment per period), ended plans get the short box, Paid up to… asks "Record N payments totalling Rs X (Aug, Sep and Oct)?"; long pills wrap on phones | Owner asked for the five open follow-ups from v27–v29 in one go |
 
 ## 6. Decisions log
 
@@ -181,6 +182,9 @@ owner's real records. New versions since v18 have needed no migration (absent = 
 | Record payment = a yes/no question on the period that needs money next, recording exactly what that period owes; the full form only for edits | 09-26 | The owner records on a phone; the old header form (date, currency, amount, rate, note, months) plus "edit amount" on the box made him edit and save before recording | Auto-recording without a question (a mis-tap would store money); a bottom sheet (inline keeps the period in view) |
 | A period is "for" the month its cycle starts in (24 Oct – 23 Nov = "Oct"); one function `periodMonth` decides | 09-26 | Matches how the owner talks about "October's payment", the reminder on the 20th and the cycle starting the 24th | Naming the month with most days (Nov); showing both dates on the pill (too wide on a phone; the dates are the tooltip) |
 | Every save puts the user into `state` and renders at once (`persistUser`) | 09-26 | Waiting for the poll of `/api/version` made Save look like it did nothing for up to 4 s (30 s in a background tab) | Keep `commitUser` only for the amount form; shorten the poll |
+| A prorated first period is due on the plan's start date (`nextDue` = `max(cycle start, plan start)`); its cycle start stays the key (`nextSt`, `periodOverrides`) and its month name ("for Aug") | 09-26 | Money cannot be due before the plan exists; full periods keep their cycle start, so the rule is one line and the boxes, pills, questions and reminders agree | Showing the cycle start everywhere (v29 behaviour, wrong for the owner); renaming the month after the plan start (would make "Sep – Sep" for two owed periods) |
+| A refund on a one-time item lowers the item's total (undoes that much of the sale); a refund on a monthly plan makes the month owed again | 09-26 | A refunded one-time sale is not owed again; the owner otherwise had to edit the total by hand. Monthly service was delivered, so the month is owed | Same rule for both (a refunded item showed as overdue); a "sale undone" checkbox on the refund form |
+| Record payment on a later period = one payment per period from the next-due one through it (the Paid up to… answer), never a payment aimed at a single later month | 09-26 | Credit is applied in period order, so a payment "for Dec" while Oct is unpaid would fill Oct anyway; recording it per period keeps the history honest | Letting a payment target a period (would need stored allocations and change how credit works) |
 
 ## 7. Operations runbook
 
@@ -287,23 +291,20 @@ both DuckDNS names to the new IP, then `sudo systemctl restart caddy`.
 
 **Known follow-ups (not built yet)**
 
-- A plan that starts or resumes mid-cycle shows its next due date as the cycle start rather than the date billing
-  actually starts from, in places that read the cycle date.
-- Record payment (v29) asks only for the period that needs money next (credit is applied in period order, so a payment cannot be
-  aimed at a later month). A plan with no next period (ended) still opens the old full payment form from its header button.
-  "Paid up to…" and editing a payment still use the older multi-field forms. Status pills are longer now ("Overdue for Sep – Oct"),
-  which widens the Status column on the phone's scrolling table.
+- Editing a payment still uses the older multi-field `.pay-form` (Edit in the payment history); every way of recording a new
+  payment is the one-tap box since v30.
 - The "for 24 Oct – 23 Nov 2026" note the one-tap flow writes is the period's dates at the time of recording; if the cycle day or
   the plan's start is changed afterwards, the note keeps the old dates (payments themselves are re-applied correctly).
-- The link page's "Upgrade to C Max" offer ignores a month that is already billed as C Max through a period override
-  (v27), so it can still offer the upgrade for that month.
-- Refunds (v28): the Summary's 12-month bar chart still draws collected before refunds (refunds are in its tooltip,
-  and in the Analytics net line, tables and cumulative chart). Refunding a one-time item does not lower its total: it raises
-  what is left to pay; if the sale is undone, the owner also edits the item's total. A refund is counted for the plan's package on the
-  refund date, not for the package a single month was billed as. For a cancelled user, "kept after refund" period
-  amounts replace a hand-set amount on the same period, and they stay if the user is later resumed (they are
-  recomputed, and removed, only when a refund on that plan is saved or removed while the user is cancelled).
-  "Also cancel" in the refund form uses the normal cancellation, so it ends all of that user's plans.
+- A prorated first period is still named after its cycle's month: a plan started 10 Sep shows "Overdue for Aug" and Paid up to…
+  asks "Record 1 payment totalling Rs 1,960 for Aug?" (the dates are on the box, in the tooltip and in the line under the question).
+  `periodMonth` is the one place to change if the owner wants "Sep" there.
+- The user row's "Paid through" for a resumed user reads "nothing yet" until the new plan is paid, although the plan that ended at
+  the cancellation was paid (only running plans count toward the user's paid-through).
+- Refunds (v28): a refund is counted for the plan's package on the refund date, not for the package a single month was billed as.
+  A refund on a one-time item larger than what was paid leaves the difference owed (v30 lowers the total by the refund and compares
+  what was kept with it). For a cancelled user, "kept after refund" period amounts replace a hand-set amount on the same period, and
+  they stay if the user is later resumed (they are recomputed, and removed, only when a refund on that plan is saved or removed while
+  the user is cancelled). "Also cancel" in the refund form uses the normal cancellation, so it ends all of that user's plans.
 
 ## 10. Continuing with another AI tool
 

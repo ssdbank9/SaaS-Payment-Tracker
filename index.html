@@ -218,8 +218,7 @@ details.except[open] summary{background:var(--accent-soft)}
 .ans .when{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400}
 .ans .note{font-weight:400;color:var(--ink-2);white-space:normal}
 table.fn td.st .ans{display:flex;margin-top:2px}
-.upto-plan{font-size:12px;color:var(--ink-2);margin-top:6px;min-height:1.2em}
-.upto-plan b{color:var(--ink)}
+.upto-plan{margin-top:6px;min-height:1.2em}
 
 .sum-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
 .sum-head label{margin-left:auto}
@@ -399,7 +398,9 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .cell .rec-cta{margin-top:4px}
 .cell .btn.rec{width:100%;min-height:36px;font-size:13px;white-space:normal}
 .rec-box{margin-top:6px;padding-top:8px;border-top:1px dashed var(--line-strong);text-align:left;display:flex;flex-direction:column;gap:6px}
-.sub-body>.rec-box{margin-top:10px;padding:10px;border:1px solid var(--accent-line);border-radius:6px;background:var(--accent-tint)}
+.sub-body>.rec-box,.upto-form .rec-box{margin-top:10px;padding:10px;border:1px solid var(--accent-line);border-radius:6px;background:var(--accent-tint)}
+/* v30: Paid up to… asks a question; the total / date / note fields show only behind Different amount */
+.upto-form .upto-more{display:none}.upto-form[data-more="1"] .upto-more{display:grid}.upto-form .rec-form{border-top:0}
 .rec-box .rec-q{font-family:var(--sans);font-size:15px;color:var(--ink);margin:0;line-height:1.35}
 .rec-box .rec-q b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600}
 .rec-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -411,6 +412,8 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .rec-form .rec-note,.rec-form .form-actions,.rec-form .d{grid-column:1/-1}
 .rec-form .form-actions .btn{min-height:44px;font-size:15px;flex:1 1 auto}
 @media (max-width:700px){.rec-acts .btn{flex:1 1 100%}}
+/* v30: long pills ("Overdue for Sep – Oct") wrap on phones instead of widening the Status column */
+@media (max-width:760px){tr.row td>.pill{white-space:normal;max-width:9.5em;line-height:1.2}}
 .cell .pkg-line b{color:var(--ink);font-weight:600}
 .amt-form .amt-plan{font-weight:600;font-size:12px;color:var(--ink)}
 /* v24: what a hand-set amount would do to the plan, shown before Save */
@@ -584,7 +587,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v29</span>
+      <span class="small muted num" id="app-ver" title="App version">v30</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -1167,10 +1170,12 @@ function analyzeMonthly(s,today){
     k++;
   }
   const paidThrough=kPaid>0?periods[kPaid-1].en:addDays(s.start,-1);
-  const nextDue=active(kPaid)?pStart(s,kPaid):null;
+  /* v30: nextSt is the cycle start of the period that needs money next (the key its period box, overrides and lookups use); nextDue is the day the
+     money is actually due: the plan's own start date when that first period begins mid-cycle (a plan started or resumed mid-cycle), else the cycle start */
+  const nextSt=active(kPaid)?pStart(s,kPaid):null;const nextDue=nextSt?(nextSt<s.start?s.start:nextSt):null;
   const overdue=periods.filter(p=>(p.state==='unpaid'||p.state==='partial')&&p.st<=today);
   let amountDue=0;for(const p of overdue)amountDue+=p.pr-p.covered;const overdueAmount=amountDue;
-  const np=nextDue?periods.find(p=>p.st===nextDue):null;const nextAmount=np?np.pr-np.covered:(nextDue?effPrice(s,nextDue):0);const nextCredit=np?np.covered:0;
+  const np=nextSt?periods.find(p=>p.st===nextSt):null;const nextAmount=np?np.pr-np.covered:(nextDue?effPrice(s,nextDue):0);const nextCredit=np?np.covered:0;
   if(!amountDue&&nextDue)amountDue=nextAmount;
   const nc=nextCycleStart(today);const cp=periods.find(p=>p.st===nc);const cycleDue=cp?cp.pr-cp.covered:0;const cyclePaid=!!cp&&cp.state==='paid';
   let status;
@@ -1181,17 +1186,19 @@ function analyzeMonthly(s,today){
   else status='overdue';
   if(s.dueBy&&(status==='overdue'||status==='due-today')&&overdueAmount>0)status=today>s.dueBy?'overdue':'open';
   const curP=periods[Math.max(0,Math.min(curIdx,periods.length-1))]||null;
-  return {kind:'monthly',cycle:subCycle(s),paid,unconv:pc.unconv,paidThrough,nextDue,nextAmount,nextCredit,cycleDue,cyclePaid,periods,overdue:overdue.length,amountDue,overdueAmount,status,price:effPrice(s,nextDue||today),listPrice:priceAt(s,nextDue||today),cur:s.currency,curIdx,kPaid,curP,tiered:tierEntries(s).length>0,curPkgId:pkgIdAt(s,today),curPrice:effPrice(s,today),curListPrice:priceAt(s,today)};
+  return {kind:'monthly',cycle:subCycle(s),paid,unconv:pc.unconv,paidThrough,nextDue,nextSt,nextAmount,nextCredit,cycleDue,cyclePaid,periods,overdue:overdue.length,amountDue,overdueAmount,status,price:effPrice(s,nextDue||today),listPrice:priceAt(s,nextDue||today),cur:s.currency,curIdx,kPaid,curP,tiered:tierEntries(s).length>0,curPkgId:pkgIdAt(s,today),curPrice:effPrice(s,today),curListPrice:priceAt(s,today)};
 }
 function analyzeOneTime(s,today){
-  const pc=paidInPlanCur(s);const paid=pc.t;const remaining=Math.max(0,(Number(s.total)||0)-paid);
+  /* v30: a refund on a one-time item undoes that much of the sale: total = the item's amount less refunds, paid = payments less refunds (what was kept),
+     remaining = total - paid. So refunding a paid item leaves nothing owed (before v30 it put the refunded amount back on the balance due). */
+  const pc=paidInPlanCur(s);const paid=pc.t;const refunded=refundedInPlanCur(s);const listed=Number(s.total)||0;const total=Math.max(0,listed-refunded);const remaining=Math.max(0,total-Math.max(0,paid));
   let status;
   if(remaining<=0)status='paid';else if(s.due&&s.due<today)status='overdue';else if(s.due&&s.due===today)status='due-today';else if(s.due&&dayDiff(today,s.due)<=7)status='due-soon';else status='open';
-  return {kind:'one-time',paid,unconv:pc.unconv,remaining,nextDue:remaining>0?s.due||null:null,amountDue:remaining,status,cur:s.currency,overdue:status==='overdue'?1:0};
+  return {kind:'one-time',paid,unconv:pc.unconv,total,listed,refunded,remaining,nextDue:remaining>0?s.due||null:null,amountDue:remaining,status,cur:s.currency,overdue:status==='overdue'?1:0};
 }
 /* amount of one cycle period of a plan (first period may be prorated or waived), and what is still owed per period from the first unpaid one up to a target period */
-function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=periodFull(s,st,es).full;const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;const ov=periodOverride(s,st);return {k,st,en,es,pr:ov?ov.amount:(waived?0:(prorated?prorateCalc(s,full,days,total).amt:full))};}
-function coverPlan(s,sa,targetK){const out=[];for(let k=sa.kPaid;k<=targetK&&k<sa.kPaid+240;k++){const p=periodAmt(s,k);const ex=(sa.periods||[]).find(x=>x.k===k);const cov=ex?ex.covered:0;out.push({k,st:p.st,en:p.en,pr:p.pr,credit:cov,due:Math.max(0,p.pr-cov)});}return out;}
+function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=periodFull(s,st,es).full;const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;const ov=periodOverride(s,st);return {k,st,en,es,prorated:prorated&&!waived,waived,pr:ov?ov.amount:(waived?0:(prorated?prorateCalc(s,full,days,total).amt:full))};}
+function coverPlan(s,sa,targetK){const out=[];for(let k=sa.kPaid;k<=targetK&&k<sa.kPaid+240;k++){const p=periodAmt(s,k);const ex=(sa.periods||[]).find(x=>x.k===k);const cov=ex?ex.covered:0;out.push({k,st:p.st,en:p.en,es:p.es,prorated:p.prorated,waived:p.waived,pr:p.pr,credit:cov,due:Math.max(0,p.pr-cov)});}return out;}
 const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,paid:5,ended:5,cancelled:5,nosub:6};
 function analyze(u,today){
   const subs=u.subscriptions||[];const sa={};const totals=newSum(),balance=newSum(),due=newSum(),cycleDue=newSum();let cyclePaid=false;
@@ -1209,7 +1216,7 @@ function analyze(u,today){
       if(a.status!=='ended'&&a.status!=='upcoming'){if(a.status!=='open'&&a.kPaid>0&&(!paidThrough||a.paidThrough<paidThrough))paidThrough=a.paidThrough;planParts.push({name:planLabel(s),tier:tm,price:shown,cur:s.currency,per:perOf(s),noPkg:!s.packageId,subId:s.id,note:u.cancel&&s.end?'until '+fmtD(s.end):(s.discount?discountLabel(s):undefined)});pkgIds.add(pid||'');}
       else if(a.status==='upcoming'){planParts.push({name:planLabel(s),tier:tm,price:shown,cur:s.currency,per:perOf(s),note:'starts '+fmtD(s.start),noPkg:!s.packageId,subId:s.id});pkgIds.add(pid||'');}
       else if(u.cancel&&s.end){planParts.push({name:planLabel(s,s.end),tier:tm,price:priceAt(s,s.end),cur:s.currency,per:perOf(s),note:'until '+fmtD(s.end),subId:s.id});if(pid)pkgIds.add(pid);}
-    }else if(a.remaining>0){planParts.push({name:planLabel(s),price:a.remaining,cur:s.currency,per:'',note:'left of '+fmtAmt(s.total,s.currency)});if(pid)pkgIds.add(pid);}
+    }else if(a.remaining>0){planParts.push({name:planLabel(s),price:a.remaining,cur:s.currency,per:'',note:'left of '+fmtAmt(a.total,s.currency)});if(pid)pkgIds.add(pid);}
     if(a.nextDue&&!['ended','paid','upcoming'].includes(a.status)){if(!nextDue||a.nextDue<nextDue)nextDue=a.nextDue;}
     if(['overdue','due-today','due-soon'].includes(a.status)){sumAdd(due,a.amountDue,s.currency,null);duePlans.push(planLabel(s));if(pid)duePkgs.push(pkgName(pid));overdue+=a.overdue;}
   }
@@ -1228,6 +1235,9 @@ function statusPeriod(a){const m=a&&a.periods?a:(a&&a.statusA&&a.statusA.periods
   if(m.status==='overdue'||m.status==='due-today'||m.status==='open'){const od=ps.filter(p=>p.state==='unpaid'||p.state==='partial');return od.length?{p:od[0],last:od[od.length-1],m}:null;}
   return null;}
 const perMonth=(x,p)=>periodMonth(p.st,p.en,x.m.cycle);
+/* v30: the day a period is billed from: its cycle start, or the plan's start date for a prorated or waived first period (the same day nextDue names) */
+const pFrom=p=>(p.prorated||p.waived)&&p.es?p.es:p.st;
+const perLabel=p=>fmtD(pFrom(p))+' – '+fmtD(p.en);
 function statusLabel(a){switch(a.status){case 'cancelled':return a.balance&&a.balance.n?'Cancelled · owes':'Cancelled · settled';
   case 'overdue':{const x=statusPeriod(a);if(!x)return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';const f=perMonth(x,x.p),l=perMonth(x,x.last);return 'Overdue for '+(f===l?f:f+' – '+l);}
   case 'due-today':{const x=statusPeriod(a);return x?'Due today for '+perMonth(x,x.p):'Due today';}
@@ -1236,7 +1246,7 @@ function statusLabel(a){switch(a.status){case 'cancelled':return a.balance&&a.ba
   case 'open':{const x=statusPeriod(a);return x?'Open balance for '+perMonth(x,x.p):'Open balance';}
   case 'upcoming':return 'Starts later';case 'ended':return 'Ended';case 'paid':return 'Paid';default:return 'No plan';}}
 /* v29: the pill's tooltip: the exact dates behind "Paid for Oct" */
-function statusHint(a){const x=statusPeriod(a);if(!x)return '';return (a.status==='current'?'Paid through ':'Owed for ')+fmtCycle(x.p.st,x.last.en);}
+function statusHint(a){const x=statusPeriod(a);if(!x)return '';return (a.status==='current'?'Paid through ':'Owed for ')+fmtCycle(pFrom(x.p),x.last.en);}
 const displayName=u=>u.name||u.email||'(unnamed)';
 
 /* ---------- reminders ---------- */
@@ -1245,7 +1255,7 @@ function reminderFields(u,a,today,mode,x){
   const plans=(a.duePlans.length?a.duePlans:(u.subscriptions||[]).map(s=>planLabel(s))).filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'subscription';
   let amount,period,dueDate;
   const parts=[];
-  if(mode==='overdue'){const S=a.due.n?a.due:a.balance;amount=ownText(S,a.mainCur);let st=null,en=null;for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly'||!['overdue','due-today'].includes(sa.status))continue;if(sa.overdueAmount>0)parts.push(fmtAmt(sa.overdueAmount,s.currency)+' for '+planLabel(s));for(const p of sa.periods)if((p.state==='unpaid'||p.state==='partial')&&p.st<=today){if(!st||p.st<st)st=p.st;if(!en||p.en>en)en=p.en;}}period=st?fmtD(st)+' – '+fmtD(en):'the current period';dueDate=st?fmtD(st,true):(a.nextDue?fmtD(a.nextDue,true):'now');}
+  if(mode==='overdue'){const S=a.due.n?a.due:a.balance;amount=ownText(S,a.mainCur);let st=null,en=null;for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly'||!['overdue','due-today'].includes(sa.status))continue;if(sa.overdueAmount>0)parts.push(fmtAmt(sa.overdueAmount,s.currency)+' for '+planLabel(s));for(const p of sa.periods)if((p.state==='unpaid'||p.state==='partial')&&p.st<=today){const f=pFrom(p);if(!st||f<st)st=f;if(!en||p.en>en)en=p.en;}}period=st?fmtD(st)+' – '+fmtD(en):'the current period';dueDate=st?fmtD(st,true):(a.nextDue?fmtD(a.nextDue,true):'now');}
   else{amount=ownText(a.cycleDue.n?a.cycleDue:a.due,a.mainCur);for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.cycleDue>0)parts.push(fmtAmt(sa.cycleDue,s.currency)+' for '+planLabel(s));}period=fmtD(w.nc)+' – '+fmtD(w.periodEnd);dueDate=fmtD(w.nc,true);}
   if(parts.length>1)amount+=' in total ('+parts.join(' + ')+')';
   if(x&&x.dueDate)dueDate=x.dueDate;
@@ -1289,8 +1299,10 @@ function switchFor(s,cs){const cur=pkgIdAt(s,cs);const curName=pkgName(cur)||'';
   return {packageId:t.id,name:t.name,label,choice,price,priceText:price!=null?fmtAmt(price,s.currency)+perOf(s):''};}
 function cycleCard(u,a,cs,today){const ce=cycleEndOf(cs);const replyBy=dayOnOrBefore(addDays(cs,-1),replyDay());const plans=[];
   for(const s of u.subscriptions||[]){if(s.kind!=='monthly'||subCycle(s)!=='monthly')continue;if(s.end&&s.end<cs)continue;if(s.start>ce)continue;const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly')continue;
-    const p=(sa.periods||[]).find(x=>x.st===cs);const price=effPrice(s,cs);const amount=p?Math.max(0,p.pr-p.covered):price;const paid=!!p&&(p.state==='paid'||p.state==='waived');const ac=acctParts(u,s);const cpid=p&&p.pkgId?p.pkgId:pkgIdAt(s,cs);const tier=pkgName(cpid)||planLabel(s,cs);
-    plans.push({planId:s.id,label:ac.label||tier,custom:!!(p&&p.custom),amountNote:p&&p.custom?p.note:'',acct:[ac.label,ac.email].filter(Boolean).join(' · '),pkgId:cpid,tier,price,priceText:fmtAmt(price,s.currency)+perOf(s),currency:s.currency,amount,amountText:fmtAmt(amount,s.currency),paid,switch:switchFor(s,cs)});}
+    const p=(sa.periods||[]).find(x=>x.st===cs);const price=p?p.full:effPrice(s,cs);const amount=p?Math.max(0,p.pr-p.covered):price;const paid=!!p&&(p.state==='paid'||p.state==='waived');const ac=acctParts(u,s);const cpid=p&&p.pkgId?p.pkgId:pkgIdAt(s,cs);const tier=pkgName(cpid)||planLabel(s,cs);
+    plans.push({planId:s.id,label:ac.label||tier,custom:!!(p&&p.custom),amountNote:p&&p.custom?p.note:'',acct:[ac.label,ac.email].filter(Boolean).join(' · '),pkgId:cpid,tier,price,priceText:fmtAmt(price,s.currency)+perOf(s),currency:s.currency,amount,amountText:fmtAmt(amount,s.currency),paid,
+      /* v30: a cycle already billed as another package by hand (v27 override, e.g. one month as C Max) gets no tier offer; the page says so instead */
+      switch:p&&p.pkgOv?null:switchFor(s,cs),switchNote:p&&p.pkgOv?'Already on '+tier+' for this cycle':''});}
   const due=plans.filter(p=>!p.paid&&p.amount>0);const S=newSum();for(const p of due)sumAdd(S,p.amount,p.currency,null);
   let amountText=due.length?ownText(S,plans[0].currency):(plans.length?'nothing (already paid)':'—');if(due.length>1)amountText+=' ('+due.map(p=>`${p.amountText} ${p.label}`).join(' + ')+')';
   const tiers=plans.map(p=>p.tier).filter((x,i,arr)=>x&&arr.indexOf(x)===i);const first=plans.find(p=>p.switch);
@@ -1589,7 +1601,7 @@ function renderRemindRun(){
   const row=(r,mode)=>{const a=r.a,u=r.u;const pk=(mode==='overdue'?(a.duePkgs.length?a.duePkgs:[...a.pkgIds].map(pkgName)):cyclePkgs(u,a)).filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'package not set';const st=remState(u,key);
     const due=mode==='overdue'?`<b>${esc(ownText(a.balance.n?a.balance:a.due,a.mainCur))}</b> overdue${a.nextDue?` since ${esc(fmtD(a.nextDue))}`:''}${a.cycleDue.n?` · plus ${esc(ownText(a.cycleDue,a.mainCur))} on ${esc(fmtD(w.nc))}`:''}`:`<b>${esc(ownText(a.cycleDue,a.mainCur))}</b> due ${esc(fmtD(w.nc))}${creditNote(r)}`;
     return `<div class="rr-row" data-user="${esc(r.id)}" data-done="${st.confirmed?'1':'0'}"><span class="who" title="${esc(displayName(u))}">${esc(displayName(u))}</span><span class="due">${esc(pk)} · ${due}${answerLine(r.id)}</span>${tog(r,'reminded','Reminded')}${tog(r,'confirmed','Confirmed')}<span class="remind-pair">${remindControl(u,a,today,'Open WhatsApp',mode)}${emailControl(u,a,today,'Email',mode)}${telegramControl(u,'Telegram')}${linkControl(r.id)}</span></div>`;};
-  const creditNote=r=>{let c=[];for(const s of r.u.subscriptions||[]){const sa=r.a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.nextDue===w.nc&&sa.nextCredit>0)c.push(fmtAmt(sa.nextCredit,s.currency));}return c.length?` <span class="muted">(after ${esc(c.join(' + '))} credit)</span>`:'';};
+  const creditNote=r=>{let c=[];for(const s of r.u.subscriptions||[]){const sa=r.a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.nextSt===w.nc&&sa.nextCredit>0)c.push(fmtAmt(sa.nextCredit,s.currency));}return c.length?` <span class="muted">(after ${esc(c.join(' + '))} credit)</span>`:'';};
   const dueTxt=r=>r.a.unpaid?ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur)+' overdue':ownText(r.a.cycleDue,r.a.mainCur);
   const ticked=R.overdue.length+R.cycle.length-R.todo.length;
   let html=`<div class="fn-bar"><span class="lead"><b>${R.todo.length}</b> to remind · <b>${R.skipped.length}</b> skipped${ticked?` · ${ticked} already reminded or confirmed`:''}</span><details class="except"${ui.exceptOpen?' open':''}><summary>Except… ${R.skipped.length?`(${R.skipped.length})`:''}</summary><div class="except-list"><span class="hint">Tick anyone to leave out of this run (for example, someone who has paid ahead or told you separately). Saved for this cycle only.</span>${R.due.length?R.due.map(r=>`<label class="chk"><input type="checkbox" data-act="skip" data-user="${esc(r.id)}"${remState(r.u,key).skipped?' checked':''}>${esc(displayName(r.u))}<span class="when">${esc(dueTxt(r))}</span></label>`).join(''):'<span class="hint">Nobody is due this cycle.</span>'}</div></details></div>`;
@@ -1769,28 +1781,30 @@ function monthlySeries(cur){const today=todayISO();const ck=monthKey(today);cons
   for(const r of allRefunds()){const i=months.indexOf(monthKey(r.date));if(i<0)continue;const v=toCur(r.amount,r.currency,cur,r.rate);if(v==null)skipped++;else ref[i]+=v;}
   for(const id in state.costs){const c=state.costs[id];const i=months.indexOf(monthKey(c.date));if(i<0)continue;const v=toCur(costTotal(c),c.currency,cur,c.rate);if(v==null)skipped++;else cost[i]+=v;}
   const net=months.map((m,i)=>col[i]-ref[i]-cost[i]);
-  return {months,col,ref,cost,net,skipped,ck};}
+  /* v30: colNet = collected less refunds, the bars both charts draw (col and ref stay for tooltips and tables) */
+  const colNet=months.map((m,i)=>Math.max(0,col[i]-ref[i]));
+  return {months,col,colNet,ref,cost,net,skipped,ck};}
 function renderChart(){
   const box=$('#chart');const today=todayISO();const ck=monthKey(today);const cur=ui.chartCur;
   document.querySelectorAll('#chart-cur button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cur===cur)));
-  const {months,col,ref,cost,skipped}=monthlySeries(cur);
-  $('#chart-note').textContent=`Last 12 months by payment or cost date, in ${cur} equivalents.`+(skipped?` ${skipped} entr${skipped===1?'y':'ies'} in the other currency not shown: set an exchange rate in Settings.`:'');
+  const {months,col,colNet,ref,cost,skipped}=monthlySeries(cur);
+  $('#chart-note').textContent=`Last 12 months by payment, refund or cost date, in ${cur} equivalents; collected is after refunds.`+(skipped?` ${skipped} entr${skipped===1?'y':'ies'} in the other currency not shown: set an exchange rate in Settings.`:'');
   const W=Math.max(280,box.clientWidth||560),H=200,pl=56,pr=10,pt=18,pb=26;
-  const max=Math.max.apply(null,col.concat(cost,[0]));const step=niceStep(max);const top=Math.max(step,Math.ceil(max/step)*step);
+  const max=Math.max.apply(null,colNet.concat(cost,[0]));const step=niceStep(max);const top=Math.max(step,Math.ceil(max/step)*step);
   const innerH=H-pt-pb,innerW=W-pl-pr,band=innerW/12,bw=Math.min(14,(band-10)/2);const y=v=>pt+innerH-(v/top)*innerH;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Collected and costs per month for the last 12 months">`;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Collected (after refunds) and costs per month for the last 12 months">`;
   for(let t=0;t<=top+1e-9;t+=step){const yy=y(t);svg+=`<line class="grid-line" x1="${pl}" x2="${W-pr}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"/><text class="tick" x="${pl-6}" y="${(yy+3.5).toFixed(1)}" text-anchor="end">${kfmt(t)}</text>`;}
   svg+=`<line class="baseline" x1="${pl}" x2="${W-pr}" y1="${y(0)}" y2="${y(0)}"/>`;
   const bar=(x,v,cls)=>{if(v<=0)return '';const h=Math.max(1,y(0)-y(v));const yTop=y(0)-h;const r=Math.min(4,h/2,bw/2);return `<path class="${cls}" d="M${x.toFixed(1)},${(yTop+r).toFixed(1)} a${r},${r} 0 0 1 ${r},-${r} h${(bw-2*r).toFixed(1)} a${r},${r} 0 0 1 ${r},${r} V${y(0)} H${x.toFixed(1)} Z"/>`;};
   months.forEach((m,i)=>{
     const cx=pl+i*band+band/2;const p=m.split('-');const lab=(+p[1]===1||i===0)?MONTHS[+p[1]-1]+' ’'+p[0].slice(2):MONTHS[+p[1]-1];
     svg+=`<rect class="hit" data-i="${i}" x="${(pl+i*band).toFixed(1)}" y="${pt}" width="${band.toFixed(1)}" height="${innerH}"/>`;
-    svg+=bar(cx-bw-1,col[i],'bar1')+bar(cx+1,cost[i],'bar2');
+    svg+=bar(cx-bw-1,colNet[i],'bar1')+bar(cx+1,cost[i],'bar2');
     svg+=`<text class="xlab${m===ck?' cur':''}" x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle">${lab}</text>`;
   });
   svg+='</svg><div class="tip" id="tip" hidden></div>';box.innerHTML=svg;
   const tip=$('#tip');
-  box.querySelectorAll('.hit').forEach(r=>{r.addEventListener('mouseenter',()=>{const i=+r.dataset.i;tip.textContent=`${mLabel(months[i])} · collected ${fmtAmt(col[i],cur)}${ref[i]?` · refunds ${fmtAmt(-ref[i],cur)}`:''} · costs ${fmtAmt(cost[i],cur)}`;const scale=box.clientWidth/W;tip.style.left=((pl+i*band+band/2)*scale)+'px';tip.style.top=((y(Math.max(col[i],cost[i]))-6)*scale)+'px';tip.hidden=false;});r.addEventListener('mouseleave',()=>{tip.hidden=true;});});
+  box.querySelectorAll('.hit').forEach(r=>{r.addEventListener('mouseenter',()=>{const i=+r.dataset.i;tip.textContent=`${mLabel(months[i])} · collected ${fmtAmt(colNet[i],cur)}${ref[i]?` (${fmtAmt(col[i],cur)} less ${fmtAmt(ref[i],cur)} refunds)`:''} · costs ${fmtAmt(cost[i],cur)}`;const scale=box.clientWidth/W;tip.style.left=((pl+i*band+band/2)*scale)+'px';tip.style.top=((y(Math.max(colNet[i],cost[i]))-6)*scale)+'px';tip.hidden=false;});r.addEventListener('mouseleave',()=>{tip.hidden=true;});});
 }
 
 /* ---------- v26: Analytics tab. Every number here is built from the same functions the Summary uses
@@ -1863,16 +1877,16 @@ function usersPkgSVG(box,rows){
 }
 /* Collected vs costs by month with the net line: the same 12 months and numbers as the Summary chart (monthlySeries), plus net = collected - costs */
 function monthlyNetSVG(box,S,cur){
-  const {months,col,ref,cost,ck,net}=S;
+  const {months,col,colNet,ref,cost,ck,net}=S;
   const W=chartW(box),H=220,pl=56,pr=64,pt=18,pb=26;
-  const hi=Math.max(...col,...cost,...net,0),lo=Math.min(...net,0);const step=niceStep(Math.max(hi,-lo));const top=Math.max(step,Math.ceil(hi/step)*step),bot=lo<0?-Math.ceil(-lo/step)*step:0;
+  const hi=Math.max(...colNet,...cost,...net,0),lo=Math.min(...net,0);const step=niceStep(Math.max(hi,-lo));const top=Math.max(step,Math.ceil(hi/step)*step),bot=lo<0?-Math.ceil(-lo/step)*step:0;
   const innerH=H-pt-pb,innerW=W-pl-pr,band=innerW/12,bw=Math.min(14,(band-10)/2);const y=v=>pt+innerH*(top-v)/(top-bot);
   let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Collected, costs and net per month for the last 12 months">`;
   for(let t=bot;t<=top+1e-9;t+=step){const yy=y(t).toFixed(1);svg+=`<line class="grid-line" x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}"/><text class="tick" x="${pl-6}" y="${(+yy+3.5).toFixed(1)}" text-anchor="end">${t<0?'−':''}${kfmt(Math.abs(t))}</text>`;}
   svg+=`<line class="baseline" x1="${pl}" x2="${W-pr}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}"/>`;
   const every=band<30?2:1;const pts=[];
   months.forEach((m,i)=>{const cx=pl+i*band+band/2;
-    if(col[i]>0)svg+=barPath(cx-bw-1,y(col[i]),bw,Math.max(1,y(0)-y(col[i])),'up','bar1a');
+    if(colNet[i]>0)svg+=barPath(cx-bw-1,y(colNet[i]),bw,Math.max(1,y(0)-y(colNet[i])),'up','bar1a');
     if(cost[i]>0)svg+=barPath(cx+1,y(cost[i]),bw,Math.max(1,y(0)-y(cost[i])),'up','bar2a');
     pts.push([cx,y(net[i])]);
     if(i%every===(11%every))svg+=`<text class="xlab${m===ck?' cur':''}" x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle">${xLabel(m,i,ck)}</text>`;});
@@ -1880,9 +1894,9 @@ function monthlyNetSVG(box,S,cur){
   svg+=`<polyline class="ln-net" points="${pts.slice(first).map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}"/>`;
   pts.forEach((p,i)=>{if(i>=first&&(col[i]||ref[i]||cost[i]||i===11))svg+=`<circle class="dot dotn" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4"/>`;});
   const last=pts[11];svg+=`<text class="dlab strong" x="${(last[0]+bw+7).toFixed(1)}" y="${(last[1]+4).toFixed(1)}">${esc(sgn(net[11],cur))}</text>`;
-  months.forEach((m,i)=>{svg+=`<rect class="hit" tabindex="0" data-i="${i}" x="${(pl+i*band).toFixed(1)}" y="${pt}" width="${band.toFixed(1)}" height="${innerH}"><title>${mLabel(m)}: collected ${esc(fmtAmt(col[i],cur))}${ref[i]?`, refunds ${esc(fmtAmt(-ref[i],cur))}`:''}, costs ${esc(fmtAmt(cost[i],cur))}, net ${esc(fmtAmt(net[i],cur))}</title></rect>`;});
+  months.forEach((m,i)=>{svg+=`<rect class="hit" tabindex="0" data-i="${i}" x="${(pl+i*band).toFixed(1)}" y="${pt}" width="${band.toFixed(1)}" height="${innerH}"><title>${mLabel(m)}: collected ${esc(fmtAmt(colNet[i],cur))}${ref[i]?` after ${esc(fmtAmt(ref[i],cur))} refunds (${esc(fmtAmt(col[i],cur))} paid in)`:''}, costs ${esc(fmtAmt(cost[i],cur))}, net ${esc(fmtAmt(net[i],cur))}</title></rect>`;});
   svg+='</svg><div class="tip" hidden></div>';box.innerHTML=svg;
-  wireTips(box,W,i=>({text:`${mLabel(months[i])}\n${fmtAmt(col[i],cur)} collected${ref[i]?`\n${fmtAmt(-ref[i],cur)} refunds`:''}\n${fmtAmt(cost[i],cur)} costs\n${fmtAmt(net[i],cur)} net`,x:pl+i*band+band/2,y:Math.min(y(Math.max(col[i],cost[i],net[i]))-8,y(0)-8)}));
+  wireTips(box,W,i=>({text:`${mLabel(months[i])}\n${fmtAmt(colNet[i],cur)} collected${ref[i]?` after refunds\n${fmtAmt(col[i],cur)} paid in, ${fmtAmt(-ref[i],cur)} refunds`:''}\n${fmtAmt(cost[i],cur)} costs\n${fmtAmt(net[i],cur)} net`,x:pl+i*band+band/2,y:Math.min(y(Math.max(colNet[i],cost[i],net[i]))-8,y(0)-8)}));
   return net;
 }
 /* Cumulative money made vs cost since the first record: two 2px lines with a 10% wash, end markers, the gap between the two ends labelled */
@@ -2089,7 +2103,7 @@ function refundPreview(u,s,f,today){
   const inPlan=toCur(n,pc,s.currency,rate);if(inPlan==null)return txt+'. Set an exchange rate so it can count against this plan.';
   const base=clone(s);base.refunds=(base.refunds||[]).filter(r=>r.id!==f.refId);
   const sim=clone(base);sim.refunds=(sim.refunds||[]).concat([{id:f.refId||'__new',date:f.date||today,amount:n,currency:pc,rate}]);
-  if(s.kind!=='monthly'){const b=analyzeOneTime(base,today),a=analyzeOneTime(sim,today);return txt+`. Paid on ${s.name||'this item'} goes from ${fmtAmt(b.paid,s.currency)} to ${fmtAmt(a.paid,s.currency)}; remaining ${fmtAmt(a.remaining,s.currency)}. If the sale is undone, also edit the item's total.`;}
+  if(s.kind!=='monthly'){const b=analyzeOneTime(base,today),a=analyzeOneTime(sim,today);return txt+`. ${s.name||'This item'} goes from ${fmtAmt(b.total,s.currency)} to ${fmtAmt(a.total,s.currency)} (a refund comes off the item's total); kept ${fmtAmt(a.paid,s.currency)}; remaining ${fmtAmt(a.remaining,s.currency)}${a.remaining>0?' still to pay':''}.`;}
   const b=analyzeMonthly(base,today);
   const cx=f.alsoCancel&&isDateKey(f.lastDay)?f.lastDay:(u.cancel?u.cancel.lastDay:null);
   if(cx&&(!sim.end||sim.end>cx))sim.end=cx;
@@ -2105,16 +2119,20 @@ function refundPreview(u,s,f,today){
   return txt;}
 function uptoForm(id,s,sa,today,open){
   if(!sa.nextDue)return '';
-  const opts=[];for(let k=sa.kPaid;k<sa.kPaid+12;k++){const p=periodAmt(s,k);if(s.end&&p.st>s.end)break;opts.push(`<option value="${k}">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}</option>`);}
+  const opts=[];for(let k=sa.kPaid;k<sa.kPaid+12;k++){const p=periodAmt(s,k);if(s.end&&p.st>s.end)break;opts.push(`<option value="${k}">${esc(perLabel(p))}</option>`);}
   return `<form class="upto-form" data-id="${id}" data-sub="${s.id}" ${open?'':'hidden'} novalidate>
     <div class="pay-row">
       <label class="f">Paid up to (cycle)<select id="up-target-${s.id}" name="target">${opts.join('')}</select></label>
       <label class="f upto-date">or a date<span class="date-clear"><input id="up-date-${s.id}" name="upToDate" type="date" min="${esc(s.start)}"><button class="btn sm" type="button" data-role="upto-clear" disabled title="Remove the date and go back to the first unpaid cycle" aria-label="Clear the paid-up-to date">Clear</button></span></label>
-      <label class="f">Payment date<input id="up-when-${s.id}" name="date" type="date" required value="${today}"></label>
-      <label class="f">Total (${s.currency})<input id="up-amount-${s.id}" name="amount" type="number" min="0" step="0.01" required></label>
-      <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button><button class="link" type="button" data-act="toggle" data-key="upto:${s.id}">Cancel</button></span>
     </div>
-    <div class="upto-plan" data-role="plan"></div>
+    <div class="rec-box upto-plan" data-role="plan" role="group" aria-label="Paid up to"></div>
+    <div class="rec-form upto-more">
+      <label class="f rec-amt">Total paid (${s.currency})<input id="up-amount-${s.id}" name="amount" type="number" min="0" step="0.01" inputmode="decimal" aria-label="Total paid"></label>
+      <label class="f">Payment date<input id="up-when-${s.id}" name="date" type="date" value="${today}"></label>
+      <label class="f rec-note">Note <span class="muted">(optional)</span><input id="up-note-${s.id}" name="note" type="text" maxlength="140" placeholder="e.g. NayaPay ref"></label>
+      <span class="form-actions" style="margin:0"><button class="btn primary" type="submit">Record</button></span>
+      <span class="d">The total is split one payment per period when it matches; a different total is one payment noted "paid up to …", and periods fill in order with any extra carried as credit.</span>
+    </div>
   </form>`;
 }
 /* the account strip at the top of a plan box: "Account · email", "Account 2 · email", "ChatGPT · email" */
@@ -2192,34 +2210,59 @@ const refundEditOf=s=>{const rid=(ui.refundEdit||{})[s.id];return rid?(s.refunds
    only period a payment can go to). Yes records what that period actually owes (after discount, proration, a hand-set amount or package,
    and any credit already applied), dated today, in the plan's currency at the default rate. "Different amount" opens amount, currency,
    date and note. Nothing has to be edited or saved first; the row, the box and the totals redraw as soon as the payment is stored. ---------- */
-function recTarget(s,sa){if(!sa)return null;if(s.kind!=='monthly')return sa.remaining>0?{st:'item',owed:sa.remaining,label:s.name||'this item'}:null;if(!sa.nextDue)return null;const p=(sa.periods||[]).find(x=>x.st===sa.nextDue);if(!p)return null;const owed=Math.round(Math.max(0,p.pr-p.covered)*100)/100;return owed>0?{st:p.st,owed,p,label:fmtCycle(p.st,p.en)}:null;}
-function recBoxHTML(id,u,s,t,today,more){const cur=s.currency;const p=t.p;
-  const facts=p?(p.covered>0?`${fmtAmt(p.pr,cur)} for the period less ${fmtAmt(p.covered,cur)} already paid toward it`:p.custom?`amount set by hand for this period${p.note?' · '+p.note:''}`:p.pkgOv?`billed as ${pkgName(p.pkgId)} this period`:p.prorated?`${p.daysCharged} day${p.daysCharged===1?'':'s'} prorated`:s.discount?`${fmtAmt(p.listed,cur)} less ${discountLabel(s)}`:''):`what is left of ${fmtAmt(s.total,cur)}`;
+/* v30: the question a period box asks. st = the box's cycle start (default: the period that needs money next; 'item' for a one-time item).
+   For the next-due period it is one payment of what that period still owes; for a later unpaid or upcoming period it is one payment per period from the
+   next-due one through it (credit is applied in period order, so money cannot skip a month): the same thing Paid up to… records. */
+function recTarget(s,sa,st){if(!sa)return null;if(s.kind!=='monthly')return sa.remaining>0?{st:'item',owed:sa.remaining,label:s.name||'this item',total:sa.total,parts:[],n:1}:null;if(!sa.nextSt)return null;
+  const ps=sa.periods||[];const tgt=ps.find(x=>x.st===(st||sa.nextSt));if(!tgt||tgt.k<sa.kPaid)return null;
+  const parts=coverPlan(s,sa,tgt.k).filter(x=>x.due>0);if(!parts.length)return null;const owed=Math.round(parts.reduce((t,x)=>t+x.due,0)*100)/100;if(owed<=0)return null;
+  const p=parts.length===1?(ps.find(x=>x.st===parts[0].st)||tgt):null;const upto=parts[parts.length-1].en;
+  const names=parts.map(x=>periodMonth(x.st,x.en,subCycle(s)));const label=p?fmtCycle(pFrom(p),p.en):(names.length<=4?names.slice(0,-1).join(', ')+' and '+names[names.length-1]:names[0]+' – '+names[names.length-1]+' ('+names.length+' periods)');
+  return {st:tgt.st,owed,p,parts,n:parts.length,label,upto,note:p?'for '+label:'paid up to '+fmtD(upto,true)};}
+/* the payments a multi-period answer records: one per period, each noted with its period and the paid-up-to date */
+function recPayments(s,t,date){const n=t.parts.length;return t.parts.map((x,i)=>({date,amount:Math.round(x.due*100)/100,currency:s.currency,rate:null,note:'for '+fmtCycle(pFrom(x),x.en)+(n>1?` · ${i+1} of ${n}, paid up to ${fmtD(t.upto,true)}`:'')}));}
+function recBoxHTML(id,u,s,t,today,more){const cur=s.currency;const p=t.p;const multi=t.n>1;
+  const facts=multi?`one payment per period: ${t.parts.map(x=>fmtAmt(x.due,cur)).join(' + ')}, covering ${fmtD(pFrom(t.parts[0]))} – ${fmtD(t.upto)}${t.parts[0].credit>0?` (the ${fmtAmt(t.parts[0].credit,cur)} credit already carried reduces the first)`:''}`
+    :p?(p.covered>0?`${fmtAmt(p.pr,cur)} for the period less ${fmtAmt(p.covered,cur)} already paid toward it`:p.custom?`amount set by hand for this period${p.note?' · '+p.note:''}`:p.pkgOv?`billed as ${pkgName(p.pkgId)} this period`:p.prorated?`${p.daysCharged} day${p.daysCharged===1?'':'s'} prorated`:s.discount?`${fmtAmt(p.listed,cur)} less ${discountLabel(s)}`:''):`what is left of ${fmtAmt(t.total!=null?t.total:s.total,cur)}`;
   return `<div class="rec-box" data-sub="${esc(s.id)}" role="group" aria-label="Record payment">
-    <p class="rec-q">Record <b>${esc(fmtAmt(t.owed,cur))}</b> for ${esc(t.label)}?</p>
+    <p class="rec-q">${multi?`Record <b>${t.n} payments</b> totalling <b>${esc(fmtAmt(t.owed,cur))}</b> for ${esc(t.label)}?`:`Record <b>${esc(fmtAmt(t.owed,cur))}</b> for ${esc(t.label)}?`}</p>
     <p class="d">Dated today, ${esc(fmtD(today,true))}${facts?' · '+esc(facts):''}.</p>
-    <div class="rec-acts"><button class="btn primary rec-yes" type="button" data-act="rec-yes" data-sub="${esc(s.id)}" data-start="${esc(t.st)}">Yes, record ${esc(fmtAmt(t.owed,cur))}</button><button class="btn" type="button" data-act="rec-more" data-sub="${esc(s.id)}" aria-expanded="${more?'true':'false'}">Different amount</button><button class="link" type="button" data-act="rec-cancel" data-sub="${esc(s.id)}">Not now</button></div>
-    ${more?`<form class="rec-form" data-id="${esc(id)}" data-sub="${esc(s.id)}" data-start="${esc(t.st)}" data-label="${esc(t.label)}" novalidate>
+    <div class="rec-acts"><button class="btn primary rec-yes" type="button" data-act="rec-yes" data-sub="${esc(s.id)}" data-start="${esc(t.st)}" data-owed="${t.owed}">Yes, record ${esc(fmtAmt(t.owed,cur))}</button><button class="btn" type="button" data-act="rec-more" data-sub="${esc(s.id)}" aria-expanded="${more?'true':'false'}">Different amount</button><button class="link" type="button" data-act="rec-cancel" data-sub="${esc(s.id)}">Not now</button></div>
+    ${more?`<form class="rec-form" data-id="${esc(id)}" data-sub="${esc(s.id)}" data-start="${esc(t.st)}" data-note="${esc(t.st==='item'?'':t.note)}" novalidate>
       <label class="f rec-amt">Amount<input name="amount" type="number" min="0" step="0.01" required inputmode="decimal" value="${t.owed}" aria-label="Amount paid"></label>
       <label class="f">Paid in${curSelect('rc-cur-'+s.id,'currency',cur)}</label>
       <label class="f">Date<input name="date" type="date" required value="${today}"></label>
       <label class="f rec-note">Note <span class="muted">(optional)</span><input name="note" type="text" maxlength="140" placeholder="e.g. NayaPay ref, USDT tx"></label>
       <span class="form-actions" style="margin:0"><button class="btn primary" type="submit">Record</button></span>
-      <span class="d">Less than what is owed is kept as a partial payment; more carries forward as credit. A payment in the other currency counts at the default rate; use Edit in the payment history to set a rate.</span>
+      <span class="d">${multi?'One payment of this amount is recorded; periods fill in order and any extra carries forward as credit.':'Less than what is owed is kept as a partial payment; more carries forward as credit.'} A payment in the other currency counts at the default rate; use Edit in the payment history to set a rate.</span>
     </form>`:''}
   </div>`;}
+/* v30: the plan's Record payment when nothing is owed (an ended plan, or everything paid): the same box, with the short form open, instead of the old six-field form */
+function recNoneHTML(id,u,s,sa,today){const cur=s.currency;const ended=sa.status==='ended';
+  return `<div class="rec-box" data-sub="${esc(s.id)}" role="group" aria-label="Record payment">
+    <p class="rec-q">Nothing is owed on this plan${ended&&s.end?` · it ended ${esc(fmtD(s.end,true))}`:sa.paidThrough&&sa.kPaid?` · paid through ${esc(fmtD(sa.paidThrough,true))}`:''}.</p>
+    <p class="d">Record a payment anyway: it is kept ${ended?'on the plan':'as credit toward the next period'}.</p>
+    <form class="rec-form" data-id="${esc(id)}" data-sub="${esc(s.id)}" data-start="none" data-note="" novalidate>
+      <label class="f rec-amt">Amount<input name="amount" type="number" min="0" step="0.01" required inputmode="decimal" aria-label="Amount paid"></label>
+      <label class="f">Paid in${curSelect('rc-cur-'+s.id,'currency',cur)}</label>
+      <label class="f">Date<input name="date" type="date" required value="${today}"></label>
+      <label class="f rec-note">Note <span class="muted">(optional)</span><input name="note" type="text" maxlength="140" placeholder="e.g. NayaPay ref, USDT tx"></label>
+      <span class="form-actions" style="margin:0"><button class="btn primary" type="submit">Record</button><button class="link" type="button" data-act="rec-cancel" data-sub="${esc(s.id)}">Not now</button></span>
+    </form>
+  </div>`;}
 async function recordPayment(id,sid,pay){if(!state.users[id])return false;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return false;
-  s.payments=(s.payments||[]).concat([{id:newId('p'),date:pay.date,amount:pay.amount,currency:pay.currency,rate:pay.rate||null,note:pay.note||''}]);
-  ui.open[id]=Object.assign({},ui.open[id],{['rec:'+sid]:false,['recmore:'+sid]:false});
+  const list=Array.isArray(pay)?pay:[pay];if(!list.length)return false;
+  s.payments=(s.payments||[]).concat(list.map(x=>({id:newId('p'),date:x.date,amount:x.amount,currency:x.currency,rate:x.rate||null,note:x.note||''})));
+  ui.open[id]=Object.assign({},ui.open[id],{['rec:'+sid]:false,['recmore:'+sid]:false,['upto:'+sid]:false});
   const ok=await persistUser(id,u);
-  if(ok){const sa=analyze(state.users[id]||u,todayISO()).sa[sid];toast(`${fmtAmt(pay.amount,pay.currency)} recorded for ${displayName(u)}${sa?' · '+statusLabel(sa):''}.`);}
+  if(ok){const sa=analyze(state.users[id]||u,todayISO()).sa[sid];const sum=Math.round(list.reduce((t,x)=>t+x.amount,0)*100)/100;toast(`${list.length>1?list.length+' payments, ':''}${fmtAmt(sum,list[0].currency)} recorded for ${displayName(u)}${sa?' · '+statusLabel(sa):''}.`);}
   return ok;}
 async function saveRecForm(form){const id=form.dataset.id,sid=form.dataset.sub;const v=n=>{const el=form.querySelector(`[name=${n}]`);return el?String(el.value||''):'';};
   const date=v('date'),raw=v('amount').trim(),pc=normCur(v('currency')),note=v('note').trim().slice(0,140);
   if(!isDateKey(date)){toast('Pick the payment date.');return;}
   if(!validAmt(raw)||Number(raw)<=0){toast('Enter the amount paid.');const a=form.querySelector('[name=amount]');if(a)a.focus();return;}
   const b=form.querySelector('button[type=submit]');if(b)b.disabled=true;
-  const ok=await recordPayment(id,sid,{date,amount:Math.round(Number(raw)*100)/100,currency:pc,rate:null,note:note||(form.dataset.start!=='item'?'for '+form.dataset.label:'')});
+  const ok=await recordPayment(id,sid,{date,amount:Math.round(Number(raw)*100)/100,currency:pc,rate:null,note:note||form.dataset.note||''});
   if(!ok&&b)b.disabled=false;}
 function detailHTML(id,u,a,today){
   const open=ui.open[id]||{};const subs=u.subscriptions||[];
@@ -2247,12 +2290,14 @@ function detailHTML(id,u,a,today){
         const pkgLine=p.pkgOv?`<span class="d pkg-line">Billed as <b>${esc(pkgName(p.pkgId))}</b> this period · plan is ${esc(pkgName(pkgIdAt(s,p.es))||'its own price')}${!p.custom&&((s.periodOverrides||{})[p.st]||{}).note?' · '+esc(s.periodOverrides[p.st].note):''}</span>`:'';
         const canEdit=p.en>=today&&!u.cancel;const editLink=canEdit&&!editing?`<span class="d"><button class="link sm" type="button" data-act="toggle" data-key="${fkey}" title="Set the amount or the package for this period by hand (discount, correction, or one month on another package)">edit amount / package</button></span>`:'';
         /* v29: the period that needs money next carries its own Record payment button; tapping it (or the plan's button) opens the question in this box */
-        const recBtn=rt&&rt.st===p.st&&!rec?`<span class="rec-cta"><button class="btn primary rec" type="button" data-act="rec" data-sub="${s.id}" data-start="${p.st}">Record payment</button></span>`:'';
-        const recBox=rec&&rt&&rt.st===p.st?recBoxHTML(id,u,s,rt,today,recMore):'';
-        return `<div class="cell${editing?' editing':''}" data-state="${p.state}" data-custom="${p.custom?'1':'0'}"><span class="m">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}${p.prorated?' <span class="tag">prorated</span>':''}${tierTag(p)}${p.custom?' <span class="tag custom" title="Amount set by hand">custom</span>':''}</span><span class="a">${a}</span>${pro}${extra}${custom}${pkgLine}${recBtn}${editLink}${recBox}${open[fkey]?amtFormHTML(id,s,p,'detail',''):''}</div>`;}).join('');
+        /* v30: every unpaid, partial or upcoming box has one; the next-due box's is the primary button, a later box asks for one payment per period through it */
+        const rtP=(p.state==='unpaid'||p.state==='partial'||p.state==='upcoming')?(rt&&rt.st===p.st?rt:recTarget(s,sa,p.st)):null;
+        const recBtn=rtP&&!rec?`<span class="rec-cta"><button class="btn ${p.st===sa.nextSt?'primary ':''}rec" type="button" data-act="rec" data-sub="${s.id}" data-start="${p.st}"${rtP.n>1?` title="Record ${rtP.n} payments: one for each period up to this one"`:''}>Record payment</button></span>`:'';
+        const recBox=rec&&rtP?recBoxHTML(id,u,s,rtP,today,recMore):'';
+        return `<div class="cell${editing?' editing':''}" data-state="${p.state}" data-custom="${p.custom?'1':'0'}"><span class="m">${esc(perLabel(p))}${p.prorated?' <span class="tag">prorated</span>':''}${tierTag(p)}${p.custom?' <span class="tag custom" title="Amount set by hand">custom</span>':''}</span><span class="a">${a}</span>${pro}${extra}${custom}${pkgLine}${recBtn}${editLink}${recBox}${open[fkey]?amtFormHTML(id,s,p,'detail',''):''}</div>`;}).join('');
       const nextPr=sa.nextDue?sa.nextAmount:sa.price;
       const pe=(ui.priceEdit||{})[s.id]||null;const pePrice=pe?(hist.find(x=>x.from===pe)||{}).price:null;
-      const defFrom=pe||sa.nextDue||pStart(s,Math.max(0,sa.curIdx));
+      const defFrom=pe||sa.nextSt||pStart(s,Math.max(0,sa.curIdx));
       const payEditId=(ui.payEdit||{})[s.id]||null;const payEdit=payEditId?(s.payments||[]).find(x=>x.id===payEditId):null;
       const tierPkgs=packages().filter(p=>p.cycle===subCycle(s));const canTier=tierPkgs.some(p=>p.id!==sa.curPkgId);
       const shownPrice=sa.tiered?sa.curPrice:sa.price,shownList=sa.tiered?sa.curListPrice:sa.listPrice;
@@ -2261,7 +2306,7 @@ function detailHTML(id,u,a,today){
         <div class="sub-head">
           ${acctLine(u,s)}
           <div class="sub-line"><span class="pkg-badge" title="Package / tier">${esc(pkgName(sa.curPkgId)||planLabel(s))}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="kind">${subCycle(s)} · ${s.currency}</span><span class="num">${s.discount?`${esc(fmtAmt(shownList,s.currency))}<span class="muted">${perOf(s)}</span> · ${esc(discountLabel(s))} = <b>${esc(fmtAmt(shownPrice,s.currency))}</b>`:`${esc(fmtAmt(shownPrice,s.currency))}<span class="muted">${perOf(s)}</span>`}</span><span class="pill" data-status="${sa.status}" title="${esc(statusHint(sa))}">${esc(statusLabel(sa))}</span>${tierBadgeHTML(s,today)}
-          <span class="sub-acts">${rt?`<button class="btn sm primary" type="button" data-act="rec" data-sub="${s.id}" data-start="${rt.st}" aria-expanded="${recOpen===rt.st?'true':'false'}">Record payment</button>`:`<button class="btn sm primary" type="button" data-act="toggle" data-key="pay:${s.id}">Record payment</button>`}
+          <span class="sub-acts"><button class="btn sm primary" type="button" data-act="rec" data-sub="${s.id}" data-start="${rt?rt.st:'none'}" aria-expanded="${recOpen===(rt?rt.st:'none')?'true':'false'}">Record payment</button>
           ${sa.nextDue?`<button class="btn sm" type="button" data-act="toggle" data-key="upto:${s.id}" title="Record payment for every period up to a chosen cycle or date">Paid up to…</button>`:''}
           ${(s.payments||[]).length?`<button class="btn sm" type="button" data-act="toggle" data-key="refund:${s.id}" title="Record money given back: it comes off revenue and off this plan's credit">Refund</button>`:''}
           <button class="btn sm" type="button" data-act="toggle" data-key="price:${s.id}">Change price</button>
@@ -2272,6 +2317,7 @@ function detailHTML(id,u,a,today){
         <div class="sub-facts"><span>Started <b>${esc(fmtD(s.start,true))}</b></span>${s.end?`<span>Ends <b>${esc(fmtD(s.end,true))}</b></span>`:''}<span>Paid through <b>${sa.kPaid?esc(fmtD(sa.paidThrough,true)):'nothing yet'}</b></span>${sa.nextDue?(sa.nextDue>today?`<span>Next due <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}${sa.nextCredit>0?` <span class="muted">(after ${esc(fmtAmt(sa.nextCredit,s.currency))} credit)</span>`:''}</span>`:sa.nextCredit>0?`<span>Remaining on the current period <b>${esc(fmtAmt(nextPr,s.currency))}</b></span>`:`<span>Unpaid since <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}</span>`):''}${(s.refunds||[]).length?`<span>Paid in <b>${esc(fmtAmt(sa.paid+refundedInPlanCur(s),s.currency))}</b> · refunded <b class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</b> · kept <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`:`<span>Total paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`}${yearFacts}${dueByFact}${s.waiveFirst?'<span>First partial period <b>waived</b></span>':s.prorate===false?'<span>First period <b>not prorated</b></span>':''}${unconvNote}</div>
         ${histTxt?`<div class="hist">Price history: ${histTxt}</div>`:''}${tierHist}
         <div class="periods">${cells}</div>
+        ${recOpen==='none'&&!rt?recNoneHTML(id,u,s,sa,today):''}
         ${payForm(id,s,sa,today,nextPr,payOpen,payEdit)}
         ${uptoForm(id,s,sa,today,open['upto:'+s.id])}
         ${refundForm(id,u,s,today,open['refund:'+s.id],refundEditOf(s))}
@@ -2319,13 +2365,13 @@ function detailHTML(id,u,a,today){
       subsHtml+=`<div class="sub" data-sub="${s.id}" data-settled="${dimOn()&&!u.cancel&&sa.status==='paid'?1:0}">
         <div class="sub-head">
           ${acctLine(u,s)}
-          <div class="sub-line"><span class="pkg-badge" title="Package / product">${esc(pkgName(s.packageId)||'One-time')}</span><span class="name">${esc(s.name)}</span><span class="kind">one-time · ${s.currency}</span><span class="num">${esc(fmtAmt(s.total,s.currency))}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>
+          <div class="sub-line"><span class="pkg-badge" title="Package / product">${esc(pkgName(s.packageId)||'One-time')}</span><span class="name">${esc(s.name)}</span><span class="kind">one-time · ${s.currency}</span><span class="num">${esc(fmtAmt(sa.total,s.currency))}${sa.refunded?` <span class="muted" title="The item's amount less what was refunded">(${esc(fmtAmt(sa.listed,s.currency))} less ${esc(fmtAmt(sa.refunded,s.currency))} refunded)</span>`:''}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>
           <span class="sub-acts">${sa.remaining>0?`<button class="btn sm primary" type="button" data-act="rec" data-sub="${s.id}" data-start="item" aria-expanded="${open['rec:'+s.id]==='item'?'true':'false'}">Record payment</button>`:''}
           ${(s.payments||[]).length?`<button class="btn sm" type="button" data-act="toggle" data-key="refund:${s.id}" title="Record money given back: it comes off revenue and off what this item has paid">Refund</button>`:''}
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
         </div>
         <div class="sub-body">
-        <div class="sub-facts"><span>Paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b>${(s.refunds||[]).length?` <span class="muted">(after <span class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</span> refunded)</span>`:''}</span><span>Remaining <b>${esc(fmtAmt(sa.remaining,s.currency))}</b></span><span>Due <b>${s.due?esc(fmtD(s.due,true)):'no date'}</b></span>${unconvNote}</div>
+        <div class="sub-facts"><span>Paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b>${(s.refunds||[]).length?` <span class="muted">kept (<span class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</span> refunded, taken off the item's total)</span>`:''}</span><span>Remaining <b>${esc(fmtAmt(sa.remaining,s.currency))}</b></span><span>Due <b>${s.due?esc(fmtD(s.due,true)):'no date'}</b></span>${unconvNote}</div>
         ${open['rec:'+s.id]==='item'&&sa.remaining>0?recBoxHTML(id,u,s,recTarget(s,sa),today,!!open['recmore:'+s.id]):''}
         ${payForm(id,s,sa,today,sa.remaining,payOpen,(ui.payEdit||{})[s.id]?(s.payments||[]).find(x=>x.id===ui.payEdit[s.id]):null)}
         ${refundForm(id,u,s,today,open['refund:'+s.id],refundEditOf(s))}
@@ -2432,22 +2478,23 @@ function wireDetail(id,today){
     const s=(u.subscriptions||[]).find(x=>x.id===form.dataset.sub);if(!s||s.kind!=='monthly')return;
     const sa=analyzeMonthly(s,today);const sel=form.querySelector('[name=target]'),dateEl=form.querySelector('[name=upToDate]'),amt=form.querySelector('[name=amount]'),plan=form.querySelector('[data-role=plan]');
     let auto=true;
-    const compute=()=>{const k=Number(sel.value);const cov=coverPlan(s,sa,k);const total=cov.reduce((t,p)=>t+p.due,0);const n=cov.filter(p=>p.due>0).length;form.dataset.total=String(total);form.dataset.k=String(k);
-      if(auto)amt.value=String(total);
-      const last=cov[cov.length-1];const credit=cov.find(p=>p.credit>0);
-      const parts=cov.filter(p=>p.due>0).map(p=>fmtAmt(p.due,s.currency));
-      let txt=n?`Records <b>${n} payment${n===1?'':'s'}</b> (${parts.join(' + ')} = <b>${fmtAmt(total,s.currency)}</b>) dated ${fmtD(form.querySelector('[name=date]').value||today,true)}, covering ${fmtD(cov[0].st,true)} – ${fmtD(last.en,true)}.`:`Already paid through ${fmtD(last.en,true)}; nothing to record.`;
-      if(credit)txt+=` The ${fmtAmt(credit.credit,s.currency)} credit already carried reduces the first period only.`;
-      if(Number(amt.value)!==total&&Number(amt.value)>0)txt+=` <span class="muted">Different total: one payment of ${fmtAmt(Number(amt.value),s.currency)} will be recorded with the note "paid up to ${fmtD(last.en,true)}"; periods fill in order and any extra carries as credit.</span>`;
-      plan.innerHTML=txt;};
+    /* v30: the question ("Record 3 payments totalling Rs 12,600 for Oct, Nov and Dec?", Yes / Different amount / Not now) replaces the older date + total fields */
+    const compute=()=>{const k=Number(sel.value);const cov=coverPlan(s,sa,k);const due=cov.filter(p=>p.due>0);const total=Math.round(due.reduce((t,p)=>t+p.due,0)*100)/100;const n=due.length;form.dataset.total=String(total);form.dataset.k=String(k);
+      if(auto)amt.value=n?String(total):'';
+      const last=cov[cov.length-1];const credit=cov.find(p=>p.credit>0);const cur=s.currency;
+      const names=due.map(p=>periodMonth(p.st,p.en,subCycle(s)));const who=n?(n<=4?(n===1?names[0]:names.slice(0,-1).join(', ')+' and '+names[names.length-1]):names[0]+' – '+names[names.length-1]+' ('+n+' periods)'):'';
+      const notNow=`<button class="link" type="button" data-act="toggle" data-key="upto:${s.id}">Not now</button>`;
+      plan.innerHTML=n?`<p class="rec-q">Record <b>${n} payment${n===1?'':'s'}</b> totalling <b>${esc(fmtAmt(total,cur))}</b> for ${esc(who)}?</p>
+        <p class="d">Dated today, ${esc(fmtD(today,true))} · ${n===1?esc(fmtAmt(due[0].due,cur))+' for '+esc(perLabel(due[0])):'one payment per period: '+esc(due.map(p=>fmtAmt(p.due,cur)).join(' + '))+', covering '+esc(fmtD(pFrom(due[0])))+' – '+esc(fmtD(last.en))}${credit?` · the ${esc(fmtAmt(credit.credit,cur))} credit already carried reduces the first`:''}.</p>
+        <div class="rec-acts"><button class="btn primary rec-yes" type="button" data-act="upto-yes" data-sub="${s.id}" data-k="${k}" data-total="${total}">Yes, record ${esc(fmtAmt(total,cur))}</button><button class="btn" type="button" data-act="upto-more" data-sub="${s.id}">Different amount</button>${notNow}</div>`
+        :`<p class="rec-q">Already paid through ${esc(fmtD(last.en,true))}; nothing to record.</p><div class="rec-acts">${notNow}</div>`;};
     /* v27: Clear takes the typed date away (iPhone date pickers have no clear of their own) and puts the default cycle back */
     const clearBtn=form.querySelector('[data-role=upto-clear]');const def=sel.options.length?sel.options[0].value:'';
     const clearDate=()=>{dateEl.value='';sel.querySelectorAll('option[data-extra]').forEach(o=>o.remove());if(def!=='')sel.value=def;if(clearBtn)clearBtn.disabled=true;auto=true;compute();};
     if(clearBtn)clearBtn.addEventListener('click',()=>{clearDate();dateEl.focus();});
     sel.addEventListener('change',()=>{auto=true;compute();});
-    dateEl.addEventListener('change',()=>{const d=dateEl.value;if(!isDateKey(d)){clearDate();return;}if(clearBtn)clearBtn.disabled=false;let k=periodIndexAt(s,d);if(k<sa.kPaid){k=sa.kPaid;}const has=[...sel.options].some(o=>Number(o.value)===k);if(!has){const p=periodAmt(s,k);sel.insertAdjacentHTML('beforeend',`<option value="${k}" data-extra="1">${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}</option>`);}sel.value=String(k);auto=true;compute();});
-    amt.addEventListener('input',()=>{auto=false;compute();});
-    form.querySelector('[name=date]').addEventListener('change',compute);
+    dateEl.addEventListener('change',()=>{const d=dateEl.value;if(!isDateKey(d)){clearDate();return;}if(clearBtn)clearBtn.disabled=false;let k=periodIndexAt(s,d);if(k<sa.kPaid){k=sa.kPaid;}const has=[...sel.options].some(o=>Number(o.value)===k);if(!has){const p=periodAmt(s,k);sel.insertAdjacentHTML('beforeend',`<option value="${k}" data-extra="1">${esc(perLabel(p))}</option>`);}sel.value=String(k);auto=true;compute();});
+    amt.addEventListener('input',()=>{auto=false;});
     compute();
   });
   det.querySelectorAll('.tier-form').forEach(form=>{
@@ -2716,7 +2763,10 @@ function bind(){
     else if(A==='rec'){const k='rec:'+sid;const was=(ui.open[id]||{})[k];const st=act.dataset.start;ui.open[id]=Object.assign({},ui.open[id],{[k]:was===st?false:st,['recmore:'+sid]:false});renderTable();if(was!==st){const box=document.querySelector(`tr.detail[data-id="${id}"] .rec-box[data-sub="${sid}"]`);if(box){box.scrollIntoView({behavior:'smooth',block:'nearest'});const y=box.querySelector('.rec-yes');if(y)y.focus({preventScroll:true});}}}
     else if(A==='rec-more'){ui.open[id]=Object.assign({},ui.open[id],{['recmore:'+sid]:true});renderTable();const f=document.querySelector(`tr.detail[data-id="${id}"] .rec-form[data-sub="${sid}"] [name=amount]`);if(f){f.focus();f.select();}}
     else if(A==='rec-cancel'){ui.open[id]=Object.assign({},ui.open[id],{['rec:'+sid]:false,['recmore:'+sid]:false});renderTable();}
-    else if(A==='rec-yes'){const u0=state.users[id];const s0=u0&&(u0.subscriptions||[]).find(x=>x.id===sid);if(!s0)return;const t=recTarget(s0,analyze(u0,todayISO()).sa[sid]);if(!t||t.st!==act.dataset.start){toast('This period has changed since the box was drawn; check it again.');renderTable();return;}act.disabled=true;act.textContent='Recording…';await recordPayment(id,sid,{date:todayISO(),amount:t.owed,currency:s0.currency,rate:null,note:t.p?'for '+t.label:''});}
+    else if(A==='rec-yes'){const u0=state.users[id];const s0=u0&&(u0.subscriptions||[]).find(x=>x.id===sid);if(!s0)return;const st=act.dataset.start;const t=recTarget(s0,analyze(u0,todayISO()).sa[sid],st==='item'?null:st);if(!t||t.st!==st||String(t.owed)!==act.dataset.owed){toast('This period has changed since the box was drawn; check it again.');renderTable();return;}act.disabled=true;act.textContent='Recording…';const today0=todayISO();await recordPayment(id,sid,st==='item'?{date:today0,amount:t.owed,currency:s0.currency,rate:null,note:''}:recPayments(s0,t,today0));}
+    /* v30: Paid up to… → Yes records one payment per period through the chosen cycle */
+    else if(A==='upto-yes'){const u0=state.users[id];const s0=u0&&(u0.subscriptions||[]).find(x=>x.id===sid);if(!s0||s0.kind!=='monthly')return;const sa0=analyzeMonthly(s0,todayISO());const k=Number(act.dataset.k);const cov=coverPlan(s0,sa0,k).filter(x=>x.due>0);const total=Math.round(cov.reduce((t,x)=>t+x.due,0)*100)/100;if(!cov.length||String(total)!==act.dataset.total){toast('This plan has changed since the question was drawn; check it again.');renderTable();return;}act.disabled=true;act.textContent='Recording…';await recordPayment(id,sid,recPayments(s0,{parts:cov,upto:cov[cov.length-1].en},todayISO()));}
+    else if(A==='upto-more'){const f=act.closest('form.upto-form');if(f){f.dataset.more='1';const a=f.querySelector('[name=amount]');if(a){a.focus();a.select();}}}
     else if(A==='pay-edit'){ui.payEdit=ui.payEdit||{};ui.payEdit[sid]=act.dataset.pay;renderTable();}
     else if(A==='refund-edit'){ui.refundEdit=ui.refundEdit||{};ui.refundEdit[sid]=act.dataset.ref;ui.open[id]=Object.assign({},ui.open[id],{['refund:'+sid]:true});renderTable();}
     else if(A==='refund-cancel'){if(ui.refundEdit)delete ui.refundEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['refund:'+sid]:false});renderTable();}
@@ -2762,15 +2812,17 @@ function bind(){
       if(ui.refundEdit)delete ui.refundEdit[s.id];closeKey('refund:'+s.id);
       const ok=await persistUser(id,u);if(ok)toast(`Refund ${fmtAmt(-Number(amtRaw),pc)} on ${fmtD(date,true)} saved for ${displayName(u)}`+(alsoCancel?` · cancelled, last day ${fmtD(lastDay,true)}`:'')+(kept.length?` · ${kept.length} period${kept.length===1?'':'s'} counted at what was kept`:'')+'.');
     }else if(form.classList.contains('upto-form')){
-      const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s||s.kind!=='monthly')return;const date=val('date'),amtRaw=val('amount');const k=Number(val('target'));
+      const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s||s.kind!=='monthly')return;const date=val('date'),amtRaw=val('amount'),note=val('note').trim().slice(0,140);const k=Number(val('target'));
+      if(!form.dataset.more){toast('Tap Yes to record what is shown, or Different amount.');return;}
       if(!isDateKey(date)){toast('Pick the payment date.');return;}
-      if(!validAmt(amtRaw)||Number(amtRaw)<=0){toast('Enter the total paid.');return;}
-      const sa=analyzeMonthly(s,todayISO());const cov=coverPlan(s,sa,k);const total=cov.reduce((t,p)=>t+p.due,0);const last=cov[cov.length-1];const upto=fmtD(last.en,true);
-      s.payments=s.payments||[];let n=0;
-      if(Math.abs(Number(amtRaw)-total)<0.005){const parts=cov.filter(p=>p.due>0);parts.forEach((p,i)=>{s.payments.push({id:newId('p'),date,amount:p.due,currency:s.currency,rate:null,note:'paid up to '+upto+(parts.length>1?` (${i+1} of ${parts.length}: ${fmtD(p.st)} – ${fmtD(p.en)})`:'')});n++;});}
-      else{s.payments.push({id:newId('p'),date,amount:Number(amtRaw),currency:s.currency,rate:null,note:'paid up to '+upto});n=1;}
-      if(!n){toast('Nothing to record: already paid through '+upto+'.');return;}
-      closeKey('upto:'+s.id);const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: paid up to ${upto} (${n} payment${n===1?'':'s'}, ${fmtAmt(Number(amtRaw),s.currency)}).`);
+      if(!validAmt(amtRaw)||Number(amtRaw)<=0){toast('Enter the total paid.');const a=form.querySelector('[name=amount]');if(a)a.focus();return;}
+      const sa=analyzeMonthly(s,todayISO());const cov=coverPlan(s,sa,k).filter(p=>p.due>0);const total=Math.round(cov.reduce((t,p)=>t+p.due,0)*100)/100;const last=cov.length?cov[cov.length-1]:null;
+      if(!last){toast('Nothing to record: already paid through the chosen cycle.');return;}
+      const upto=fmtD(last.en,true);let pays;
+      if(Math.abs(Number(amtRaw)-total)<0.005)pays=recPayments(s,{parts:cov,upto:last.en},date).map(p=>note?Object.assign(p,{note:p.note+' · '+note}):p);
+      else pays=[{date,amount:Math.round(Number(amtRaw)*100)/100,currency:s.currency,rate:null,note:'paid up to '+upto+(note?' · '+note:'')}];
+      const b=form.querySelector('button[type=submit]');if(b)b.disabled=true;
+      const ok=await recordPayment(id,s.id,pays);if(!ok&&b)b.disabled=false;return;
     }else if(form.classList.contains('days-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const d=Math.floor(Number(val('days')));const rt=val('rate'),am=val('amount');
       if(!(d>=1&&d<=366)){toast('Enter the number of days charged (1–366).');return;}
