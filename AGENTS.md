@@ -68,16 +68,20 @@ Write user-facing text in plain, factual words; no emojis.
   `periodOverrides{periodStart:{amount?,packageId?,note,at,fromRefund?}}` (hand-set amount and/or package for one period),
   `payments[{id,date,amount,currency,rate,note}]`,
   `refunds[{id,date,amount,currency,rate,note}]` (v28; absent = none). One-time items have `total` and `due`.
-- Recording a payment (v29, extended v30): `recTarget(s, sa, st)` builds the question for a period box (`st` = its cycle start;
-  default the period that needs money next; `'item'` for a one-time item). For the next-due period it is one payment of what that
-  period still owes; for a later unpaid / upcoming period it is one payment per period from the next-due one through it (`coverPlan`;
-  credit is applied in period order, so money cannot skip a month), the same thing Paid up to… records. `recBoxHTML` draws it
-  ("Record Rs 4,200 for 24 Oct – 23 Nov?" or "Record 2 payments totalling Rs 8,400 for Sep and Oct?", Yes / Different amount / Not now);
-  `recPayments` turns a multi-period answer into `[{date,amount,currency,rate:null,note}]`; `recordPayment(id, sid, payOrList)` appends and
-  saves through `persistUser`, which puts the user into `state` and renders at once on every backend (do not wait for the poll).
-  `recNoneHTML` is the box for a plan with nothing owed (ended / paid ahead). Paid up to… (`uptoForm`) shows the same question after the
-  cycle is picked (`data-act="upto-yes"`); its total / date / note fields sit behind Different amount. The older `.pay-form` is only for
-  editing a payment. Status pills come from `statusLabel(a)` with `periodMonth(st, en, cycle)` ("Paid for Oct", "Paid to Nov",
+- Recording a payment (v32): the row's Record month payment, plan/period Record payment and receipt-history Edit open the same
+  `paymentDialog` outside the table, so a poll redraw cannot discard its inputs. `openPaymentDialog` picks the account and first
+  unpaid period, or the period box clicked. `paymentTarget` uses `coverPlan`: choosing a later month includes earlier unpaid periods.
+  Cash still fills periods oldest first; no receipt allocations are stored. `receiptAllocations` computes current coverage for edits.
+  The form separates billing month from Received on (actual cash date), previews Total paid and covered periods, and keeps
+  currency/rate/note in `details.more`. `recPayments` creates one receipt per covered period for an exact normal-currency payment;
+  a different amount or currency is one actual receipt. `recordPayment(id, sid, payOrList)` appends and saves through `persistUser`,
+  which puts the user into `state` and renders at once on every backend. An edit preserves the original receipt ID and array order.
+  Add user previews the first joining bill and next full bill, then opens the receipt dialog without recording cash automatically.
+  Only the first partial period is prorated; changing the cash date never changes a bill. `billReductions` reports monthly-charge
+  reductions separately from receipts minus refunds; automatic joining proration and derived `fromRefund` offsets are not discounts.
+  Paid up to… (`uptoForm`) keeps the v30 Yes / Different amount question and uses the same `coverPlan` / `recPayments` helpers.
+  Legacy inline receipt helpers remain for compatibility but the normal Record/Edit actions use the dialog.
+  Status pills come from `statusLabel(a)` with `periodMonth(st, en, cycle)` ("Paid for Oct", "Paid to Nov",
   "Overdue for Sep – Oct", "Paid for 2026–27"); a user analysis carries `statusA`, the plan that set its status.
 - Due dates (v30): a plan analysis has `nextSt` (the cycle start of the period that needs money next; the key for period boxes,
   `periodOverrides` and lookups) and `nextDue` (the day money is due: `max(nextSt, s.start)`, so a plan started or resumed mid-cycle
@@ -146,8 +150,13 @@ Browser check with Playwright (Node): `npm i -D playwright && npx playwright ins
 (not in this repo), then launch Chromium, sign in, and pin the date with an init script:
 `localStorage.setItem('pt-today','2026-09-25')`. Collect `console` errors and `pageerror` events.
 
-Known, harmless console noise: Google Fonts blocked in an offline sandbox, `/api/read-image` 501 (no AI key),
-first-load 404s for `settings/main` and `meta/seed` on an empty store.
+First setup on an empty store can request missing `settings/main` and `meta/seed` before seeding. Complete that setup before the
+browser acceptance pass. Google Fonts needs network access for a console-clean check. Since v32 GET `/api/read-image` returns
+200 with `enabled: false` when no AI key is configured; POST still returns 501 until screenshot reading is set up.
+
+`node tests/payment-flow.cjs` exercises synthetic records on a disposable local server at `http://127.0.0.1:8098` with the
+test passcode above. Set `PLAYWRIGHT_MODULE` / `PLAYWRIGHT_EXECUTABLE` if Playwright or the browser is installed elsewhere.
+Never point this test store at the owner's database. Screenshots and the check record are written under ignored `data/payment-qa/`.
 
 If you are running in Claude's cloud sandbox: Playwright is preinstalled; `require('/opt/node22/lib/node_modules/playwright')`,
 launch with `executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'` and

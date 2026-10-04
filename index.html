@@ -285,6 +285,11 @@ td.who{max-width:230px;overflow:hidden;text-overflow:ellipsis}
 td.who .nm{font-weight:500;font-size:14px}
 td.who .em{display:block;font-family:var(--mono);font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
 td.who .ct{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);white-space:normal;line-height:1.35;margin-top:1px}
+/* v32: recording is reachable in the first column on a phone. Cash and bill reductions stay separate. */
+td.who .row-pay{display:block;margin-top:8px;min-height:44px;max-width:100%;white-space:normal}
+.row-money{display:none}
+.bill-reduction{display:block;font-size:11px;color:var(--ink-2);white-space:normal;margin-top:3px}
+@media(max-width:760px){.row-money{display:block;max-width:220px;white-space:normal;font-size:12px;color:var(--ink-2);margin-top:6px}.row-money b{color:var(--ink);font-weight:500}}
 td.plan{max-width:250px;overflow:hidden;text-overflow:ellipsis}
 td.plan .l2{display:block;font-size:12px;color:var(--muted)}
 /* v31: accounts per user at the top of the plan cell, and the Active accounts bar under the tiles */
@@ -425,6 +430,22 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .rec-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;align-items:end;margin-top:4px;padding-top:8px;border-top:1px dashed var(--line)}
 .rec-form .rec-amt input{font-size:18px;min-height:44px;font-family:var(--mono)}
 .rec-form .rec-note,.rec-form .form-actions,.rec-form .d{grid-column:1/-1}
+.payment-dialog.panel{color:var(--ink);width:min(560px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);margin:auto;padding:18px;overflow-y:auto;box-shadow:var(--shadow)}
+.payment-dialog::backdrop{background:rgba(0,0,0,.45)}
+.payment-dialog .panel-head{align-items:flex-start}
+.payment-dialog .panel-head h3{font-size:18px}
+.payment-dialog .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.payment-dialog .payment-wide{grid-column:1/-1}
+.payment-dialog [hidden]{display:none}
+.payment-dialog input,.payment-dialog select{width:100%;min-width:0;min-height:44px}
+.payment-dialog .rec-box{border:1px solid var(--accent-line);border-radius:6px;padding:12px;background:var(--accent-tint);margin:14px 0}
+.payment-dialog .rec-box p{margin:0;overflow-wrap:anywhere}
+.payment-dialog .payment-amount{font-size:20px;font-family:var(--mono)}
+.payment-dialog .form-actions .primary{flex:1 1 100%;min-height:48px;white-space:normal}
+.payment-preview{font-size:13px;line-height:1.5;white-space:pre-line;color:var(--ink-2)}
+.payment-dialog .payment-preview{margin-top:12px}
+.payment-dialog .err{display:block;margin-top:8px;white-space:normal}
+@media(max-width:480px){.payment-dialog.panel{padding:14px}.payment-dialog .form-grid{grid-template-columns:1fr}.payment-dialog .payment-wide{grid-column:auto}}
 .rec-form .form-actions .btn{min-height:44px;font-size:15px;flex:1 1 auto}
 @media (max-width:700px){.rec-acts .btn{flex:1 1 100%}}
 /* v30: long pills ("Overdue for Sep – Oct") wrap on phones instead of widening the Status column */
@@ -602,7 +623,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v31</span>
+      <span class="small muted num" id="app-ver" title="App version">v32</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -813,6 +834,7 @@ table.costs td.cat{color:var(--ink-2)}
           <label class="f chk"><input id="a-waive" type="checkbox">Waive first partial period <span class="muted">(stub days free, billing starts next cycle)</span></label>
         </div>
       </details>
+      <p class="cover" id="a-bill-preview" aria-live="polite"></p>
       <div class="form-actions">
         <button class="btn primary" type="submit">Add user</button>
         <span class="small muted" id="a-conv">The first billing period starts on the join date. One-time items and more plans can be added from the user's row.</span>
@@ -960,6 +982,29 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
 
   <p class="foot" id="foot"></p>
 </div>
+
+<dialog class="panel payment-dialog" id="paymentDialog" aria-labelledby="payment-title">
+  <div class="panel-head"><div><h3 id="payment-title">Record payment</h3><p class="small muted" id="payment-who"></p></div><button class="link" id="payment-close" type="button" aria-label="Close payment form">Close</button></div>
+  <form id="paymentForm" novalidate>
+    <div class="form-grid">
+      <label class="f payment-wide">Account<select id="payment-account" name="account"></select></label>
+      <label class="f payment-wide" id="payment-month-label">Pay through billing month<select id="payment-month" name="period"></select></label>
+    </div>
+    <div class="rec-box" id="payment-bill" aria-live="polite"></div>
+    <div class="form-grid">
+      <label class="f"><span id="payment-amount-label">Amount received (PKR)</span><input class="payment-amount" id="payment-amount" name="amount" type="number" min="0" step="0.01" required inputmode="decimal"></label>
+      <label class="f">Received on<input id="payment-date" name="date" type="date" required></label>
+    </div>
+    <details class="more" id="payment-more"><summary>Currency, exchange rate and note</summary><div class="form-grid">
+      <label class="f">Received in<select id="payment-currency" name="currency"><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
+      <label class="f">PKR per USD <span class="muted">(blank = default)</span><input id="payment-rate" name="rate" type="number" min="0" step="0.0001" inputmode="decimal"></label>
+      <label class="f payment-wide">Note <span class="muted">(optional)</span><input id="payment-note" name="note" type="text" maxlength="140" placeholder="e.g. NayaPay reference"></label>
+    </div></details>
+    <p class="payment-preview" id="payment-preview" aria-live="polite"></p>
+    <span class="err" id="payment-error" role="alert"></span>
+    <div class="form-actions"><button class="btn primary" id="payment-save" type="submit">Record payment</button><button class="link" id="payment-cancel" type="button">Not now</button></div>
+  </form>
+</dialog>
 
 <script>
 (function(){
@@ -2038,7 +2083,88 @@ function planCell(a){
   const line=p=>p.noPkg?`<span class="pill warnp" title="Pick a package for this plan">Package not set</span> <span class="muted">${esc(fmtAmt(p.price,p.cur))}${p.per}</span><span class="l2"><select class="pkg-quick" data-sub="${esc(p.subId)}" aria-label="Set package">${pkgOptions('','Set package…')}</select></span>`:`${esc(p.name)}${p.tier||''} · ${esc(fmtAmt(p.price,p.cur))}${p.per}${p.note?` <span class="muted">(${esc(p.note)})</span>`:''}`;
   return top+line(a.planParts[0])+(a.planParts.length>1?`<span class="l2">${a.planParts.slice(1).map(line).join(' / ')}</span>`:'');
 }
+/* v32: reductions to bills are not receipts. Automatic joining proration is part of the bill's baseline. */
+function periodGross(s,p){const raw=p.pkgOv?(pkgPeriodPrice(s,p.pkgId,p.es)??priceAt(s,p.es)):priceAt(s,p.es);return p.waived||p.prorated?prorateCalc({prorationBasis:s.prorationBasis},raw,p.days,p.total).computed:raw;}
+function billReductions(u,a,today){const sum=newSum();
+  for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;for(const p of a.sa[s.id].periods){if(p.es>today&&p.covered<=0)continue;
+    const gross=periodGross(s,p);
+    const ov=(s.periodOverrides||{})[p.st];if(ov&&ov.fromRefund)continue;
+    sumAdd(sum,Math.max(0,gross-p.pr),s.currency,null);
+  }}return sum;
+}
+/* v32: coverage is computed from receipts in date order. No existing receipt or period is rewritten. */
+function billingName(s,p){return p.prorated||p.waived?`First bill (${mLabel(monthKey(p.st))} cycle)`:subCycle(s)==='yearly'?periodMonth(p.st,p.en,'yearly'):mLabel(monthKey(p.st));}
+function receiptCoverage(s,before,after){const parts=[];const prior=new Map((before.periods||[]).map(p=>[p.st,p]));
+  for(const p of after.periods||[]){const old=prior.get(p.st);const amount=p.covered-(old?old.covered:0);if(amount>0.005)parts.push({name:billingName(s,p),dates:fmtCycle(pFrom(p),p.en),amount,partial:p.covered+0.005<p.pr});}
+  return parts;
+}
+function receiptAllocations(s,today){const out={};if(s.kind!=='monthly')return out;const base=clone(s);base.payments=[];let before=analyzeMonthly(base,today);
+  for(const p of (s.payments||[]).slice().sort((a,b)=>a.date.localeCompare(b.date))){base.payments.push(p);const after=analyzeMonthly(base,today);out[p.id]=receiptCoverage(s,before,after);before=after;}return out;
+}
+const coverageText=parts=>parts.map(p=>p.name+(p.partial?' (partial)':'')).join(', ');
+function paymentContext(){const d=ui.paymentDraft,u=d&&state.users[d.id],s=u&&(u.subscriptions||[]).find(s=>s.id===d.sid);return s?{d,u,s,a:analyze(u,todayISO())}:null;}
+function paymentTarget(s,sa,k){if(s.kind!=='monthly')return sa.remaining>0?{owed:sa.remaining,parts:[],n:1,st:'item'}:null;
+  if(!Number.isInteger(k)||k<sa.kPaid||!sa.nextSt||(s.end&&pStart(s,k)>s.end))return null;
+  const parts=coverPlan(s,sa,k).filter(p=>p.due>0);if(!parts.length)return null;
+  return {owed:Math.round(parts.reduce((t,p)=>t+p.due,0)*100)/100,parts,n:parts.length,st:pStart(s,k),upto:parts[parts.length-1].en};
+}
+function paymentAccountName(u,s,i){const acct=acctParts(u,s);return `${acct.label||'Account '+(i+1)} · ${planLabel(s)} · ${s.currency}${s.kind==='monthly'?' · '+subCycle(s):''}${acct.email?' · '+acct.email:''}`;}
+function fillPaymentMonths(start){const c=paymentContext();if(!c)return;const {d,s,a}=c,sa=a.sa[s.id],sel=$('#payment-month');
+  $('#payment-month-label').hidden=!!d.payId||s.kind!=='monthly'||!sa.nextSt;
+  if(s.kind!=='monthly'){sel.innerHTML='<option value="item">One-time item</option>';return;}
+  const from=Math.max(0,sa.kPaid-2),end=Math.min(2399,sa.kPaid+239,Math.max(sa.curIdx+11,sa.kPaid+11));const options=[];
+  for(let k=from;k<=end;k++){const p=periodAmt(s,k);if(s.end&&p.st>s.end)break;options.push(`<option value="${k}"${k<sa.kPaid?' disabled':''}>${esc(billingName(s,p)+' · '+fmtCycle(pFrom(p),p.en)+(k<sa.kPaid?' · already covered':''))}</option>`);}
+  sel.innerHTML=options.join('')||'<option value="">No unpaid period on this plan</option>';
+  const chosen=start?(sa.periods.find(p=>p.st===start)||{}).k:null;
+  sel.value=String(chosen!=null?chosen:sa.kPaid);
+}
+function paymentAutoAmount(){const c=paymentContext();if(!c)return;const {d,s,a}=c;const k=Number($('#payment-month').value),t=paymentTarget(s,a.sa[s.id],k);
+  const value=t?toCur(t.owed,s.currency,$('#payment-currency').value,normRate($('#payment-rate').value)):null;
+  $('#payment-amount').value=value!=null?String(Math.round(value*100)/100):'';d.auto=true;refreshPaymentPreview();
+}
+function openPaymentDialog(id,sid,payId,start){const u=state.users[id];if(!u||!u.subscriptions.length)return;const a=analyze(u,todayISO());
+  const subs=u.subscriptions;const s=subs.find(s=>s.id===sid)||subs.find(s=>a.sa[s.id].nextDue)||subs[0];const pay=payId&&(s.payments||[]).find(p=>p.id===payId);if(payId&&!pay)return;
+  ui.paymentDraft={id,sid:s.id,payId:pay?pay.id:null,auto:!pay,busy:false};$('#paymentForm').reset();$('#payment-error').textContent='';
+  $('#payment-title').textContent=pay?'Edit money received':'Record payment';$('#payment-who').textContent=displayName(u);
+  $('#payment-account').innerHTML=subs.map((x,i)=>`<option value="${esc(x.id)}">${esc(paymentAccountName(u,x,i))}</option>`).join('');$('#payment-account').value=s.id;$('#payment-account').disabled=!!pay||subs.length===1;
+  $('#payment-currency').value=pay?(pay.currency||s.currency):s.currency;$('#payment-date').value=pay?pay.date:todayISO();$('#payment-rate').value=pay&&pay.rate?pay.rate:'';$('#payment-note').value=pay?pay.note||'':'';
+  $('#payment-more').open=!!(pay&&((pay.currency&&pay.currency!==s.currency)||pay.rate));
+  fillPaymentMonths(start);if(pay){$('#payment-amount').value=String(pay.amount);refreshPaymentPreview();}else paymentAutoAmount();
+  const dialog=$('#paymentDialog');if(!dialog.open)dialog.showModal();(pay?$('#payment-amount'):$('#payment-month-label').hidden?$('#payment-amount'):$('#payment-month')).focus();
+}
+function paymentDraftList(c,t){const {d,s}=c;const n=Math.round(Number($('#payment-amount').value)*100)/100,pc=$('#payment-currency').value,date=$('#payment-date').value,rate=normRate($('#payment-rate').value),note=$('#payment-note').value.trim();
+  if(!d.payId&&t&&t.parts.length&&pc===s.currency&&!rate&&Math.abs(n-t.owed)<0.005)return recPayments(s,t,date).map(p=>note?Object.assign(p,{note:p.note+' · '+note}):p);
+  const periodNote=t&&t.parts.length?`for ${t.parts.map(p=>billingName(s,p)).join(', ')} · through ${fmtD(t.upto,true)}`:'';
+  return [{id:d.payId||'__preview',date,amount:n,currency:pc,rate,note:note||periodNote}];
+}
+function refreshPaymentPreview(){const c=paymentContext();if(!c)return;const {d,u,s,a}=c,today=todayISO(),sa=a.sa[s.id];const k=Number($('#payment-month').value),t=paymentTarget(s,sa,k),edit=d.payId&&(s.payments||[]).find(p=>p.id===d.payId);
+  let bill='';if(edit){const parts=receiptAllocations(s,today)[edit.id]||[];bill=`<p class="rec-q">Currently covers: <b>${esc(s.kind==='monthly'?(coverageText(parts)||'no additional period'):s.name||'this item')}</b></p><p class="small">${esc(parts.map(p=>p.dates).join('; '))}</p>`;}
+  else if(t&&s.kind==='monthly'){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const p=sa.periods.find(p=>p.k===k)||Object.assign(periodAmt(s,k),{pkgOv:!!periodPkg(s,st),pkgId:periodPkg(s,st),days:dayDiff(st<s.start?s.start:st,en)+1,total:dayDiff(st,en)+1});
+    const last=t.parts[t.parts.length-1],paid=last.credit||0,reduction=Math.max(0,periodGross(s,p)-p.pr);
+    bill=`<p class="rec-q"><b>${esc(billingName(s,p))}</b> · ${esc(fmtCycle(pFrom(p),p.en))}</p><p class="small">Charge ${esc(fmtAmt(p.pr,s.currency))}${reduction?` after ${esc(fmtAmt(reduction,s.currency))} discount / reduction`:''} · already covered ${esc(fmtAmt(paid,s.currency))} · left ${esc(fmtAmt(last.due,s.currency))}.</p>${t.n>1?`<p class="small">Includes earlier unpaid periods: ${esc(t.parts.slice(0,-1).map(p=>billingName(s,p)).join(', '))}. Total needed: <b>${esc(fmtAmt(t.owed,s.currency))}</b>.</p>`:''}<p class="small muted">${p.prorated?'First bill prorated from '+esc(fmtD(s.start,true))+'. ':''}Cash clears the oldest unpaid period first. Received on is the cash date.</p>`;
+  }else bill=`<p class="rec-q">${s.kind==='monthly'?'No unpaid period on this plan':esc(s.name||'One-time item')+' · '+(t?'left '+esc(fmtAmt(t.owed,s.currency)):'already paid')}.</p>${!t?'<p class="small">Enter any money actually received. It adds to Total paid; it does not create another bill.</p>':''}`;
+  $('#payment-bill').innerHTML=bill;
+  const raw=$('#payment-amount').value,n=Number(raw),pc=$('#payment-currency').value,rateRaw=$('#payment-rate').value.trim(),rate=normRate(rateRaw),valid=validAmt(raw)&&n>0&&(!rateRaw||rate!==null)&&isDateKey($('#payment-date').value)&&toCur(n,pc,s.currency,rate)!=null;
+  $('#payment-amount-label').textContent='Amount received ('+pc+')';
+  const save=$('#payment-save');save.disabled=d.busy||!valid;save.textContent=d.busy?'Saving…':edit?'Save receipt changes':valid?'Record '+fmtAmt(n,pc):'Record payment';
+  if(!valid){$('#payment-preview').textContent=rateRaw&&rate===null?'Enter a positive PKR per USD exchange rate.':toCur(n,pc,s.currency,rate)==null?'Set the exchange rate so this receipt can count toward the bill.':'Enter the amount and the date the money was received.';return;}
+  const sim=clone(u),ss=sim.subscriptions.find(x=>x.id===s.id),list=paymentDraftList(c,t);ss.payments=d.payId?(ss.payments||[]).map(p=>p.id===d.payId?Object.assign({},p,list[0]):p):(ss.payments||[]).concat(list);const after=analyze(sim,today),next=after.sa[s.id];
+  const parts=edit?(receiptAllocations(ss,today)[edit.id]||[]):s.kind==='monthly'?receiptCoverage(s,sa,next):[];
+  let txt=`Total paid: ${ownText(a.totals,a.mainCur)} → ${ownText(after.totals,after.mainCur)}.\nDiscounts / reductions on billed or prepaid periods: ${ownText(billReductions(sim,after,today),after.mainCur)}.\n`;
+  txt+=s.kind==='monthly'?`This receipt covers: ${coverageText(parts)||'no additional period'}${parts.length?' · '+parts.map(p=>p.dates).join('; '):''}.\nPaid through: ${sa.kPaid?fmtD(sa.paidThrough,true):'nothing yet'} → ${next.kPaid?fmtD(next.paidThrough,true):'nothing yet'}.`:`Remaining on this item: ${fmtAmt(sa.remaining,s.currency)} → ${fmtAmt(next.remaining,s.currency)}.`;
+  if(!edit&&t&&toCur(n,pc,s.currency,rate)+0.005<t.owed)txt+='\nThis is a partial payment; the chosen month is not fully paid.';
+  $('#payment-preview').textContent=txt;
+}
+function closePaymentDialog(){if(ui.paymentDraft&&ui.paymentDraft.busy)return;$('#paymentDialog').close();ui.paymentDraft=null;}
+async function savePaymentDialog(e){e.preventDefault();const c=paymentContext();if(!c||c.d.busy)return;refreshPaymentPreview();if($('#payment-save').disabled)return;const {d,u,s,a}=c,t=paymentTarget(s,a.sa[s.id],Number($('#payment-month').value));const list=paymentDraftList(c,t);
+  if(d.payId&&!(s.payments||[]).some(p=>p.id===d.payId)){$('#payment-error').textContent='This receipt has changed. Close the form and open it again.';return;}
+  d.busy=true;refreshPaymentPreview();let ok=false;
+  if(d.payId){const edited=clone(u),ss=edited.subscriptions.find(x=>x.id===s.id);ss.payments=ss.payments.map(p=>p.id===d.payId?Object.assign({},p,list[0],{id:p.id}):p);ok=await persistUser(d.id,edited);if(ok)toast(`Receipt saved for ${displayName(u)} · total paid ${ownText(analyze(state.users[d.id],todayISO()).totals,a.mainCur)}.`);}
+  else ok=await recordPayment(d.id,s.id,list);
+  d.busy=false;if(ok){$('#paymentDialog').close();ui.paymentDraft=null;}else{$('#payment-error').textContent='The payment was not saved. Your entries are kept here; try again.';refreshPaymentPreview();}
+}
 function renderTable(){
+  if(ui.paymentDraft&&$('#paymentDialog').open)refreshPaymentPreview();
   renderAcctBar();
   const today=todayISO();const ids=Object.keys(state.users);
   const loading=state.mode==='connecting'||(state.mode==='shared'&&!state.loaded);
@@ -2052,16 +2178,16 @@ function renderTable(){
   const nores=$('#nores');nores.hidden=rows.length>0;nores.textContent=ui.filterUnpaid?(ui.search?'No unpaid users match that search.':'Nobody is overdue or due today.'):(ui.statusFilter==='cancelled'?'No cancelled users.':ui.statusFilter==='active'&&!ui.search?'No active users. Switch Status to All to see cancelled ones.':'No users match that search.');
   let html='';
   for(const r of rows){
-    const {u,a,id}=r;const exp=ui.expanded===id;const late=a.status==='overdue';
+    const {u,a,id}=r;const exp=ui.expanded===id;const late=a.status==='overdue';const reductions=billReductions(u,a,today);
     const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):(a.planParts.length&&!u.cancel?'nothing yet':'—');
     const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?`<span class="muted">paid for ${esc(periodMonth(nextCycleStart(today),null,'monthly'))}</span>`:'<span class="muted">—</span>');
     html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}" data-settled="${dimOn()&&a.settled?1:0}">
-      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${contactLine(u)}</td>
+      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${contactLine(u)}${u.subscriptions.length?`<button class="btn primary sm row-pay" type="button" data-act="row-pay" data-user="${esc(id)}">Record month payment</button>`:''}<span class="row-money">Total paid <b data-role="row-paid">${esc(ownText(a.totals,a.mainCur))}</b><br>Discounts / reductions <b>${esc(ownText(reductions,a.mainCur))}</b><br>${esc(statusLabel(a))}</span></td>
       <td class="plan">${planCell(a)}</td>
       <td title="${esc(u.joinDate)}">${esc(fmtD(u.joinDate))}</td>
       <td class="${late?'late':''}">${ptTxt}</td>
       <td class="r">${ndTxt}</td>
-      <td class="r">${ownHTML(a.totals,a.mainCur,fmtAmt(0,a.mainCur))}</td>
+      <td class="r" data-role="total-paid" title="Money received less refunds; discounts reduce bills separately">${ownHTML(a.totals,a.mainCur,fmtAmt(0,a.mainCur))}<span class="bill-reduction" title="Reductions to billed or prepaid periods, including discounts and waived joining periods; automatic proration is not a discount">Discounts / reductions ${esc(ownText(reductions,a.mainCur))}</span></td>
       <td class="r${a.balance.n?' late':''}">${ownHTML(a.balance,a.mainCur)}</td>
       <td><span class="pill" data-status="${a.status}" title="${esc(statusHint(a))}">${statusLabel(a)}</span>${discBadge(u)}</td>
       <td>${a.needsReminder?`<span class="remind-pair">${remindControl(u,a,today)}${emailControl(u,a,today)}${u.telegram?telegramControl(u):''}</span>`:'<span class="muted">—</span>'}${remBadge(u,nextCycleStart(today))}</td>
@@ -2319,7 +2445,7 @@ function detailHTML(id,u,a,today){
       const tierTag=p=>p.pkgOv&&p.pkgId?` <span class="tag tier pkgov" title="Billed at ${esc(pkgName(p.pkgId))} for this period only">${esc(pkgName(p.pkgId))}</span>`:sa.tiered&&p.pkgId?` <span class="tag tier">${esc(pkgName(p.pkgId))}</span>`:'';
       const rt=recTarget(s,sa);const recOpen=open['rec:'+s.id]||'';const recMore=!!open['recmore:'+s.id];
       const cells=sa.periods.map(p=>{const fkey='amt:'+s.id+':'+p.st;const rec=recOpen===p.st;const editing=!!open[fkey]||rec;const pro=p.prorated?`<span class="d">${p.daysCharged} day${p.daysCharged===1?'':'s'} × ${esc(fmtAmt(p.rate,s.currency))} = ${esc(fmtAmt(p.computed,s.currency))}${p.amtOverride&&!p.custom?` → charged ${esc(fmtAmt(p.pr,s.currency))}`:''}${p.discounted&&!p.custom?' <span class="tag">discounted</span>':''}</span><span class="d muted">${p.basisDays===30?'30-day month':p.total+'-day cycle'}${p.override?` · days set by hand (actual ${p.days})`:''}${p.rateOverride?' · rate set by hand':''} · <button class="link sm" type="button" data-act="toggle" data-key="days:${s.id}">edit days / rate</button></span>`:'';let a;
-        let extra='';if(p.state==='waived'){a='Waived · '+esc(fmtD(p.es))+' – '+esc(fmtD(p.en));extra=`<span class="d">${p.days} stub day${p.days===1?'':'s'} free · billing starts ${esc(fmtD(addDays(p.en,1)))}</span>`;}else if(p.state==='paid'){a=esc(fmtAmt(p.pr,s.currency));if(p===lastPaid&&p.creditAfter>0&&sa.nextDue)extra=`<span class="d">paid ${esc(fmtAmt(p.pr+p.creditAfter,s.currency))} · credit ${esc(fmtAmt(p.creditAfter,s.currency))} carried</span>`;}
+        let extra='';if(p.state==='waived'){a='Waived · '+esc(fmtD(p.es))+' – '+esc(fmtD(p.en));extra=`<span class="d">${p.days} stub day${p.days===1?'':'s'} free · billing starts ${esc(fmtD(addDays(p.en,1)))}</span>`;}else if(p.state==='paid'){a='Paid · '+esc(fmtAmt(p.pr,s.currency));if(p===lastPaid&&p.creditAfter>0&&sa.nextDue)extra=`<span class="d">${esc(fmtAmt(p.creditAfter,s.currency))} credit toward the next period</span>`;}
         else if(p.state==='partial')a=esc(fmtAmt(p.covered,s.currency))+' of '+esc(fmtAmt(p.pr,s.currency));
         else if(p.state==='unpaid')a='Unpaid · '+esc(fmtAmt(p.pr,s.currency));
         else{a='Upcoming · '+esc(fmtAmt(p.pr-p.covered,s.currency));if(p.covered>0)extra=`<span class="d">${esc(fmtAmt(p.pr,s.currency))} less ${esc(fmtAmt(p.covered,s.currency))} credit</span>`;}
@@ -2327,13 +2453,13 @@ function detailHTML(id,u,a,today){
         const custom=p.custom?`<span class="d custom-line" title="Computed ${esc(fmtAmt(p.listed,s.currency))} · set to ${esc(fmtAmt(p.pr,s.currency))}${p.note?' · '+esc(p.note):''}"><s>${esc(fmtAmt(p.listed,s.currency))}</s> → <b>${esc(fmtAmt(p.pr,s.currency))}</b>${p.note?` · ${esc(p.note)}`:''}</span>`:'';
         /* v27: a period billed at another package says which one, next to the plan's own */
         const pkgLine=p.pkgOv?`<span class="d pkg-line">Billed as <b>${esc(pkgName(p.pkgId))}</b> this period · plan is ${esc(pkgName(pkgIdAt(s,p.es))||'its own price')}${!p.custom&&((s.periodOverrides||{})[p.st]||{}).note?' · '+esc(s.periodOverrides[p.st].note):''}</span>`:'';
-        const canEdit=p.en>=today&&!u.cancel;const editLink=canEdit&&!editing?`<span class="d"><button class="link sm" type="button" data-act="toggle" data-key="${fkey}" title="Set the amount or the package for this period by hand (discount, correction, or one month on another package)">edit amount / package</button></span>`:'';
+        const canEdit=p.en>=today&&!u.cancel;const editLink=canEdit&&!editing?`<span class="d"><button class="link sm" type="button" data-act="toggle" data-key="${fkey}" title="Change this bill's charge or package. Record payment stores money received.">change charge / package</button></span>`:'';
         /* v29: the period that needs money next carries its own Record payment button; tapping it (or the plan's button) opens the question in this box */
         /* v30: every unpaid, partial or upcoming box has one; the next-due box's is the primary button, a later box asks for one payment per period through it */
         const rtP=(p.state==='unpaid'||p.state==='partial'||p.state==='upcoming')?(rt&&rt.st===p.st?rt:recTarget(s,sa,p.st)):null;
         const recBtn=rtP&&!rec?`<span class="rec-cta"><button class="btn ${p.st===sa.nextSt?'primary ':''}rec" type="button" data-act="rec" data-sub="${s.id}" data-start="${p.st}"${rtP.n>1?` title="Record ${rtP.n} payments: one for each period up to this one"`:''}>Record payment</button></span>`:'';
         const recBox=rec&&rtP?recBoxHTML(id,u,s,rtP,today,recMore):'';
-        return `<div class="cell${editing?' editing':''}" data-state="${p.state}" data-custom="${p.custom?'1':'0'}"><span class="m">${esc(perLabel(p))}${p.prorated?' <span class="tag">prorated</span>':''}${tierTag(p)}${p.custom?' <span class="tag custom" title="Amount set by hand">custom</span>':''}</span><span class="a">${a}</span>${pro}${extra}${custom}${pkgLine}${recBtn}${editLink}${recBox}${open[fkey]?amtFormHTML(id,s,p,'detail',''):''}</div>`;}).join('');
+        return `<div class="cell${editing?' editing':''}" data-state="${p.state}" data-custom="${p.custom?'1':'0'}"><span class="m"><b>${esc(billingName(s,p))}</b><br>${esc(perLabel(p))}${p.prorated?' <span class="tag">prorated</span>':''}${tierTag(p)}${p.custom?' <span class="tag custom" title="Amount set by hand">custom</span>':''}</span><span class="a">${a}</span>${pro}${extra}${custom}${pkgLine}${recBtn}${editLink}${recBox}${open[fkey]?amtFormHTML(id,s,p,'detail',''):''}</div>`;}).join('');
       const nextPr=sa.nextDue?sa.nextAmount:sa.price;
       const pe=(ui.priceEdit||{})[s.id]||null;const pePrice=pe?(hist.find(x=>x.from===pe)||{}).price:null;
       const defFrom=pe||sa.nextSt||pStart(s,Math.max(0,sa.curIdx));
@@ -2670,7 +2796,15 @@ async function testMail(){const msg=$('#m-msg');const to=$('#m-test-to').value.t
 function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
 function openAdd(){showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
 function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';}
-function updAddConv(){const cur=$('#a-cur').value;const cyEl=$('#a-cycle');const cy=cyEl?cyEl.value:'monthly';$('#a-price-lbl').textContent=`${cy==='one-time'?'Total amount':cy==='yearly'?'Yearly price':'Monthly price'} (${cur==='USD'?'$':'Rs'})`;const n=Number($('#a-price').value)||0;const c=conv(n,cur,null);$('#a-conv').textContent=n?`${fmtAmt(n,cur)}${CYCLES[cy].per}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`:' (set an exchange rate in Settings to see the other currency)'):'The first billing period starts on the join date. One-time items and more plans can be added from the user\'s row.';}
+function updAddConv(){const cur=$('#a-cur').value;const cyEl=$('#a-cycle');const cy=cyEl?cyEl.value:'monthly';$('#a-price-lbl').textContent=`${cy==='one-time'?'Total amount':cy==='yearly'?'Yearly price':'Monthly price'} (${cur==='USD'?'$':'Rs'})`;const n=Number($('#a-price').value)||0;const c=conv(n,cur,null);$('#a-conv').textContent=n?`${fmtAmt(n,cur)}${CYCLES[cy].per}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`:' (set an exchange rate in Settings to see the other currency)'):'Enter the price to preview the first bill.';
+  /* v32: only the joining period is prorated. The receipt date never changes a charge. */
+  const preview=$('#a-bill-preview'),join=$('#a-join').value;
+  if(!isDateKey(join)||!validAmt($('#a-price').value)){preview.textContent='Choose the joining date and price to see the first bill.';return;}
+  if(cy==='one-time'){preview.textContent=`Item total: ${fmtAmt(n,cur)}. Record the money received after adding the user.`;return;}
+  const s={kind:'monthly',cycle:cy,currency:cur,packageId:$('#a-pkg').value,start:join,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,prices:[{from:join,price:n}],payments:[]};
+  const first=periodAmt(s,0),next=periodAmt(s,1);
+  preview.textContent=`First bill: ${fmtAmt(first.pr,cur)} for ${fmtCycle(pFrom(first),first.en)}${first.waived?' (first partial period waived)':first.prorated?' (prorated once from the joining date)':''}. Then ${fmtAmt(next.pr,cur)}${CYCLES[cy].per} from ${fmtD(next.st,true)}. The date cash arrives is recorded separately.`;
+}
 function toggleOpen(id,key){ui.open[id]=ui.open[id]||{};ui.open[id][key]=!ui.open[id][key];if(!ui.open[id][key]){if(key==='cancel')delete ui.cancelPre[id];const sid=key.split(':')[1];if(sid&&ui.priceEdit)delete ui.priceEdit[sid];if(sid&&ui.payEdit)delete ui.payEdit[sid];if(sid&&ui.refundEdit)delete ui.refundEdit[sid];}renderTable();}
 const validPhone=raw=>{const d=digits(raw);return d===''||(d.length>=7&&d.length<=15);};
 const validAmt=v=>v!==''&&isFinite(Number(v))&&Number(v)>=0;
@@ -2694,6 +2828,15 @@ function bind(){
   $('#qa-save').addEventListener('click',quickSave);
   $('#add-close').addEventListener('click',()=>{$('#addPanel').hidden=true;});
   $('#a-cur').addEventListener('change',updAddConv);$('#a-price').addEventListener('input',updAddConv);
+  ['#a-join','#a-prorate','#a-waive'].forEach(sel=>$(sel).addEventListener('input',updAddConv));
+  $('#paymentForm').addEventListener('submit',savePaymentDialog);
+  ['#payment-close','#payment-cancel'].forEach(sel=>$(sel).addEventListener('click',closePaymentDialog));
+  $('#paymentDialog').addEventListener('cancel',e=>{if(ui.paymentDraft&&ui.paymentDraft.busy)e.preventDefault();else ui.paymentDraft=null;});
+  $('#payment-account').addEventListener('change',()=>{const c=paymentContext();if(!c||c.d.busy)return;c.d.sid=$('#payment-account').value;const next=paymentContext();$('#payment-currency').value=next.s.currency;$('#payment-rate').value='';fillPaymentMonths();paymentAutoAmount();});
+  $('#payment-month').addEventListener('change',paymentAutoAmount);
+  $('#payment-amount').addEventListener('input',()=>{if(ui.paymentDraft)ui.paymentDraft.auto=false;refreshPaymentPreview();});
+  ['#payment-currency','#payment-rate'].forEach(sel=>$(sel).addEventListener('input',()=>{if(ui.paymentDraft&&ui.paymentDraft.auto)paymentAutoAmount();else refreshPaymentPreview();}));
+  ['#payment-date','#payment-note'].forEach(sel=>$(sel).addEventListener('input',refreshPaymentPreview));
   $('#btn-io').addEventListener('click',()=>{$('#ioPanel').hidden?showPanel('ioPanel'):($('#ioPanel').hidden=true);});
   $('#io-close').addEventListener('click',()=>{$('#ioPanel').hidden=true;});
   $('#btn-settings').addEventListener('click',()=>{$('#settingsPanel').hidden?openSettings():closeSettings();});
@@ -2789,26 +2932,27 @@ function bind(){
     if(!validPhone(phone)){err.textContent='Phone number should have 7 to 15 digits including the country code.';return;}
     const id=newId('u');
     const ok=await persistUser(id,{name,email,phone,telegram:normTg($('#a-tg').value),joinDate:join,notes,subscriptions:[cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,total:Number(priceRaw),due:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start:join,end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,dueBy:null,prices:[{from:join,price:Number(priceRaw)}],payments:[]}]});
-    if(ok){$('#addForm').reset();$('#addPanel').hidden=true;ui.expanded=id;toast('Added '+(name||email)+'. Open the row to record payments.');if(!db)renderTable();}
+    if(ok){$('#addForm').reset();$('#addPanel').hidden=true;ui.expanded=null;renderTable();toast('Added '+(name||email)+'. Record the first payment when the money is received.');openPaymentDialog(id);}
   });
 
   const tbody=$('#tbody');
   tbody.addEventListener('click',async e=>{
     if(e.target.closest('a'))return;
+    const quickPay=e.target.closest('[data-act="row-pay"]');if(quickPay){openPaymentDialog(quickPay.dataset.user);return;}
     const row=e.target.closest('tr.row');
     if(row){if(e.target.closest('button,select,input'))return;ui.expanded=ui.expanded===row.dataset.id?null:row.dataset.id;renderTable();return;}
     const det=e.target.closest('tr.detail');if(!det)return;const id=det.dataset.id;
     const act=e.target.closest('[data-act]');if(!act)return;const A=act.dataset.act,sid=act.dataset.sub;
     if(A==='toggle')toggleOpen(id,act.dataset.key);
     /* v29: one-tap Record payment */
-    else if(A==='rec'){const k='rec:'+sid;const was=(ui.open[id]||{})[k];const st=act.dataset.start;ui.open[id]=Object.assign({},ui.open[id],{[k]:was===st?false:st,['recmore:'+sid]:false});renderTable();if(was!==st){const box=document.querySelector(`tr.detail[data-id="${id}"] .rec-box[data-sub="${sid}"]`);if(box){box.scrollIntoView({behavior:'smooth',block:'nearest'});const y=box.querySelector('.rec-yes');if(y)y.focus({preventScroll:true});}}}
+    else if(A==='rec')openPaymentDialog(id,sid,null,act.dataset.start);
     else if(A==='rec-more'){ui.open[id]=Object.assign({},ui.open[id],{['recmore:'+sid]:true});renderTable();const f=document.querySelector(`tr.detail[data-id="${id}"] .rec-form[data-sub="${sid}"] [name=amount]`);if(f){f.focus();f.select();}}
     else if(A==='rec-cancel'){ui.open[id]=Object.assign({},ui.open[id],{['rec:'+sid]:false,['recmore:'+sid]:false});renderTable();}
     else if(A==='rec-yes'){const u0=state.users[id];const s0=u0&&(u0.subscriptions||[]).find(x=>x.id===sid);if(!s0)return;const st=act.dataset.start;const t=recTarget(s0,analyze(u0,todayISO()).sa[sid],st==='item'?null:st);if(!t||t.st!==st||String(t.owed)!==act.dataset.owed){toast('This period has changed since the box was drawn; check it again.');renderTable();return;}act.disabled=true;act.textContent='Recording…';const today0=todayISO();await recordPayment(id,sid,st==='item'?{date:today0,amount:t.owed,currency:s0.currency,rate:null,note:''}:recPayments(s0,t,today0));}
     /* v30: Paid up to… → Yes records one payment per period through the chosen cycle */
     else if(A==='upto-yes'){const u0=state.users[id];const s0=u0&&(u0.subscriptions||[]).find(x=>x.id===sid);if(!s0||s0.kind!=='monthly')return;const sa0=analyzeMonthly(s0,todayISO());const k=Number(act.dataset.k);const cov=coverPlan(s0,sa0,k).filter(x=>x.due>0);const total=Math.round(cov.reduce((t,x)=>t+x.due,0)*100)/100;if(!cov.length||String(total)!==act.dataset.total){toast('This plan has changed since the question was drawn; check it again.');renderTable();return;}act.disabled=true;act.textContent='Recording…';await recordPayment(id,sid,recPayments(s0,{parts:cov,upto:cov[cov.length-1].en},todayISO()));}
     else if(A==='upto-more'){const f=act.closest('form.upto-form');if(f){f.dataset.more='1';const a=f.querySelector('[name=amount]');if(a){a.focus();a.select();}}}
-    else if(A==='pay-edit'){ui.payEdit=ui.payEdit||{};ui.payEdit[sid]=act.dataset.pay;renderTable();}
+    else if(A==='pay-edit')openPaymentDialog(id,sid,act.dataset.pay);
     else if(A==='refund-edit'){ui.refundEdit=ui.refundEdit||{};ui.refundEdit[sid]=act.dataset.ref;ui.open[id]=Object.assign({},ui.open[id],{['refund:'+sid]:true});renderTable();}
     else if(A==='refund-cancel'){if(ui.refundEdit)delete ui.refundEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['refund:'+sid]:false});renderTable();}
     else if(A==='refund-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const r=(s.refunds||[]).find(x=>x.id===act.dataset.ref);s.refunds=(s.refunds||[]).filter(x=>x.id!==act.dataset.ref);if(!s.refunds.length)delete s.refunds;settleRefunds(u,s,todayISO());if(ui.refundEdit)delete ui.refundEdit[sid];const ok=await persistUser(id,u);if(ok&&r)toast(`Removed the ${fmtAmt(r.amount,r.currency||s.currency)} refund dated ${r.date}.`);}

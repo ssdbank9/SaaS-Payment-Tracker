@@ -6,9 +6,20 @@ A single-file web app for tracking subscriber payments for a small SaaS. It keep
 
 ## Live app
 
-The app runs as a Claude artifact at https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA. In the artifact, data is shared across devices and screenshot reading works.
+The owner's app and database run on the Wasooli server. Open your bookmarked sign-in address to use the same records on your phone and computer. The header's version badge shows which update is running.
+
+The [Claude artifact](https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA) remains a demo and is republished separately; it may be behind the server.
 
 Opening `index.html` directly in a browser also runs the app, but with per-device local storage and without screenshot reading.
+
+## Recording a month's payment
+
+1. Add a user with the day they joined and the normal monthly price. Wasooli shows their first prorated bill and the full price from the next 24th. Saving the user opens the first receipt form; money is recorded only when you press Record.
+2. Beside their name, press **Record month payment**. Choose the account and **Pay through billing month**. The form shows the exact period dates, bill, advance credit and amount still needed. Choosing a later month also includes earlier unpaid months, which are named in the form.
+3. Enter the money actually received and **Received on**, the day it arrived. The cash date can change each month; only the first joining period is prorated. Currency, exchange rate and note are under an expandable option.
+4. To correct cash already recorded, open the person's receipt history and press **Edit**. It shows the months the receipt currently covers and what the change will do before you save. To give a discount, use **change charge / package** on the period card instead.
+
+**Total paid** is receipts minus refunds. Discounts and reductions lower the bills and appear separately; they do not add cash. For example, Rs 8,400 received against a Rs 3,220 first bill and Rs 4,200 next bill leaves Rs 980 advance credit. The following month's receipt is Rs 3,220, bringing Total paid to Rs 11,620.
 
 ## Files
 
@@ -30,9 +41,9 @@ Opening `index.html` directly in a browser also runs the app, but with per-devic
 
 ## Development
 
-1. Edit `index.html`.
-2. Open it locally in a browser to test.
-3. Republish the artifact.
+1. Read `AGENTS.md` and `docs/HANDOFF.md`, then edit the single `index.html` and any needed server code.
+2. Run Flask with a disposable local database and check the phone and desktop layouts in both themes.
+3. Commit and push to `main` after the checks pass. The VM updates itself within five minutes; verify the live version. Republish the artifact separately when using Claude.
 
 ## Making changes
 

@@ -1,6 +1,6 @@
 # Wasooli hand-off
 
-Written 2026-09-23 at v26, updated 2026-09-26 at v29. This is the document to read first when picking the project
+Written 2026-09-23 at v26, updated 2026-10-04 at v32. This is the document to read first when picking the project
 up again in Claude Code, another AI coding tool or by hand. `AGENTS.md` is the working guide for a coding session
 (every tool reads it, see section 10); this file records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
 built is `docs/setup-runbook.html` (open it in a browser; it prints).
@@ -16,14 +16,14 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
   Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.
 - **Repo:** `ssdbank9/SaaS-Payment-Tracker` on GitHub, branch `main`. Pushing to `main` is the release.
 
-## 2. Current state (2026-09-26, v31)
+## 2. Current state (2026-10-04, v32)
 
 | Item | Value |
 | --- | --- |
 | Admin site | `https://wasooli.duckdns.org` (plain root shows a blank neutral page on purpose) |
 | Sign-in form | `https://wasooli.duckdns.org/x/<ADMIN_PATH>` (printed by the installer; Settings → Security) |
 | Subscriber links | `https://pay-up.duckdns.org/c/<token>` (`LINK_DOMAIN`) |
-| Health check | `https://wasooli.duckdns.org/healthz` → `{"ok": true, "app": "wasooli", "version": "31", "linkBase": "https://pay-up.duckdns.org", ...}` |
+| Health check | `https://wasooli.duckdns.org/healthz`; verify `ok: true` and `version: "32"` after pushing. The pre-release check on 2026-10-04 returned v31 with an empty `linkBase`; the subscriber-domain setup listed above is prior handoff context and needs separate verification. |
 | VM | Oracle Cloud Always Free, `VM.Standard.A1.Flex`, 1 OCPU / 6 GB, Ubuntu 24.04 aarch64, public IP `141.145.157.7`, created 2026-09-22 ~11:45 UTC in VCN `vcn-20260922-1643` / subnet `subnet-20260922-1643` |
 | Cloud firewall | Default Security List of that subnet: default rules (TCP 22, ICMP) plus TCP 80 and TCP 443 from `0.0.0.0/0` added by the owner |
 | DNS | DuckDNS (owner signed in with Google): `wasooli.duckdns.org` and `pay-up.duckdns.org` → `141.145.157.7`. The first name `wasool.duckdns.org` was deleted on 2026-09-23 |
@@ -32,14 +32,30 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
 | Data on VM | `/var/lib/payments-tracker/tracker.sqlite3` plus `assets/` (uploaded receipts) and `backups/` |
 | Secrets on VM | `/etc/payments-tracker.env` (`DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`); AI and mail keys typed in Settings live in the SQLite `meta` table |
 | Services | `payments-tracker.service` (gunicorn on 127.0.0.1:8080), `caddy` (HTTPS for all three hosts), timers `payments-tracker-update` (5 min), `payments-tracker-backup` (03:15 daily), `payments-tracker-notify` (04:00 UTC = 09:00 PKT daily) |
-| Versions | badge `v31` in `index.html`, `VERSION = "31"` in `server/app.py`, top entry `## v31` in `CHANGELOG.md` |
-| Repo head | the v31 commit "Show accounts and packages per user on the dashboard (v31)" (check with `git log -1`) |
-| claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: same `index.html`, kept identical in code, but retired as the place where data lives |
+| Versions | badge `v32` in `index.html`, `VERSION = "32"` in `server/app.py`, top entry `## v32` in `CHANGELOG.md` |
+| Repo head | the v32 change "Clarify monthly receipts and first bills (v32)" (check with `git log -1`) |
+| claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: retired as the data store; v32 was edited in Codex and has not been republished there |
 
 **How updates deploy.** `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: `git fetch`,
 hard-reset to `origin/main` if it moved, reinstall requirements if `server/requirements.txt` changed, refresh
 the systemd units, append defaults for new env keys (`ensure_env`), restart the service. Nothing else is
 needed; the version badge in the header shows when the new copy is live.
+
+**The owner's payment flow (v32).** Every ordinary month is the 24th through the next 23rd. A person who joins on
+10 Oct at Rs 4,200/month has a first bill of Rs 1,960 for 10–23 Oct on the default 30-day basis, then a full Rs 4,200
+bill from 24 Oct. Add user previews both and opens a receipt form after saving. Received on is the day cash arrived;
+it does not change the joining date or prorate a later bill.
+
+Record month payment is beside each person's name. Choose the account and Pay through billing month, review the
+dates, charge, existing advance credit and amount left, then save the actual receipt. Older unpaid months are included
+and named when choosing a later month, preserving the existing credit rule. Edit in receipt history shows current and
+resulting period coverage, Total paid and Paid through before saving. Total paid is cash received minus refunds;
+Discounts / reductions is a separate total for monthly bills already started or prepaid. A charge change does not add
+cash. In the owner's screenshot example Rs 8,400 already received covers the Rs 3,220 first bill, Rs 4,200 next bill and
+Rs 980 advance credit; the next receipt is Rs 3,220 and raises Total paid to Rs 11,620.
+
+The receipt dialog lives outside the redrawn table. Currency, exchange rate and note expand when needed; unsaved
+values survive a poll, and failed saves keep the form for retry. No new schema or data migration was introduced.
 
 ## 3. Architecture (one page)
 
@@ -107,8 +123,9 @@ SQLite tables (`server/db.py`): `docs(path, json, updated_at)`, `confirmations`,
 payments minus refunds as credit in order and yields paid / partial / unpaid / upcoming, balance and next due.
 Since v29 `analyze(u, today)` also returns `statusA`, the plan analysis whose status the user's pill shows;
 `statusLabel` / `statusHint` / `periodMonth` turn a plan or user analysis into "Paid for Oct" and its tooltip, and
-`recTarget(s, sa)` is the one period (or one-time remainder) the Record payment question is about. `analyze(u,
-today)` aggregates a user. `breakdownRows`, `monthlySeries` and `analyticsData` build Summary and Analytics
+Since v32 `paymentTarget(s, sa, k)` uses `coverPlan` to total the unpaid periods through the chosen month.
+`receiptAllocations` derives coverage for the receipt-edit preview from cash records; it never stores or rewrites allocations.
+`analyze(u, today)` aggregates a user. `breakdownRows`, `monthlySeries` and `analyticsData` build Summary and Analytics
 from those same functions, so totals reconcile by construction. Any new money figure must reuse them.
 Since v28 revenue in a month is its payments minus its refunds (by refund date) and Net = collected − refunds − costs
 (`netSum`); a refund is counted for the plan's package on the refund date.
@@ -154,6 +171,7 @@ owner's real records. New versions since v18 have needed no migration (absent = 
 | 29 | 09-26 | One-tap Record payment (question on the period box, big Yes, Different amount); every save redraws at once; same-day payments both kept; status pills say "Paid for Oct" / "Paid to Nov" / "Overdue for Sep – Oct" | Owner found recording a payment counter-intuitive (edit → save → record, and Paid appearing late) and wanted the dashboard to name the month |
 | 30 | 09-26 | Mid-cycle / resumed plans show the real due date (plan start, not cycle start); link page offers no upgrade for a cycle already billed as C Max by hand; Summary and Analytics bars are collected after refunds; a refund lowers a one-time item's total; Record payment on every unpaid / upcoming box (a later box = one payment per period), ended plans get the short box, Paid up to… asks "Record N payments totalling Rs X (Aug, Sep and Oct)?"; long pills wrap on phones | Owner asked for the five open follow-ups from v27–v29 in one go |
 | 31 | 09-26 | Each user row shows its active accounts and packages ("3 accounts · C ×2 · G"); an Active accounts bar under the tiles counts accounts per package and filters the list by package; By product / Analytics users per package come from the same accounts | Owner asked to see on the front page how many accounts each person has and which category. One-time items are not accounts (shown as "+ 1 one-time"); a month billed as C Max counts as C Max |
+| 32 | 10-04 | Main-row month receipt form; first-bill preview when adding a user; separate cash date; receipt-edit coverage and cash-total preview; discounts shown separately; unsaved form survives polling | Owner wanted the front screen to record a month clearly, show what an edited payment covers, keep proration to the joining period and reconcile actual receipts with discounts |
 
 ## 6. Decisions log
 
@@ -186,6 +204,9 @@ owner's real records. New versions since v18 have needed no migration (absent = 
 | A prorated first period is due on the plan's start date (`nextDue` = `max(cycle start, plan start)`); its cycle start stays the key (`nextSt`, `periodOverrides`) and its month name ("for Aug") | 09-26 | Money cannot be due before the plan exists; full periods keep their cycle start, so the rule is one line and the boxes, pills, questions and reminders agree | Showing the cycle start everywhere (v29 behaviour, wrong for the owner); renaming the month after the plan start (would make "Sep – Sep" for two owed periods) |
 | A refund on a one-time item lowers the item's total (undoes that much of the sale); a refund on a monthly plan makes the month owed again | 09-26 | A refunded one-time sale is not owed again; the owner otherwise had to edit the total by hand. Monthly service was delivered, so the month is owed | Same rule for both (a refunded item showed as overdue); a "sale undone" checkbox on the refund form |
 | Record payment on a later period = one payment per period from the next-due one through it (the Paid up to… answer), never a payment aimed at a single later month | 09-26 | Credit is applied in period order, so a payment "for Dec" while Oct is unpaid would fill Oct anyway; recording it per period keeps the history honest | Letting a payment target a period (would need stored allocations and change how credit works) |
+| Main-row month chooser and one receipt dialog for Record and Edit (supersedes the v29 inline-only form decision) | 10-04 | Owner needs the month visible before recording and the current coverage visible when editing; keeping the dialog outside the table protects unsaved inputs during background refresh | Another charge-edit shortcut that appears to record cash; rebuilding the form inside a polled row |
+| Joining date controls the first prorated bill; Received on controls the receipt's cash date only | 10-04 | Owner confirmed later cycles must stay full price even when cash arrives on another day | Re-prorating each receipt from its cash date |
+| Monthly-charge reductions are shown separately from Total paid, which remains receipts minus refunds | 10-04 | A discount lowers what is owed; advance credit is already-received cash. Neither is a second cash receipt. Automatic joining proration is the first bill's baseline | Increasing Total paid when changing a charge; counting proration or refunds as discounts |
 
 ## 7. Operations runbook
 
@@ -292,13 +313,14 @@ both DuckDNS names to the new IP, then `sudo systemctl restart caddy`.
 
 **Known follow-ups (not built yet)**
 
-- Editing a payment still uses the older multi-field `.pay-form` (Edit in the payment history); every way of recording a new
-  payment is the one-tap box since v30.
+- Payment recording still clears older bills first. v32 names the earlier periods in the month chooser; paying a single later
+  month while leaving an earlier one overdue would require a change to the allocation model.
 - The "for 24 Oct – 23 Nov 2026" note the one-tap flow writes is the period's dates at the time of recording; if the cycle day or
   the plan's start is changed afterwards, the note keeps the old dates (payments themselves are re-applied correctly).
 - A prorated first period is still named after its cycle's month: a plan started 10 Sep shows "Overdue for Aug" and Paid up to…
   asks "Record 1 payment totalling Rs 1,960 for Aug?" (the dates are on the box, in the tooltip and in the line under the question).
   `periodMonth` is the one place to change if the owner wants "Sep" there.
+  v32 receipt choices and period cards also say First bill and show the joining-period dates, but the status policy is unchanged.
 - The user row's "Paid through" for a resumed user reads "nothing yet" until the new plan is paid, although the plan that ended at
   the cancellation was paid (only running plans count toward the user's paid-through).
 - Refunds (v28): a refund is counted for the plan's package on the refund date, not for the package a single month was billed as.
@@ -306,6 +328,11 @@ both DuckDNS names to the new IP, then `sudo systemctl restart caddy`.
   what was kept with it). For a cancelled user, "kept after refund" period amounts replace a hand-set amount on the same period, and
   they stay if the user is later resumed (they are recomputed, and removed, only when a refund on that plan is saved or removed while
   the user is cancelled). "Also cancel" in the refund form uses the normal cancellation, so it ends all of that user's plans.
+
+**v32 local verification.** `tests/payment-flow.cjs` uses synthetic records in a disposable Flask store and rejects production
+URLs. It covers actual receipts, charge discounts, cash dates, first bills, edits, refunds, partial and advance payments, multiple
+accounts, ended plans, save failure/retry, polling and 390px/1400px light/dark layouts. No owner data or production login was used.
+Its check record and screenshots are local ignored files under `data/payment-qa/`; repeat the check before any subsequent push.
 
 ## 10. Continuing with another AI tool
 

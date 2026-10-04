@@ -2,6 +2,15 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v32 - 2026-10-04
+
+- Record month payment is available beside each person's name on the main screen, including on a phone. Choose the account and billing month, see the exact dates, charge, advance credit and amount left, then record the money received. Choosing a later month clearly includes earlier unpaid periods, following the existing rule that cash clears the oldest bill first.
+- Add user previews the first bill from the joining date and the full charge from the following 24th. The first partial period is prorated once. Received on records the actual cash date; moving it does not prorate later bills or change the joining date. Saving a new user opens the first receipt form without recording money automatically.
+- Edit in the payment history shows the receipt's currently covered months and dates, plus the resulting coverage and Total paid before saving. Saving updates the main screen immediately. Background refreshes preserve unfinished receipt entries, and a failed save keeps the form available for retry.
+- Total paid remains receipts minus refunds. Discounts and other reductions to billed or prepaid monthly charges appear separately, including in the phone row. Period cards show the billing month and exact dates, and display advance credit separately from the amount paid for that period. Change charge / package makes the distinction from recording cash explicit.
+- The normal form keeps the amount and cash date visible, with currency, exchange rate and note under an expandable option. Settled or ended plans can still record actual money received. The screenshot-reading capability check returns a successful disabled response when no AI key is configured; trying to read an image still requires setup.
+- Added a local Playwright regression check for the receipt and charge flow, including phone and desktop layouts in both themes. Existing records, stored units and schema are unchanged; no data migration is required.
+
 ## v31 - 2026-09-26
 
 - **Accounts per person on the dashboard.** Each row in the user list now starts its plan column with how many active accounts the person has and which packages they are: "3 accounts [C ×2] [G]" for Haroon, "1 account [C]" for most. The column is now headed "Accounts · plan"; the plan and price lines stay underneath. An account is a monthly or yearly plan that is still running (a plan that starts later counts; an ended plan does not). A cancelled user shows no accounts. The package is the one the current month is billed as, so a month switched to C Max (a tier change, or "Package for this period") shows C Max; hovering that chip says "C account billed as C Max for Sep".

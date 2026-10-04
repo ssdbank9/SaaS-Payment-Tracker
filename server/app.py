@@ -27,7 +27,7 @@ import notify  # noqa: E402
 
 APP_NAME = "Wasooli"
 TAGLINE = "Know who's paid."
-VERSION = "31"
+VERSION = "32"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
@@ -387,7 +387,7 @@ def api_read_image_info():
     on = reading_enabled(p)
     return jsonify({"enabled": on, "configured": on, "provider": p, "source": claude_read.key_source() if p == "anthropic" else ("settings" if on else ""),
                     "model": reading_model(p), "mediaTypes": list(claude_read.MEDIA_TYPES),
-                    "message": "" if on else not_set_up_message(p)}), (200 if on else 501)
+                    "message": "" if on else not_set_up_message(p)})
 
 
 @app.post("/api/read-image")
