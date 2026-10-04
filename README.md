@@ -14,12 +14,20 @@ Opening `index.html` directly in a browser also runs the app, but with per-devic
 
 ## Recording a month's payment
 
-1. Add a user with the day they joined and the normal monthly price. Wasooli shows their first prorated bill and the full price from the next 24th. Saving the user opens the first receipt form; money is recorded only when you press Record.
+1. Add a user with the day they joined, the day their package started, and its normal price. Wasooli shows the first prorated bill and the full price from the next 24th. Saving the user opens the first receipt form; money is recorded only when you press Record.
 2. Beside their name, press **Record month payment**. Choose the account and **Pay through billing month**. The form shows the exact period dates, bill, advance credit and amount still needed. Choosing a later month also includes earlier unpaid months, which are named in the form.
 3. Enter the money actually received and **Received on**, the day it arrived. The cash date can change each month; only the first joining period is prorated. Currency, exchange rate and note are under an expandable option.
 4. To correct cash already recorded, open the person's receipt history and press **Edit**. It shows the months the receipt currently covers and what the change will do before you save. To give a discount, use **change charge / package** on the period card instead.
 
 **Total paid** is receipts minus refunds. Discounts and reductions lower the bills and appear separately; they do not add cash. For example, Rs 8,400 received against a Rs 3,220 first bill and Rs 4,200 next bill leaves Rs 980 advance credit. The following month's receipt is Rs 3,220, bringing Total paid to Rs 11,620.
+
+## Package start dates and annual installments
+
+Beside each person's name, press **Package start / payments**, choose the account, and enter **Package started on**. Each package has its own date. Only its first partial bill is prorated; later monthly bills start on the 24th. The preview shows the first and next bill and the effect on the balance and Paid through. Saving keeps the person's joining date, all receipts, refunds and price history.
+
+G stays an annual package. Choose **Monthly**, **Every 3 months**, **Every 6 months** or **Yearly** payments for that subscriber. At Rs 50,000 per year, full quarterly bills are Rs 12,500 and half-year bills Rs 25,000. Monthly installments balance rounding across the year so twelve bills total exactly Rs 50,000. The first partial installment uses actual days in its billing period, then later installments start on the 24th at the chosen interval.
+
+For an existing subscriber, a schedule change starts at **Next bill** by default and keeps earlier bills. Choose **Package start** to recalculate earlier bills explicitly; review the preview before saving. Existing custom charges stay attached to their billing dates. To record money, use **Record month payment** and choose the bill to pay through; extra cash carries forward and changing its received date never changes the bill.
 
 ## Files
 

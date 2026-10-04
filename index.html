@@ -287,6 +287,9 @@ td.who .em{display:block;font-family:var(--mono);font-size:12px;color:var(--mute
 td.who .ct{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);white-space:normal;line-height:1.35;margin-top:1px}
 /* v32: recording is reachable in the first column on a phone. Cash and bill reductions stay separate. */
 td.who .row-pay{display:block;margin-top:8px;min-height:44px;max-width:100%;white-space:normal}
+td.who .row-start{display:block;margin-top:6px;min-height:44px;max-width:100%;white-space:normal}
+.start-list{font-size:11px;line-height:1.45;margin-top:4px;color:var(--muted);white-space:normal}
+#a-payment-wrap[hidden],#a-start-wrap[hidden],.addsub-form [data-role="payment-wrap"][hidden]{display:none}
 .row-money{display:none}
 .bill-reduction{display:block;font-size:11px;color:var(--ink-2);white-space:normal;margin-top:3px}
 @media(max-width:760px){.row-money{display:block;max-width:220px;white-space:normal;font-size:12px;color:var(--ink-2);margin-top:6px}.row-money b{color:var(--ink);font-weight:500}}
@@ -438,6 +441,7 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .payment-dialog .payment-wide{grid-column:1/-1}
 .payment-dialog [hidden]{display:none}
 .payment-dialog input,.payment-dialog select{width:100%;min-width:0;min-height:44px}
+.payment-dialog input[type="checkbox"]{width:16px;min-height:16px;flex:0 0 auto}
 .payment-dialog .rec-box{border:1px solid var(--accent-line);border-radius:6px;padding:12px;background:var(--accent-tint);margin:14px 0}
 .payment-dialog .rec-box p{margin:0;overflow-wrap:anywhere}
 .payment-dialog .payment-amount{font-size:20px;font-family:var(--mono)}
@@ -623,7 +627,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v32</span>
+      <span class="small muted num" id="app-ver" title="App version">v33</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -820,8 +824,10 @@ table.costs td.cat{color:var(--ink-2)}
         <label class="f">WhatsApp number<input id="a-phone" type="tel" placeholder="+92 300 1234567" autocomplete="off" inputmode="tel"></label>
         <label class="f">Joined on<input id="a-join" type="date" required></label>
         <label class="f">Package / product<select id="a-pkg" required></select></label>
+        <label class="f" id="a-start-wrap">Package started on<input id="a-start" type="date" required></label>
         <label class="f"><span id="a-price-lbl">Monthly price (Rs)</span><input id="a-price" type="number" min="0" step="0.01" required placeholder="4200" inputmode="decimal"></label>
         <label class="f">Currency <span class="muted">(pays in)</span><select id="a-cur" required><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
+        <label class="f" id="a-payment-wrap" hidden>Payment schedule<select id="a-payment"><option value="12">Yearly</option><option value="1">Monthly</option><option value="3">Every 3 months</option><option value="6">Every 6 months</option></select></label>
       </div>
       <details class="more" id="a-more">
         <summary>More options: billing cycle, plan label, notes, proration</summary>
@@ -1006,6 +1012,23 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
   </form>
 </dialog>
 
+<dialog class="panel payment-dialog" id="startDialog" aria-labelledby="start-title">
+  <div class="panel-head"><div><h3 id="start-title">Package start and payments</h3><p class="small muted" id="start-who"></p></div><button class="link" id="start-close" type="button" aria-label="Close package start form">Close</button></div>
+  <form id="startForm" novalidate>
+    <div class="form-grid">
+      <label class="f payment-wide">Account<select id="start-account"></select></label>
+      <label class="f payment-wide">Package started on<input id="start-date" type="date" required></label>
+      <label class="f chk payment-wide"><input id="start-prorate" type="checkbox" checked>Prorate first partial period</label>
+      <label class="f payment-wide" id="start-payment-wrap">Payment schedule<select id="start-payment"></select></label>
+      <label class="f payment-wide" id="start-apply-wrap" hidden>Apply payment schedule from<select id="start-apply"><option value="next">Next bill (keep earlier bills)</option><option value="start">Package start (recalculate earlier bills)</option></select></label>
+    </div>
+    <div class="rec-box" id="start-bill" aria-live="polite"></div>
+    <p class="payment-preview" id="start-preview" aria-live="polite"></p>
+    <span class="err" id="start-error" role="alert"></span>
+    <div class="form-actions"><button class="btn primary" id="start-save" type="submit">Save package start</button><button class="link" id="start-cancel" type="button">Not now</button></div>
+  </form>
+</dialog>
+
 <script>
 (function(){
 'use strict';
@@ -1057,7 +1080,7 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 const TOKEN_RE=/^[A-Za-z0-9_-]{16,64}$/;
 const newId=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 
-const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,cycleDay:null,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,publicBaseUrl:'',queueTemplates:{},payHow:'',waApp:'regular'},mode:'connecting',backend:'local',loaded:false,costsLoaded:false};
+const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,cycleDay:null,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,publicBaseUrl:'',queueTemplates:{},payHow:'',waApp:'regular'},mode:'connecting',backend:'local',loaded:false,costsLoaded:false,settingsLoaded:false};
 const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'queue',cancelPre:{},qStage:null,qOpen:{}};
 let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,seedActive=false,migrateChecked=false;
 
@@ -1133,7 +1156,14 @@ const pkgById=id=>packages().find(p=>p.id===id)||null;
 const pkgName=id=>{const p=pkgById(id);return p?p.name:'';};
 function planLabel(s,date){const pn=pkgName(pkgIdAt(s,date||todayISO()));const extra=(s.name||'').trim();if(!pn)return extra||(s.kind==='one-time'?'Item':'Plan');return extra&&extra.toLowerCase()!=='standard'&&extra.toLowerCase()!==pn.toLowerCase()?pn+' · '+extra:pn;}
 const subCycle=s=>s.kind==='one-time'?'one-time':normCycle(s.cycle);
-const cycMonths=s=>CYCLES[subCycle(s)].months||1;
+/* v33: an annual package keeps its annual price. Payment intervals are independent; absent = the existing yearly bill. */
+const validPayMonths=n=>[1,3,6,12].includes(Number(n));
+function normPaymentSchedule(list){const by={};for(const x of Array.isArray(list)?list:[])if(x&&isDateKey(x.from)&&validPayMonths(x.months))by[x.from]={from:x.from,months:Number(x.months)};return Object.values(by).sort((a,b)=>a.from.localeCompare(b.from));}
+function payMonthsAt(s,date){if(subCycle(s)!=='yearly')return 1;let m=validPayMonths(s.paymentEvery)?Number(s.paymentEvery):12;for(const x of s.paymentSchedule||[])if(x.from<=date)m=x.months;else break;return m;}
+const cycMonths=s=>payMonthsAt(s,s.start);
+const payFrequency=m=>m===12?'yearly':m===1?'monthly':'every '+m+' months';
+const payPer=m=>m===12?'/yr':m===1?'/mo':' / '+m+' months';
+function payScheduleOptions(m){return [1,3,6,12].map(n=>`<option value="${n}"${n===Number(m)?' selected':''}>${n===12?'Yearly':n===1?'Monthly':'Every '+n+' months'}</option>`).join('');}
 const anchor=()=>isDateKey(state.settings.anchor)?state.settings.anchor:DEFAULT_ANCHOR;
 /* v21: the billing day is its own setting (default: the anchor's day) so 29–31 survive a short anchor month; every cycle start is that day clamped to the month's last day.
    The anchor date keeps the year and the month yearly plans renew in. */
@@ -1142,7 +1172,10 @@ function cycleAt(n){const p=anchor().split('-').map(Number);const total=(p[1]-1)
 /* shared billing cycle: period j of a plan starts at anchor + j cycles; a plan's first period is the one containing its start date */
 const cStart=(s,j)=>cycleAt(j*cycMonths(s));
 function firstIdx(s){const a=anchor().split('-').map(Number),b=s.start.split('-').map(Number);let j=Math.floor(((b[0]-a[0])*12+(b[1]-a[1]))/cycMonths(s));let g=0;while(cStart(s,j+1)<=s.start&&g++<40)j++;while(cStart(s,j)>s.start&&g++<80)j--;return j;}
-const pStart=(s,k)=>cStart(s,firstIdx(s)+k);
+const monthOffset=st=>(+st.slice(0,4)-+anchor().slice(0,4))*12+(+st.slice(5,7)-+anchor().slice(5,7));
+function pStart(s,k){if(!(s.paymentSchedule||[]).length)return cStart(s,firstIdx(s)+k);let st=cStart(s,firstIdx(s)),left=k;
+  while(left>0){const m=payMonthsAt(s,st),next=(s.paymentSchedule||[]).find(x=>x.from>st);const steps=Math.min(left,next?Math.max(1,Math.ceil((monthOffset(next.from)-monthOffset(st))/m)):left);st=cycleAt(monthOffset(st)+steps*m);left-=steps;}return st;}
+function installmentPrice(s,annual,st){if(subCycle(s)!=='yearly')return annual;const m=payMonthsAt(s,st);if(m===12)return annual;const unit=s.currency==='USD'?100:1,pos=((monthOffset(st)%12)+12)%12;return (Math.round(annual*unit*(pos+m)/12)-Math.round(annual*unit*pos/12))/unit;}
 function cycleIdxAfter(today){const a=anchor().split('-').map(Number),b=today.split('-').map(Number);let j=(b[0]-a[0])*12+(b[1]-a[1])-1;let g=0;while(cycleAt(j)<=today&&g++<40)j++;return j;}
 function nextCycleStart(today){return cycleAt(cycleIdxAfter(today));}
 const ordinal=n=>n+(n%10===1&&n!==11?'st':n%10===2&&n!==12?'nd':n%10===3&&n!==13?'rd':'th');
@@ -1183,6 +1216,7 @@ function normalizeUser(b,id){
     const sub={id:s.id||newId('s'),kind,name:String(s.name||'').trim()||(kind==='one-time'?'Item':''),currency:cur,packageId:String(s.packageId||'').trim()||null,payments:[]};
     if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;{const ov=Number(s.prorationDaysOverride);sub.prorationDaysOverride=Number.isInteger(ov)&&ov>0?ov:null;const ro=Number(s.prorationRateOverride);sub.prorationRateOverride=isFinite(ro)&&ro>0?ro:null;const ao=s.prorationAmountOverride;sub.prorationAmountOverride=ao!=null&&ao!==''&&isFinite(Number(ao))&&Number(ao)>=0?Number(ao):null;sub.prorationBasis=rawBasis(s.prorationBasis);sub.discount=normDiscount(s.discount);sub.tierHistory=normTierHistory(s.tierHistory,cur);sub.periodOverrides=normPeriodOverrides(s.periodOverrides);}sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
     else{sub.total=Number(s.total)||0;sub.due=normDate(s.due);}
+    if(kind==='monthly'&&sub.cycle==='yearly'){if(validPayMonths(s.paymentEvery))sub.paymentEvery=Number(s.paymentEvery);const schedule=normPaymentSchedule(s.paymentSchedule);if(schedule.length)sub.paymentSchedule=schedule;}
     for(const p of s.payments||[]){const d=normDate(p.date);if(!d)continue;sub.payments.push({id:p.id||newId('p'),date:d,amount:Number(p.amount)||0,currency:p.currency?normCur(p.currency):cur,rate:normRate(p.rate),note:String(p.note||'')});}
     sub.payments.sort((a,b)=>a.date.localeCompare(b.date));
     /* v28: refunds given back on this plan [{id,date,amount,currency,rate,note}]; absent = none (nothing is written for plans without one) */
@@ -1204,7 +1238,7 @@ function priceAt(s,date){const ps=(s.prices||[]).slice().sort((a,b)=>a.from.loca
 /* v27: the full (unprorated) price of the period starting st: the plan's own price, or, when the period is billed at another package,
    that package's price in the plan's currency (switchPrice, else the package default converted at the default rate), less the plan's discount */
 function pkgPeriodPrice(s,pid,es){let v=switchPrice(s,pid,es);if(v==null){const p=pkgById(pid);if(p&&p.price!=null&&p.currency&&p.currency!==s.currency){const c=toCur(p.price,p.currency,s.currency,null);if(c!=null&&isFinite(c)&&c>0)v=s.currency==='PKR'?Math.round(c):Math.round(c*100)/100;}}return v;}
-function periodFull(s,st,es){const pid=periodPkg(s,st);if(pid){const v=pkgPeriodPrice(s,pid,es);return {full:v!=null?applyDiscount(s,v):effPrice(s,es),pid};}return {full:effPrice(s,es),pid:null};}
+function periodFull(s,st,es){const pid=periodPkg(s,st);if(pid){const v=pkgPeriodPrice(s,pid,es);return {full:installmentPrice(s,v!=null?applyDiscount(s,v):effPrice(s,es),st),pid};}return {full:installmentPrice(s,effPrice(s,es),st),pid:null};}
 function periodIndexAt(s,date){if(date<s.start)return -1;let k=0;while(pStart(s,k+1)<=date){k++;if(k>2400)break;}return k;}
 function paidInPlanCur(s){let t=0,unconv=0;for(const p of s.payments||[]){const v=toCur(p.amount,p.currency||s.currency,s.currency,p.rate);if(v==null)unconv++;else t+=v;}
   /* v28: a refund takes money back out of the plan's credit, so the period it paid for shows as unpaid again (unless it is not billed) */
@@ -1226,7 +1260,7 @@ function analyzeMonthly(s,today){
     else if(credit+1e-9>=pr){stt='paid';covered=pr;credit-=pr;kPaid=k+1;}
     else if(credit>0){stt=st<=today?'partial':'upcoming';covered=credit;credit=0;}
     else{stt=st<=today?'unpaid':'upcoming';covered=0;}
-    periods.push({k,st,en,es,pr,full,pkgId:pf.pid||pkgIdAt(s,es),pkgOv:!!pf.pid,prorated:prorated&&!waived,waived,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0,listed,custom:!!ov,note:ov?ov.note:''});
+    periods.push({k,st,en,es,months:payMonthsAt(s,st),pr,full,pkgId:pf.pid||pkgIdAt(s,es),pkgOv:!!pf.pid,prorated:prorated&&!waived,waived,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0,listed,custom:!!ov,note:ov?ov.note:''});
     if(stt!=='paid'&&stt!=='waived'&&k>curIdx)break;
     if(stt==='paid'&&pr<=0&&k>curIdx+1)break;
     k++;
@@ -1237,7 +1271,7 @@ function analyzeMonthly(s,today){
   const nextSt=active(kPaid)?pStart(s,kPaid):null;const nextDue=nextSt?(nextSt<s.start?s.start:nextSt):null;
   const overdue=periods.filter(p=>(p.state==='unpaid'||p.state==='partial')&&p.st<=today);
   let amountDue=0;for(const p of overdue)amountDue+=p.pr-p.covered;const overdueAmount=amountDue;
-  const np=nextSt?periods.find(p=>p.st===nextSt):null;const nextAmount=np?np.pr-np.covered:(nextDue?effPrice(s,nextDue):0);const nextCredit=np?np.covered:0;
+  const np=nextSt?periods.find(p=>p.st===nextSt):null;const nextAmount=np?np.pr-np.covered:(nextDue?periodFull(s,nextSt,nextDue).full:0);const nextCredit=np?np.covered:0;
   if(!amountDue&&nextDue)amountDue=nextAmount;
   const nc=nextCycleStart(today);const cp=periods.find(p=>p.st===nc);const cycleDue=cp?cp.pr-cp.covered:0;const cyclePaid=!!cp&&cp.state==='paid';
   let status;
@@ -1259,8 +1293,8 @@ function analyzeOneTime(s,today){
   return {kind:'one-time',paid,unconv:pc.unconv,total,listed,refunded,remaining,nextDue:remaining>0?s.due||null:null,amountDue:remaining,status,cur:s.currency,overdue:status==='overdue'?1:0};
 }
 /* amount of one cycle period of a plan (first period may be prorated or waived), and what is still owed per period from the first unpaid one up to a target period */
-function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=periodFull(s,st,es).full;const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;const ov=periodOverride(s,st);return {k,st,en,es,prorated:prorated&&!waived,waived,pr:ov?ov.amount:(waived?0:(prorated?prorateCalc(s,full,days,total).amt:full))};}
-function coverPlan(s,sa,targetK){const out=[];for(let k=sa.kPaid;k<=targetK&&k<sa.kPaid+240;k++){const p=periodAmt(s,k);const ex=(sa.periods||[]).find(x=>x.k===k);const cov=ex?ex.covered:0;out.push({k,st:p.st,en:p.en,es:p.es,prorated:p.prorated,waived:p.waived,pr:p.pr,credit:cov,due:Math.max(0,p.pr-cov)});}return out;}
+function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=periodFull(s,st,es).full;const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;const ov=periodOverride(s,st);return {k,st,en,es,months:payMonthsAt(s,st),full,days,total,custom:!!ov,prorated:prorated&&!waived,waived,pr:ov?ov.amount:(waived?0:(prorated?prorateCalc(s,full,days,total).amt:full))};}
+function coverPlan(s,sa,targetK){const out=[];for(let k=sa.kPaid;k<=targetK&&k<sa.kPaid+240;k++){const p=periodAmt(s,k);const ex=(sa.periods||[]).find(x=>x.k===k);const cov=ex?ex.covered:0;out.push({k,st:p.st,en:p.en,es:p.es,months:p.months,prorated:p.prorated,waived:p.waived,pr:p.pr,credit:cov,due:Math.max(0,p.pr-cov)});}return out;}
 const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,paid:5,ended:5,cancelled:5,nosub:6};
 function analyze(u,today){
   const subs=u.subscriptions||[];const sa={};const totals=newSum(),balance=newSum(),due=newSum(),cycleDue=newSum();let cyclePaid=false;
@@ -1272,7 +1306,7 @@ function analyze(u,today){
   for(const s of subs){
     const a=s.kind==='one-time'?analyzeOneTime(s,today):analyzeMonthly(s,today);sa[s.id]=a;
     const pid=pkgIdAt(s,today);const tm=a.kind==='monthly'?tierMarkHTML(s,today):'';const cp=a.kind==='monthly'&&a.curP&&a.curP.pkgId?a.curP.pkgId:pid;
-    if(!u.cancel){if(a.kind==='monthly'){if(a.status!=='ended')accounts.push({sid:s.id,pid:cp||'',base:pid||'',ov:!!(a.curP&&a.curP.pkgOv),per:a.curP?periodMonth(a.curP.st,a.curP.en,a.cycle):''});}else if(a.remaining>0)oneOpen++;}const shown=a.kind==='monthly'&&a.tiered?a.curPrice:a.price;
+    if(!u.cancel){if(a.kind==='monthly'){if(a.status!=='ended')accounts.push({sid:s.id,pid:cp||'',base:pid||'',ov:!!(a.curP&&a.curP.pkgOv),per:a.curP?paymentPeriodMonth(a.curP,a.cycle):''});}else if(a.remaining>0)oneOpen++;}const shown=a.kind==='monthly'&&a.tiered?a.curPrice:a.price;
     for(const p of s.payments||[])sumAdd(totals,p.amount,p.currency||s.currency,p.rate);
     for(const r of s.refunds||[])sumAdd(totals,-r.amount,r.currency||s.currency,r.rate);
     if(a.kind==='monthly'){if(a.overdueAmount>0)sumAdd(balance,a.overdueAmount,s.currency,null);if(a.cycleDue>0)sumAdd(cycleDue,a.cycleDue,s.currency,null);if(a.cyclePaid)cyclePaid=true;}else if(a.remaining>0)sumAdd(balance,a.remaining,s.currency,null);
@@ -1300,12 +1334,13 @@ function statusPeriod(a){const m=a&&a.periods?a:(a&&a.statusA&&a.statusA.periods
   if(m.status==='current'){const p=ps[m.kPaid-1];return p&&p.state==='paid'?{p,last:p,m,ahead:m.kPaid-1>m.curIdx}:null;}
   if(m.status==='overdue'||m.status==='due-today'||m.status==='open'){const od=ps.filter(p=>p.state==='unpaid'||p.state==='partial');return od.length?{p:od[0],last:od[od.length-1],m}:null;}
   return null;}
-const perMonth=(x,p)=>periodMonth(p.st,p.en,x.m.cycle);
+function paymentPeriodMonth(p,cycle){const m=p.months|| (cycle==='yearly'?12:1);if(m===12)return periodMonth(p.st,p.en,'yearly');const first=periodMonth(p.st,p.en,'monthly');return m>1?first+' – '+periodMonth(cycleAt(monthOffset(p.st)+m-1),p.en,'monthly'):first;}
+const perMonth=(x,p)=>paymentPeriodMonth(p,x.m.cycle);
 /* v30: the day a period is billed from: its cycle start, or the plan's start date for a prorated or waived first period (the same day nextDue names) */
 const pFrom=p=>(p.prorated||p.waived)&&p.es?p.es:p.st;
 const perLabel=p=>fmtD(pFrom(p))+' – '+fmtD(p.en);
 function statusLabel(a){switch(a.status){case 'cancelled':return a.balance&&a.balance.n?'Cancelled · owes':'Cancelled · settled';
-  case 'overdue':{const x=statusPeriod(a);if(!x)return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';const f=perMonth(x,x.p),l=perMonth(x,x.last);return 'Overdue for '+(f===l?f:f+' – '+l);}
+  case 'overdue':{const x=statusPeriod(a);if(!x)return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';const monthly=x.p.months<12&&x.last.months<12;const f=monthly?periodMonth(x.p.st,x.p.en,'monthly'):perMonth(x,x.p),l=monthly?periodMonth(cycleAt(monthOffset(x.last.st)+x.last.months-1),x.last.en,'monthly'):perMonth(x,x.last);return 'Overdue for '+(f===l?f:f+' – '+l);}
   case 'due-today':{const x=statusPeriod(a);return x?'Due today for '+perMonth(x,x.p):'Due today';}
   case 'due-soon':return 'Due soon';
   case 'current':{const x=statusPeriod(a);return x?(x.ahead?'Paid to ':'Paid for ')+perMonth(x,x.p):'Current';}
@@ -1363,10 +1398,10 @@ function switchFor(s,cs){const cur=pkgIdAt(s,cs);const curName=pkgName(cur)||'';
   const choice=/max/i.test(t.name)&&!/max/i.test(curName)?'upgrade':/max/i.test(curName)?'downgrade':price!=null&&price<curPrice?'downgrade':price!=null&&price>curPrice?'upgrade':back?'downgrade':'upgrade';
   const label=/max/i.test(t.name)&&!/max/i.test(curName)?'Upgrade to '+t.name:/max/i.test(curName)&&back?'Move back to '+t.name:/max/i.test(curName)?'Move to '+t.name:back?'Move back to '+t.name:'Change to '+t.name;
   return {packageId:t.id,name:t.name,label,choice,price,priceText:price!=null?fmtAmt(price,s.currency)+perOf(s):''};}
-function cycleCard(u,a,cs,today){const ce=cycleEndOf(cs);const replyBy=dayOnOrBefore(addDays(cs,-1),replyDay());const plans=[];
-  for(const s of u.subscriptions||[]){if(s.kind!=='monthly'||subCycle(s)!=='monthly')continue;if(s.end&&s.end<cs)continue;if(s.start>ce)continue;const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly')continue;
-    const p=(sa.periods||[]).find(x=>x.st===cs);const price=p?p.full:effPrice(s,cs);const amount=p?Math.max(0,p.pr-p.covered):price;const paid=!!p&&(p.state==='paid'||p.state==='waived');const ac=acctParts(u,s);const cpid=p&&p.pkgId?p.pkgId:pkgIdAt(s,cs);const tier=pkgName(cpid)||planLabel(s,cs);
-    plans.push({planId:s.id,label:ac.label||tier,custom:!!(p&&p.custom),amountNote:p&&p.custom?p.note:'',acct:[ac.label,ac.email].filter(Boolean).join(' · '),pkgId:cpid,tier,price,priceText:fmtAmt(price,s.currency)+perOf(s),currency:s.currency,amount,amountText:fmtAmt(amount,s.currency),paid,
+function cycleCard(u,a,cs,today){let ce=cycleEndOf(cs);const replyBy=dayOnOrBefore(addDays(cs,-1),replyDay());const plans=[];
+  for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;if(s.end&&s.end<cs)continue;const k=Math.max(0,periodIndexAt(s,cs)),bill=periodAmt(s,k);if(bill.st!==cs||s.start>bill.en)continue;const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly')continue;
+    const p=(sa.periods||[]).find(x=>x.st===cs);const price=bill.full;const amount=p?Math.max(0,p.pr-p.covered):bill.pr;const paid=!!p&&(p.state==='paid'||p.state==='waived');const ac=acctParts(u,s);const cpid=p&&p.pkgId?p.pkgId:pkgIdAt(s,cs);const tier=pkgName(cpid)||planLabel(s,cs);if(bill.en>ce)ce=bill.en;
+    plans.push({planId:s.id,label:ac.label||tier,periodText:fmtCycle(pFrom(bill),bill.en),custom:!!(p&&p.custom),amountNote:p&&p.custom?p.note:'',acct:[ac.label,ac.email].filter(Boolean).join(' · '),pkgId:cpid,tier,price,priceText:fmtAmt(price,s.currency)+payPer(bill.months),currency:s.currency,amount,amountText:fmtAmt(amount,s.currency),paid,
       /* v30: a cycle already billed as another package by hand (v27 override, e.g. one month as C Max) gets no tier offer; the page says so instead */
       switch:p&&p.pkgOv?null:switchFor(s,cs),switchNote:p&&p.pkgOv?'Already on '+tier+' for this cycle':''});}
   const due=plans.filter(p=>!p.paid&&p.amount>0);const S=newSum();for(const p of due)sumAdd(S,p.amount,p.currency,null);
@@ -1397,7 +1432,7 @@ const answerLine=(id,cycle)=>state.backend==='api'?`<br>${answerBadge(id,cycle)}
 /* apply what a subscriber chose, once per answer (the server stamps applied_at); re-running changes nothing.
    continue → confirmed tick; upgrade / downgrade → a tierHistory entry from the cycle start at the package price (marked via:'link');
    discontinue → a "Discontinue requested" mark the owner confirms with one tap; a changed answer resets the earlier one. */
-function applyAnswerSet(u,rows,cycle){const today=todayISO();const monthly=(u.subscriptions||[]).filter(s=>s.kind==='monthly'&&subCycle(s)==='monthly'&&(!s.end||s.end>=cycle));
+function applyAnswerSet(u,rows,cycle){const today=todayISO();const monthly=(u.subscriptions||[]).filter(s=>s.kind==='monthly'&&(!s.end||s.end>=cycle)&&periodAmt(s,Math.max(0,periodIndexAt(s,cycle))).st===cycle);
   const targetsOf=a=>a.plan_id?monthly.filter(s=>s.id===a.plan_id):monthly;const touched=new Set();for(const a of rows)for(const s of targetsOf(a))touched.add(s.id);
   for(const s of monthly)if(touched.has(s.id))s.tierHistory=(s.tierHistory||[]).filter(t=>!(t.from===cycle&&t.via==='link'));
   const keep=rows.some(a=>a.answer!=='discontinue');u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[cycle]||{});
@@ -1412,7 +1447,7 @@ function applyAnswerSet(u,rows,cycle){const today=todayISO();const monthly=(u.su
   else if(u.discontinue&&u.discontinue.cycleStart===cycle)u.discontinue=null;
   return u;}
 const applying={};
-async function applyAnswers(){if(state.backend!=='api'||!state.loaded)return;
+async function applyAnswers(){if(state.backend!=='api'||!state.loaded||!state.settingsLoaded)return;
   for(const cycle in confirmAnswers.byCycle){const byUser=confirmAnswers.byCycle[cycle];for(const uid in byUser){const rows=byUser[uid];const pending=rows.filter(a=>!a.applied_at);if(!pending.length)continue;const u=state.users[uid];if(!u||u.cancel||applying[uid])continue;applying[uid]=1;
     try{const before=JSON.stringify(cleanUser(Object.assign({},clone(u),{id:uid})));const c=applyAnswerSet(clone(u),rows,cycle);const after=JSON.stringify(cleanUser(Object.assign({},c,{id:uid})));let ok=true;if(after!==before)ok=await persistUser(uid,c);
       if(ok){for(const a of pending){try{const j=await apiJSON('/api/confirmations/'+a.id+'/applied',{method:'POST'});a.applied_at=j.applied_at||new Date().toISOString();}catch(e){}}confirmAnswers.key='';}}
@@ -1627,7 +1662,7 @@ function applyBranding(){const name=appName();const tag=tagline();const custom=n
   const big=markPNG(512,14,letter),mask=markPNG(512,0,letter);const icons=[{src:svg,sizes:'any',type:'image/svg+xml',purpose:'any'}];if(big)icons.push({src:big,sizes:'512x512',type:'image/png',purpose:'any'});if(mask)icons.push({src:mask,sizes:'512x512',type:'image/png',purpose:'maskable'});if(png)icons.push({src:png,sizes:'180x180',type:'image/png'});
   const man={name:name,short_name:name.length>12?name.split(/\s+/)[0].slice(0,12):name,description:tag,start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f3f5f3',theme_color:BRAND_GREEN,icons:icons};
   if(lm)lm.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));}
-function render(){applyBranding();renderSync();renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if(!$('#analyticsPanel').hidden)renderAnalytics();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);$('#s-dim').checked=dimOn();fillQueueSettings();}}
+function render(){applyBranding();renderSync();if(!state.settingsLoaded){renderTable();return;}renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if(!$('#analyticsPanel').hidden)renderAnalytics();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);$('#s-dim').checked=dimOn();fillQueueSettings();}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
   el.textContent=state.mode==='shared'?(state.backend==='api'?'Saved on your server, shared across your devices':'Shared with your team, saves live'):state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
@@ -2084,7 +2119,7 @@ function planCell(a){
   return top+line(a.planParts[0])+(a.planParts.length>1?`<span class="l2">${a.planParts.slice(1).map(line).join(' / ')}</span>`:'');
 }
 /* v32: reductions to bills are not receipts. Automatic joining proration is part of the bill's baseline. */
-function periodGross(s,p){const raw=p.pkgOv?(pkgPeriodPrice(s,p.pkgId,p.es)??priceAt(s,p.es)):priceAt(s,p.es);return p.waived||p.prorated?prorateCalc({prorationBasis:s.prorationBasis},raw,p.days,p.total).computed:raw;}
+function periodGross(s,p){const raw=installmentPrice(s,p.pkgOv?(pkgPeriodPrice(s,p.pkgId,p.es)??priceAt(s,p.es)):priceAt(s,p.es),p.st);return p.waived||p.prorated?prorateCalc({prorationBasis:s.prorationBasis},raw,p.days,p.total).computed:raw;}
 function billReductions(u,a,today){const sum=newSum();
   for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;for(const p of a.sa[s.id].periods){if(p.es>today&&p.covered<=0)continue;
     const gross=periodGross(s,p);
@@ -2093,7 +2128,7 @@ function billReductions(u,a,today){const sum=newSum();
   }}return sum;
 }
 /* v32: coverage is computed from receipts in date order. No existing receipt or period is rewritten. */
-function billingName(s,p){return p.prorated||p.waived?`First bill (${mLabel(monthKey(p.st))} cycle)`:subCycle(s)==='yearly'?periodMonth(p.st,p.en,'yearly'):mLabel(monthKey(p.st));}
+function billingName(s,p){return p.prorated||p.waived?`First bill (${mLabel(monthKey(p.st))} cycle)`:(p.months||payMonthsAt(s,p.st))===12?periodMonth(p.st,p.en,'yearly'):(p.months||payMonthsAt(s,p.st))>1?payFrequency(p.months||payMonthsAt(s,p.st))+' · '+mLabel(monthKey(p.st)):mLabel(monthKey(p.st));}
 function receiptCoverage(s,before,after){const parts=[];const prior=new Map((before.periods||[]).map(p=>[p.st,p]));
   for(const p of after.periods||[]){const old=prior.get(p.st);const amount=p.covered-(old?old.covered:0);if(amount>0.005)parts.push({name:billingName(s,p),dates:fmtCycle(pFrom(p),p.en),amount,partial:p.covered+0.005<p.pr});}
   return parts;
@@ -2102,13 +2137,52 @@ function receiptAllocations(s,today){const out={};if(s.kind!=='monthly')return o
   for(const p of (s.payments||[]).slice().sort((a,b)=>a.date.localeCompare(b.date))){base.payments.push(p);const after=analyzeMonthly(base,today);out[p.id]=receiptCoverage(s,before,after);before=after;}return out;
 }
 const coverageText=parts=>parts.map(p=>p.name+(p.partial?' (partial)':'')).join(', ');
+/* v33: start and schedule edits preview the dashboard's bills without changing cash or price history. */
+function firstBillText(s){const first=periodAmt(s,0),next=periodAmt(s,1),pa=prorateCalc(s,first.full,first.days,first.total);let txt=`First bill: ${fmtAmt(first.pr,s.currency)} for ${fmtCycle(pFrom(first),first.en)}${first.waived?' (first partial period waived)':first.prorated?' (prorated once)':''}.`;
+  if(first.prorated&&!first.custom)txt+=` ${pa.days} / ${pa.basis} days × ${fmtAmt(first.full,s.currency)}${pa.amtOverride||pa.rateOverride||pa.override?' (existing custom proration applies)':''}.`;
+  if(first.custom)txt+=' The existing custom charge takes priority over automatic proration.';
+  txt+=` Then ${fmtAmt(next.pr,s.currency)}${payPer(next.months)} from ${fmtD(next.st,true)} for ${fmtCycle(next.st,next.en)}.`;
+  if(subCycle(s)==='yearly')txt+=` Annual price stays ${fmtAmt(effPrice(s,s.start),s.currency)}. Installments split that price; rounding is balanced across the year.`;
+  return txt+' The date cash arrives is recorded separately.';
+}
+function startContext(){const d=ui.startDraft,u=d&&state.users[d.id],s=u&&(u.subscriptions||[]).find(x=>x.id===d.sid);return s&&s.kind==='monthly'?{d,u,s,a:analyze(u,todayISO())}:null;}
+function nextScheduleStart(s,sa){return pStart(s,Math.max(1,sa.kPaid,sa.curIdx+1));}
+function fillStartForm(){const c=startContext();if(!c)return;const {d,s,a}=c;$('#start-date').value=s.start;$('#start-prorate').checked=s.prorate!==false;$('#start-error').textContent='';
+  d.originalMonths=payMonthsAt(s,'9999-12-31');$('#start-payment').innerHTML=payScheduleOptions(d.originalMonths);$('#start-payment-wrap').hidden=subCycle(s)!=='yearly';$('#start-apply').value=(s.payments||[]).length?'next':'start';
+  $('#start-apply').options[0].textContent='Next bill: '+fmtD(nextScheduleStart(s,a.sa[s.id]),true)+' (keep earlier bills)';refreshStartPreview();
+}
+function openStartDialog(id,sid){if(!state.settingsLoaded)return;const u=state.users[id],subs=u&&(u.subscriptions||[]).filter(s=>s.kind==='monthly');if(!subs||!subs.length)return;const s=subs.find(x=>x.id===sid)||subs[0];ui.startDraft={id,sid:s.id,busy:false};$('#start-who').textContent=displayName(u);
+  $('#start-account').innerHTML=subs.map((x,i)=>`<option value="${esc(x.id)}">${esc(paymentAccountName(u,x,i))}</option>`).join('');$('#start-account').value=s.id;$('#start-account').disabled=subs.length===1;fillStartForm();const dialog=$('#startDialog');if(!dialog.open)dialog.showModal();$('#start-date').focus();
+}
+function startDraftUser(c){const {d,u,s,a}=c,sim=clone(u),ss=sim.subscriptions.find(x=>x.id===s.id);ss.start=$('#start-date').value;ss.prorate=$('#start-prorate').checked;
+  const m=Number($('#start-payment').value),scheduleChanged=subCycle(s)==='yearly'&&m!==d.originalMonths;
+  if(subCycle(s)==='yearly'&&(!scheduleChanged||$('#start-apply').value==='start'||ss.start!==s.start||ss.prorate!==(s.prorate!==false)))ss.prorationBasis='actual';
+  if(scheduleChanged){if($('#start-apply').value==='start')ss.paymentEvery=m;else{const from=nextScheduleStart(s,a.sa[s.id]);ss.paymentSchedule=normPaymentSchedule((ss.paymentSchedule||[]).concat({from,months:m}));}}
+  return sim;
+}
+function refreshStartPreview(){const c=startContext();if(!c)return;const {d,u,s,a}=c,date=$('#start-date').value,valid=isDateKey(date)&&(!s.end||date<=s.end);const scheduleChanged=subCycle(s)==='yearly'&&Number($('#start-payment').value)!==d.originalMonths;
+  ['#start-date','#start-prorate','#start-payment','#start-apply'].forEach(sel=>$(sel).disabled=d.busy);$('#start-account').disabled=d.busy||u.subscriptions.filter(x=>x.kind==='monthly').length===1;
+  $('#start-apply-wrap').hidden=!scheduleChanged;$('#start-save').disabled=d.busy||!valid;$('#start-save').textContent=d.busy?'Saving…':'Save package start and payments';
+  if(!valid){$('#start-bill').textContent=s.end&&date>s.end?'The package start must be on or before its end date.':'Choose the date this package started.';$('#start-preview').textContent='';return;}
+  const sim=startDraftUser(c),ss=sim.subscriptions.find(x=>x.id===s.id),after=analyze(sim,todayISO()),old=a.sa[s.id],next=after.sa[s.id];$('#start-bill').textContent=firstBillText(ss);
+  let txt=`Total paid stays ${ownText(a.totals,a.mainCur)}; receipts and refunds are kept.\nFirst bill: ${fmtAmt(periodAmt(s,0).pr,s.currency)} → ${fmtAmt(periodAmt(ss,0).pr,s.currency)}.\nPaid through: ${old.kPaid?fmtD(old.paidThrough,true):'nothing yet'} → ${next.kPaid?fmtD(next.paidThrough,true):'nothing yet'}.\nBalance on bills already started: ${ownText(a.balance,a.mainCur)} → ${ownText(after.balance,after.mainCur)}. Person joined on ${fmtD(u.joinDate,true)}.`;
+  if(scheduleChanged)txt+='\n'+($('#start-apply').value==='next'?`New ${payFrequency(Number($('#start-payment').value))} payments begin ${fmtD(nextScheduleStart(s,old),true)}. Earlier bills keep their dates and amounts, apart from the start/proration edit shown above.`:'The selected payment schedule recalculates bills from the package start. Recorded cash is applied oldest first.');
+  if((ss.paymentSchedule||[]).length)txt+='\nScheduled changes: '+ss.paymentSchedule.map(x=>payFrequency(x.months)+' from '+fmtD(x.from,true)).join('; ')+'.';
+  if(Object.keys(s.periodOverrides||{}).length)txt+='\nCustom charges stay attached to their original billing dates; use change charge / package to adjust one.';
+  if(s.waiveFirst)txt+='\nThe existing first-period waiver is kept; change it in the full plan Edit form if needed.';
+  $('#start-preview').textContent=txt;
+}
+function closeStartDialog(){if(ui.startDraft&&ui.startDraft.busy)return;$('#startDialog').close();ui.startDraft=null;}
+async function saveStartDialog(e){e.preventDefault();const c=startContext();if(!c||c.d.busy)return;refreshStartPreview();if($('#start-save').disabled)return;const edited=startDraftUser(c);c.d.busy=true;refreshStartPreview();const ok=await persistUser(c.d.id,edited);c.d.busy=false;
+  if(ok){$('#startDialog').close();ui.startDraft=null;toast('Package start and payments saved. Recorded cash is unchanged.');}else{$('#start-error').textContent='The changes were not saved. Your entries are kept here; try again.';refreshStartPreview();}
+}
 function paymentContext(){const d=ui.paymentDraft,u=d&&state.users[d.id],s=u&&(u.subscriptions||[]).find(s=>s.id===d.sid);return s?{d,u,s,a:analyze(u,todayISO())}:null;}
 function paymentTarget(s,sa,k){if(s.kind!=='monthly')return sa.remaining>0?{owed:sa.remaining,parts:[],n:1,st:'item'}:null;
   if(!Number.isInteger(k)||k<sa.kPaid||!sa.nextSt||(s.end&&pStart(s,k)>s.end))return null;
   const parts=coverPlan(s,sa,k).filter(p=>p.due>0);if(!parts.length)return null;
   return {owed:Math.round(parts.reduce((t,p)=>t+p.due,0)*100)/100,parts,n:parts.length,st:pStart(s,k),upto:parts[parts.length-1].en};
 }
-function paymentAccountName(u,s,i){const acct=acctParts(u,s);return `${acct.label||'Account '+(i+1)} · ${planLabel(s)} · ${s.currency}${s.kind==='monthly'?' · '+subCycle(s):''}${acct.email?' · '+acct.email:''}`;}
+function paymentAccountName(u,s,i){const acct=acctParts(u,s);return `${acct.label||'Account '+(i+1)} · ${planLabel(s)} · ${s.currency}${s.kind==='monthly'?' · '+subCycle(s)+(subCycle(s)==='yearly'?' · pays '+payFrequency(payMonthsAt(s,'9999-12-31')):''):''}${acct.email?' · '+acct.email:''}`;}
 function fillPaymentMonths(start){const c=paymentContext();if(!c)return;const {d,s,a}=c,sa=a.sa[s.id],sel=$('#payment-month');
   $('#payment-month-label').hidden=!!d.payId||s.kind!=='monthly'||!sa.nextSt;
   if(s.kind!=='monthly'){sel.innerHTML='<option value="item">One-time item</option>';return;}
@@ -2122,7 +2196,7 @@ function paymentAutoAmount(){const c=paymentContext();if(!c)return;const {d,s,a}
   const value=t?toCur(t.owed,s.currency,$('#payment-currency').value,normRate($('#payment-rate').value)):null;
   $('#payment-amount').value=value!=null?String(Math.round(value*100)/100):'';d.auto=true;refreshPaymentPreview();
 }
-function openPaymentDialog(id,sid,payId,start){const u=state.users[id];if(!u||!u.subscriptions.length)return;const a=analyze(u,todayISO());
+function openPaymentDialog(id,sid,payId,start){if(!state.settingsLoaded)return;const u=state.users[id];if(!u||!u.subscriptions.length)return;const a=analyze(u,todayISO());
   const subs=u.subscriptions;const s=subs.find(s=>s.id===sid)||subs.find(s=>a.sa[s.id].nextDue)||subs[0];const pay=payId&&(s.payments||[]).find(p=>p.id===payId);if(payId&&!pay)return;
   ui.paymentDraft={id,sid:s.id,payId:pay?pay.id:null,auto:!pay,busy:false};$('#paymentForm').reset();$('#payment-error').textContent='';
   $('#payment-title').textContent=pay?'Edit money received':'Record payment';$('#payment-who').textContent=displayName(u);
@@ -2165,9 +2239,10 @@ async function savePaymentDialog(e){e.preventDefault();const c=paymentContext();
 }
 function renderTable(){
   if(ui.paymentDraft&&$('#paymentDialog').open)refreshPaymentPreview();
+  if(ui.startDraft&&$('#startDialog').open)refreshStartPreview();
   renderAcctBar();
   const today=todayISO();const ids=Object.keys(state.users);
-  const loading=state.mode==='connecting'||(state.mode==='shared'&&!state.loaded);
+  const loading=state.mode==='connecting'||!state.settingsLoaded||(state.mode==='shared'&&!state.loaded);
   $('#loading').hidden=!loading;$('#empty').hidden=loading||ids.length>0;$('#tableWrap').hidden=loading||ids.length===0;$('#costsSec').hidden=loading;
   $('#sort').value=ui.sort;$('#statusFilter').value=ui.statusFilter;$('#btn-filter').setAttribute('aria-pressed',String(ui.filterUnpaid));
   document.querySelectorAll('#table thead th[data-sort]').forEach(th=>{th.querySelector('.arrow').textContent=th.dataset.sort===ui.sort?(ui.dir===1?'▾':'▴'):'';});
@@ -2182,7 +2257,7 @@ function renderTable(){
     const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):(a.planParts.length&&!u.cancel?'nothing yet':'—');
     const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?`<span class="muted">paid for ${esc(periodMonth(nextCycleStart(today),null,'monthly'))}</span>`:'<span class="muted">—</span>');
     html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}" data-settled="${dimOn()&&a.settled?1:0}">
-      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${contactLine(u)}${u.subscriptions.length?`<button class="btn primary sm row-pay" type="button" data-act="row-pay" data-user="${esc(id)}">Record month payment</button>`:''}<span class="row-money">Total paid <b data-role="row-paid">${esc(ownText(a.totals,a.mainCur))}</b><br>Discounts / reductions <b>${esc(ownText(reductions,a.mainCur))}</b><br>${esc(statusLabel(a))}</span></td>
+      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${contactLine(u)}${u.subscriptions.length?`<button class="btn primary sm row-pay" type="button" data-act="row-pay" data-user="${esc(id)}">Record month payment</button>`:''}${u.subscriptions.some(s=>s.kind==='monthly')?`<button class="btn sm row-start" type="button" data-act="row-start" data-user="${esc(id)}">Package start / payments</button><span class="start-list">${u.subscriptions.filter(s=>s.kind==='monthly').map(s=>`${esc(planLabel(s))}: ${esc(fmtD(s.start,true))}${subCycle(s)==='yearly'?' · pays '+esc(payFrequency(payMonthsAt(s,'9999-12-31'))):''}`).join('<br>')}</span>`:''}<span class="row-money">Total paid <b data-role="row-paid">${esc(ownText(a.totals,a.mainCur))}</b><br>Discounts / reductions <b>${esc(ownText(reductions,a.mainCur))}</b><br>${esc(statusLabel(a))}</span></td>
       <td class="plan">${planCell(a)}</td>
       <td title="${esc(u.joinDate)}">${esc(fmtD(u.joinDate))}</td>
       <td class="${late?'late':''}">${ptTxt}</td>
@@ -2439,7 +2514,7 @@ function detailHTML(id,u,a,today){
       const hist=(s.prices||[]).slice().sort((x,y)=>x.from.localeCompare(y.from));
       const histTxt=hist.length>1?hist.map(p=>`${esc(fmtAmt(p.price,s.currency))} from ${esc(fmtD(p.from,true))} <button class="link sm" type="button" data-act="price-edit" data-sub="${s.id}" data-from="${p.from}">edit</button> <button class="link sm danger" type="button" data-act="price-remove" data-sub="${s.id}" data-from="${p.from}">remove</button>`).join(' → '):'';
       const yearly=subCycle(s)==='yearly';const cp=sa.curP;
-      const yearFacts=yearly&&cp?`<span>This year (${esc(fmtD(cp.st,true))} – ${esc(fmtD(cp.en,true))}): paid <b>${esc(fmtAmt(cp.covered,s.currency))}</b> of ${esc(fmtAmt(cp.pr,s.currency))} · remaining <b>${esc(fmtAmt(Math.max(0,cp.pr-cp.covered),s.currency))}</b></span>`:'';
+      const yearFacts=yearly&&cp&&cp.months===12?`<span>This year (${esc(fmtD(cp.st,true))} – ${esc(fmtD(cp.en,true))}): paid <b>${esc(fmtAmt(cp.covered,s.currency))}</b> of ${esc(fmtAmt(cp.pr,s.currency))} · remaining <b>${esc(fmtAmt(Math.max(0,cp.pr-cp.covered),s.currency))}</b></span>`:'';
       const dueByFact=s.dueBy?`<span>Remaining due by <b>${esc(fmtD(s.dueBy,true))}</b></span>`:'';
       const lastPaid=sa.periods.filter(p=>p.state==='paid').pop();
       const tierTag=p=>p.pkgOv&&p.pkgId?` <span class="tag tier pkgov" title="Billed at ${esc(pkgName(p.pkgId))} for this period only">${esc(pkgName(p.pkgId))}</span>`:sa.tiered&&p.pkgId?` <span class="tag tier">${esc(pkgName(p.pkgId))}</span>`:'';
@@ -2479,7 +2554,7 @@ function detailHTML(id,u,a,today){
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
         </div>
         <div class="sub-body">
-        <div class="sub-facts"><span>Started <b>${esc(fmtD(s.start,true))}</b></span>${s.end?`<span>Ends <b>${esc(fmtD(s.end,true))}</b></span>`:''}<span>Paid through <b>${sa.kPaid?esc(fmtD(sa.paidThrough,true)):'nothing yet'}</b></span>${sa.nextDue?(sa.nextDue>today?`<span>Next due <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}${sa.nextCredit>0?` <span class="muted">(after ${esc(fmtAmt(sa.nextCredit,s.currency))} credit)</span>`:''}</span>`:sa.nextCredit>0?`<span>Remaining on the current period <b>${esc(fmtAmt(nextPr,s.currency))}</b></span>`:`<span>Unpaid since <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}</span>`):''}${(s.refunds||[]).length?`<span>Paid in <b>${esc(fmtAmt(sa.paid+refundedInPlanCur(s),s.currency))}</b> · refunded <b class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</b> · kept <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`:`<span>Total paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`}${yearFacts}${dueByFact}${s.waiveFirst?'<span>First partial period <b>waived</b></span>':s.prorate===false?'<span>First period <b>not prorated</b></span>':''}${unconvNote}</div>
+        <div class="sub-facts"><span>Package started <b>${esc(fmtD(s.start,true))}</b> <button class="link sm" type="button" data-act="package-start" data-sub="${s.id}">Change start / payments</button></span>${yearly?`<span>Pays <b>${esc(payFrequency(payMonthsAt(s,'9999-12-31')))}</b>${(s.paymentSchedule||[]).length?' · '+s.paymentSchedule.map(x=>esc(payFrequency(x.months)+' from '+fmtD(x.from,true))).join('; '):''}</span>`:''}${s.end?`<span>Ends <b>${esc(fmtD(s.end,true))}</b></span>`:''}<span>Paid through <b>${sa.kPaid?esc(fmtD(sa.paidThrough,true)):'nothing yet'}</b></span>${sa.nextDue?(sa.nextDue>today?`<span>Next due <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}${sa.nextCredit>0?` <span class="muted">(after ${esc(fmtAmt(sa.nextCredit,s.currency))} credit)</span>`:''}</span>`:sa.nextCredit>0?`<span>Remaining on the current period <b>${esc(fmtAmt(nextPr,s.currency))}</b></span>`:`<span>Unpaid since <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}</span>`):''}${(s.refunds||[]).length?`<span>Paid in <b>${esc(fmtAmt(sa.paid+refundedInPlanCur(s),s.currency))}</b> · refunded <b class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</b> · kept <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`:`<span>Total paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`}${yearFacts}${dueByFact}${s.waiveFirst?'<span>First partial period <b>waived</b></span>':s.prorate===false?'<span>First period <b>not prorated</b></span>':''}${unconvNote}</div>
         ${histTxt?`<div class="hist">Price history: ${histTxt}</div>`:''}${tierHist}
         <div class="periods">${cells}</div>
         ${recOpen==='none'&&!rt?recNoneHTML(id,u,s,sa,today):''}
@@ -2493,7 +2568,7 @@ function detailHTML(id,u,a,today){
             <label class="f">Amount charged (${s.currency}) <span class="muted">(blank = days × rate)</span><input id="dy-amt-${s.id}" name="amount" type="number" min="0" step="0.01" value="${periodOverride(s,sa.periods[0].st)?periodOverride(s,sa.periods[0].st).amount:(s.prorationAmountOverride!=null?s.prorationAmountOverride:'')}" placeholder="${esc(fmtAmt(sa.periods[0].computed,s.currency))}"></label>
             <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button><button class="link" type="button" data-act="days-reset" data-sub="${s.id}">Reset to actual (${sa.periods[0].days} days, standard rate)</button><button class="link" type="button" data-act="toggle" data-key="days:${s.id}">Cancel</button></span>
           </div>
-          <p class="small muted" style="margin-top:6px">Standard daily rate ${esc(fmtAmt(effPrice(s,sa.periods[0].es)/sa.periods[0].basisDays,s.currency))} (${sa.periods[0].basisDays===30?'fixed 30-day month':'actual '+sa.periods[0].total+'-day cycle'}${rawBasis(s.prorationBasis)?', set on this plan':', from Settings'}). The first period is charged days × rate, capped at the full price; a set amount wins over both and is marked "custom" (the same entry as the period box's "edit amount").</p>
+          <p class="small muted" style="margin-top:6px">Standard daily rate ${esc(fmtAmt(sa.periods[0].full/sa.periods[0].basisDays,s.currency))} (${sa.periods[0].basisDays===30?'fixed 30-day month':'actual '+sa.periods[0].total+'-day cycle'}${rawBasis(s.prorationBasis)?', set on this plan':', from Settings'}). The first period is charged days × rate, capped at the full price; a set amount wins over both and is marked "custom" (the same entry as the period box's "edit amount").</p>
         </form>`:''}
         <form class="price-form" data-id="${id}" data-sub="${s.id}" ${open['price:'+s.id]?'':'hidden'} novalidate>
           <input type="hidden" name="replaceFrom" value="${esc(pe||'')}">
@@ -2587,11 +2662,13 @@ function detailHTML(id,u,a,today){
         <label class="f"><span data-role="name-label">Label (optional)</span><input id="as-name-${id}" name="name" type="text" placeholder="e.g. ChatGPT"></label>
         <label class="f">Pays in${curSelect('as-cur-'+id,'currency',a.mainCur)}</label>
         <label class="f"><span data-role="amt-label">Monthly price</span><input id="as-price-${id}" name="price" type="number" min="0" step="0.01" required></label>
-        <label class="f"><span data-role="date-label">Start date</span><input id="as-date-${id}" name="date" type="date" value="${u.joinDate}"></label>
+        <label class="f"><span data-role="date-label">Start date</span><input id="as-date-${id}" name="date" type="date" value="${todayISO()}"></label>
+        <label class="f" data-role="payment-wrap" hidden>Payment schedule<select name="paymentEvery">${payScheduleOptions(12)}</select></label>
         <label class="f" data-role="dueby-wrap">Remaining due by <span class="muted">(optional)</span><input id="as-dueby-${id}" name="dueBy" type="date"></label>
         <label class="f chk" data-role="prorate-wrap"><input id="as-prorate-${id}" name="prorate" type="checkbox" checked>Prorate first period</label>
         <label class="f chk" data-role="waive-wrap"><input id="as-waive-${id}" name="waiveFirst" type="checkbox">Waive first partial period</label>
       </div>
+      <p class="cover" data-role="first-bill-preview" aria-live="polite"></p>
       <div class="form-actions"><button class="btn primary sm" type="submit">Add</button><button class="link" type="button" data-act="toggle" data-key="addsub">Cancel</button><span class="err" data-role="addsub-err"></span></div>
     </form>
     <form class="block edit-form" data-id="${id}" ${open.edit?'':'hidden'} novalidate>
@@ -2647,7 +2724,7 @@ function wireDetail(id,today){
     const compute=()=>{const k=Number(sel.value);const cov=coverPlan(s,sa,k);const due=cov.filter(p=>p.due>0);const total=Math.round(due.reduce((t,p)=>t+p.due,0)*100)/100;const n=due.length;form.dataset.total=String(total);form.dataset.k=String(k);
       if(auto)amt.value=n?String(total):'';
       const last=cov[cov.length-1];const credit=cov.find(p=>p.credit>0);const cur=s.currency;
-      const names=due.map(p=>periodMonth(p.st,p.en,subCycle(s)));const who=n?(n<=4?(n===1?names[0]:names.slice(0,-1).join(', ')+' and '+names[names.length-1]):names[0]+' – '+names[names.length-1]+' ('+n+' periods)'):'';
+      const names=due.map(p=>paymentPeriodMonth(p,subCycle(s)));const who=n?(n<=4?(n===1?names[0]:names.slice(0,-1).join(', ')+' and '+names[names.length-1]):names[0]+' – '+names[names.length-1]+' ('+n+' periods)'):'';
       const notNow=`<button class="link" type="button" data-act="toggle" data-key="upto:${s.id}">Not now</button>`;
       plan.innerHTML=n?`<p class="rec-q">Record <b>${n} payment${n===1?'':'s'}</b> totalling <b>${esc(fmtAmt(total,cur))}</b> for ${esc(who)}?</p>
         <p class="d">Dated today, ${esc(fmtD(today,true))} · ${n===1?esc(fmtAmt(due[0].due,cur))+' for '+esc(perLabel(due[0])):'one payment per period: '+esc(due.map(p=>fmtAmt(p.due,cur)).join(' + '))+', covering '+esc(fmtD(pFrom(due[0])))+' – '+esc(fmtD(last.en))}${credit?` · the ${esc(fmtAmt(credit.credit,cur))} credit already carried reduces the first`:''}.</p>
@@ -2678,7 +2755,15 @@ function wireDetail(id,today){
     sync(false);
   });
   const add=det.querySelector('.addsub-form');
-  if(add){const kind=add.querySelector('[name=kind]');const pkgSel=add.querySelector('[name=packageId]');pkgSel.addEventListener('change',()=>{if(pkgSel.value==='__new'){pkgSel.value='';newPackageFlow();return;}const p=pkgById(pkgSel.value);const pr=add.querySelector('[name=price]');if(p){kind.value=p.cycle;kind.dispatchEvent(new Event('change'));}if(p&&p.price!=null&&(pr.value===''||pr.value===(pkgSel.dataset.prefilled||''))){pr.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency)add.querySelector('[name=currency]').value=p.currency;}});const upd=()=>{const ot=kind.value==='one-time';add.querySelector('[data-role=dueby-wrap]').hidden=ot;add.querySelector('[data-role=prorate-wrap]').hidden=ot;add.querySelector('[data-role=waive-wrap]').hidden=ot;add.querySelector('[data-role=name-label]').textContent=ot?'Item name':'Label (optional)';add.querySelector('[data-role=amt-label]').textContent=ot?'Total amount':(kind.value==='yearly'?'Yearly price':'Monthly price');add.querySelector('[data-role=date-label]').textContent=ot?'Due date (optional)':'Start date';const d=add.querySelector('[name=date]');d.required=!ot;if(ot&&d.value===u.joinDate)d.value='';if(!ot&&!d.value)d.value=u.joinDate;};kind.addEventListener('change',upd);upd();}
+  if(add){const kind=add.querySelector('[name=kind]'),pkgSel=add.querySelector('[name=packageId]');
+    const upd=()=>{const ot=kind.value==='one-time',yearly=kind.value==='yearly';add.querySelector('[data-role=dueby-wrap]').hidden=ot;add.querySelector('[data-role=prorate-wrap]').hidden=ot;add.querySelector('[data-role=waive-wrap]').hidden=ot;add.querySelector('[data-role=payment-wrap]').hidden=!yearly;add.querySelector('[data-role=name-label]').textContent=ot?'Item name':'Label (optional)';add.querySelector('[data-role=amt-label]').textContent=ot?'Total amount':yearly?'Yearly price':'Monthly price';add.querySelector('[data-role=date-label]').textContent=ot?'Due date (optional)':'Package started on';const d=add.querySelector('[name=date]');d.required=!ot;if(!ot&&!d.value)d.value=todayISO();
+      const raw=add.querySelector('[name=price]').value,cur=add.querySelector('[name=currency]').value,preview=add.querySelector('[data-role=first-bill-preview]');
+      if(!validAmt(raw)||(!ot&&!isDateKey(d.value))){preview.textContent='Choose this package’s start date and price to see its first bill.';return;}
+      preview.textContent=ot?'Item total: '+fmtAmt(Number(raw),cur):firstBillText({kind:'monthly',cycle:kind.value,start:d.value,currency:cur,packageId:pkgSel.value,prorate:add.querySelector('[name=prorate]').checked,waiveFirst:add.querySelector('[name=waiveFirst]').checked,prorationBasis:yearly?'actual':'',paymentEvery:yearly?Number(add.querySelector('[name=paymentEvery]').value):undefined,prices:[{from:d.value,price:Number(raw)}]});
+    };
+    pkgSel.addEventListener('change',()=>{if(pkgSel.value==='__new'){pkgSel.value='';newPackageFlow();return;}const p=pkgById(pkgSel.value),pr=add.querySelector('[name=price]');if(p)kind.value=p.cycle;if(p&&p.price!=null&&(pr.value===''||pr.value===(pkgSel.dataset.prefilled||''))){pr.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency)add.querySelector('[name=currency]').value=p.currency;}upd();});
+    add.addEventListener('input',upd);kind.addEventListener('change',upd);upd();
+  }
   det.querySelectorAll('.subedit-form select[name=packageId]').forEach(sel=>sel.addEventListener('change',()=>{if(sel.value==='__new'){sel.value='';newPackageFlow();}}));
 }
 
@@ -2794,16 +2879,15 @@ async function saveMailSettings(){const msg=$('#m-msg');msg.textContent='Saving�
   try{const m=await apiJSON('/api/mail-settings',apiBody('PUT',body));$('#m-pass').value='';$('#m-pass').placeholder=m.hasPassword?'•••••••• saved · leave blank to keep':'app password';msg.textContent=m.configured?'Saved. The daily job at 09:00 will email today\'s stage.':'Saved, but not configured yet (host, user and app password are needed).';}catch(e){msg.textContent='Could not save: '+(e.message||e.code||'error');}}
 async function testMail(){const msg=$('#m-msg');const to=$('#m-test-to').value.trim();msg.textContent='Sending test…';try{const j=await apiJSON('/api/mail-test',apiBody('POST',{to}));msg.textContent='Test email sent to '+j.to+'. Check the inbox (and spam).';}catch(e){msg.textContent='Test failed: '+(e.message||e.code||'error')+(e.code==='not_configured'?' Save the mail settings first.':'');}}
 function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
-function openAdd(){showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
+function openAdd(){if(!state.settingsLoaded){toast('Billing settings are loading. Try again in a moment.');return;}showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();if(!$('#a-start').value)$('#a-start').value=$('#a-join').value;const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
 function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';}
 function updAddConv(){const cur=$('#a-cur').value;const cyEl=$('#a-cycle');const cy=cyEl?cyEl.value:'monthly';$('#a-price-lbl').textContent=`${cy==='one-time'?'Total amount':cy==='yearly'?'Yearly price':'Monthly price'} (${cur==='USD'?'$':'Rs'})`;const n=Number($('#a-price').value)||0;const c=conv(n,cur,null);$('#a-conv').textContent=n?`${fmtAmt(n,cur)}${CYCLES[cy].per}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`:' (set an exchange rate in Settings to see the other currency)'):'Enter the price to preview the first bill.';
   /* v32: only the joining period is prorated. The receipt date never changes a charge. */
-  const preview=$('#a-bill-preview'),join=$('#a-join').value;
-  if(!isDateKey(join)||!validAmt($('#a-price').value)){preview.textContent='Choose the joining date and price to see the first bill.';return;}
+  $('#a-start-wrap').hidden=cy==='one-time';$('#a-payment-wrap').hidden=cy!=='yearly';const preview=$('#a-bill-preview'),start=$('#a-start').value;
+  if(!isDateKey(start)||!validAmt($('#a-price').value)){preview.textContent='Choose the package start date and price to see the first bill.';return;}
   if(cy==='one-time'){preview.textContent=`Item total: ${fmtAmt(n,cur)}. Record the money received after adding the user.`;return;}
-  const s={kind:'monthly',cycle:cy,currency:cur,packageId:$('#a-pkg').value,start:join,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,prices:[{from:join,price:n}],payments:[]};
-  const first=periodAmt(s,0),next=periodAmt(s,1);
-  preview.textContent=`First bill: ${fmtAmt(first.pr,cur)} for ${fmtCycle(pFrom(first),first.en)}${first.waived?' (first partial period waived)':first.prorated?' (prorated once from the joining date)':''}. Then ${fmtAmt(next.pr,cur)}${CYCLES[cy].per} from ${fmtD(next.st,true)}. The date cash arrives is recorded separately.`;
+  const s={kind:'monthly',cycle:cy,currency:cur,packageId:$('#a-pkg').value,start,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,prorationBasis:cy==='yearly'?'actual':'',paymentEvery:cy==='yearly'?Number($('#a-payment').value):undefined,prices:[{from:start,price:n}],payments:[]};
+  preview.textContent=firstBillText(s);
 }
 function toggleOpen(id,key){ui.open[id]=ui.open[id]||{};ui.open[id][key]=!ui.open[id][key];if(!ui.open[id][key]){if(key==='cancel')delete ui.cancelPre[id];const sid=key.split(':')[1];if(sid&&ui.priceEdit)delete ui.priceEdit[sid];if(sid&&ui.payEdit)delete ui.payEdit[sid];if(sid&&ui.refundEdit)delete ui.refundEdit[sid];}renderTable();}
 const validPhone=raw=>{const d=digits(raw);return d===''||(d.length>=7&&d.length<=15);};
@@ -2828,7 +2912,14 @@ function bind(){
   $('#qa-save').addEventListener('click',quickSave);
   $('#add-close').addEventListener('click',()=>{$('#addPanel').hidden=true;});
   $('#a-cur').addEventListener('change',updAddConv);$('#a-price').addEventListener('input',updAddConv);
-  ['#a-join','#a-prorate','#a-waive'].forEach(sel=>$(sel).addEventListener('input',updAddConv));
+  $('#a-join').addEventListener('input',()=>{if(!$('#a-start').dataset.manual)$('#a-start').value=$('#a-join').value;updAddConv();});
+  $('#a-start').addEventListener('input',()=>{$('#a-start').dataset.manual='1';updAddConv();});
+  ['#a-prorate','#a-waive','#a-payment'].forEach(sel=>$(sel).addEventListener('input',updAddConv));
+  $('#startForm').addEventListener('submit',saveStartDialog);
+  ['#start-close','#start-cancel'].forEach(sel=>$(sel).addEventListener('click',closeStartDialog));
+  $('#startDialog').addEventListener('cancel',e=>{if(ui.startDraft&&ui.startDraft.busy)e.preventDefault();else ui.startDraft=null;});
+  $('#start-account').addEventListener('change',()=>{if(!ui.startDraft||ui.startDraft.busy)return;ui.startDraft.sid=$('#start-account').value;fillStartForm();});
+  ['#start-date','#start-prorate','#start-payment','#start-apply'].forEach(sel=>$(sel).addEventListener('input',refreshStartPreview));
   $('#paymentForm').addEventListener('submit',savePaymentDialog);
   ['#payment-close','#payment-cancel'].forEach(sel=>$(sel).addEventListener('click',closePaymentDialog));
   $('#paymentDialog').addEventListener('cancel',e=>{if(ui.paymentDraft&&ui.paymentDraft.busy)e.preventDefault();else ui.paymentDraft=null;});
@@ -2913,7 +3004,7 @@ function bind(){
     const u=clone(state.users[row.dataset.id]);const s=(u.subscriptions||[]).find(x=>x.id===sel.dataset.sub);if(!s)return;
     s.packageId=sel.value;sel.disabled=true;const ok=await persistUser(row.dataset.id,u);if(ok)toast(`${displayName(u)}: package set to ${pkgName(sel.value)}.`);else sel.disabled=false;
   });
-  const prefillFromPkg=(pkgSel,priceEl,curEl)=>{const p=pkgById(pkgSel.value);if(!p||p.price==null)return;const last=pkgSel.dataset.prefilled||'';if(priceEl.value===''||priceEl.value===last){priceEl.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency&&curEl)curEl.value=p.currency;priceEl.dispatchEvent(new Event('input',{bubbles:true}));if(curEl)curEl.dispatchEvent(new Event('change',{bubbles:true}));}};
+  const prefillFromPkg=(pkgSel,priceEl,curEl)=>{const p=pkgById(pkgSel.value);if(!p)return;const last=pkgSel.dataset.prefilled||'';if(p.price==null){if(last&&priceEl.value===last){priceEl.value='';delete pkgSel.dataset.prefilled;priceEl.dispatchEvent(new Event('input',{bubbles:true}));}return;}if(priceEl.value===''||priceEl.value===last){priceEl.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency&&curEl)curEl.value=p.currency;priceEl.dispatchEvent(new Event('input',{bubbles:true}));if(curEl)curEl.dispatchEvent(new Event('change',{bubbles:true}));}};
   $('#a-pkg').addEventListener('change',()=>{if($('#a-pkg').value==='__new'){$('#a-pkg').value='';newPackageFlow();return;}const p=pkgById($('#a-pkg').value);if(p){$('#a-cycle').value=p.cycle;}prefillFromPkg($('#a-pkg'),$('#a-price'),$('#a-cur'));updAddConv();});
   $('#a-cycle-wrap').addEventListener('change',updAddConv);
   $('#pkg-add').addEventListener('click',()=>{ui.pkgEdit=ui.pkgEdit||clone(packages());ui.pkgEdit.push({id:newId('pkg'),name:'',cycle:'monthly',price:null,currency:'',description:''});renderPkgEditor();const inputs=document.querySelectorAll('#pkgList input[data-f=name]');if(inputs.length)inputs[inputs.length-1].focus();});
@@ -2926,24 +3017,27 @@ function bind(){
     if(!name&&!email){err.textContent='Enter a name or an email.';return;}
     if(email&&!EMAIL_RE.test(email)){err.textContent='That email does not look valid.';return;}
     if(!isDateKey(join)){err.textContent='Pick the day this user joined.';return;}
+    const start=$('#a-start').value;if(cy!=='one-time'&&!isDateKey(start)){err.textContent='Pick the date this package started.';return;}
     if(findUser(email,name)){err.textContent='That user is already tracked. Open their row to edit.';return;}
     if(!pkgById(pkg)){err.textContent='Choose the package or product (edit the list in Settings).';return;}
     if(!validAmt(priceRaw)){err.textContent='Enter the monthly price (0 is allowed for a free plan).';return;}
     if(!validPhone(phone)){err.textContent='Phone number should have 7 to 15 digits including the country code.';return;}
     const id=newId('u');
-    const ok=await persistUser(id,{name,email,phone,telegram:normTg($('#a-tg').value),joinDate:join,notes,subscriptions:[cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,total:Number(priceRaw),due:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start:join,end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,dueBy:null,prices:[{from:join,price:Number(priceRaw)}],payments:[]}]});
-    if(ok){$('#addForm').reset();$('#addPanel').hidden=true;ui.expanded=null;renderTable();toast('Added '+(name||email)+'. Record the first payment when the money is received.');openPaymentDialog(id);}
+    const ok=await persistUser(id,{name,email,phone,telegram:normTg($('#a-tg').value),joinDate:join,notes,subscriptions:[cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,total:Number(priceRaw),due:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start,end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number($('#a-payment').value)}:{}),dueBy:null,prices:[{from:start,price:Number(priceRaw)}],payments:[]}]});
+    if(ok){$('#addForm').reset();delete $('#a-start').dataset.manual;$('#addPanel').hidden=true;ui.expanded=null;renderTable();toast('Added '+(name||email)+'. Record the first payment when the money is received.');openPaymentDialog(id);}
   });
 
   const tbody=$('#tbody');
   tbody.addEventListener('click',async e=>{
     if(e.target.closest('a'))return;
+    const quickStart=e.target.closest('[data-act="row-start"]');if(quickStart){openStartDialog(quickStart.dataset.user);return;}
     const quickPay=e.target.closest('[data-act="row-pay"]');if(quickPay){openPaymentDialog(quickPay.dataset.user);return;}
     const row=e.target.closest('tr.row');
     if(row){if(e.target.closest('button,select,input'))return;ui.expanded=ui.expanded===row.dataset.id?null:row.dataset.id;renderTable();return;}
     const det=e.target.closest('tr.detail');if(!det)return;const id=det.dataset.id;
     const act=e.target.closest('[data-act]');if(!act)return;const A=act.dataset.act,sid=act.dataset.sub;
     if(A==='toggle')toggleOpen(id,act.dataset.key);
+    else if(A==='package-start')openStartDialog(id,sid);
     /* v29: one-tap Record payment */
     else if(A==='rec')openPaymentDialog(id,sid,null,act.dataset.start);
     else if(A==='rec-more'){ui.open[id]=Object.assign({},ui.open[id],{['recmore:'+sid]:true});renderTable();const f=document.querySelector(`tr.detail[data-id="${id}"] .rec-form[data-sub="${sid}"] [name=amount]`);if(f){f.focus();f.select();}}
@@ -3033,7 +3127,6 @@ function bind(){
     }else if(form.classList.contains('subedit-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const name=s.kind==='monthly'?val('name').trim():(val('name').trim()||s.name);const cur=normCur(val('currency'));
       if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}s.packageId=pkg;s.cycle=val('cycle')==='yearly'?'yearly':'monthly';s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;const dt=val('discType'),dv=Number(val('discValue'));if(dt&&!(dv>0)){toast('Enter the discount value (above zero), or set Discount to None.');return;}if(dt==='percent'&&dv>100){toast('A percent discount cannot exceed 100.');return;}s.discount=dt&&dv>0?{type:dt,value:dv}:null;s.prorationBasis=rawBasis(val('basis'));if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start){toast('The end date must not be before the start date.');return;}
-        if(start!==s.start){s.prices=(s.prices||[]).map(p=>p.from<start?Object.assign({},p,{from:start}):p);const seen={};s.prices=s.prices.filter(p=>{if(seen[p.from])return false;seen[p.from]=true;return true;});}
         Object.assign(s,{name,start,end:end||null,currency:cur});}
       else{const total=val('total'),due=val('due');if(!validAmt(total)){toast('Enter the total amount.');return;}const pk=val('packageId');Object.assign(s,{name,total:Number(total),due:isDateKey(due)?due:null,currency:cur,packageId:pkgById(pk)?pk:null});}
       closeKey('edit:'+s.id);const ok=await persistUser(id,u);if(ok)toast('Saved '+planLabel(s)+'.');
@@ -3041,7 +3134,7 @@ function bind(){
       setErr('addsub-err','');const cy=normCycle(val('kind'));const kind=cy==='one-time'?'one-time':'monthly';const pkg=val('packageId');const name=val('name').trim()||(kind==='monthly'?'':(pkgName(pkg)||'Item'));const priceRaw=val('price'),date=val('date'),cur=normCur(val('currency')),dueBy=val('dueBy');
       if(!pkgById(pkg)){setErr('addsub-err','Choose a package or product.');return;}
       if(!validAmt(priceRaw)){setErr('addsub-err',kind==='monthly'?'Enter the monthly price.':'Enter the total amount.');return;}
-      if(kind==='monthly'){if(!isDateKey(date)){setErr('addsub-err','Pick the start date.');return;}u.subscriptions.push({id:newId('s'),kind,cycle:cy,name,packageId:pkg,currency:cur,start:date,end:null,prorate:!!(form.querySelector('[name=prorate]')||{}).checked,waiveFirst:!!(form.querySelector('[name=waiveFirst]')||{}).checked,dueBy:isDateKey(dueBy)?dueBy:null,prices:[{from:date,price:Number(priceRaw)}],payments:[]});}
+      if(kind==='monthly'){if(!isDateKey(date)){setErr('addsub-err','Pick the start date.');return;}u.subscriptions.push({id:newId('s'),kind,cycle:cy,name,packageId:pkg,currency:cur,start:date,end:null,prorate:!!(form.querySelector('[name=prorate]')||{}).checked,waiveFirst:!!(form.querySelector('[name=waiveFirst]')||{}).checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number(val('paymentEvery'))}:{}),dueBy:isDateKey(dueBy)?dueBy:null,prices:[{from:date,price:Number(priceRaw)}],payments:[]});}
       else u.subscriptions.push({id:newId('s'),kind,name,packageId:pkg,currency:cur,total:Number(priceRaw),due:isDateKey(date)?date:null,payments:[]});
       closeKey('addsub');const ok=await persistUser(id,u);if(ok)toast('Added '+(name||pkgName(pkg))+'.');
     }else if(form.classList.contains('cancel-form')){
@@ -3559,7 +3652,7 @@ function subscribe(){
     if(publicBase())ensureConfirmTokens();
   },e=>{state.mode='error';state.loaded=true;toast('Live data unavailable ('+(e&&e.code||'unknown')+'). Reload to reconnect.');render();});
   db.collection('costs').onSnapshot(snap=>{const costs={};snap.docs.forEach(d=>{const b=d.data();if(b)costs[d.id]=normalizeCost(b,d.id);});state.costs=costs;state.costsLoaded=true;render();},()=>{});
-  db.doc('settings/main').onSnapshot(snap=>{if(snap.exists){applySettingsDoc(snap.data()||{});render();}},()=>{});
+  db.doc('settings/main').onSnapshot(snap=>{if(snap.exists){applySettingsDoc(snap.data()||{});state.settingsLoaded=true;render();if(state.backend==='api')refreshConfirmations();}},()=>{});
 }
 async function init(){
   loadPrefs();bind();render();
@@ -3571,7 +3664,7 @@ async function init(){
   if(sample){try{const lim=await sample.limits();canImage=!!(lim&&lim.images);if(lim&&lim.images&&lim.images.mediaTypes&&lim.images.mediaTypes.length)$('#shot-file').accept=lim.images.mediaTypes.join(',');}catch(e){canImage=false;}}
   updateShotCaption();
   if(d){db=d;state.backend='artifact';state.mode='shared';render();subscribe();}
-  else{state.backend='local';state.mode='local';state.loaded=true;loadLocal();maybeSeedLocal();maybeMigrateLocal();render();}
+  else{state.backend='local';state.mode='local';state.loaded=true;loadLocal();maybeSeedLocal();maybeMigrateLocal();state.settingsLoaded=true;render();}
 }
 init();
 })();

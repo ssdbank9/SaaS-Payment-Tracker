@@ -1,6 +1,6 @@
 # Wasooli hand-off
 
-Written 2026-09-23 at v26, updated 2026-10-04 at v32. This is the document to read first when picking the project
+Written 2026-09-23 at v26, updated 2026-10-04 at v33. This is the document to read first when picking the project
 up again in Claude Code, another AI coding tool or by hand. `AGENTS.md` is the working guide for a coding session
 (every tool reads it, see section 10); this file records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
 built is `docs/setup-runbook.html` (open it in a browser; it prints).
@@ -16,14 +16,14 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
   Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.
 - **Repo:** `ssdbank9/SaaS-Payment-Tracker` on GitHub, branch `main`. Pushing to `main` is the release.
 
-## 2. Current state (2026-10-04, v32)
+## 2. Current state (2026-10-04, v33)
 
 | Item | Value |
 | --- | --- |
 | Admin site | `https://wasooli.duckdns.org` (plain root shows a blank neutral page on purpose) |
 | Sign-in form | `https://wasooli.duckdns.org/x/<ADMIN_PATH>` (printed by the installer; Settings → Security) |
 | Subscriber links | `https://pay-up.duckdns.org/c/<token>` (`LINK_DOMAIN`) |
-| Health check | `https://wasooli.duckdns.org/healthz`; verify `ok: true` and `version: "32"` after pushing. The pre-release check on 2026-10-04 returned v31 with an empty `linkBase`; the subscriber-domain setup listed above is prior handoff context and needs separate verification. |
+| Health check | `https://wasooli.duckdns.org/healthz`; verify `ok: true` and `version: "33"` after pushing. The v32 release was confirmed live on 2026-10-04 with an empty `linkBase`; the subscriber-domain setup listed above is prior handoff context and needs separate verification. |
 | VM | Oracle Cloud Always Free, `VM.Standard.A1.Flex`, 1 OCPU / 6 GB, Ubuntu 24.04 aarch64, public IP `141.145.157.7`, created 2026-09-22 ~11:45 UTC in VCN `vcn-20260922-1643` / subnet `subnet-20260922-1643` |
 | Cloud firewall | Default Security List of that subnet: default rules (TCP 22, ICMP) plus TCP 80 and TCP 443 from `0.0.0.0/0` added by the owner |
 | DNS | DuckDNS (owner signed in with Google): `wasooli.duckdns.org` and `pay-up.duckdns.org` → `141.145.157.7`. The first name `wasool.duckdns.org` was deleted on 2026-09-23 |
@@ -32,9 +32,9 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
 | Data on VM | `/var/lib/payments-tracker/tracker.sqlite3` plus `assets/` (uploaded receipts) and `backups/` |
 | Secrets on VM | `/etc/payments-tracker.env` (`DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`); AI and mail keys typed in Settings live in the SQLite `meta` table |
 | Services | `payments-tracker.service` (gunicorn on 127.0.0.1:8080), `caddy` (HTTPS for all three hosts), timers `payments-tracker-update` (5 min), `payments-tracker-backup` (03:15 daily), `payments-tracker-notify` (04:00 UTC = 09:00 PKT daily) |
-| Versions | badge `v32` in `index.html`, `VERSION = "32"` in `server/app.py`, top entry `## v32` in `CHANGELOG.md` |
-| Repo head | the v32 change "Clarify monthly receipts and first bills (v32)" (check with `git log -1`) |
-| claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: retired as the data store; v32 was edited in Codex and has not been republished there |
+| Versions | badge `v33` in `index.html`, `VERSION = "33"` in `server/app.py`, top entry `## v33` in `CHANGELOG.md` |
+| Repo head | the v33 change "Add package starts and annual payment schedules (v33)" (check with `git log -1`) |
+| claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: retired as the data store; v33 was edited in Codex and has not been republished there |
 
 **How updates deploy.** `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: `git fetch`,
 hard-reset to `origin/main` if it moved, reinstall requirements if `server/requirements.txt` changed, refresh
@@ -56,6 +56,26 @@ Rs 980 advance credit; the next receipt is Rs 3,220 and raises Total paid to Rs 
 
 The receipt dialog lives outside the redrawn table. Currency, exchange rate and note expand when needed; unsaved
 values survive a poll, and failed saves keep the form for retry. No new schema or data migration was introduced.
+
+**Package starts and annual installments (v33).** Package start / payments is beside each name and Change start / payments
+is beside each expanded plan's start. Choose the account and its own start date. It is independent of the person's joining date
+and cash receipt dates; Add user and Add plan show both the first and following full bill before saving. The focused start form
+preserves all receipts, refunds, price history, custom period charges and the person's joining date. Its preview shows the bill,
+balance and paid-through changes before Save. The full plan Edit also preserves historical price entries when a start moves.
+
+G keeps its annual stored price and can collect monthly, every 3 months, every 6 months or yearly. `installmentPrice` splits the
+annual price, with rounding balanced so a full year totals the annual price. A first partial installment is prorated by actual days
+for new annual plans or an explicit initial start/proration edit. Monthly plans keep the existing fixed-30-day default. Existing
+annual plans without payment choices remain yearly and keep their old proration until edited. `paymentEvery` sets the initial
+interval; dated `paymentSchedule` entries change it from a billing boundary. A plan with receipts defaults to changing from its
+next bill; an explicit Package start option recalculates earlier charges. Dated schedule entries and custom charges retain their
+dates, and the preview names them. A future-only schedule change preserves earlier calculations. Ordinary receipts still fill
+the oldest unpaid bill first, regardless of their cash dates, with no stored allocation or invented receipt.
+
+Periods carry their payment interval in `months`, so labels, status, dues, credit, Summary/Analytics and receipt choices use the
+same schedule while `subCycle` and prices remain annual. Subscriber cards include only bills actually starting on that 24th and
+carry individual period dates; the notifier reads those cards. `settingsLoaded` prevents an early reload from quoting a bill with
+provisional proration settings. The new dialog sits outside the redrawn table and keeps failed/unfinished saves for retry.
 
 ## 3. Architecture (one page)
 
@@ -104,6 +124,8 @@ SQLite tables (`server/db.py`): `docs(path, json, updated_at)`, `confirmations`,
     `prorationBasis|DaysOverride|RateOverride|AmountOverride` (older per-plan overrides, still read),
     `tierHistory[{from,packageId,price,currency,note,via}]` (C ↔ C Max from a cycle start),
     `periodOverrides{periodStart:{amount?,packageId?,note,at}}` (hand-set amount and/or package for one period, v27; absent = computed),
+    `paymentEvery` (1|3|6|12 months for annual-priced plans, v33; absent = 12),
+    `paymentSchedule[{from,months}]` (v33; dated interval changes, absent = none),
     `payments[{id,date,amount,currency,rate,note}]`, `refunds[{id,date,amount,currency,rate,note}]` (v28; absent =
     none). One-time items carry `total` and `due`. A `periodOverrides` entry marked `fromRefund` is derived by
     `settleRefunds` (a cancelled user's period that a refund made short counts at what was kept) and is recomputed
@@ -172,6 +194,7 @@ owner's real records. New versions since v18 have needed no migration (absent = 
 | 30 | 09-26 | Mid-cycle / resumed plans show the real due date (plan start, not cycle start); link page offers no upgrade for a cycle already billed as C Max by hand; Summary and Analytics bars are collected after refunds; a refund lowers a one-time item's total; Record payment on every unpaid / upcoming box (a later box = one payment per period), ended plans get the short box, Paid up to… asks "Record N payments totalling Rs X (Aug, Sep and Oct)?"; long pills wrap on phones | Owner asked for the five open follow-ups from v27–v29 in one go |
 | 31 | 09-26 | Each user row shows its active accounts and packages ("3 accounts · C ×2 · G"); an Active accounts bar under the tiles counts accounts per package and filters the list by package; By product / Analytics users per package come from the same accounts | Owner asked to see on the front page how many accounts each person has and which category. One-time items are not accounts (shown as "+ 1 one-time"); a month billed as C Max counts as C Max |
 | 32 | 10-04 | Main-row month receipt form; first-bill preview when adding a user; separate cash date; receipt-edit coverage and cash-total preview; discounts shown separately; unsaved form survives polling | Owner wanted the front screen to record a month clearly, show what an edited payment covers, keep proration to the joining period and reconcile actual receipts with discounts |
+| 33 | 10-04 | Dashboard controls for independent package starts; first and next bill previews on new packages; annual prices with monthly/3-month/6-month/yearly payments; future schedule changes and explicit initial recalculation; billing-settings readiness | Owner wanted a separate start for every package and confirmed G stays annual but may be collected in installments |
 
 ## 6. Decisions log
 
@@ -207,6 +230,9 @@ owner's real records. New versions since v18 have needed no migration (absent = 
 | Main-row month chooser and one receipt dialog for Record and Edit (supersedes the v29 inline-only form decision) | 10-04 | Owner needs the month visible before recording and the current coverage visible when editing; keeping the dialog outside the table protects unsaved inputs during background refresh | Another charge-edit shortcut that appears to record cash; rebuilding the form inside a polled row |
 | Joining date controls the first prorated bill; Received on controls the receipt's cash date only | 10-04 | Owner confirmed later cycles must stay full price even when cash arrives on another day | Re-prorating each receipt from its cash date |
 | Monthly-charge reductions are shown separately from Total paid, which remains receipts minus refunds | 10-04 | A discount lowers what is owed; advance credit is already-received cash. Neither is a second cash receipt. Automatic joining proration is the first bill's baseline | Increasing Total paid when changing a charge; counting proration or refunds as discounts |
+| Each package start is independent of the person's join date (v33 supersedes the initial join-date-only control) | 10-04 | One person can subscribe to several packages on different days; cash arrival dates must not re-prorate a bill | Copying a changed joining date to every plan; shifting/deleting historical price entries |
+| Annual product price stays annual; payment intervals are 1, 3, 6 or 12 months | 10-04 | Owner confirmed G is annual and requested installment choices in either direction; full-year rounding must reconcile | Reinterpreting Rs 50,000/year as a monthly price; changing legacy schedules during deployment |
+| A paid plan's schedule change defaults to its next bill; initial recalculation is explicit and previewed | 10-04 | Preserve earlier bills and cash; let the owner correct an initial setup deliberately | Silently recalculating all past bills when a subscriber changes payment frequency |
 
 ## 7. Operations runbook
 
@@ -333,6 +359,20 @@ both DuckDNS names to the new IP, then `sudo systemctl restart caddy`.
 URLs. It covers actual receipts, charge discounts, cash dates, first bills, edits, refunds, partial and advance payments, multiple
 accounts, ended plans, save failure/retry, polling and 390px/1400px light/dark layouts. No owner data or production login was used.
 Its check record and screenshots are local ignored files under `data/payment-qa/`; repeat the check before any subsequent push.
+
+**v33 local verification.** Both `tests/payment-flow.cjs` and `tests/package-start-flow.cjs` run on a disposable local Flask store.
+The package check pins the browser date and needs `WASOOL_TODAY=2026-10-20` on the local server for the subscriber-page check.
+It covers independent starts, preserved price/cash records, annual first proration, all four schedules, exact full-year PKR/USD
+totals, schedule changes in both directions, a delayed settings response, quarterly discount/refund reconciliation, subscriber
+period dates and skipped intervening months, polling, save failure/retry and both themes at 390px/1400px. Outputs and screenshots
+are ignored under `data/start-qa/`. Live SMTP sending and handset-specific browser behaviour remain separately unverified.
+
+**Start/schedule follow-ups.** Custom charges and dated schedule changes remain attached to their original dates when a start
+is moved. The preview names these; the owner can adjust a period with change charge / package. An existing first-period waiver
+and remaining-due-by date are preserved and still editable in the full plan form. Historical receipt notes keep their original
+period wording. The older Quick add parser has no installment selector; use Add user or Package start / payments for an annual
+installment setup. An annual schedule chosen for payment collection describes billing amounts; it does not record cash or create
+a subscriber self-service schedule-choice form.
 
 ## 10. Continuing with another AI tool
 

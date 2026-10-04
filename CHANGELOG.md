@@ -2,6 +2,14 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v33 - 2026-10-04
+
+- Package start / payments is available beside each person on the dashboard and from each expanded package. Choose an account and its own start date, preview the first prorated bill and next full bill, and save. A person's joining date and the dates cash arrived stay separate. New users and added packages show the same first-bill preview.
+- G stays an annual package at its annual price. Each subscriber can pay monthly, every 3 months, every 6 months or yearly. Installments divide the annual price, with rounding balanced across a full year; only the first partial payment period is prorated. Later bills start on the shared 24th at the selected interval.
+- Changing an existing payment schedule defaults to the next bill, preserving earlier bills. An explicit option recalculates from the package start, with the resulting bill, balance and paid-through dates previewed. Recorded receipts, refunds, custom charges and price history are kept. Annual first-period proration uses actual days when the owner saves the new form or adds a plan; existing plans keep their old calculation until edited.
+- Receipt month choices, dashboard status, dues, Summary and Analytics use the selected billing schedule. Subscriber links and reminders use the amount and exact dates of a scheduled bill and do not ask for an installment in an intervening month. Existing records require no migration and retain their prior schedule when no payment choice has been saved.
+- Billing forms wait for the saved billing settings to load, so a fast reload cannot briefly quote a bill using a different proration basis.
+
 ## v32 - 2026-10-04
 
 - Record month payment is available beside each person's name on the main screen, including on a phone. Choose the account and billing month, see the exact dates, charge, advance credit and amount left, then record the money received. Choosing a later month clearly includes earlier unpaid periods, following the existing rule that cash clears the oldest bill first.

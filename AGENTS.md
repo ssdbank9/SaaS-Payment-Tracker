@@ -66,6 +66,8 @@ Write user-facing text in plain, factual words; no emojis.
   `prorate`, `waiveFirst`, `prices[{from,price}]`, `discount`, `dueBy`,
   `tierHistory[{from,packageId,price,currency,note,via}]` (C and C Max switches from a cycle start),
   `periodOverrides{periodStart:{amount?,packageId?,note,at,fromRefund?}}` (hand-set amount and/or package for one period),
+  `paymentEvery` (1|3|6|12 months for a yearly-priced package; absent = 12),
+  `paymentSchedule[{from,months}]` (v33, changes from a billing boundary; absent = none),
   `payments[{id,date,amount,currency,rate,note}]`,
   `refunds[{id,date,amount,currency,rate,note}]` (v28; absent = none). One-time items have `total` and `due`.
 - Recording a payment (v32): the row's Record month payment, plan/period Record payment and receipt-history Edit open the same
@@ -87,6 +89,16 @@ Write user-facing text in plain, factual words; no emojis.
   `periodOverrides` and lookups) and `nextDue` (the day money is due: `max(nextSt, s.start)`, so a plan started or resumed mid-cycle
   is due on its start date). `pFrom(p)` / `perLabel(p)` give the day a period is billed from (its `es` when prorated or waived).
   Never compare `nextDue` with a period's `st`; use `nextSt`.
+- Package starts / annual installments (v33): `startDialog` lives outside the polled table. Each plan's start is independent
+  of `joinDate` and receipt dates. `payMonthsAt` / `pStart` compute its payment schedule; `installmentPrice` splits the annual
+  price without changing stored yearly units and balances rounding across a full year. New annual plans and explicit
+  start/proration edits use actual days; existing plans keep their calculation until edited. Future-only schedule changes
+  preserve earlier calculations. `paymentEvery` controls the initial schedule; dated `paymentSchedule` entries take priority.
+  A schedule edit defaults to the next bill for a plan with receipts; the owner can explicitly recalculate from the package
+  start. Custom charges keep their original dates, and all receipts, refunds and price-history entries are preserved.
+  The current period's `months` controls its label (including after a schedule change); `subCycle` remains the stored product
+  pricing unit. Subscriber cycle cards include only actual billing boundaries and carry per-plan dates.
+  `settingsLoaded` prevents forms and computed bills from using provisional settings during startup.
 - Accounts (v31): `analyze(u)` returns `accounts[{sid,pid,base,ov,per}]`, one per plan still running (monthly or yearly, not ended;
   none for a cancelled user; one-time items are not accounts, `oneOpen` counts those still being paid). `pid` is the package the
   current period is billed as (`curP.pkgId`: tier switch or one-month package). `acctHTML` draws the row's "3 accounts [C ×2] [G]",
@@ -157,6 +169,9 @@ browser acceptance pass. Google Fonts needs network access for a console-clean c
 `node tests/payment-flow.cjs` exercises synthetic records on a disposable local server at `http://127.0.0.1:8098` with the
 test passcode above. Set `PLAYWRIGHT_MODULE` / `PLAYWRIGHT_EXECUTABLE` if Playwright or the browser is installed elsewhere.
 Never point this test store at the owner's database. Screenshots and the check record are written under ignored `data/payment-qa/`.
+`node tests/package-start-flow.cjs` checks independent start dates, annual installments, price/cash preservation, schedule changes,
+loading order, failure/retry and both themes at 390px/1400px. Its outputs are ignored under `data/start-qa/`.
+For that subscriber-page check, start the disposable server with `WASOOL_TODAY=2026-10-20`; the browser pins its own date.
 
 If you are running in Claude's cloud sandbox: Playwright is preinstalled; `require('/opt/node22/lib/node_modules/playwright')`,
 launch with `executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'` and

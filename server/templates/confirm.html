@@ -78,6 +78,7 @@ label.f{margin-top:12px}
       <span class="tier"><b>{{ p.tier or p.label }}</b>{% if p.priceText %}<span class="price">{{ p.priceText }}</span>{% endif %}</span>
     </div>
     <div class="plan-body">
+      {% if p.periodText %}<p class="hint" style="margin-top:0">{{ p.periodText }}</p>{% endif %}
       <div class="due" data-paid="{{ 1 if p.paid else 0 }}"><span>{% if p.paid %}Already paid for this cycle{% else %}Due on {{ due_date }}{% endif %}</span><span class="amt">{% if p.paid %}✓ paid{% else %}{{ p.amountText }}{% endif %}</span></div>
       {% if multi %}
         {% if p.answer %}
