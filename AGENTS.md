@@ -89,6 +89,13 @@ Write user-facing text in plain, factual words; no emojis.
   `periodOverrides` and lookups) and `nextDue` (the day money is due: `max(nextSt, s.start)`, so a plan started or resumed mid-cycle
   is due on its start date). `pFrom(p)` / `perLabel(p)` give the day a period is billed from (its `es` when prorated or waived).
   Never compare `nextDue` with a period's `st`; use `nextSt`.
+- Bill settlement / refunds (v35): Set bill / proration selects an exact period and previews its charge and
+  settlement. Pending never deletes recorded cash. Explicit receipt corrections preserve ID, currency and rate.
+  Linked bill refunds carry `billStart` and `billReduction` in plan currency; `billCharge` applies the reduction
+  in both `analyzeMonthly` and `periodAmt`. Cash-only legacy refunds are unchanged. Editing/removing a linked
+  refund changes/removes its derived charge reduction; `billReductions` excludes refund reductions.
+  Bill/refund dialogs live outside the polled table and preserve failed-save drafts. Do not migrate or guess
+  owner corrections. Run `tests/billing-clarity-flow.cjs` on a disposable local store.
 - Cancellation (v34): `cancel.lastDay` is inclusive. No bills from billing month sets it to the day before that
   month's shared cycle start. Edit cancellation changes only ends owned by the previous cancellation or still
   running beyond the new cutoff; independently earlier ends and cash history are retained. `applyCancel` also

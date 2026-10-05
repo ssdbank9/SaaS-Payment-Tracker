@@ -1,8 +1,9 @@
 // Synthetic local records only; never use the owner's database.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
-const base='http://127.0.0.1:8098',headers={'X-Requested-With':'wasool'},checks=[];
-const out=path.resolve('data/cancel-qa');fs.mkdirSync(out,{recursive:true});
+const base=process.env.WASOOLI_TEST_URL||'http://127.0.0.1:8098',headers={'X-Requested-With':'wasool'},checks=[];
+assert.equal(new URL(base).hostname,'127.0.0.1');assert.equal(new URL(base).protocol,'http:');
+const out=path.resolve(process.env.WASOOLI_TEST_OUTPUT||'data/cancel-qa');fs.mkdirSync(out,{recursive:true});
 const plan=()=>({id:'qa-cancel-c',kind:'monthly',cycle:'monthly',packageId:'pkg_c',currency:'PKR',start:'2026-09-01',prorate:true,prorationBasis:'fixed30',prorationDaysOverride:24,prices:[{from:'2026-09-01',price:4200}],payments:[{id:'receipt-1',date:'2026-09-01',amount:4200,currency:'PKR',rate:null,note:'Original receipt'}],refunds:[{id:'refund-1',date:'2026-09-23',amount:840,currency:'PKR',rate:null,note:'Original refund'}]});
 const fixture=()=>({name:'Cancellation QA',email:'cancel-qa@example.test',joinDate:'2026-09-01',subscriptions:[plan()]});
 (async()=>{
@@ -11,7 +12,7 @@ const fixture=()=>({name:'Cancellation QA',email:'cancel-qa@example.test',joinDa
  const context=await browser.newContext({viewport:{width:1400,height:1000},colorScheme:'light'});await context.addInitScript(()=>localStorage.setItem('pt-today','2026-10-05'));
  const page=await context.newPage();const errors=[];let failing=false;page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error'&&!(failing&&m.text().includes('503')))errors.push(m.text())});
  await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#tbody tr.row');
- await page.waitForTimeout(1000);errors.length=0;assert.equal((await (await context.request.get(base+'/healthz')).json()).version,'34');
+ await page.waitForTimeout(1000);assert.equal((await (await context.request.get(base+'/healthz')).json()).version,'35');
  const put=async user=>assert.equal((await context.request.put(base+'/api/docs/users/qa-cancel',{headers,data:user})).status(),200);
  const get=async()=>(await (await context.request.get(base+'/api/docs/users/qa-cancel')).json()).data;
  const row=()=>page.locator('tr.row[data-id="qa-cancel"]');const det=()=>page.locator('tr.detail[data-id="qa-cancel"]');const form=()=>det().locator('.cancel-form');
@@ -31,6 +32,6 @@ const fixture=()=>({name:'Cancellation QA',email:'cancel-qa@example.test',joinDa
  user=fixture();user.subscriptions[0].start='2026-08-24';delete user.subscriptions[0].prorationDaysOverride;await reset(user);await open();await month('2026-09');assert.match(await form().locator('[data-role=cancel-preview]').innerText(),/Settled: nothing owed/);await save();saved=await get();assert.equal(saved.subscriptions[0].periodOverrides['2026-08-24'].amount,3360);assert.equal(saved.subscriptions[0].periodOverrides['2026-08-24'].fromRefund,true);record('Refund made before cancellation is settled during cancellation save');
  user=fixture();user.subscriptions[0]={...plan(),cycle:'yearly',packageId:'pkg_g',start:'2026-07-24',prorate:false,paymentEvery:12,prices:[{from:'2026-07-24',price:50000}],payments:[{id:'annual-part',date:'2026-08-01',amount:25000,currency:'PKR',rate:null,note:''}],refunds:[]};await reset(user);await open();await month('2026-09');assert.match(await form().locator('[data-role=cancel-preview]').innerText(),/Earlier bills still owed: Rs 25,000/);await save();assert.deepEqual((await get()).subscriptions[0].payments,user.subscriptions[0].payments);record('Annual cancellation retains the already-started annual balance');
  await open();await form().locator('[name=reason]').fill('');await form().locator('[name=note]').fill('');await page.locator('#search').fill('Cancellation');assert.equal(await form().locator('[name=reason]').inputValue(),'');assert.equal(await form().locator('[name=note]').inputValue(),'');await save();saved=await get();assert.equal(saved.cancel.reason,'');assert.equal(saved.cancel.note,'');record('Empty optional fields stay empty through redraw and save');
- assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'34',checks,errors},null,2));console.log(`Passed ${checks.length} cancellation checks`);await context.close();
+ assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'35',checks,errors},null,2));console.log(`Passed ${checks.length} cancellation checks`);await context.close();
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

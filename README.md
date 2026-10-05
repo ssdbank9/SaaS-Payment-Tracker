@@ -21,6 +21,14 @@ Opening `index.html` directly in a browser also runs the app, but with per-devic
 
 **Total paid** is receipts minus refunds. Discounts and reductions lower the bills and appear separately; they do not add cash. For example, Rs 8,400 received against a Rs 3,220 first bill and Rs 4,200 next bill leaves Rs 980 advance credit. The following month's receipt is Rs 3,220, bringing Total paid to Rs 11,620.
 
+## Set a partial bill and say whether it is settled
+
+Beside the person's name, press **Set bill / proration**. Select the account and exact billing period: September's bill is **September 24–October 23**, not the day the cash arrived. Enter the agreed bill amount or select the inclusive service dates. The next period keeps its normal price.
+
+Under **Has the money been received?**, keep the recorded payments, leave the bill owing without adding money, record a new receipt, or correct an existing receipt. The preview shows whether the bill is settled, how much is still owing, the next bill and any actual advance money. A pending choice cannot erase receipts already saved. For example, a Rs 3,500 bill with Rs 4,200 received leaves Rs 700 advance; a Rs 3,360 bill with Rs 3,360 received is settled without new advance. Check earlier bills too if the balance still differs from what you expected.
+
+To return money, open the person and press **Refund**. Choose whether to return cash with bills unchanged, reduce one exact bill and return money, or stop access and refund. Returning cash alone can make a bill owing again. Reducing the selected bill as well keeps the two changes aligned. The money-returned date determines the revenue month; it does not select the bill. Check the preview before saving.
+
 ## Package start dates and annual installments
 
 Beside each person's name, press **Package start / payments**, choose the account, and enter **Package started on**. Each package has its own date. Only its first partial bill is prorated; later monthly bills start on the 24th. The preview shows the first and next bill and the effect on the balance and Paid through. Saving keeps the person's joining date, all receipts, refunds and price history.

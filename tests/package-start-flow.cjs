@@ -17,7 +17,7 @@ let browser;
   const page=await context.newPage(),errors=[],expectedFailureErrors=[];let failing=false;
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'){if(failing&&m.text().includes('503'))expectedFailureErrors.push(m.text());else errors.push(m.text());}});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.locator('#tbody tr.row').first().waitFor();
-  assert.equal((await(await context.request.get(base+'/healthz')).json()).version,'34');
+  assert.equal((await(await context.request.get(base+'/healthz')).json()).version,'35');
   const get=async()=> (await(await context.request.get(base+'/api/docs/users/qa-start')).json()).data;
   const put=async(user)=>assert.equal((await context.request.put(base+'/api/docs/users/qa-start',{headers,data:user})).status(),200);
   const row=()=>page.locator('tr.row[data-id="qa-start"]');
@@ -90,5 +90,5 @@ let browser;
     await start('qa-start-g');await page.locator('#start-prorate').check();await page.locator('#start-payment').selectOption('3');await page.locator('#start-apply').selectOption('start');await page.locator('#start-save').scrollIntoViewIfNeeded();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);const form=await page.locator('#startDialog').boundingBox();assert(form.x>=0&&form.x+form.width<=width);assert.equal(await page.locator('#startDialog').evaluate(d=>d.scrollWidth<=d.clientWidth),true);await page.screenshot({path:path.join(out,'start-'+width+'-'+theme+'.png')});await page.locator('#start-cancel').click();
     check('Layout '+width+'px '+theme+' dashboard and package start/schedule form');
   }
-  assert.deepEqual(errors,[]);const summary={version:'34',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary));await browser.close();browser=null;
+  assert.deepEqual(errors,[]);const summary={version:'35',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary));await browser.close();browser=null;
 })().catch(async e=>{console.error(e);if(browser)await browser.close();process.exitCode=1;});

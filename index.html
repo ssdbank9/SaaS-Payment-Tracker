@@ -287,7 +287,7 @@ td.who .em{display:block;font-family:var(--mono);font-size:12px;color:var(--mute
 td.who .ct{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);white-space:normal;line-height:1.35;margin-top:1px}
 /* v32: recording is reachable in the first column on a phone. Cash and bill reductions stay separate. */
 td.who .row-pay{display:block;margin-top:8px;min-height:44px;max-width:100%;white-space:normal}
-td.who .row-start{display:block;margin-top:6px;min-height:44px;max-width:100%;white-space:normal}
+td.who .row-start,td.who .row-bill{display:block;margin-top:6px;min-height:44px;max-width:100%;white-space:normal}
 .start-list{font-size:11px;line-height:1.45;margin-top:4px;color:var(--muted);white-space:normal}
 #a-payment-wrap[hidden],#a-start-wrap[hidden],.addsub-form [data-role="payment-wrap"][hidden]{display:none}
 .row-money{display:none}
@@ -627,7 +627,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v34</span>
+      <span class="small muted num" id="app-ver" title="App version">v35</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -997,6 +997,8 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
       <label class="f payment-wide" id="payment-month-label">Pay through billing month<select id="payment-month" name="period"></select></label>
     </div>
     <div class="rec-box" id="payment-bill" aria-live="polite"></div>
+    <button class="link" id="payment-set-bill" type="button">Set the agreed bill / proration first</button>
+    <p class="small muted">Amount received means actual cash. Billing period means the bill to cover; earlier unpaid bills are included. A cash date never changes a charge.</p>
     <div class="form-grid">
       <label class="f"><span id="payment-amount-label">Amount received (PKR)</span><input class="payment-amount" id="payment-amount" name="amount" type="number" min="0" step="0.01" required inputmode="decimal"></label>
       <label class="f">Received on<input id="payment-date" name="date" type="date" required></label>
@@ -1009,6 +1011,46 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     <p class="payment-preview" id="payment-preview" aria-live="polite"></p>
     <span class="err" id="payment-error" role="alert"></span>
     <div class="form-actions"><button class="btn primary" id="payment-save" type="submit">Record payment</button><button class="link" id="payment-cancel" type="button">Not now</button></div>
+  </form>
+</dialog>
+
+<dialog class="panel payment-dialog" id="billDialog" aria-labelledby="bill-title">
+  <div class="panel-head"><div><h3 id="bill-title">Set bill / proration</h3><p class="small muted" id="bill-who"></p></div><button class="link" id="bill-close" type="button">Close</button></div>
+  <form id="billForm" novalidate>
+    <p class="small">Choose the bill first. Its dates stay fixed. A reduced bill applies only to this period; later bills keep their normal charge.</p>
+    <div class="form-grid">
+      <label class="f payment-wide">Account<select id="bill-account"></select></label>
+      <label class="f payment-wide">Billing period<select id="bill-period"></select></label>
+      <label class="f payment-wide">Charge for this bill<select id="bill-mode"><option value="amount">Agreed amount for this bill</option><option value="normal">Full normal charge</option><option value="days">Charge for selected service dates</option><option value="computed">Use existing automatic calculation</option></select></label>
+      <label class="f" id="bill-from-wrap" hidden>Access from (inclusive)<input id="bill-from" type="date"></label>
+      <label class="f" id="bill-to-wrap" hidden>Access through (inclusive)<input id="bill-to" type="date"></label>
+      <label class="f" id="bill-amount-wrap"><span id="bill-amount-label">Agreed bill amount</span><input id="bill-amount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <label class="f payment-wide">Has the money been received?<select id="bill-settlement"><option value="keep">Keep recorded payments as they are</option><option value="pending">No new payment — leave the amount owing</option><option value="new">Yes — record money received</option><option value="edit">Yes — correct an existing receipt</option></select></label>
+      <label class="f payment-wide" id="bill-receipt-wrap" hidden>Receipt to correct<select id="bill-receipt"></select></label>
+      <label class="f" id="bill-cash-wrap" hidden><span id="bill-cash-label">Actual amount received</span><input id="bill-cash" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <label class="f" id="bill-date-wrap" hidden>Money received on<input id="bill-date" type="date"></label>
+    </div>
+    <p class="payment-preview" id="bill-preview" aria-live="polite"></p><span class="err" id="bill-error" role="alert"></span>
+    <div class="form-actions"><button class="btn primary" id="bill-save" type="submit">Save bill</button><button class="link" id="bill-cancel" type="button">Not now</button></div>
+  </form>
+</dialog>
+
+<dialog class="panel payment-dialog" id="refundDialog" aria-labelledby="refund-title">
+  <div class="panel-head"><div><h3 id="refund-title">Return money</h3><p class="small muted" id="refund-who"></p></div><button class="link" id="refund-close" type="button">Close</button></div>
+  <form id="refundForm" novalidate>
+    <div class="form-grid">
+      <label class="f payment-wide">Account<select id="refund-account"></select></label>
+      <label class="f payment-wide">What should happen to the bill?<select id="refund-purpose"><option value="cash">Return money; leave bills unchanged</option><option value="bill">Reduce one bill and return money</option><option value="cancel">Stop access and return money</option></select></label>
+      <label class="f payment-wide" id="refund-period-wrap" hidden>Bill to reduce<select id="refund-period"></select></label>
+      <label class="f">Money returned on<input id="refund-date" type="date"></label>
+      <label class="f">Amount returned<input id="refund-amount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <label class="f">Returned in<select id="refund-currency"><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
+      <label class="f" id="refund-month-wrap" hidden>No bills from billing month<input id="refund-month" type="month"></label>
+      <label class="f" id="refund-last-wrap" hidden>Last access day (inclusive)<input id="refund-last" type="date"></label>
+    </div>
+    <details class="more"><summary>Exchange rate and note</summary><div class="form-grid"><label class="f">PKR per USD (blank = default)<input id="refund-rate" type="number" min="0" step="0.0001"></label><label class="f">Note<input id="refund-note" type="text" maxlength="140"></label></div></details>
+    <p class="payment-preview" id="refund-preview" aria-live="polite"></p><span class="err" id="refund-error" role="alert"></span>
+    <div class="form-actions"><button class="btn danger" id="refund-save" type="submit">Save refund</button><button class="link" id="refund-cancel" type="button">Not now</button></div>
   </form>
 </dialog>
 
@@ -1220,7 +1262,7 @@ function normalizeUser(b,id){
     for(const p of s.payments||[]){const d=normDate(p.date);if(!d)continue;sub.payments.push({id:p.id||newId('p'),date:d,amount:Number(p.amount)||0,currency:p.currency?normCur(p.currency):cur,rate:normRate(p.rate),note:String(p.note||'')});}
     sub.payments.sort((a,b)=>a.date.localeCompare(b.date));
     /* v28: refunds given back on this plan [{id,date,amount,currency,rate,note}]; absent = none (nothing is written for plans without one) */
-    if(Array.isArray(s.refunds)){const rf=[];for(const r of s.refunds){const d=normDate(r&&r.date);const amt=Number(r&&r.amount);if(!d||!(amt>0))continue;rf.push({id:r.id||newId('r'),date:d,amount:amt,currency:r.currency?normCur(r.currency):cur,rate:normRate(r.rate),note:String(r.note||'')});}if(rf.length)sub.refunds=rf.sort((a,b)=>a.date.localeCompare(b.date));}
+    if(Array.isArray(s.refunds)){const rf=[];for(const r of s.refunds){const d=normDate(r&&r.date);const amt=Number(r&&r.amount);if(!d||!(amt>0))continue;const entry={id:r.id||newId('r'),date:d,amount:amt,currency:r.currency?normCur(r.currency):cur,rate:normRate(r.rate),note:String(r.note||'')};if(kind==='monthly'&&isDateKey(r.billStart)&&Number(r.billReduction)>0){entry.billStart=r.billStart;entry.billReduction=Math.round(Number(r.billReduction)*100)/100;}rf.push(entry);}if(rf.length)sub.refunds=rf.sort((a,b)=>a.date.localeCompare(b.date));}
     u.subscriptions.push(sub);
   }
   return u;
@@ -1247,6 +1289,9 @@ function paidInPlanCur(s){let t=0,unconv=0;for(const p of s.payments||[]){const 
 function refundedInPlanCur(s){let t=0;for(const r of s.refunds||[]){const v=toCur(r.amount,r.currency||s.currency,s.currency,r.rate);if(v!=null)t+=v;}return t;}
 /* v28: the product a refund is taken off: the plan's package on the refund date (one-time items: their own product) */
 const refundKey=(s,r)=>{const pid=s.kind==='one-time'?s.packageId:pkgIdAt(s,r.date);return (pid&&pkgById(pid))?pid:(s.kind==='one-time'?'__one':'__none');};
+/* v35: only an explicitly linked bill refund reduces its bill. Cash-only legacy refunds keep their meaning. */
+function billRefundReduction(s,st){return (s.refunds||[]).reduce((n,r)=>n+(r.billStart===st&&r.billReduction>0?Number(r.billReduction):0),0);}
+function billCharge(s,st,listed){const ov=periodOverride(s,st);return Math.max(0,(ov?ov.amount:listed)-billRefundReduction(s,st));}
 function analyzeMonthly(s,today){
   const pc=paidInPlanCur(s);const paid=pc.t;const active=k=>!s.end||(s.start<=s.end&&pStart(s,k)<=s.end);
   const curIdx=periodIndexAt(s,today);
@@ -1254,13 +1299,13 @@ function analyzeMonthly(s,today){
   while(active(k)&&k<2400){
     const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const pf=periodFull(s,st,es);const full=pf.full;
     const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;
-    const waived=k===0&&s.waiveFirst===true&&es>st;const pa=prorateCalc(s,full,days,total);const listed=waived?0:(prorated?pa.amt:full);const ov=periodOverride(s,st);const pr=ov?ov.amount:listed;
+    const waived=k===0&&s.waiveFirst===true&&es>st;const pa=prorateCalc(s,full,days,total);const listed=waived?0:(prorated?pa.amt:full);const ov=periodOverride(s,st);const pr=billCharge(s,st,listed);
     let stt,covered;
-    if(waived){stt='waived';covered=0;kPaid=k+1;}
+    if(waived&&pr===0){stt='waived';covered=0;kPaid=k+1;}
     else if(credit+1e-9>=pr){stt='paid';covered=pr;credit-=pr;kPaid=k+1;}
     else if(credit>0){stt=st<=today?'partial':'upcoming';covered=credit;credit=0;}
     else{stt=st<=today?'unpaid':'upcoming';covered=0;}
-    periods.push({k,st,en,es,months:payMonthsAt(s,st),pr,full,pkgId:pf.pid||pkgIdAt(s,es),pkgOv:!!pf.pid,prorated:prorated&&!waived,waived,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0,listed,custom:!!ov,note:ov?ov.note:''});
+    periods.push({k,st,en,es,months:payMonthsAt(s,st),pr,full,pkgId:pf.pid||pkgIdAt(s,es),pkgOv:!!pf.pid,prorated:prorated&&!waived,waived:waived&&pr===0,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0,listed,custom:!!ov,note:ov?ov.note:''});
     if(stt!=='paid'&&stt!=='waived'&&k>curIdx)break;
     if(stt==='paid'&&pr<=0&&k>curIdx+1)break;
     k++;
@@ -1294,7 +1339,7 @@ function analyzeOneTime(s,today){
   return {kind:'one-time',paid,unconv:pc.unconv,total,listed,refunded,remaining,nextDue:remaining>0?s.due||null:null,amountDue:remaining,status,cur:s.currency,overdue:status==='overdue'?1:0};
 }
 /* amount of one cycle period of a plan (first period may be prorated or waived), and what is still owed per period from the first unpaid one up to a target period */
-function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=periodFull(s,st,es).full;const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;const ov=periodOverride(s,st);return {k,st,en,es,months:payMonthsAt(s,st),full,days,total,custom:!!ov,prorated:prorated&&!waived,waived,pr:ov?ov.amount:(waived?0:(prorated?prorateCalc(s,full,days,total).amt:full))};}
+function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=periodFull(s,st,es).full;const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;const ov=periodOverride(s,st),pr=billCharge(s,st,waived?0:(prorated?prorateCalc(s,full,days,total).amt:full));return {k,st,en,es,months:payMonthsAt(s,st),full,days,total,custom:!!ov,prorated:prorated&&!waived,waived:waived&&pr===0,pr};}
 function coverPlan(s,sa,targetK){const out=[];for(let k=sa.kPaid;k<=targetK&&k<sa.kPaid+240;k++){const p=periodAmt(s,k);const ex=(sa.periods||[]).find(x=>x.k===k);const cov=ex?ex.covered:0;out.push({k,st:p.st,en:p.en,es:p.es,months:p.months,prorated:p.prorated,waived:p.waived,pr:p.pr,credit:cov,due:Math.max(0,p.pr-cov)});}return out;}
 const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,paid:5,ended:5,cancelled:5,nosub:6};
 function analyze(u,today){
@@ -1704,7 +1749,7 @@ function renderRemindRun(){
   const row=(r,mode)=>{const a=r.a,u=r.u;const pk=(mode==='overdue'?(a.duePkgs.length?a.duePkgs:[...a.pkgIds].map(pkgName)):cyclePkgs(u,a)).filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'package not set';const st=remState(u,key);
     const due=mode==='overdue'?`<b>${esc(ownText(a.balance.n?a.balance:a.due,a.mainCur))}</b> overdue${a.nextDue?` since ${esc(fmtD(a.nextDue))}`:''}${a.cycleDue.n?` · plus ${esc(ownText(a.cycleDue,a.mainCur))} on ${esc(fmtD(w.nc))}`:''}`:`<b>${esc(ownText(a.cycleDue,a.mainCur))}</b> due ${esc(fmtD(w.nc))}${creditNote(r)}`;
     return `<div class="rr-row" data-user="${esc(r.id)}" data-done="${st.confirmed?'1':'0'}"><span class="who" title="${esc(displayName(u))}">${esc(displayName(u))}</span><span class="due">${esc(pk)} · ${due}${answerLine(r.id)}</span>${tog(r,'reminded','Reminded')}${tog(r,'confirmed','Confirmed')}<span class="remind-pair">${remindControl(u,a,today,'Open WhatsApp',mode)}${emailControl(u,a,today,'Email',mode)}${telegramControl(u,'Telegram')}${linkControl(r.id)}</span></div>`;};
-  const creditNote=r=>{let c=[];for(const s of r.u.subscriptions||[]){const sa=r.a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.nextSt===w.nc&&sa.nextCredit>0)c.push(fmtAmt(sa.nextCredit,s.currency));}return c.length?` <span class="muted">(after ${esc(c.join(' + '))} credit)</span>`:'';};
+  const creditNote=r=>{let c=[];for(const s of r.u.subscriptions||[]){const sa=r.a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.nextSt===w.nc&&sa.nextCredit>0)c.push(fmtAmt(sa.nextCredit,s.currency));}return c.length?` <span class="muted">(recorded advance money: ${esc(c.join(' + '))}; the full bill is unchanged)</span>`:'';};
   const dueTxt=r=>r.a.unpaid?ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur)+' overdue':ownText(r.a.cycleDue,r.a.mainCur);
   const ticked=R.overdue.length+R.cycle.length-R.todo.length;
   let html=`<div class="fn-bar"><span class="lead"><b>${R.todo.length}</b> to remind · <b>${R.skipped.length}</b> skipped${ticked?` · ${ticked} already reminded or confirmed`:''}</span><details class="except"${ui.exceptOpen?' open':''}><summary>Except… ${R.skipped.length?`(${R.skipped.length})`:''}</summary><div class="except-list"><span class="hint">Tick anyone to leave out of this run (for example, someone who has paid ahead or told you separately). Saved for this cycle only.</span>${R.due.length?R.due.map(r=>`<label class="chk"><input type="checkbox" data-act="skip" data-user="${esc(r.id)}"${remState(r.u,key).skipped?' checked':''}>${esc(displayName(r.u))}<span class="when">${esc(dueTxt(r))}</span></label>`).join(''):'<span class="hint">Nobody is due this cycle.</span>'}</div></details></div>`;
@@ -2126,7 +2171,7 @@ function billReductions(u,a,today){const sum=newSum();
   for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;for(const p of a.sa[s.id].periods){if(p.es>today&&p.covered<=0)continue;
     const gross=periodGross(s,p);
     const ov=(s.periodOverrides||{})[p.st];if(ov&&ov.fromRefund)continue;
-    sumAdd(sum,Math.max(0,gross-p.pr),s.currency,null);
+    sumAdd(sum,Math.max(0,gross-p.pr-billRefundReduction(s,p.st)),s.currency,null);
   }}return sum;
 }
 /* v32: coverage is computed from receipts in date order. No existing receipt or period is rewritten. */
@@ -2174,6 +2219,49 @@ function refreshStartPreview(){const c=startContext();if(!c)return;const {d,u,s,
   if(s.waiveFirst)txt+='\nThe existing first-period waiver is kept; change it in the full plan Edit form if needed.';
   $('#start-preview').textContent=txt;
 }
+/* v35: a bill, its settlement and a refund each name an exact period; cash dates never select a bill. */
+function billingPeriods(s){const out=[];const end= Math.min(2399,Math.max(2,periodIndexAt(s,todayISO())+12));for(let k=0;k<=end;k++){const p=periodAmt(s,k);if(s.end&&(s.end<s.start||p.st>s.end))break;out.push(p);}return out;}
+const exactBillLabel=(s,p)=>billingName(s,p)+' · '+fmtCycle(p.st,p.en);
+function billingOptions(s,selected){return billingPeriods(s).map(p=>`<option value="${p.st}"${p.st===selected?' selected':''}>${esc(exactBillLabel(s,p))}</option>`).join('');}
+function moneyDialogContext(kind){const d=ui[kind+'Draft'],u=d&&state.users[d.id],s=u&&(u.subscriptions||[]).find(x=>x.id===d.sid);return s?{d,u,s}:null;}
+function fillBillPeriod(){const c=moneyDialogContext('bill');if(!c)return;const {s}=c,p=billingPeriods(s).find(p=>p.st===$('#bill-period').value);if(!p){refreshBillPreview();return;}
+  $('#bill-mode').value='amount';$('#bill-amount').value=p.pr;$('#bill-from').value=pFrom(p);$('#bill-to').value=p.en;$('#bill-from').min=pFrom(p);$('#bill-from').max=p.en;$('#bill-to').min=pFrom(p);$('#bill-to').max=p.en;
+  $('#bill-amount-label').textContent='Agreed bill amount ('+s.currency+')';$('#bill-cash-label').textContent='Actual amount received ('+s.currency+')';$('#bill-cash').value=p.pr;refreshBillPreview();
+}
+function fillBillAccount(start){const c=moneyDialogContext('bill');if(!c)return;const {s}=c;$('#bill-period').innerHTML=billingOptions(s,start||pStart(s,Math.max(0,periodIndexAt(s,todayISO()))));
+  $('#bill-receipt').innerHTML=(s.payments||[]).map(p=>`<option value="${esc(p.id)}">${esc(fmtD(p.date,true)+' · '+fmtAmt(p.amount,p.currency||s.currency))}</option>`).join('');$('#bill-receipt').value=(s.payments||[]).at(-1)?.id||'';$('#bill-settlement').value='keep';$('#bill-date').value=todayISO();fillBillPeriod();
+}
+function openBillDialog(id,sid,start){if(!state.settingsLoaded)return;const u=state.users[id],subs=u&&(u.subscriptions||[]).filter(s=>s.kind==='monthly');if(!subs||!subs.length)return;const s=subs.find(s=>s.id===sid)||subs[0];ui.billDraft={id,sid:s.id,busy:false};$('#bill-error').textContent='';$('#bill-who').textContent=displayName(u);$('#bill-account').innerHTML=subs.map((s,i)=>`<option value="${esc(s.id)}">${esc(paymentAccountName(u,s,i))}</option>`).join('');$('#bill-account').value=s.id;fillBillAccount(start);$('#billDialog').showModal();}
+function billDraftUser(c,includeCash=true){const {u,s}=c,p=billingPeriods(s).find(p=>p.st===$('#bill-period').value);if(!p)return {error:'This account has no bill in that period.'};const mode=$('#bill-mode').value,settlement=$('#bill-settlement').value,sim=clone(u),ss=sim.subscriptions.find(x=>x.id===s.id);let amount=Number($('#bill-amount').value),note='Agreed bill for '+fmtCycle(p.st,p.en);
+  if(mode==='normal')amount=p.full;else if(mode==='computed'){const plain=clone(s);setPeriodOverride(plain,p.st,null,undefined);amount=periodAmt(plain,p.k).pr+billRefundReduction(plain,p.st);}else if(mode==='days'){const from=$('#bill-from').value,to=$('#bill-to').value;if(!isDateKey(from)||!isDateKey(to)||from<pFrom(p)||to>p.en||to<from)return {error:'Service dates must be inside the selected bill, with the end on or after the start.'};const days=dayDiff(from,to)+1,divisor=planBasis(s)==='fixed30'?30:p.total;amount=Math.min(p.full,Math.round(p.full*days/divisor));note='Service '+fmtCycle(from,to)+'; '+days+' / '+divisor+' days';}
+  if(mode==='amount'&&!validAmt($('#bill-amount').value))return {error:'Enter the agreed amount for this bill (zero is allowed).'};
+  if(mode==='computed')setPeriodOverride(ss,p.st,null,undefined);else {setPeriodOverride(ss,p.st,amount+billRefundReduction(s,p.st),note);if(p.k===0)ss.prorationAmountOverride=null;}
+  if(includeCash&&(settlement==='new'||settlement==='edit')){const cash=$('#bill-cash').value,date=$('#bill-date').value;if(!validAmt(cash)||Number(cash)<=0||!isDateKey(date))return {error:'Enter the actual money received and its receipt date.'};const existing=settlement==='edit'&&(ss.payments||[]).find(p=>p.id===$('#bill-receipt').value);if(settlement==='edit'&&!existing)return {error:'Choose an existing receipt to correct.'};const receipt={id:existing?existing.id:'__bill_preview',date,amount:Number(cash),currency:existing?(existing.currency||s.currency):s.currency,rate:existing?existing.rate:null,note:existing?existing.note:'Received for '+exactBillLabel(s,p)};if(existing)ss.payments=ss.payments.map(p=>p.id===existing.id?Object.assign({},p,receipt):p);else ss.payments=(ss.payments||[]).concat(receipt);}
+  settleRefunds(sim,ss,todayISO());return {sim,ss,p,amount:periodAmt(ss,p.k).pr,settlement};
+}
+function refreshBillPreview(){const c=moneyDialogContext('bill');if(!c)return;const {d,u,s}=c,mode=$('#bill-mode').value,settlement=$('#bill-settlement').value,cash=['new','edit'].includes(settlement);$('#bill-from-wrap').hidden=$('#bill-to-wrap').hidden=mode!=='days';$('#bill-amount-wrap').hidden=mode!=='amount';$('#bill-cash-wrap').hidden=$('#bill-date-wrap').hidden=!cash;$('#bill-receipt-wrap').hidden=settlement!=='edit';
+  $('#billForm').querySelectorAll('input,select').forEach(el=>el.disabled=d.busy);$('#bill-save').textContent=d.busy?'Saving…':cash?'Save bill and receipt':'Save bill';const change=billDraftUser(c);$('#bill-save').disabled=d.busy||!!change.error;if(change.error){$('#bill-preview').textContent=change.error;return;}
+  const before=analyzeMonthly(s,todayISO()),after=analyzeMonthly(change.ss,todayISO()),p=after.periods.find(x=>x.st===change.p.st)||Object.assign(periodAmt(change.ss,change.p.k),{covered:0}),nextBefore=periodAmt(s,change.p.k+1),nextAfter=periodAmt(change.ss,change.p.k+1);
+  let text=exactBillLabel(s,change.p)+'\nBill: '+fmtAmt(change.p.pr,s.currency)+' → '+fmtAmt(p.pr,s.currency)+'. Covered by recorded money: '+fmtAmt(p.covered,s.currency)+'. Still owing: '+fmtAmt(Math.max(0,p.pr-p.covered),s.currency)+'.\n';
+  text+=p.covered+0.005>=p.pr?'This bill is settled.':'This bill is not settled.';text+='\nNext bill: '+fmtAmt(nextBefore.pr,s.currency)+' → '+fmtAmt(nextAfter.pr,s.currency)+' for '+fmtCycle(nextAfter.st,nextAfter.en)+'.\nMoney kept: '+fmtAmt(before.paid,s.currency)+' → '+fmtAmt(after.paid,s.currency)+'.';
+  const earlier=after.periods.filter(x=>x.st<change.p.st);if(earlier.length)text+='\nEarlier bills: '+earlier.slice(-3).map(x=>fmtCycle(x.st,x.en)+' — charge '+fmtAmt(x.pr,s.currency)+', covered '+fmtAmt(x.covered,s.currency)).join('; ')+'. Cash clears the oldest bill first.';
+  const following=after.periods.find(x=>x.st===nextAfter.st);if(following&&following.covered>0)text+='\n'+fmtAmt(following.covered,s.currency)+' of real recorded money already covers the next bill; only '+fmtAmt(Math.max(0,following.pr-following.covered),s.currency)+' remains.';
+  if(!cash)text+='\nNo receipt will be added, changed or deleted. Choosing pending cannot undo money already recorded.';else text+='\n'+(settlement==='edit'?'Only the selected receipt will be corrected.':'A new receipt will be added. Do not record it again if it is already in the history.')+' Receipt date records cash only; it does not change this bill’s dates.';$('#bill-preview').textContent=text;
+}
+function closeMoneyDialog(kind){if(ui[kind+'Draft']?.busy)return;$('#'+kind+'Dialog').close();ui[kind+'Draft']=null;}
+async function saveBillDialog(e){e.preventDefault();const c=moneyDialogContext('bill');if(!c||c.d.busy)return;const change=billDraftUser(c);if(change.error){$('#bill-error').textContent=change.error;return;}const ss=change.ss;for(const p of ss.payments||[])if(p.id==='__bill_preview')p.id=newId('p');c.d.busy=true;refreshBillPreview();const ok=await persistUser(c.d.id,change.sim);c.d.busy=false;if(ok){closeMoneyDialog('bill');toast('Bill saved for '+exactBillLabel(ss,change.p)+'.');}else{$('#bill-error').textContent='Nothing was saved. Your entries are kept; try again.';refreshBillPreview();}}
+function fillRefundAccount(refId){const c=moneyDialogContext('refund');if(!c)return;const {s,u}=c,r=(s.refunds||[]).find(r=>r.id===refId);c.d.refId=r?r.id:null;$('#refund-purpose').value=r&&r.billStart?'bill':'cash';$('#refund-purpose').querySelector('[value=cancel]').disabled=!!u.cancel||s.kind!=='monthly'||!!r;$('#refund-purpose').querySelector('[value=bill]').disabled=s.kind!=='monthly';$('#refund-period').innerHTML=s.kind==='monthly'?billingOptions(s,r?.billStart||pStart(s,Math.max(0,periodIndexAt(s,todayISO())))):'';$('#refund-date').value=r?r.date:todayISO();$('#refund-currency').value=r?(r.currency||s.currency):s.currency;$('#refund-amount').value=r?r.amount:'';$('#refund-rate').value=r&&r.rate?r.rate:'';$('#refund-note').value=r?r.note||'':'';$('#refund-last').value=todayISO();$('#refund-month').value='';refreshRefundPreview();}
+function openRefundDialog(id,sid,refId){if(!state.settingsLoaded)return;const u=state.users[id];if(!u?.subscriptions?.length)return;const s=u.subscriptions.find(x=>x.id===sid)||u.subscriptions[0];ui.refundDraft={id,sid:s.id,busy:false,refId:null};$('#refund-error').textContent='';$('#refund-who').textContent=displayName(u);$('#refund-account').innerHTML=u.subscriptions.map((s,i)=>`<option value="${esc(s.id)}">${esc(paymentAccountName(u,s,i))}</option>`).join('');$('#refund-account').value=s.id;$('#refund-account').disabled=!!refId;fillRefundAccount(refId);$('#refundDialog').showModal();}
+function refundDraftUser(c){const {d,u,s}=c,amount=$('#refund-amount').value,date=$('#refund-date').value,cur=$('#refund-currency').value,rawRate=$('#refund-rate').value,purpose=$('#refund-purpose').value;const rate=normRate(rawRate)||(cur!==s.currency?defaultRate():null);if(!validAmt(amount)||Number(amount)<=0||!isDateKey(date))return {error:'Enter the amount actually returned and the date it was returned.'};const converted=toCur(Number(amount),cur,s.currency,rate);if(converted==null)return {error:'Set an exchange rate to show how this refund affects the account.'};
+  if(d.refId&&!(s.refunds||[]).some(r=>r.id===d.refId))return {error:'This refund was removed. Close the form and open the history again.'};const sim=clone(u),ss=sim.subscriptions.find(x=>x.id===s.id);ss.refunds=(ss.refunds||[]).filter(r=>r.id!==d.refId);settleRefunds(sim,ss,todayISO());if(converted>Math.max(0,paidInPlanCur(ss).t)+0.005)return {error:'The refund exceeds the money still held for this account. Check the amount or receipts.'};const r={id:d.refId||'__refund_preview',date,amount:Number(amount),currency:cur,rate,note:$('#refund-note').value.trim()};
+  if(purpose==='bill'){const p=billingPeriods(ss).find(p=>p.st===$('#refund-period').value);if(!p)return {error:'Choose the exact bill to reduce.'};if(converted>p.pr+0.005)return {error:'The refund exceeds this bill’s remaining charge. Choose another bill or return advance money with bills unchanged.'};r.billStart=p.st;r.billReduction=Math.round(converted*100)/100;}
+  ss.refunds.push(r);if(purpose==='cancel'){const last=$('#refund-last').value;if(!isDateKey(last))return {error:'Choose the inclusive last access day.'};applyCancel(sim,last,'Refunded',r.note);}for(const x of sim.subscriptions||[])settleRefunds(sim,x,todayISO());return {sim,ss,r,purpose};
+}
+function refreshRefundPreview(){const c=moneyDialogContext('refund');if(!c)return;const {d,u,s}=c,purpose=$('#refund-purpose').value;$('#refund-period-wrap').hidden=purpose!=='bill';$('#refund-last-wrap').hidden=$('#refund-month-wrap').hidden=purpose!=='cancel';$('#refundForm').querySelectorAll('input,select').forEach(el=>{el.disabled=d.busy;});$('#refund-account').disabled=d.busy||!!d.refId;$('#refund-purpose').querySelector('[value=cancel]').disabled=!!u.cancel||s.kind!=='monthly'||!!d.refId;$('#refund-purpose').querySelector('[value=bill]').disabled=s.kind!=='monthly';const change=refundDraftUser(c);$('#refund-save').disabled=d.busy||!!change.error;$('#refund-save').textContent=d.busy?'Saving…':d.refId?'Save refund correction':'Save refund';if(change.error){$('#refund-preview').textContent=change.error;return;}
+  const before=s.kind==='monthly'?analyzeMonthly(s,todayISO()):analyzeOneTime(s,todayISO()),after=s.kind==='monthly'?analyzeMonthly(change.ss,todayISO()):analyzeOneTime(change.ss,todayISO());let text='Money returned: '+fmtAmt(change.r.amount,change.r.currency)+' on '+fmtD(change.r.date,true)+'. Revenue for '+mLabel(monthKey(change.r.date))+' changes by this cash refund.\nMoney kept: '+fmtAmt(before.paid,s.currency)+' → '+fmtAmt(after.paid,s.currency)+'.\n';
+  if(purpose==='bill'){const p=before.periods.find(p=>p.st===change.r.billStart)||billingPeriods(s).find(p=>p.st===change.r.billStart),q=after.periods.find(p=>p.st===change.r.billStart)||Object.assign(billingPeriods(change.ss).find(p=>p.st===change.r.billStart),{covered:0});text+='Only '+fmtCycle(q.st,q.en)+': bill '+fmtAmt(p.pr,s.currency)+' → '+fmtAmt(q.pr,s.currency)+'. Owing on this bill: '+fmtAmt(Math.max(0,q.pr-q.covered),s.currency)+'. Later bills keep their charges.\n';}else if(purpose==='cancel')text+='Last access day: '+fmtD(change.sim.cancel.lastDay,true)+'. No bill starts after that day. Earlier genuine arrears remain.\n';else text+='Bills stay unchanged'+(u.cancel?' except the existing cancellation refund settlement.':'; returned money can leave an amount owing again.')+'\n';text+='Amount owing on bills already started: '+fmtAmt(s.kind==='monthly'?after.overdueAmount:after.remaining,s.currency)+'. The refund date records cash; it never selects a billing month.';$('#refund-preview').textContent=text;
+}
+async function saveRefundDialog(e){e.preventDefault();const c=moneyDialogContext('refund');if(!c||c.d.busy)return;const change=refundDraftUser(c);if(change.error){$('#refund-error').textContent=change.error;return;}if(change.r.id==='__refund_preview')change.r.id=newId('r');c.d.busy=true;refreshRefundPreview();const ok=await persistUser(c.d.id,change.sim);c.d.busy=false;if(ok){closeMoneyDialog('refund');toast('Refund saved. Receipts have been preserved.');}else{$('#refund-error').textContent='Nothing was saved. Your entries are kept; try again.';refreshRefundPreview();}}
 function closeStartDialog(){if(ui.startDraft&&ui.startDraft.busy)return;$('#startDialog').close();ui.startDraft=null;}
 async function saveStartDialog(e){e.preventDefault();const c=startContext();if(!c||c.d.busy)return;refreshStartPreview();if($('#start-save').disabled)return;const edited=startDraftUser(c);c.d.busy=true;refreshStartPreview();const ok=await persistUser(c.d.id,edited);c.d.busy=false;
   if(ok){$('#startDialog').close();ui.startDraft=null;toast('Package start and payments saved. Recorded cash is unchanged.');}else{$('#start-error').textContent='The changes were not saved. Your entries are kept here; try again.';refreshStartPreview();}
@@ -2201,7 +2289,7 @@ function paymentAutoAmount(){const c=paymentContext();if(!c)return;const {d,s,a}
 function openPaymentDialog(id,sid,payId,start){if(!state.settingsLoaded)return;const u=state.users[id];if(!u||!u.subscriptions.length)return;const a=analyze(u,todayISO());
   const subs=u.subscriptions;const s=subs.find(s=>s.id===sid)||subs.find(s=>a.sa[s.id].nextDue)||subs[0];const pay=payId&&(s.payments||[]).find(p=>p.id===payId);if(payId&&!pay)return;
   ui.paymentDraft={id,sid:s.id,payId:pay?pay.id:null,auto:!pay,busy:false};$('#paymentForm').reset();$('#payment-error').textContent='';
-  $('#payment-title').textContent=pay?'Edit money received':'Record payment';$('#payment-who').textContent=displayName(u);
+  $('#payment-set-bill').hidden=!!pay||s.kind!=='monthly';$('#payment-title').textContent=pay?'Edit money received':'Record payment';$('#payment-who').textContent=displayName(u);
   $('#payment-account').innerHTML=subs.map((x,i)=>`<option value="${esc(x.id)}">${esc(paymentAccountName(u,x,i))}</option>`).join('');$('#payment-account').value=s.id;$('#payment-account').disabled=!!pay||subs.length===1;
   $('#payment-currency').value=pay?(pay.currency||s.currency):s.currency;$('#payment-date').value=pay?pay.date:todayISO();$('#payment-rate').value=pay&&pay.rate?pay.rate:'';$('#payment-note').value=pay?pay.note||'':'';
   $('#payment-more').open=!!(pay&&((pay.currency&&pay.currency!==s.currency)||pay.rate));
@@ -2214,6 +2302,7 @@ function paymentDraftList(c,t){const {d,s}=c;const n=Math.round(Number($('#payme
   return [{id:d.payId||'__preview',date,amount:n,currency:pc,rate,note:note||periodNote}];
 }
 function refreshPaymentPreview(){const c=paymentContext();if(!c)return;const {d,u,s,a}=c,today=todayISO(),sa=a.sa[s.id];const k=Number($('#payment-month').value),t=paymentTarget(s,sa,k),edit=d.payId&&(s.payments||[]).find(p=>p.id===d.payId);
+  $('#payment-set-bill').hidden=!!d.payId||s.kind!=='monthly';
   let bill='';if(edit){const parts=receiptAllocations(s,today)[edit.id]||[];bill=`<p class="rec-q">Currently covers: <b>${esc(s.kind==='monthly'?(coverageText(parts)||'no additional period'):s.name||'this item')}</b></p><p class="small">${esc(parts.map(p=>p.dates).join('; '))}</p>`;}
   else if(t&&s.kind==='monthly'){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const p=sa.periods.find(p=>p.k===k)||Object.assign(periodAmt(s,k),{pkgOv:!!periodPkg(s,st),pkgId:periodPkg(s,st),days:dayDiff(st<s.start?s.start:st,en)+1,total:dayDiff(st,en)+1});
     const last=t.parts[t.parts.length-1],paid=last.credit||0,reduction=Math.max(0,periodGross(s,p)-p.pr);
@@ -2242,6 +2331,8 @@ async function savePaymentDialog(e){e.preventDefault();const c=paymentContext();
 function renderTable(){
   if(ui.paymentDraft&&$('#paymentDialog').open)refreshPaymentPreview();
   if(ui.startDraft&&$('#startDialog').open)refreshStartPreview();
+  if(ui.billDraft&&$('#billDialog').open)refreshBillPreview();
+  if(ui.refundDraft&&$('#refundDialog').open)refreshRefundPreview();
   renderAcctBar();
   const today=todayISO();const ids=Object.keys(state.users);
   const loading=state.mode==='connecting'||!state.settingsLoaded||(state.mode==='shared'&&!state.loaded);
@@ -2259,7 +2350,7 @@ function renderTable(){
     const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):(a.planParts.length&&!u.cancel?'nothing yet':'—');
     const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?`<span class="muted">paid for ${esc(periodMonth(nextCycleStart(today),null,'monthly'))}</span>`:'<span class="muted">—</span>');
     html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}" data-settled="${dimOn()&&a.settled?1:0}">
-      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${contactLine(u)}${u.subscriptions.length?`<button class="btn primary sm row-pay" type="button" data-act="row-pay" data-user="${esc(id)}">Record month payment</button>`:''}${u.subscriptions.some(s=>s.kind==='monthly')?`<button class="btn sm row-start" type="button" data-act="row-start" data-user="${esc(id)}">Package start / payments</button><span class="start-list">${u.subscriptions.filter(s=>s.kind==='monthly').map(s=>`${esc(planLabel(s))}: ${esc(fmtD(s.start,true))}${subCycle(s)==='yearly'?' · pays '+esc(payFrequency(payMonthsAt(s,'9999-12-31'))):''}`).join('<br>')}</span>`:''}<span class="row-money">Total paid <b data-role="row-paid">${esc(ownText(a.totals,a.mainCur))}</b><br>Discounts / reductions <b>${esc(ownText(reductions,a.mainCur))}</b><br>${esc(statusLabel(a))}</span></td>
+      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${contactLine(u)}${u.subscriptions.length?`<button class="btn primary sm row-pay" type="button" data-act="row-pay" data-user="${esc(id)}">Record month payment</button>`:''}${u.subscriptions.some(s=>s.kind==='monthly')?`<button class="btn sm row-start" type="button" data-act="row-start" data-user="${esc(id)}">Package start / payments</button><button class="btn sm row-bill" type="button" data-act="row-bill" data-user="${esc(id)}">Set bill / proration</button><span class="start-list">${u.subscriptions.filter(s=>s.kind==='monthly').map(s=>`${esc(planLabel(s))}: ${esc(fmtD(s.start,true))}${subCycle(s)==='yearly'?' · pays '+esc(payFrequency(payMonthsAt(s,'9999-12-31'))):''}`).join('<br>')}</span>`:''}<span class="row-money">Total paid <b data-role="row-paid">${esc(ownText(a.totals,a.mainCur))}</b><br>Discounts / reductions <b>${esc(ownText(reductions,a.mainCur))}</b><br>${esc(statusLabel(a))}</span></td>
       <td class="plan">${planCell(a)}</td>
       <td title="${esc(u.joinDate)}">${esc(fmtD(u.joinDate))}</td>
       <td class="${late?'late':''}">${ptTxt}</td>
@@ -2928,11 +3019,23 @@ function bind(){
   $('#a-join').addEventListener('input',()=>{if(!$('#a-start').dataset.manual)$('#a-start').value=$('#a-join').value;updAddConv();});
   $('#a-start').addEventListener('input',()=>{$('#a-start').dataset.manual='1';updAddConv();});
   ['#a-prorate','#a-waive','#a-payment'].forEach(sel=>$(sel).addEventListener('input',updAddConv));
+  $('#billForm').addEventListener('submit',saveBillDialog);
+  ['bill','refund'].forEach(kind=>{['close','cancel'].forEach(action=>$('#'+kind+'-'+action).addEventListener('click',()=>closeMoneyDialog(kind)));$('#'+kind+'Dialog').addEventListener('cancel',e=>{if(ui[kind+'Draft']?.busy)e.preventDefault();else ui[kind+'Draft']=null;});});
+  $('#bill-account').addEventListener('change',()=>{ui.billDraft.sid=$('#bill-account').value;fillBillAccount();});
+  $('#bill-period').addEventListener('change',fillBillPeriod);
+  $('#bill-receipt').addEventListener('change',()=>{const c=moneyDialogContext('bill'),r=c.s.payments.find(r=>r.id===$('#bill-receipt').value);if(!r)return;$('#bill-cash').value=r.amount;$('#bill-cash-label').textContent='Actual amount received ('+(r.currency||c.s.currency)+')';$('#bill-date').value=r.date;refreshBillPreview();});
+  $('#bill-settlement').addEventListener('change',()=>{if($('#bill-settlement').value==='edit')$('#bill-receipt').dispatchEvent(new Event('change'));else if($('#bill-settlement').value==='new'){$('#bill-cash-label').textContent='Actual amount received ('+moneyDialogContext('bill').s.currency+')';$('#bill-cash-label').textContent='Actual amount received ('+moneyDialogContext('bill').s.currency+')';const c=moneyDialogContext('bill'),change=billDraftUser(c,false);const p=!change.error&&(analyzeMonthly(change.ss,todayISO()).periods.find(p=>p.st===change.p.st)||{pr:change.amount,covered:0});$('#bill-cash').value=p?Math.max(0,p.pr-p.covered):'';$('#bill-date').value=todayISO();}refreshBillPreview();});
+  ['mode','amount','from','to','cash','date'].forEach(name=>$('#bill-'+name).addEventListener('input',refreshBillPreview));
+  $('#refundForm').addEventListener('submit',saveRefundDialog);
+  $('#refund-account').addEventListener('change',()=>{ui.refundDraft.sid=$('#refund-account').value;fillRefundAccount();});
+  ['purpose','period','date','amount','currency','rate','note','last'].forEach(name=>$('#refund-'+name).addEventListener('input',()=>{if(name==='last')$('#refund-month').value='';refreshRefundPreview();}));
+  $('#refund-month').addEventListener('input',()=>{const m=$('#refund-month').value;if(/^\d{4}-\d{2}$/.test(m)){$('#refund-last').value=addDays(cycleAt(monthOffset(m+'-01')),-1);refreshRefundPreview();}});
   $('#startForm').addEventListener('submit',saveStartDialog);
   ['#start-close','#start-cancel'].forEach(sel=>$(sel).addEventListener('click',closeStartDialog));
   $('#startDialog').addEventListener('cancel',e=>{if(ui.startDraft&&ui.startDraft.busy)e.preventDefault();else ui.startDraft=null;});
   $('#start-account').addEventListener('change',()=>{if(!ui.startDraft||ui.startDraft.busy)return;ui.startDraft.sid=$('#start-account').value;fillStartForm();});
   ['#start-date','#start-prorate','#start-payment','#start-apply'].forEach(sel=>$(sel).addEventListener('input',refreshStartPreview));
+  $('#payment-set-bill').addEventListener('click',()=>{const c=paymentContext();if(!c||c.d.busy||c.s.kind!=='monthly')return;const start=pStart(c.s,Number($('#payment-month').value));closePaymentDialog();openBillDialog(c.d.id,c.s.id,start);});
   $('#paymentForm').addEventListener('submit',savePaymentDialog);
   ['#payment-close','#payment-cancel'].forEach(sel=>$(sel).addEventListener('click',closePaymentDialog));
   $('#paymentDialog').addEventListener('cancel',e=>{if(ui.paymentDraft&&ui.paymentDraft.busy)e.preventDefault();else ui.paymentDraft=null;});
@@ -3043,13 +3146,14 @@ function bind(){
   const tbody=$('#tbody');
   tbody.addEventListener('click',async e=>{
     if(e.target.closest('a'))return;
+    const quickBill=e.target.closest('[data-act="row-bill"]');if(quickBill){openBillDialog(quickBill.dataset.user);return;}
     const quickStart=e.target.closest('[data-act="row-start"]');if(quickStart){openStartDialog(quickStart.dataset.user);return;}
     const quickPay=e.target.closest('[data-act="row-pay"]');if(quickPay){openPaymentDialog(quickPay.dataset.user);return;}
     const row=e.target.closest('tr.row');
     if(row){if(e.target.closest('button,select,input'))return;ui.expanded=ui.expanded===row.dataset.id?null:row.dataset.id;renderTable();return;}
     const det=e.target.closest('tr.detail');if(!det)return;const id=det.dataset.id;
     const act=e.target.closest('[data-act]');if(!act)return;const A=act.dataset.act,sid=act.dataset.sub;
-    if(A==='toggle')toggleOpen(id,act.dataset.key);
+    if(A==='toggle'){if((act.dataset.key||'').startsWith('refund:'))openRefundDialog(id,sid);else if((act.dataset.key||'').startsWith('days:'))openBillDialog(id,sid,pStart(state.users[id].subscriptions.find(s=>s.id===sid),0));else toggleOpen(id,act.dataset.key);}
     else if(A==='package-start')openStartDialog(id,sid);
     /* v29: one-tap Record payment */
     else if(A==='rec')openPaymentDialog(id,sid,null,act.dataset.start);
@@ -3060,7 +3164,7 @@ function bind(){
     else if(A==='upto-yes'){const u0=state.users[id];const s0=u0&&(u0.subscriptions||[]).find(x=>x.id===sid);if(!s0||s0.kind!=='monthly')return;const sa0=analyzeMonthly(s0,todayISO());const k=Number(act.dataset.k);const cov=coverPlan(s0,sa0,k).filter(x=>x.due>0);const total=Math.round(cov.reduce((t,x)=>t+x.due,0)*100)/100;if(!cov.length||String(total)!==act.dataset.total){toast('This plan has changed since the question was drawn; check it again.');renderTable();return;}act.disabled=true;act.textContent='Recording…';await recordPayment(id,sid,recPayments(s0,{parts:cov,upto:cov[cov.length-1].en},todayISO()));}
     else if(A==='upto-more'){const f=act.closest('form.upto-form');if(f){f.dataset.more='1';const a=f.querySelector('[name=amount]');if(a){a.focus();a.select();}}}
     else if(A==='pay-edit')openPaymentDialog(id,sid,act.dataset.pay);
-    else if(A==='refund-edit'){ui.refundEdit=ui.refundEdit||{};ui.refundEdit[sid]=act.dataset.ref;ui.open[id]=Object.assign({},ui.open[id],{['refund:'+sid]:true});renderTable();}
+    else if(A==='refund-edit')openRefundDialog(id,sid,act.dataset.ref);
     else if(A==='refund-cancel'){if(ui.refundEdit)delete ui.refundEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['refund:'+sid]:false});renderTable();}
     else if(A==='refund-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const r=(s.refunds||[]).find(x=>x.id===act.dataset.ref);s.refunds=(s.refunds||[]).filter(x=>x.id!==act.dataset.ref);if(!s.refunds.length)delete s.refunds;settleRefunds(u,s,todayISO());if(ui.refundEdit)delete ui.refundEdit[sid];const ok=await persistUser(id,u);if(ok&&r)toast(`Removed the ${fmtAmt(r.amount,r.currency||s.currency)} refund dated ${r.date}.`);}
     else if(A==='pay-edit-cancel'){if(ui.payEdit)delete ui.payEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['pay:'+sid]:false});renderTable();}

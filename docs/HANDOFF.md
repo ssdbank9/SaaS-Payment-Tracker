@@ -1,6 +1,6 @@
 # Wasooli hand-off
 
-Written 2026-09-23 at v26, updated 2026-10-05 at v34. This is the document to read first when picking the project
+Written 2026-09-23 at v26, updated 2026-10-05 at v35. This is the document to read first when picking the project
 up again in Claude Code, another AI coding tool or by hand. `AGENTS.md` is the working guide for a coding session
 (every tool reads it, see section 10); this file records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
 built is `docs/setup-runbook.html` (open it in a browser; it prints).
@@ -20,7 +20,21 @@ change/release workflow, with a verified 2026-10-04 snapshot and a copyable cont
   Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.
 - **Repo:** `ssdbank9/SaaS-Payment-Tracker` on GitHub, branch `main`. Pushing to `main` is the release.
 
-## 2. Current state (2026-10-05, v34)
+## 2. Current state (2026-10-05, v35)
+
+**Bill and refund clarity (v35).** Set bill / proration is a separate dialog beside each name, and can also
+open from Record payment. Select an account and the exact billing period; a custom charge or service-date
+calculation changes only that bill. Settlement explicitly keeps cash unchanged, leaves the bill owing,
+adds a receipt, or corrects one existing receipt while retaining its ID and currency/rate. The preview
+shows settlement, subsequent bills and real advance credit. Pending is not permission to erase cash.
+Return money uses a separate dialog: cash only, reduce one bill and return money, or cancel access and
+return money. Linked refunds store `billStart` and `billReduction` (plan-currency amount, fixed at save).
+`billCharge` applies that reduction in both `analyzeMonthly` and `periodAmt`; existing unlinked refunds
+keep the previous meaning. Editing/removing a linked refund changes/removes its reduction by derivation.
+`billReductions` excludes refund reductions, avoiding classifying returned cash as a discount. No migration
+or automatic owner-data rewrite. Read-only diagnosis found full stored receipts can create valid advance
+credit after an automatic first-bill proration; owner corrections must use the explicit previewed form.
+`tests/billing-clarity-flow.cjs` uses a disposable local store only.
 
 **Cancellation (v34).** Cancel subscription has No bills from billing month plus an inclusive last access day,
 with a balance preview. Selecting September stops bills from September 24 and sets the last day to September 23.
@@ -43,8 +57,8 @@ disposable local server; never run it against owner data. A cutoff correction is
 | Data on VM | `/var/lib/payments-tracker/tracker.sqlite3` plus `assets/` (uploaded receipts) and `backups/` |
 | Secrets on VM | `/etc/payments-tracker.env` (`DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`); AI and mail keys typed in Settings live in the SQLite `meta` table |
 | Services | `payments-tracker.service` (gunicorn on 127.0.0.1:8080), `caddy` (HTTPS for all three hosts), timers `payments-tracker-update` (5 min), `payments-tracker-backup` (03:15 daily), `payments-tracker-notify` (04:00 UTC = 09:00 PKT daily) |
-| Versions | badge `v34` in `index.html`, `VERSION = "34"` in `server/app.py`, top entry `## v34` in `CHANGELOG.md`; verify health after release |
-| Repo head | the v34 cancellation change (check with `git log -1`); the earlier v33 release is `2ef5838` |
+| Versions | badge `v35` in `index.html`, `VERSION = "35"` in `server/app.py`, top entry `## v35` in `CHANGELOG.md`; verify health after release |
+| Repo head | the v35 bill settlement and refund change (check with `git log -1`); the earlier v34 release is `fb2b3e2` |
 | claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: retired as the data store; v33 was edited in Codex and has not been republished there |
 
 **How updates deploy.** `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: `git fetch`,

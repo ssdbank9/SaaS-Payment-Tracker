@@ -2,6 +2,13 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v35 - 2026-10-05
+
+- Set bill / proration chooses an account and the exact billing period before changing its charge. Set an agreed amount, use inclusive service dates, or restore the normal bill. The preview shows settlement, money still owing, the next bill and actual advance money. A reduced September bill does not reduce October's charge.
+- The same form asks whether money has been received. Keep existing receipts, leave the bill owing without adding cash, record a new receipt, or explicitly correct one existing receipt. Cash and billing dates stay separate; a pending choice cannot erase payments already recorded.
+- Return money explicitly distinguishes returning cash with bills unchanged, reducing one selected bill and returning cash, and stopping access with a refund. A linked bill refund reduces that bill and cash held together; editing or removing it updates its reduction. Existing refunds keep their original meaning, and genuine advance payments are retained.
+- Billing and refund forms stay outside the refreshed table and retain entries after failed saves. Existing owner records are not edited by the release. Added disposable browser regression checks for billing, receipt correction, refunds and phone/desktop layouts in both themes.
+
 ## v34 - 2026-10-05
 
 - Cancel subscription asks which billing month should have no bill, shows its last access day and previews the resulting balance. September's bill starts September 24, so cancelling before it sets the last day to September 23.
