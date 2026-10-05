@@ -2,6 +2,12 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v34 - 2026-10-05
+
+- Cancel subscription asks which billing month should have no bill, shows its last access day and previews the resulting balance. September's bill starts September 24, so cancelling before it sets the last day to September 23.
+- Cancelled users have Edit cancellation to correct the cutoff without resuming. Receipts, refunds and independently ended plans are preserved; earlier unpaid bills remain visible. Saving recalculates existing refund settlements, and plans that start after the cutoff generate no bills.
+- Cancellation entries survive table refreshes and remain available if saving fails. Existing owner records are not changed automatically.
+
 ## v33 - 2026-10-04
 
 - Package start / payments is available beside each person on the dashboard and from each expanded package. Choose an account and its own start date, preview the first prorated bill and next full bill, and save. A person's joining date and the dates cash arrived stay separate. New users and added packages show the same first-bill preview.

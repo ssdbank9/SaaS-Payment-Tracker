@@ -27,7 +27,7 @@ let browser;
   await page.locator('[name=passcode]').fill('test1234');
   await page.locator('button[type=submit]').click();
   await page.waitForSelector('#tbody tr.row');
-  assert.equal((await (await context.request.get(base+'/healthz')).json()).version,'33');
+  assert.equal((await (await context.request.get(base+'/healthz')).json()).version,'34');
   const get = async id => (await (await context.request.get(base+'/api/docs/users/'+id)).json()).data;
   const put = async (id,user) => assert.equal((await context.request.put(base+'/api/docs/users/'+id,{headers,data:user})).status(),200);
   const reset = async user => {if(await page.locator('#paymentDialog').evaluate(d=>d.open))await page.locator('#payment-cancel').click();await put('qa-payment',user||sample());await page.reload({waitUntil:'domcontentloaded'});await page.locator('tr.row[data-id="qa-payment"]').waitFor();};
@@ -184,7 +184,7 @@ let browser;
     await page.locator('#add-close').click();check('Layout '+width+'px '+theme+' main, receipt and joining bill');
   }
   assert.deepEqual(errors,[],'Console and page errors must be empty');
-  const summary={version:'33',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};
+  const summary={version:'34',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};
   fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary));
   await browser.close();browser=null;
 })().catch(async e=>{console.error(e);if(browser)await browser.close();process.exitCode=1;});

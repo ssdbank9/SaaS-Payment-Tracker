@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>Wasooli technical project handoff</title><style>
+:root{color-scheme:light;--bg:#f3f5f4;--paper:#fff;--ink:#202b25;--muted:#536259;--line:#d6dfd9;--accent:#286345;--soft:#edf4ef;--code:#f2f4f3}
+:root[data-theme=dark]{color-scheme:dark;--bg:#111814;--paper:#19231d;--ink:#e5ece7;--muted:#aebeb3;--line:#3b4c40;--accent:#a5dab9;--soft:#233b2b;--code:#111c15}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:100px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow-wrap:anywhere}a{color:var(--accent);text-underline-offset:3px}a:hover{text-decoration-thickness:2px}a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}header{border-bottom:1px solid var(--line);background:var(--paper)}.toolbar{max-width:1100px;margin:auto;padding:18px 28px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}.brand{font-weight:750;letter-spacing:.02em;margin-right:auto}.tools{display:flex;flex-wrap:wrap;gap:8px}button{font:inherit;font-size:14px;min-height:42px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);padding:7px 13px;cursor:pointer}.doc-links{max-width:1100px;margin:auto;padding:0 28px 18px;display:flex;gap:12px 22px;flex-wrap:wrap;font-size:14px}.document{max-width:1100px;margin:30px auto;padding:36px 48px 48px;background:var(--paper);border:1px solid var(--line);border-radius:10px;min-width:0}h1,h2,h3,h4{line-height:1.25;letter-spacing:-.015em;scroll-margin-top:24px}h1{font-size:34px;margin:0 0 20px}h2{font-size:25px;margin:44px 0 18px;padding-top:22px;border-top:1px solid var(--line)}h3{font-size:20px;margin:28px 0 12px}p{margin:14px 0}li{margin:6px 0}ul,ol{padding-left:25px}code{font: .88em/1.55 Consolas,'Courier New',monospace;background:var(--code);padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{max-width:100%;overflow:auto;background:var(--code);border:1px solid var(--line);border-radius:7px;padding:16px;line-height:1.6;tab-size:2}pre code{padding:0;background:none;white-space:pre;overflow-wrap:normal;font-size:13px}blockquote{margin:20px 0;padding:8px 20px;border-left:4px solid var(--accent);background:var(--soft)}.table-wrap{max-width:100%;overflow-x:auto;margin:20px 0;border:1px solid var(--line);border-radius:7px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:12px 14px;vertical-align:top;border-bottom:1px solid var(--line);min-width:150px}th{background:var(--soft);font-weight:700}tr:last-child td{border-bottom:0}hr{border:0;border-top:1px solid var(--line);margin:30px 0}footer{max-width:1100px;margin:0 auto 30px;padding:0 28px;color:var(--muted);font-size:13px}.notice{font-size:14px;color:var(--muted);margin:0 0 25px}.top-link{display:inline-block;margin-top:22px}
+@media(max-width:600px){.toolbar{padding:14px 18px}.doc-links{padding:0 18px 14px}.document{margin:14px 10px;padding:24px 18px;border-radius:8px}h1{font-size:27px}h2{font-size:23px}h3{font-size:19px}body{font-size:15px}pre{padding:12px}th,td{padding:10px;min-width:145px}footer{padding:0 20px}.tools button{font-size:13px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{:root,:root[data-theme=dark]{color-scheme:light;--bg:white;--paper:white;--ink:black;--muted:#333;--line:#bbb;--accent:#174f31;--soft:#eee;--code:#f5f5f5}body{font-size:10pt}header,.notice,.top-link,footer{display:none}.document{margin:0;padding:0;border:0;max-width:none}h1{font-size:22pt}h2{font-size:16pt;break-after:avoid}h3{font-size:12pt;break-after:avoid}pre{white-space:pre-wrap;overflow:visible;break-inside:auto}pre code{white-space:pre-wrap;overflow-wrap:anywhere;font-size:8pt}.table-wrap{overflow:visible;border-radius:0}table{font-size:8pt}th,td{min-width:0;padding:6px}thead{display:table-header-group}tr{break-inside:avoid}a{color:inherit}}
+</style></head><body id="top"><header><div class="toolbar"><span class="brand">Wasooli · Know who's paid.</span><div class="tools"><button type="button" id="theme">Use dark theme</button><button type="button" id="print">Print / save as PDF</button></div></div><nav class="doc-links" aria-label="Related documents"><a href="../WASOOLI-FINAL-HANDOFF.html">Final handoff and recovery guide</a><a href="setup-runbook.html">Original setup runbook</a></nav></header><main class="document"><p class="notice">Offline HTML copy of docs/HANDOFF.md. HTML copies updated 5 October 2026. This is a guide; opening it does not change your website or records.</p><h1 id="wasooli-hand-off">Wasooli hand-off</h1>
+<p>Written 2026-09-23 at v26, updated 2026-10-05 at v34. This is the document to read first when picking the project
+up again in Claude Code, another AI coding tool or by hand. <code>AGENTS.md</code> is the working guide for a coding session
+(every tool reads it, see section 10); this file records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
+built is <code>docs/setup-runbook.html</code> (open it in a browser; it prints).</p>
+<p>The detailed owner and next-LLM guide is <a href="../WASOOLI-FINAL-HANDOFF.html"><code>WASOOLI-FINAL-HANDOFF.md</code></a>.
+It covers build history, billing, private recovery inventory, fresh hosting, restore procedures and the
+change/release workflow, with a verified 2026-10-04 snapshot and a copyable continuation prompt.</p>
+<h2 id="1-purpose-and-who">1. Purpose and who</h2>
+<ul>
+<li><strong>What:</strong> Wasooli (&quot;Know who&#39;s paid.&quot;) tracks subscribers who share paid SaaS accounts (packages C, C Max
+and G), their billing periods, payments in PKR or USD, running costs, and what to send them on WhatsApp,
+Telegram or email. Subscribers answer on a private link (<code>/c/&lt;token&gt;</code>): Continue, Upgrade to C Max, or
+Discontinue.</li>
+<li><strong>Owner and only user:</strong> Aly Jafferani (Karachi, UTC+5). One passcode, one admin. Not a multi-tenant product.</li>
+<li><strong>Built by:</strong> Claude in a Slack thread on 2026-09-21..23 (v1 to v26 in three days). The owner is leaving
+Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.</li>
+<li><strong>Repo:</strong> <code>ssdbank9/SaaS-Payment-Tracker</code> on GitHub, branch <code>main</code>. Pushing to <code>main</code> is the release.</li>
+</ul>
+<h2 id="2-current-state-2026-10-05-v34">2. Current state (2026-10-05, v34)</h2>
+<p><strong>Cancellation (v34).</strong> Cancel subscription has No bills from billing month plus an inclusive last access day,
+with a balance preview. Selecting September stops bills from September 24 and sets the last day to September 23.
+Cancelled users have Edit cancellation; saving preserves cash history and separately ended plans, recalculates
+derived refund settlements, and excludes plans starting after the cutoff. Genuine unpaid earlier bills remain
+due. Existing owner records are not edited automatically. Tests: <code>node tests/cancellation-flow.cjs</code> uses a
+disposable local server; never run it against owner data. A cutoff correction is an explicit owner action.</p>
+<div class="table-wrap" tabindex="0" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Admin site</td>
+<td><code>https://wasooli.duckdns.org</code> (plain root shows a blank neutral page on purpose)</td>
+</tr>
+<tr>
+<td>Sign-in form</td>
+<td><code>https://wasooli.duckdns.org/x/&lt;ADMIN_PATH&gt;</code> (printed by the installer; Settings → Security)</td>
+</tr>
+<tr>
+<td>Subscriber links</td>
+<td><code>https://pay-up.duckdns.org/c/&lt;token&gt;</code> (<code>LINK_DOMAIN</code>)</td>
+</tr>
+<tr>
+<td>Health check</td>
+<td><code>https://wasooli.duckdns.org/healthz</code>; v33 and VM commit <code>2ef5838</code> were confirmed on 2026-10-04, with an empty <code>linkBase</code>. The subscriber-domain setup listed above is prior handoff context and needs separate verification.</td>
+</tr>
+<tr>
+<td>VM</td>
+<td>Oracle Cloud Always Free, <code>VM.Standard.A1.Flex</code>, 1 OCPU / 6 GB, Ubuntu 24.04 aarch64, public IP <code>141.145.157.7</code>, created 2026-09-22 ~11:45 UTC in VCN <code>vcn-20260922-1643</code> / subnet <code>subnet-20260922-1643</code></td>
+</tr>
+<tr>
+<td>Cloud firewall</td>
+<td>Default Security List of that subnet: default rules (TCP 22, ICMP) plus TCP 80 and TCP 443 from <code>0.0.0.0/0</code> added by the owner</td>
+</tr>
+<tr>
+<td>DNS</td>
+<td>DuckDNS (owner signed in with Google): <code>wasooli.duckdns.org</code> and <code>pay-up.duckdns.org</code> → <code>141.145.157.7</code>. The first name <code>wasool.duckdns.org</code> was deleted on 2026-09-23</td>
+</tr>
+<tr>
+<td>SSH</td>
+<td><code>ssh -i &quot;$env:USERPROFILE\Downloads\ssh-key-2026-09-22.key&quot; ubuntu@141.145.157.7</code> from Windows PowerShell</td>
+</tr>
+<tr>
+<td>Code on VM</td>
+<td><code>/opt/payments-tracker</code> (a git checkout of <code>main</code>; disposable)</td>
+</tr>
+<tr>
+<td>Data on VM</td>
+<td><code>/var/lib/payments-tracker/tracker.sqlite3</code> plus <code>assets/</code> (uploaded receipts) and <code>backups/</code></td>
+</tr>
+<tr>
+<td>Secrets on VM</td>
+<td><code>/etc/payments-tracker.env</code> (<code>DOMAIN</code>, <code>LINK_DOMAIN</code>, <code>OLD_DOMAIN</code>, <code>ADMIN_PASSCODE</code>, <code>SECRET_KEY</code>, <code>ADMIN_PATH</code>, <code>SESSION_DAYS</code>, <code>DATA_DIR</code>, <code>COOKIE_SECURE</code>, <code>ANTHROPIC_API_KEY</code>, <code>APP_TZ</code>); AI and mail keys typed in Settings live in the SQLite <code>meta</code> table</td>
+</tr>
+<tr>
+<td>Services</td>
+<td><code>payments-tracker.service</code> (gunicorn on 127.0.0.1:8080), <code>caddy</code> (HTTPS for all three hosts), timers <code>payments-tracker-update</code> (5 min), <code>payments-tracker-backup</code> (03:15 daily), <code>payments-tracker-notify</code> (04:00 UTC = 09:00 PKT daily)</td>
+</tr>
+<tr>
+<td>Versions</td>
+<td>badge <code>v34</code> in <code>index.html</code>, <code>VERSION = &quot;34&quot;</code> in <code>server/app.py</code>, top entry <code>## v34</code> in <code>CHANGELOG.md</code>; verify health after release</td>
+</tr>
+<tr>
+<td>Repo head</td>
+<td>the v34 cancellation change (check with <code>git log -1</code>); the earlier v33 release is <code>2ef5838</code></td>
+</tr>
+<tr>
+<td>claude.ai artifact</td>
+<td><code>https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA</code>: retired as the data store; v33 was edited in Codex and has not been republished there</td>
+</tr>
+</tbody></table></div>
+<p><strong>How updates deploy.</strong> <code>payments-tracker-update.timer</code> runs <code>deploy/update.sh</code> every 5 minutes: <code>git fetch</code>,
+hard-reset to <code>origin/main</code> if it moved, reinstall requirements if <code>server/requirements.txt</code> changed, refresh
+the systemd units, append defaults for new env keys (<code>ensure_env</code>), restart the service. Nothing else is
+needed; the version badge in the header shows when the new copy is live.</p>
+<p><strong>The owner&#39;s payment flow (v32).</strong> Every ordinary month is the 24th through the next 23rd. A person who joins on
+10 Oct at Rs 4,200/month has a first bill of Rs 1,960 for 10–23 Oct on the default 30-day basis, then a full Rs 4,200
+bill from 24 Oct. Add user previews both and opens a receipt form after saving. Received on is the day cash arrived;
+it does not change the joining date or prorate a later bill.</p>
+<p>Record month payment is beside each person&#39;s name. Choose the account and Pay through billing month, review the
+dates, charge, existing advance credit and amount left, then save the actual receipt. Older unpaid months are included
+and named when choosing a later month, preserving the existing credit rule. Edit in receipt history shows current and
+resulting period coverage, Total paid and Paid through before saving. Total paid is cash received minus refunds;
+Discounts / reductions is a separate total for monthly bills already started or prepaid. A charge change does not add
+cash. In the owner&#39;s screenshot example Rs 8,400 already received covers the Rs 3,220 first bill, Rs 4,200 next bill and
+Rs 980 advance credit; the next receipt is Rs 3,220 and raises Total paid to Rs 11,620.</p>
+<p>The receipt dialog lives outside the redrawn table. Currency, exchange rate and note expand when needed; unsaved
+values survive a poll, and failed saves keep the form for retry. No new schema or data migration was introduced.</p>
+<p><strong>Package starts and annual installments (v33).</strong> Package start / payments is beside each name and Change start / payments
+is beside each expanded plan&#39;s start. Choose the account and its own start date. It is independent of the person&#39;s joining date
+and cash receipt dates; Add user and Add plan show both the first and following full bill before saving. The focused start form
+preserves all receipts, refunds, price history, custom period charges and the person&#39;s joining date. Its preview shows the bill,
+balance and paid-through changes before Save. The full plan Edit also preserves historical price entries when a start moves.</p>
+<p>G keeps its annual stored price and can collect monthly, every 3 months, every 6 months or yearly. <code>installmentPrice</code> splits the
+annual price, with rounding balanced so a full year totals the annual price. A first partial installment is prorated by actual days
+for new annual plans or an explicit initial start/proration edit. Monthly plans keep the existing fixed-30-day default. Existing
+annual plans without payment choices remain yearly and keep their old proration until edited. <code>paymentEvery</code> sets the initial
+interval; dated <code>paymentSchedule</code> entries change it from a billing boundary. A plan with receipts defaults to changing from its
+next bill; an explicit Package start option recalculates earlier charges. Dated schedule entries and custom charges retain their
+dates, and the preview names them. A future-only schedule change preserves earlier calculations. Ordinary receipts still fill
+the oldest unpaid bill first, regardless of their cash dates, with no stored allocation or invented receipt.</p>
+<p>Periods carry their payment interval in <code>months</code>, so labels, status, dues, credit, Summary/Analytics and receipt choices use the
+same schedule while <code>subCycle</code> and prices remain annual. Subscriber cards include only bills actually starting on that 24th and
+carry individual period dates; the notifier reads those cards. <code>settingsLoaded</code> prevents an early reload from quoting a bill with
+provisional proration settings. The new dialog sits outside the redrawn table and keeps failed/unfinished saves for retry.</p>
+<h2 id="3-architecture-one-page">3. Architecture (one page)</h2>
+<pre><code>phone / PC browser ──HTTPS──▶ Caddy (:443, certs from Let&#39;s Encrypt)
+                              │  hosts: wasooli.duckdns.org, pay-up.duckdns.org (+ OLD_DOMAIN redirect)
+                              ▼
+                     gunicorn 127.0.0.1:8080  → server/app.py (Flask)
+                              │   auth.py   passcode, per-IP lockout, /x/&lt;ADMIN_PATH&gt;, signed sessions
+                              │   db.py     SQLite document store  /var/lib/payments-tracker/tracker.sqlite3
+                              │   notify.py daily reminder emails (timer)
+                              │   gemini_read.py / claude_read.py  screenshot reading
+                              ▼
+                        index.html  (the whole admin app, one file, vanilla JS, inline CSS/SVG)
+</code></pre>
+<ul>
+<li><code>index.html</code> is the entire admin UI. It detects its backend: the server (<code>window.__PT_SERVER__</code>, docs API at
+<code>/api/docs/&lt;path&gt;</code>), the claude.ai artifact runtime (<code>window.claude</code>), or <code>localStorage</code>. All three present
+the same <code>db</code> shape to the app code.</li>
+<li>The server is a thin document store plus a few special endpoints: login, <code>/c/&lt;token&gt;</code> choice pages (rendered
+server-side from <code>confirm/&lt;token&gt;</code> documents), <code>/api/confirmations</code>, <code>/api/export</code> and <code>/api/import</code>,
+receipt upload (<code>POST /api/assets</code>, served back at <code>/blob/&lt;id&gt;</code>), AI settings/reading/test, mail settings/test, security
+(<code>/api/security</code>, regenerate path, sign out everywhere), <code>/assets/&lt;file&gt;</code> and <code>/manifest.webmanifest</code>.</li>
+<li>Host-based routing (v25): on <code>LINK_DOMAIN</code> only <code>/c/&lt;token&gt;</code>, <code>/assets/*</code>, <code>/healthz</code> and the manifest exist;
+everything else is the neutral 404. On <code>DOMAIN</code> <code>/c/&lt;token&gt;</code> redirects to the link domain. <code>OLD_DOMAIN</code>
+redirects to <code>DOMAIN</code>.</li>
+<li>No build step, no JS libraries, no framework. Fonts (IBM Plex Sans) from Google Fonts; everything else inline.</li>
+</ul>
+<h2 id="4-data-model">4. Data model</h2>
+<p>SQLite tables (<code>server/db.py</code>): <code>docs(path, json, updated_at)</code>, <code>confirmations</code>, <code>audit</code>, <code>login_attempts</code>,
+<code>meta(key, value)</code>. The app&#39;s data is JSON documents in <code>docs</code>, keyed by path.</p>
+<p><strong>Documents</strong></p>
+<ul>
+<li><code>settings/main</code>: <code>rate</code> (PKR per USD, default 280), <code>packages[{id,name,cycle,price,currency,description}]</code>
+(defaults <code>pkg_c</code> C monthly Rs 4,200, <code>pkg_cmax</code> C Max monthly, <code>pkg_g</code> G yearly), <code>anchor</code> (default
+<code>2026-07-24</code>) and <code>cycleDay</code> (24; every cycle start is that day clamped to the month), <code>remindDay</code> (20),
+<code>replyDay</code> (23), <code>prorationBasis</code> (<code>fixed30</code> | <code>actual</code>), <code>template</code>, <code>finalTemplate</code>, <code>queueTemplates{1,2,3}</code>,
+<code>payHow</code>, <code>appName</code>, <code>tagline</code>, <code>readModel</code>, <code>publicBaseUrl</code> (ignored while <code>LINK_DOMAIN</code> is set), <code>waApp</code>
+(<code>regular</code> | <code>business</code> | <code>ask</code>), <code>dimSettled</code>.</li>
+<li><code>users/&lt;id&gt;</code>: <code>name, email, phone, telegram, joinDate, notes, subscriptions[], reminders{}, cancel, cancelHistory[{lastDay,reason,note,at,resumedOn,resumedAt}] (v27, resumed cancellations), discontinue, confirmToken</code>.<ul>
+<li>Subscription (plan): <code>id, kind</code> (monthly | one-time), <code>cycle</code> (monthly | yearly), <code>packageId</code>, <code>currency</code>,
+<code>start</code>, <code>end</code>, <code>prorate</code>, <code>waiveFirst</code>, <code>prices[{from,price}]</code>, <code>discount</code>, <code>dueBy</code>,
+<code>prorationBasis|DaysOverride|RateOverride|AmountOverride</code> (older per-plan overrides, still read),
+<code>tierHistory[{from,packageId,price,currency,note,via}]</code> (C ↔ C Max from a cycle start),
+<code>periodOverrides{periodStart:{amount?,packageId?,note,at}}</code> (hand-set amount and/or package for one period, v27; absent = computed),
+<code>paymentEvery</code> (1|3|6|12 months for annual-priced plans, v33; absent = 12),
+<code>paymentSchedule[{from,months}]</code> (v33; dated interval changes, absent = none),
+<code>payments[{id,date,amount,currency,rate,note}]</code>, <code>refunds[{id,date,amount,currency,rate,note}]</code> (v28; absent =
+none). One-time items carry <code>total</code> and <code>due</code>. A <code>periodOverrides</code> entry marked <code>fromRefund</code> is derived by
+<code>settleRefunds</code> (a cancelled user&#39;s period that a refund made short counts at what was kept) and is recomputed
+whenever a refund is saved or removed.</li>
+<li><code>reminders{}</code> holds per-cycle ticks: reminded, confirmed, final notice, Except list, and Queue <code>sent</code>
+records <code>{stage, cycleStart, channel, at}</code>.</li>
+</ul>
+</li>
+<li><code>costs/&lt;id&gt;</code>: <code>date, description, category, packageId</code> (<code>&#39;&#39;</code> = shared), <code>currency, cost, tax, rate, receipt, source</code>.</li>
+<li><code>confirm/&lt;token&gt;</code>: the per-cycle card the admin page writes so the server can render <code>/c/&lt;token&gt;</code> (first
+name, plans, tier, amount, dates). Written whenever the Queue or Reminder run renders.</li>
+<li><code>meta/schema</code>, <code>meta/seed</code>: migration markers with a lease (<code>acquire</code> with a TTL) so two tabs never migrate
+at once.</li>
+<li><code>meta</code> table (server-side only, never exported): <code>admin_path</code>, <code>secret_version</code>, <code>mail</code> (SMTP incl. app
+password), <code>ai</code> (provider, keys, Gemini model), <code>docs_version</code>.</li>
+</ul>
+<p><strong>Periods are computed, never stored.</strong> <code>analyzeMonthly</code> walks cycle periods from the plan start, applies
+payments minus refunds as credit in order and yields paid / partial / unpaid / upcoming, balance and next due.
+Since v29 <code>analyze(u, today)</code> also returns <code>statusA</code>, the plan analysis whose status the user&#39;s pill shows;
+<code>statusLabel</code> / <code>statusHint</code> / <code>periodMonth</code> turn a plan or user analysis into &quot;Paid for Oct&quot; and its tooltip, and
+Since v32 <code>paymentTarget(s, sa, k)</code> uses <code>coverPlan</code> to total the unpaid periods through the chosen month.
+<code>receiptAllocations</code> derives coverage for the receipt-edit preview from cash records; it never stores or rewrites allocations.
+<code>analyze(u, today)</code> aggregates a user. <code>breakdownRows</code>, <code>monthlySeries</code> and <code>analyticsData</code> build Summary and Analytics
+from those same functions, so totals reconcile by construction. Any new money figure must reuse them.
+Since v28 revenue in a month is its payments minus its refunds (by refund date) and Net = collected − refunds − costs
+(<code>netSum</code>); a refund is counted for the plan&#39;s package on the refund date.</p>
+<p><strong>Migration rule.</strong> <code>SCHEMA = 11</code> in <code>index.html</code>. <code>maybeSeedShared</code> seeds an empty store; the migrate block
+upgrades an old one. Both are lease-guarded via <code>meta/schema</code>, write settings first and the marker last, are
+idempotent, add fields with defaults, treat an absent field as the default and never overwrite or delete
+owner-entered records. Schema 11 (v18) pinned the fixed 30-day basis and reconciled the seeded users to the
+owner&#39;s real records. New versions since v18 have needed no migration (absent = default).</p>
+<h2 id="5-version-history">5. Version history</h2>
+<div class="table-wrap" tabindex="0" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>v</th>
+<th>Date</th>
+<th>What</th>
+<th>Decision behind it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>09-21</td>
+<td>Users, monthly payments, WhatsApp payment links</td>
+<td>Start as one HTML file: no hosting needed to try it</td>
+</tr>
+<tr>
+<td>2</td>
+<td>09-21</td>
+<td>Billing periods, names, one-time items, balance due; 7 seeded users</td>
+<td>Owner&#39;s real subscribers from day one</td>
+</tr>
+<tr>
+<td>3</td>
+<td>09-21</td>
+<td>Packages per user</td>
+<td>Subscribers hold different products</td>
+</tr>
+<tr>
+<td>4</td>
+<td>09-22</td>
+<td>USD and PKR at a default rate of 280; costs and net</td>
+<td>Owner pays vendors in USD, collects in PKR</td>
+</tr>
+<tr>
+<td>5</td>
+<td>09-22</td>
+<td>Screenshot import of costs</td>
+<td>Statements arrive as pictures</td>
+</tr>
+<tr>
+<td>6</td>
+<td>09-22</td>
+<td>Packages C, C Max, G; filter; per-package breakdown</td>
+<td>The three real products</td>
+</tr>
+<tr>
+<td>7</td>
+<td>09-22</td>
+<td>Cycles monthly / yearly / one-time; shared anchor 24 July 2026; proration; credit carry-forward; Reminders panel (20th / 23rd)</td>
+<td>Everyone bills 24th–23rd; late joiners pay by days</td>
+</tr>
+<tr>
+<td>8</td>
+<td>09-22</td>
+<td>Uqba seed removed by guarded migration; Quick add from pasted text; compact Add user</td>
+<td>Never re-add a removed record</td>
+</tr>
+<tr>
+<td>9</td>
+<td>09-22</td>
+<td>Email one-tap; cancel / reactivate flow; status filter</td>
+<td>Not every subscriber uses WhatsApp</td>
+</tr>
+<tr>
+<td>10</td>
+<td>09-22</td>
+<td>Telegram field; contact migrations</td>
+<td>Some subscribers are on Telegram</td>
+</tr>
+<tr>
+<td>11</td>
+<td>09-22</td>
+<td>Second monthly plan per user; waive first partial period</td>
+<td>Haroon has two C accounts</td>
+</tr>
+<tr>
+<td>12</td>
+<td>09-22</td>
+<td>Final notice step, not-confirmed list, CSV of deactivations</td>
+<td>The 23rd is the cut-off</td>
+</tr>
+<tr>
+<td>13</td>
+<td>09-22</td>
+<td>Paid up to; Except list</td>
+<td>Prepayments and skipping people for a cycle</td>
+</tr>
+<tr>
+<td>14</td>
+<td>09-22</td>
+<td>Proration basis (fixed 30 / actual), editable prorated periods, per-plan discount</td>
+<td>Owner uses a fixed 30-day month</td>
+</tr>
+<tr>
+<td>15</td>
+<td>09-22</td>
+<td>Named Wasool; self-hosted Flask + SQLite server, passcode login, confirmation links, JSON export/import, <code>deploy/setup.sh</code></td>
+<td>Phone must work when the desktop is off; data on the owner&#39;s own VM</td>
+</tr>
+<tr>
+<td>16</td>
+<td>09-22</td>
+<td>(no CHANGELOG entry; the v15 work landed as several commits: server, frontend, deploy, docs)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>17</td>
+<td>09-22</td>
+<td>Contact details in rows; Home toggle; distinct expanded card</td>
+<td>Readability on the phone</td>
+</tr>
+<tr>
+<td>18</td>
+<td>09-22</td>
+<td>Seed and schema 11 match the owner&#39;s real records; settings-first marker-last fix</td>
+<td>A half-run seed left a store with no proration basis</td>
+</tr>
+<tr>
+<td>19</td>
+<td>09-22</td>
+<td>Per-account plan boxes; C ↔ C Max tier switch with <code>tierHistory</code></td>
+<td>Upgrades happen mid-life from a cycle start</td>
+</tr>
+<tr>
+<td>20</td>
+<td>09-22</td>
+<td>Subscriber choice page (Continue / Upgrade / Discontinue), answers applied once, Queue with three stages, SMTP settings and daily notify timer</td>
+<td>One-tap answers instead of chasing replies; silent users continue from the 24th</td>
+</tr>
+<tr>
+<td>21</td>
+<td>09-22</td>
+<td>Costs per product; AI key in Settings; billing day setting (<code>cycleDay</code>); WhatsApp app choice; currency on add</td>
+<td>Net per product; links kept opening WhatsApp Business</td>
+</tr>
+<tr>
+<td>22</td>
+<td>09-22</td>
+<td>Editable amount per period (<code>periodOverrides</code>) with note and discount shortcut</td>
+<td>Eid discounts and corrections without touching payments</td>
+</tr>
+<tr>
+<td>23</td>
+<td>09-22</td>
+<td>Google Gemini as reading provider with model picker (Flash-Lite preselected); pictures read on pick</td>
+<td>Owner has a Gemini key, not an Anthropic one</td>
+</tr>
+<tr>
+<td>24</td>
+<td>09-23</td>
+<td>Renamed Wasooli with logo and icons; period tiles wrap on phones; retroactive-edit warning; dimmed settled rows</td>
+<td>&quot;wasool&quot; was taken / awkward; unpaid rows must stand out</td>
+</tr>
+<tr>
+<td>25</td>
+<td>09-23</td>
+<td>Per-IP lockout, hidden sign-in path, 90-day sessions, <code>LINK_DOMAIN</code></td>
+<td>A stranger could lock the owner out; links carried the admin domain</td>
+</tr>
+<tr>
+<td>26</td>
+<td>09-23</td>
+<td>Analytics tab; <code>CLAUDE.md</code>; README &quot;Making changes&quot;</td>
+<td>Owner asked for graphs of users per package and money vs cost, and a way to change the site himself</td>
+</tr>
+<tr>
+<td>27</td>
+<td>09-25</td>
+<td>One month on another package; Paid up to → Clear; Cancel reachable on phones; Resume with a date and cancellation history</td>
+<td>Owner bills single months as C Max; iPhone date pickers cannot clear; the Cancel button was off-screen</td>
+</tr>
+<tr>
+<td>28</td>
+<td>09-25</td>
+<td>Refunds (reduce revenue, net and the plan&#39;s credit; optional cancel; shown in history); <code>AGENTS.md</code> for any AI tool</td>
+<td>Owner wants exact revenue and profit after money given back, and to continue with Codex or other tools</td>
+</tr>
+<tr>
+<td>29</td>
+<td>09-26</td>
+<td>One-tap Record payment (question on the period box, big Yes, Different amount); every save redraws at once; same-day payments both kept; status pills say &quot;Paid for Oct&quot; / &quot;Paid to Nov&quot; / &quot;Overdue for Sep – Oct&quot;</td>
+<td>Owner found recording a payment counter-intuitive (edit → save → record, and Paid appearing late) and wanted the dashboard to name the month</td>
+</tr>
+<tr>
+<td>30</td>
+<td>09-26</td>
+<td>Mid-cycle / resumed plans show the real due date (plan start, not cycle start); link page offers no upgrade for a cycle already billed as C Max by hand; Summary and Analytics bars are collected after refunds; a refund lowers a one-time item&#39;s total; Record payment on every unpaid / upcoming box (a later box = one payment per period), ended plans get the short box, Paid up to… asks &quot;Record N payments totalling Rs X (Aug, Sep and Oct)?&quot;; long pills wrap on phones</td>
+<td>Owner asked for the five open follow-ups from v27–v29 in one go</td>
+</tr>
+<tr>
+<td>31</td>
+<td>09-26</td>
+<td>Each user row shows its active accounts and packages (&quot;3 accounts · C ×2 · G&quot;); an Active accounts bar under the tiles counts accounts per package and filters the list by package; By product / Analytics users per package come from the same accounts</td>
+<td>Owner asked to see on the front page how many accounts each person has and which category. One-time items are not accounts (shown as &quot;+ 1 one-time&quot;); a month billed as C Max counts as C Max</td>
+</tr>
+<tr>
+<td>32</td>
+<td>10-04</td>
+<td>Main-row month receipt form; first-bill preview when adding a user; separate cash date; receipt-edit coverage and cash-total preview; discounts shown separately; unsaved form survives polling</td>
+<td>Owner wanted the front screen to record a month clearly, show what an edited payment covers, keep proration to the joining period and reconcile actual receipts with discounts</td>
+</tr>
+<tr>
+<td>33</td>
+<td>10-04</td>
+<td>Dashboard controls for independent package starts; first and next bill previews on new packages; annual prices with monthly/3-month/6-month/yearly payments; future schedule changes and explicit initial recalculation; billing-settings readiness</td>
+<td>Owner wanted a separate start for every package and confirmed G stays annual but may be collected in installments</td>
+</tr>
+</tbody></table></div>
+<h2 id="6-decisions-log">6. Decisions log</h2>
+<div class="table-wrap" tabindex="0" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Date</th>
+<th>Why</th>
+<th>Alternatives rejected</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Single <code>index.html</code>, no build, no libraries</td>
+<td>09-21</td>
+<td>Runs anywhere (artifact, file, server); one file to reason about</td>
+<td>React/Vite app; separate CSS/JS files</td>
+</tr>
+<tr>
+<td>Shared billing anchor on the 24th (24th–23rd), reminder day 20, reply-by 23</td>
+<td>09-22</td>
+<td>Matches how the owner already bills</td>
+<td>Per-user anniversaries</td>
+</tr>
+<tr>
+<td>Fixed 30-day proration basis (Rs 4,200 / 30 = Rs 140 a day)</td>
+<td>09-22</td>
+<td>Owner&#39;s existing arithmetic (Ataullah 23 days = Rs 3,220)</td>
+<td>Actual days in the cycle (kept as an option)</td>
+</tr>
+<tr>
+<td>PKR/USD default rate 280, stored per payment</td>
+<td>09-22</td>
+<td>Stable reporting; old payments keep their rate</td>
+<td>Live FX lookup</td>
+</tr>
+<tr>
+<td>Self-host on Oracle Always Free, Ubuntu arm64, Caddy, Flask, SQLite</td>
+<td>09-22</td>
+<td>Rs 0, phone works when the desktop is off, data stays with the owner</td>
+<td>Keep claude.ai artifact as the data store; paid VPS; Postgres</td>
+</tr>
+<tr>
+<td>DuckDNS names instead of a bought domain</td>
+<td>09-22</td>
+<td>Free, two minutes, no card</td>
+<td>Buying a <code>.com</code>/<code>.pk</code> (still possible: re-run installer with new <code>DOMAIN</code>)</td>
+</tr>
+<tr>
+<td>Passcode only, no authenticator app</td>
+<td>09-23</td>
+<td>Owner refused an authenticator; hidden path + per-IP lockout + 90-day sessions give the protection needed</td>
+<td>TOTP; passkeys; OAuth</td>
+</tr>
+<tr>
+<td>Lockout per IP (8 in 15 min), global brake 60/min</td>
+<td>09-23</td>
+<td>v24 locked everyone after 8 failures, so a stranger could lock the owner out</td>
+<td>Global lockout (v24); CAPTCHA</td>
+</tr>
+<tr>
+<td>Hidden sign-in address <code>/x/&lt;ADMIN_PATH&gt;</code>; plain root blank</td>
+<td>09-23</td>
+<td>Strangers who reach the domain see nothing to attack</td>
+<td>Basic auth in Caddy; IP allow-list (owner&#39;s IP changes)</td>
+</tr>
+<tr>
+<td>Separate link domain <code>pay-up.duckdns.org</code></td>
+<td>09-23</td>
+<td>Subscribers&#39; links no longer reveal the admin address</td>
+<td>Same domain for both</td>
+</tr>
+<tr>
+<td>One-tap message queue (WhatsApp / Telegram / email) instead of the Meta WhatsApp API</td>
+<td>09-22</td>
+<td>No business verification, no cost, owner sends from his own number</td>
+<td>WhatsApp Cloud API; Twilio</td>
+</tr>
+<tr>
+<td>Subscribers answer via <code>/c/&lt;token&gt;</code>: Continue / Upgrade to C Max / Discontinue</td>
+<td>09-22</td>
+<td>One tap on a phone; answers are applied to records once</td>
+<td>Reply by text and parse it</td>
+</tr>
+<tr>
+<td>&quot;Account continues from the 24th&quot; for silent users</td>
+<td>09-22</td>
+<td>Owner&#39;s policy: silence means continue</td>
+<td>Auto-cancel on silence</td>
+</tr>
+<tr>
+<td>Gemini Flash-Lite for screenshot reading; key stored server-side</td>
+<td>09-22</td>
+<td>Owner has a Google AI Studio key; cheapest vision model</td>
+<td>Anthropic Haiku (still supported as provider)</td>
+</tr>
+<tr>
+<td>Costs tagged per product (<code>packageId</code>, <code>&#39;&#39;</code> = shared)</td>
+<td>09-22</td>
+<td>Net per package in Summary and Analytics</td>
+<td>One global cost pool</td>
+</tr>
+<tr>
+<td>Everything editable in place, works on the phone</td>
+<td>09-22</td>
+<td>Owner runs it from the phone</td>
+<td>Desktop-only admin</td>
+</tr>
+<tr>
+<td>Data lives only on the server; artifact retired as a store but kept identical in code</td>
+<td>09-23</td>
+<td>One source of truth; the artifact stays a demo</td>
+<td>Two-way sync</td>
+</tr>
+<tr>
+<td>Future changes through Claude Code connected to the repo; VM self-updates</td>
+<td>09-23</td>
+<td>Owner does not edit code; pushing is deploying</td>
+<td>Manual <code>git pull</code> on the VM; CI pipeline</td>
+</tr>
+<tr>
+<td>Slack routines (20th and 23rd nudges) left in place but ignored</td>
+<td>09-23</td>
+<td>Owner leaving Slack; the notify timer covers the emails</td>
+<td>Deleting them (harmless either way)</td>
+</tr>
+<tr>
+<td>Refund = its own record on the plan, dated when the money went back; it lowers revenue in that month and the plan&#39;s credit</td>
+<td>09-25</td>
+<td>Revenue and profit must be exact; a refunded month is no longer paid for</td>
+<td>A negative payment (confuses the history and the payment count); lowering the period amount (hides the money that came and went)</td>
+</tr>
+<tr>
+<td><code>AGENTS.md</code> is the one guide; <code>CLAUDE.md</code>, <code>GEMINI.md</code>, <code>.github/copilot-instructions.md</code> only point to it</td>
+<td>09-25</td>
+<td>Every AI coding tool reads one of these names; one source cannot drift</td>
+<td>Copies of the same text per tool</td>
+</tr>
+<tr>
+<td>Record payment = a yes/no question on the period that needs money next, recording exactly what that period owes; the full form only for edits</td>
+<td>09-26</td>
+<td>The owner records on a phone; the old header form (date, currency, amount, rate, note, months) plus &quot;edit amount&quot; on the box made him edit and save before recording</td>
+<td>Auto-recording without a question (a mis-tap would store money); a bottom sheet (inline keeps the period in view)</td>
+</tr>
+<tr>
+<td>A period is &quot;for&quot; the month its cycle starts in (24 Oct – 23 Nov = &quot;Oct&quot;); one function <code>periodMonth</code> decides</td>
+<td>09-26</td>
+<td>Matches how the owner talks about &quot;October&#39;s payment&quot;, the reminder on the 20th and the cycle starting the 24th</td>
+<td>Naming the month with most days (Nov); showing both dates on the pill (too wide on a phone; the dates are the tooltip)</td>
+</tr>
+<tr>
+<td>Every save puts the user into <code>state</code> and renders at once (<code>persistUser</code>)</td>
+<td>09-26</td>
+<td>Waiting for the poll of <code>/api/version</code> made Save look like it did nothing for up to 4 s (30 s in a background tab)</td>
+<td>Keep <code>commitUser</code> only for the amount form; shorten the poll</td>
+</tr>
+<tr>
+<td>A prorated first period is due on the plan&#39;s start date (<code>nextDue</code> = <code>max(cycle start, plan start)</code>); its cycle start stays the key (<code>nextSt</code>, <code>periodOverrides</code>) and its month name (&quot;for Aug&quot;)</td>
+<td>09-26</td>
+<td>Money cannot be due before the plan exists; full periods keep their cycle start, so the rule is one line and the boxes, pills, questions and reminders agree</td>
+<td>Showing the cycle start everywhere (v29 behaviour, wrong for the owner); renaming the month after the plan start (would make &quot;Sep – Sep&quot; for two owed periods)</td>
+</tr>
+<tr>
+<td>A refund on a one-time item lowers the item&#39;s total (undoes that much of the sale); a refund on a monthly plan makes the month owed again</td>
+<td>09-26</td>
+<td>A refunded one-time sale is not owed again; the owner otherwise had to edit the total by hand. Monthly service was delivered, so the month is owed</td>
+<td>Same rule for both (a refunded item showed as overdue); a &quot;sale undone&quot; checkbox on the refund form</td>
+</tr>
+<tr>
+<td>Record payment on a later period = one payment per period from the next-due one through it (the Paid up to… answer), never a payment aimed at a single later month</td>
+<td>09-26</td>
+<td>Credit is applied in period order, so a payment &quot;for Dec&quot; while Oct is unpaid would fill Oct anyway; recording it per period keeps the history honest</td>
+<td>Letting a payment target a period (would need stored allocations and change how credit works)</td>
+</tr>
+<tr>
+<td>Main-row month chooser and one receipt dialog for Record and Edit (supersedes the v29 inline-only form decision)</td>
+<td>10-04</td>
+<td>Owner needs the month visible before recording and the current coverage visible when editing; keeping the dialog outside the table protects unsaved inputs during background refresh</td>
+<td>Another charge-edit shortcut that appears to record cash; rebuilding the form inside a polled row</td>
+</tr>
+<tr>
+<td>Joining date controls the first prorated bill; Received on controls the receipt&#39;s cash date only</td>
+<td>10-04</td>
+<td>Owner confirmed later cycles must stay full price even when cash arrives on another day</td>
+<td>Re-prorating each receipt from its cash date</td>
+</tr>
+<tr>
+<td>Monthly-charge reductions are shown separately from Total paid, which remains receipts minus refunds</td>
+<td>10-04</td>
+<td>A discount lowers what is owed; advance credit is already-received cash. Neither is a second cash receipt. Automatic joining proration is the first bill&#39;s baseline</td>
+<td>Increasing Total paid when changing a charge; counting proration or refunds as discounts</td>
+</tr>
+<tr>
+<td>Each package start is independent of the person&#39;s join date (v33 supersedes the initial join-date-only control)</td>
+<td>10-04</td>
+<td>One person can subscribe to several packages on different days; cash arrival dates must not re-prorate a bill</td>
+<td>Copying a changed joining date to every plan; shifting/deleting historical price entries</td>
+</tr>
+<tr>
+<td>Annual product price stays annual; payment intervals are 1, 3, 6 or 12 months</td>
+<td>10-04</td>
+<td>Owner confirmed G is annual and requested installment choices in either direction; full-year rounding must reconcile</td>
+<td>Reinterpreting Rs 50,000/year as a monthly price; changing legacy schedules during deployment</td>
+</tr>
+<tr>
+<td>A paid plan&#39;s schedule change defaults to its next bill; initial recalculation is explicit and previewed</td>
+<td>10-04</td>
+<td>Preserve earlier bills and cash; let the owner correct an initial setup deliberately</td>
+<td>Silently recalculating all past bills when a subscriber changes payment frequency</td>
+</tr>
+</tbody></table></div>
+<h2 id="7-operations-runbook">7. Operations runbook</h2>
+<p>All commands run on the VM after <code>ssh -i &quot;&lt;key&gt;&quot; ubuntu@141.145.157.7</code>.</p>
+<p><strong>Re-run the installer</strong> (repair, change domain, link domain or passcode; keeps every value you omit):</p>
+<pre><code class="language-bash">curl -fsSL https://raw.githubusercontent.com/ssdbank9/SaaS-Payment-Tracker/main/deploy/setup.sh \
+  | sudo DOMAIN=wasooli.duckdns.org LINK_DOMAIN=pay-up.duckdns.org ADMIN_PASSCODE=&#39;new-passcode&#39; bash
+</code></pre>
+<p><strong>Change the passcode only:</strong> re-run the installer with just <code>ADMIN_PASSCODE=&#39;...&#39;</code>, or
+<code>sudo nano /etc/payments-tracker.env</code>, edit <code>ADMIN_PASSCODE=</code>, then <code>sudo systemctl restart payments-tracker</code>.
+Existing sessions stay valid; use <strong>Sign out everywhere</strong> in Settings → Security to end them.</p>
+<p><strong>Rotate the sign-in address:</strong> Settings → Security → <strong>Regenerate</strong> (stored in <code>meta.admin_path</code>, wins over
+the env file). Bookmark the new address on every device before signing out. To see the effective one from the
+shell: <code>sudo sqlite3 /var/lib/payments-tracker/tracker.sqlite3 &quot;select value from meta where key=&#39;admin_path&#39;&quot;</code>
+(falls back to <code>ADMIN_PATH</code> in the env file when the row is absent).</p>
+<p><strong>Restore a backup:</strong></p>
+<pre><code class="language-bash">ls -1t /var/lib/payments-tracker/backups/            # pick tracker-YYYYMMDD-HHMMSS.sqlite3.gz
+sudo systemctl stop payments-tracker
+sudo cp /var/lib/payments-tracker/tracker.sqlite3 /var/lib/payments-tracker/tracker.before-restore.sqlite3
+sudo sh -c &#39;gunzip -c /var/lib/payments-tracker/backups/tracker-YYYYMMDD-HHMMSS.sqlite3.gz &gt; /var/lib/payments-tracker/tracker.sqlite3&#39;
+sudo chown payments-tracker:payments-tracker /var/lib/payments-tracker/tracker.sqlite3
+sudo systemctl start payments-tracker
+</code></pre>
+<p>Or, without the shell: Settings → Your data → <strong>Import everything (JSON)</strong> with an export.</p>
+<p><strong>Logs and status:</strong></p>
+<pre><code class="language-bash">sudo systemctl status payments-tracker caddy --no-pager
+sudo journalctl -u payments-tracker -n 100 --no-pager        # app (lockouts show as &quot;login: ... locked&quot;)
+sudo journalctl -u caddy -n 50 --no-pager                    # certificates
+sudo journalctl -u payments-tracker-update -n 30 --no-pager  # auto-update runs
+sudo journalctl -u payments-tracker-notify -n 30 --no-pager  # daily emails
+systemctl list-timers &#39;payments-tracker*&#39; --no-pager
+curl -s https://wasooli.duckdns.org/healthz
+</code></pre>
+<p><strong>Run the daily email job by hand (dry run, sends nothing):</strong> <code>cd /opt/payments-tracker/server &amp;&amp; sudo -u payments-tracker WASOOL_TODAY=2026-10-20 /opt/payments-tracker/venv/bin/python notify.py --dry-run</code> (the
+script honours <code>WASOOL_TODAY</code> to pretend it is another date, and <code>--dry-run</code> logs what it would send).</p>
+<p><strong>Roll back a commit:</strong> in Claude Code, &quot;revert the last commit&quot; (<code>git revert HEAD</code> and push), or on GitHub
+open the commit and press <em>Revert</em>. The VM picks it up within 5 minutes. Never force-push; the VM hard-resets to
+<code>origin/main</code>, so a rewritten history still deploys but loses the audit trail.</p>
+<p><strong>Force an update now:</strong> <code>sudo /opt/payments-tracker/deploy/update.sh</code> (what the timer runs).</p>
+<p><strong>Backup off the VM:</strong> <code>scp -i &quot;&lt;key&gt;&quot; ubuntu@141.145.157.7:/var/lib/payments-tracker/backups/*.gz .</code> needs
+sudo rights on the folder (mode 750, owned by <code>payments-tracker</code>); simpler is <strong>Export everything (JSON)</strong> in
+the app, or <code>sudo cp</code> a backup to <code>/home/ubuntu</code> first.</p>
+<p><strong>If the VM&#39;s public IP changes</strong> (only after a stop/start with an ephemeral IP, never on a reboot): update
+both DuckDNS names to the new IP, then <code>sudo systemctl restart caddy</code>.</p>
+<h2 id="8-security-model">8. Security model</h2>
+<ul>
+<li><strong>Public without login:</strong> the neutral page at <code>/</code> (200, mark + &quot;Nothing to see here.&quot;), <code>/healthz</code>,
+<code>/assets/*</code>, <code>/manifest.webmanifest</code>, <code>/c/&lt;token&gt;</code> on the link domain (shows only first name, package,
+amount, dates; the token is 22 random URL-safe characters per user). Every other path is the neutral 404.</li>
+<li><strong>Sign-in:</strong> only at <code>/x/&lt;ADMIN_PATH&gt;</code> (24 random characters). A signed <strong>known-device</strong> cookie (1 year) set
+on every successful login makes <code>/</code> redirect to the sign-in page on the owner&#39;s own devices only.</li>
+<li><strong>Lockout:</strong> 8 failures in 15 minutes lock that IP (<code>429</code>, <code>Retry-After</code>), logged with the IP; a global brake
+answers <code>429</code> when all IPs together exceed <code>LOGIN_GLOBAL_PER_MINUTE</code> (60) in a minute. Signed-in sessions
+are never affected. Client IP comes from Caddy&#39;s <code>X-Forwarded-For</code>, trusted only from localhost.</li>
+<li><strong>Sessions:</strong> signed cookie, <code>SESSION_DAYS</code> (90), sliding renewal, HttpOnly, Secure, SameSite=Lax. <strong>Sign
+out everywhere</strong> bumps <code>meta.secret_version</code>, invalidating every session without touching the env file.</li>
+<li><strong>API:</strong> <code>/api/*</code> without a session is <code>401</code> JSON; state-changing calls need the <code>X-Requested-With: wasool</code>
+header the page sends (CSRF guard). Host header must match a configured domain.</li>
+<li><strong>Secrets:</strong> passcode, <code>SECRET_KEY</code>, <code>ADMIN_PATH</code> in <code>/etc/payments-tracker.env</code> (mode 640,
+root:payments-tracker); AI keys and the SMTP app password in the SQLite <code>meta</code> table, masked on read, never in
+exports. Nothing secret is in the repository.</li>
+<li><strong>Link domain:</strong> links never carry the admin hostname, so a curious subscriber cannot find the sign-in page
+from a link.</li>
+<li><strong>Transport:</strong> Caddy, HTTPS only, HSTS one year, <code>X-Frame-Options: SAMEORIGIN</code>.</li>
+</ul>
+<h2 id="9-known-gaps--not-verified">9. Known gaps / not verified</h2>
+<ul>
+<li><strong>Real SMTP send.</strong> The Mail settings form, test button and <code>notify.py</code> were exercised against a local
+server, not against Gmail with the owner&#39;s app password. First real run: fill Settings → Mail, press &quot;Send
+test email to me&quot;, then watch <code>journalctl -u payments-tracker-notify</code> on the next 20th.</li>
+<li><strong>Gemini end-to-end.</strong> The model picker and <code>/api/ai-test</code> were tested with the API&#39;s error paths; a real key
+reading a real statement screenshot on the VM has not been confirmed by the owner in this thread.</li>
+<li><strong>Android intent links.</strong> The <code>intent://send…package=com.whatsapp</code> links are built per the Android docs; the
+owner confirmed the wrong-app problem was solved by the phone-side &quot;Clear defaults&quot; and the Settings choice,
+but the intent path was not verified on his handset separately.</li>
+<li><strong>VM timer verification.</strong> On 2026-10-04, the app, Caddy and update/backup/notify timers were all active;
+the VM timezone was <code>Etc/UTC</code>. This confirms scheduling, not successful SMTP delivery or backup integrity.</li>
+<li><strong>Settings product editor on phones.</strong> At 390px in both themes, the product headings caused a 595px-wide
+document. Product creation and reload persistence passed; the overflow remains open. See the final guide&#39;s
+section 14 and local <code>data/catalog-qa/results.json</code> for the distinction from the v33 release checks.</li>
+<li><strong>v16</strong> has no CHANGELOG entry (the v15 work landed as four commits); nothing is missing from the code.</li>
+<li><strong>Oracle &quot;Out of capacity&quot;</strong> was not hit on this tenancy; the fallback in the runbook is standard advice.</li>
+<li><strong>Certificate for <code>pay-up.duckdns.org</code></strong> was issued when the installer was re-run with <code>LINK_DOMAIN</code> on
+2026-09-23; if it ever fails, <code>journalctl -u caddy</code> says why (usually DNS not yet pointing at the VM).</li>
+<li>The claude.ai artifact still exists and still works browser-locally; it is not the data store and is not
+updated automatically by the VM pipeline (republishing is a manual step for Claude, see <code>CLAUDE.md</code>). Another AI
+tool cannot republish it; it then simply lags behind the repo, which is harmless.</li>
+</ul>
+<p><strong>Known follow-ups (not built yet)</strong></p>
+<ul>
+<li>Payment recording still clears older bills first. v32 names the earlier periods in the month chooser; paying a single later
+month while leaving an earlier one overdue would require a change to the allocation model.</li>
+<li>The &quot;for 24 Oct – 23 Nov 2026&quot; note the one-tap flow writes is the period&#39;s dates at the time of recording; if the cycle day or
+the plan&#39;s start is changed afterwards, the note keeps the old dates (payments themselves are re-applied correctly).</li>
+<li>A prorated first period is still named after its cycle&#39;s month: a plan started 10 Sep shows &quot;Overdue for Aug&quot; and Paid up to…
+asks &quot;Record 1 payment totalling Rs 1,960 for Aug?&quot; (the dates are on the box, in the tooltip and in the line under the question).
+<code>periodMonth</code> is the one place to change if the owner wants &quot;Sep&quot; there.
+v32 receipt choices and period cards also say First bill and show the joining-period dates, but the status policy is unchanged.</li>
+<li>The user row&#39;s &quot;Paid through&quot; for a resumed user reads &quot;nothing yet&quot; until the new plan is paid, although the plan that ended at
+the cancellation was paid (only running plans count toward the user&#39;s paid-through).</li>
+<li>Refunds (v28): a refund is counted for the plan&#39;s package on the refund date, not for the package a single month was billed as.
+A refund on a one-time item larger than what was paid leaves the difference owed (v30 lowers the total by the refund and compares
+what was kept with it). For a cancelled user, &quot;kept after refund&quot; period amounts replace a hand-set amount on the same period, and
+they stay if the user is later resumed (they are recomputed, and removed, only when a refund on that plan is saved or removed while
+the user is cancelled). &quot;Also cancel&quot; in the refund form uses the normal cancellation, so it ends all of that user&#39;s plans.</li>
+</ul>
+<p><strong>v32 local verification.</strong> <code>tests/payment-flow.cjs</code> uses synthetic records in a disposable Flask store and rejects production
+URLs. It covers actual receipts, charge discounts, cash dates, first bills, edits, refunds, partial and advance payments, multiple
+accounts, ended plans, save failure/retry, polling and 390px/1400px light/dark layouts. No owner data or production login was used.
+Its check record and screenshots are local ignored files under <code>data/payment-qa/</code>; repeat the check before any subsequent push.</p>
+<p><strong>v33 local verification.</strong> Both <code>tests/payment-flow.cjs</code> and <code>tests/package-start-flow.cjs</code> run on a disposable local Flask store.
+The package check pins the browser date and needs <code>WASOOL_TODAY=2026-10-20</code> on the local server for the subscriber-page check.
+It covers independent starts, preserved price/cash records, annual first proration, all four schedules, exact full-year PKR/USD
+totals, schedule changes in both directions, a delayed settings response, quarterly discount/refund reconciliation, subscriber
+period dates and skipped intervening months, polling, save failure/retry and both themes at 390px/1400px. Outputs and screenshots
+are ignored under <code>data/start-qa/</code>. Live SMTP sending and handset-specific browser behaviour remain separately unverified.</p>
+<p><strong>Start/schedule follow-ups.</strong> Custom charges and dated schedule changes remain attached to their original dates when a start
+is moved. The preview names these; the owner can adjust a period with change charge / package. An existing first-period waiver
+and remaining-due-by date are preserved and still editable in the full plan form. Historical receipt notes keep their original
+period wording. The older Quick add parser has no installment selector; use Add user or Package start / payments for an annual
+installment setup. An annual schedule chosen for payment collection describes billing amounts; it does not record cash or create
+a subscriber self-service schedule-choice form.</p>
+<h2 id="10-continuing-with-another-ai-tool">10. Continuing with another AI tool</h2>
+<p>Everything a coding assistant needs is in the repository. Which file each tool reads:</p>
+<div class="table-wrap" tabindex="0" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Reads</th>
+<th>What it contains</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OpenAI Codex (CLI, IDE, cloud), Cursor, Jules, Aider, Windsurf, Zed, Amp and most others</td>
+<td><code>AGENTS.md</code></td>
+<td>the full guide</td>
+</tr>
+<tr>
+<td>Claude Code (claude.ai/code, CLI)</td>
+<td><code>CLAUDE.md</code></td>
+<td>imports <code>AGENTS.md</code> (<code>@AGENTS.md</code>) plus the artifact republish note</td>
+</tr>
+<tr>
+<td>Gemini CLI</td>
+<td><code>GEMINI.md</code></td>
+<td>one line: follow <code>AGENTS.md</code></td>
+</tr>
+<tr>
+<td>GitHub Copilot (chat, coding agent)</td>
+<td><code>.github/copilot-instructions.md</code></td>
+<td>one line: follow <code>AGENTS.md</code></td>
+</tr>
+</tbody></table></div>
+<p>If a tool does not pick up a file on its own, start the session with: &quot;Read AGENTS.md and docs/HANDOFF.md first
+and follow them.&quot; Edit <code>AGENTS.md</code> when the rules change; the other three only point to it.</p>
+<p><strong>The one rule: pushing to <code>main</code> deploys.</strong> The VM pulls <code>main</code> every 5 minutes and restarts; there is no staging
+and no review step. A tool must run the local check in <code>AGENTS.md</code> (Flask + a browser pass at 390px and 1400px,
+light and dark, no console errors) before it pushes, and must never force-push.</p>
+<p><strong>How to hand over:</strong></p>
+<ol>
+<li>Give the tool access to the GitHub repository <code>ssdbank9/SaaS-Payment-Tracker</code> with permission to push to <code>main</code>
+(Codex: connect GitHub in its settings; Cursor, Aider, Gemini CLI: clone the repo on your computer and sign in
+to GitHub there; Copilot: open the repo on github.com).</li>
+<li>Describe the change in plain words, as you do with Claude. Ask it to bump the version (badge, <code>VERSION</code>,
+CHANGELOG) and to tell you the new version number.</li>
+<li><strong>Check it is live:</strong> after up to 5 minutes, reload the site and look at the small <code>vNN</code> badge in the header next
+to &quot;Saved on your server&quot;, or open <code>https://wasooli.duckdns.org/healthz</code> and read <code>&quot;version&quot;</code>. The number must
+match what the tool told you.</li>
+<li><strong>Roll back:</strong> tell the tool &quot;revert the last commit and push&quot; (<code>git revert HEAD</code>, then <code>git push</code>), or on
+GitHub open the commit and press <em>Revert</em>. The VM picks up the revert within 5 minutes. Your data is never touched
+by a code change or a revert.</li>
+</ol>
+<p><strong>Rules every tool must keep</strong> (all in <code>AGENTS.md</code>): never reset, re-seed or edit the owner&#39;s data; never rename env
+keys, unit names, URL paths, data paths or stored units; never force-push; keep <code>index.html</code> a single file with no
+build step; bump badge + <code>VERSION</code> + CHANGELOG together; migrations only add defaults; no secrets in the repo.
+When the owner reports a problem, ask for the exact message and <code>journalctl -u payments-tracker -n 50</code>.</p>
+<h2 id="11-owner-preferences">11. Owner preferences</h2>
+<ul>
+<li>Fact-based, plain wording; no emojis; short messages; things must work on the phone first.</li>
+<li>No authenticator app, no Meta WhatsApp API, no card-charging services; free tiers only.</li>
+<li>Everything editable in place (amounts, dates, tiers, templates, packages); nothing hard-coded that he might
+want to change.</li>
+<li>Wants to make changes himself by describing them (Claude Code), and to be able to undo them.</li>
+<li>Wants analytics: users per package, money made vs cost, outstanding, in graphs and tables (v26).</li>
+<li>Likes step-by-step guides with the exact commands to paste and &quot;you&#39;re done when&quot; checks
+(<code>docs/setup-runbook.html</code>).</li>
+</ul>
+<a class="top-link" href="#top">Back to top</a></main><footer>Keep this document with the source folder. Keep credentials and data backups in separate private storage.</footer><script>(()=>{const root=document.documentElement;let stored;try{stored=localStorage.getItem('wasooli-doc-theme')}catch{}const dark=stored?stored==='dark':matchMedia('(prefers-color-scheme: dark)').matches;root.dataset.theme=dark?'dark':'light';function label(){document.getElementById('theme').textContent=root.dataset.theme==='dark'?'Use light theme':'Use dark theme'}label();document.getElementById('theme').addEventListener('click',()=>{root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('wasooli-doc-theme',root.dataset.theme)}catch{}label()});document.getElementById('print').addEventListener('click',()=>window.print())})();</script></body></html>

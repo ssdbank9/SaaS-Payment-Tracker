@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>Wasooli final handoff and recovery guide</title><style>
+:root{color-scheme:light;--bg:#f3f5f4;--paper:#fff;--ink:#202b25;--muted:#536259;--line:#d6dfd9;--accent:#286345;--soft:#edf4ef;--code:#f2f4f3}
+:root[data-theme=dark]{color-scheme:dark;--bg:#111814;--paper:#19231d;--ink:#e5ece7;--muted:#aebeb3;--line:#3b4c40;--accent:#a5dab9;--soft:#233b2b;--code:#111c15}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:100px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow-wrap:anywhere}a{color:var(--accent);text-underline-offset:3px}a:hover{text-decoration-thickness:2px}a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}header{border-bottom:1px solid var(--line);background:var(--paper)}.toolbar{max-width:1100px;margin:auto;padding:18px 28px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}.brand{font-weight:750;letter-spacing:.02em;margin-right:auto}.tools{display:flex;flex-wrap:wrap;gap:8px}button{font:inherit;font-size:14px;min-height:42px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);padding:7px 13px;cursor:pointer}.doc-links{max-width:1100px;margin:auto;padding:0 28px 18px;display:flex;gap:12px 22px;flex-wrap:wrap;font-size:14px}.document{max-width:1100px;margin:30px auto;padding:36px 48px 48px;background:var(--paper);border:1px solid var(--line);border-radius:10px;min-width:0}h1,h2,h3,h4{line-height:1.25;letter-spacing:-.015em;scroll-margin-top:24px}h1{font-size:34px;margin:0 0 20px}h2{font-size:25px;margin:44px 0 18px;padding-top:22px;border-top:1px solid var(--line)}h3{font-size:20px;margin:28px 0 12px}p{margin:14px 0}li{margin:6px 0}ul,ol{padding-left:25px}code{font: .88em/1.55 Consolas,'Courier New',monospace;background:var(--code);padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{max-width:100%;overflow:auto;background:var(--code);border:1px solid var(--line);border-radius:7px;padding:16px;line-height:1.6;tab-size:2}pre code{padding:0;background:none;white-space:pre;overflow-wrap:normal;font-size:13px}blockquote{margin:20px 0;padding:8px 20px;border-left:4px solid var(--accent);background:var(--soft)}.table-wrap{max-width:100%;overflow-x:auto;margin:20px 0;border:1px solid var(--line);border-radius:7px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:12px 14px;vertical-align:top;border-bottom:1px solid var(--line);min-width:150px}th{background:var(--soft);font-weight:700}tr:last-child td{border-bottom:0}hr{border:0;border-top:1px solid var(--line);margin:30px 0}footer{max-width:1100px;margin:0 auto 30px;padding:0 28px;color:var(--muted);font-size:13px}.notice{font-size:14px;color:var(--muted);margin:0 0 25px}.top-link{display:inline-block;margin-top:22px}
+@media(max-width:600px){.toolbar{padding:14px 18px}.doc-links{padding:0 18px 14px}.document{margin:14px 10px;padding:24px 18px;border-radius:8px}h1{font-size:27px}h2{font-size:23px}h3{font-size:19px}body{font-size:15px}pre{padding:12px}th,td{padding:10px;min-width:145px}footer{padding:0 20px}.tools button{font-size:13px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{:root,:root[data-theme=dark]{color-scheme:light;--bg:white;--paper:white;--ink:black;--muted:#333;--line:#bbb;--accent:#174f31;--soft:#eee;--code:#f5f5f5}body{font-size:10pt}header,.notice,.top-link,footer{display:none}.document{margin:0;padding:0;border:0;max-width:none}h1{font-size:22pt}h2{font-size:16pt;break-after:avoid}h3{font-size:12pt;break-after:avoid}pre{white-space:pre-wrap;overflow:visible;break-inside:auto}pre code{white-space:pre-wrap;overflow-wrap:anywhere;font-size:8pt}.table-wrap{overflow:visible;border-radius:0}table{font-size:8pt}th,td{min-width:0;padding:6px}thead{display:table-header-group}tr{break-inside:avoid}a{color:inherit}}
+</style></head><body id="top"><header><div class="toolbar"><span class="brand">Wasooli · Know who's paid.</span><div class="tools"><button type="button" id="theme">Use dark theme</button><button type="button" id="print">Print / save as PDF</button></div></div><nav class="doc-links" aria-label="Related documents"><a href="docs/HANDOFF.html">Technical project handoff</a><a href="docs/setup-runbook.html">Original setup runbook</a></nav></header><main class="document"><p class="notice">Offline HTML copy of WASOOLI-FINAL-HANDOFF.md. HTML copies updated 5 October 2026. This is a guide; opening it does not change your website or records.</p><h1 id="wasooli-final-handoff-and-recovery-guide">Wasooli final handoff and recovery guide</h1>
+<p>Prepared for Aly Jafferani on 4 October 2026, Asia/Karachi. Application version: <strong>v33</strong>. Verified source commit: <strong>2ef5838 — Add package starts and annual payment schedules (v33)</strong>.</p>
+<p>This document explains how Wasooli was made, how to use and maintain it, how to host it on another server, and how to give the work to another LLM. It is a snapshot of the working application, not a backup of the owner&#39;s records or credentials. Keep this guide with the repository and keep the recovery files listed in section 6 privately, outside the repository.</p>
+<p>The live site returned <code>ok: true</code> and <code>version: &quot;33&quot;</code> during this handoff. Read-only SSH checks confirmed the same commit on the VM, an active application, active Caddy, and active update, backup and notification timers. No production database records were opened, imported, changed or deleted to prepare this document.</p>
+<p><strong>Update, 5 October 2026 — v34 cancellation:</strong> Cancel subscription now asks <strong>No bills from billing month</strong> and shows the inclusive last access day and balance before saving. Choosing September stops the bill starting September 24 and sets the last day to September 23. For someone already cancelled, use <strong>Edit cancellation</strong> to correct the cutoff, then save. Receipts, refunds and independently ended plans are kept; existing refund settlements are recalculated, while genuinely unpaid earlier bills remain due. No existing owner record is corrected automatically. The installation snapshot below remains the dated v33 snapshot from 4 October; check the live badge or health endpoint for the current release.</p>
+<h2 id="contents">Contents</h2>
+<ol>
+<li><a href="#1-what-wasooli-does">What Wasooli does</a></li>
+<li><a href="#2-how-we-made-it">How we made it</a></li>
+<li><a href="#3-current-installation-and-verification">Current installation and verification</a></li>
+<li><a href="#4-architecture-and-files">Architecture and files</a></li>
+<li><a href="#5-billing-and-everyday-use">Billing and everyday use</a></li>
+<li><a href="#6-what-to-keep-for-recovery">What to keep for recovery</a></li>
+<li><a href="#7-host-a-fresh-installation">Host a fresh installation</a></li>
+<li><a href="#8-back-up-and-move-an-existing-tracker">Back up and move an existing tracker</a></li>
+<li><a href="#9-restore-the-records">Restore the records</a></li>
+<li><a href="#10-run-locally-and-verify-a-change">Run locally and verify a change</a></li>
+<li><a href="#11-make-and-release-changes">Make and release changes</a></li>
+<li><a href="#12-operations-and-troubleshooting">Operations and troubleshooting</a></li>
+<li><a href="#13-rules-for-another-llm">Rules for another LLM</a></li>
+<li><a href="#14-known-issues-and-verification-limits">Known issues and verification limits</a></li>
+<li><a href="#15-copyable-continuation-prompt">Copyable continuation prompt</a></li>
+<li><a href="#16-source-references-and-final-checklist">Source references and final checklist</a></li>
+</ol>
+<h2 id="1-what-wasooli-does">1. What Wasooli does</h2>
+<p>Wasooli, “Know who&#39;s paid.”, is a one-owner tracker for people sharing paid SaaS accounts. Aly records subscribers, their accounts and packages, prices, receipts, refunds and costs. The app computes billing periods, advance credit, balances, paid-through dates and overdue status. It supplies WhatsApp, Telegram and email reminder flows, and private subscriber choice pages at <code>/c/&lt;token&gt;</code>.</p>
+<p>It tracks money already received; it does not charge a bank card, collect money through a payment processor, or automatically send WhatsApp messages. The owner opens and sends the prepared messages. The separate SMTP notification service can send reminder emails once configured.</p>
+<p>The production server is the one authoritative database. Opening the HTML as a local file uses a different browser-local store. The Claude artifact is a separate demo/runtime and does not synchronize with the production database.</p>
+<h2 id="2-how-we-made-it">2. How we made it</h2>
+<h3 id="the-original-design">The original design</h3>
+<p>The historical handoff records that the application began in Claude in a Slack thread on 21–23 September 2026. It started as one HTML file with subscribers and payment calculations, then gained billing cycles, multiple accounts per person, currencies, costs, reminders and imports. The single-file design made it possible to run the same admin interface in an artifact, from a local file, or on a server.</p>
+<p>The owner needed the phone to work when the desktop was off. The project therefore gained a Flask backend and SQLite document store, an Oracle Ubuntu VM, DuckDNS hostnames and Caddy for HTTPS. The installer and systemd timers make normal deployment a GitHub push rather than a manual server editing job.</p>
+<p>The history below is summarized from <code>CHANGELOG.md</code>, <code>docs/HANDOFF.md</code> and the current Git history. The earlier development account is historical documentation; this session independently verified the current source and installation.</p>
+<div class="table-wrap" tabindex="0" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>What was added and why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>v1–v14, 21–22 September</td>
+<td>Subscriber records; monthly/yearly/one-time items; shared 24th billing cycle; initial proration; USD/PKR; costs; multiple packages/accounts; reminders; discounts and credit.</td>
+</tr>
+<tr>
+<td>v15–v18, 22 September</td>
+<td>Flask and SQLite; passcode login; subscriber links; JSON export/import; Oracle installer; guarded seeding and schema handling. Schema remains 11. v16 has no separate changelog heading because that work landed across several commits.</td>
+</tr>
+<tr>
+<td>v19–v23, 22 September</td>
+<td>Tier and price history; editable period charges; subscriber answers; three-stage message queue; SMTP timer; screenshot-reading provider settings.</td>
+</tr>
+<tr>
+<td>v24–v26, 23 September</td>
+<td>Wasooli name and brand; hidden sign-in address; per-IP lockout; long-lived sessions; separate subscriber-domain support; analytics; working guides for coding tools.</td>
+</tr>
+<tr>
+<td>v27–v31, 25–26 September</td>
+<td>Resume/cancellation history; refunds; payment questions; immediate redraw after saves; more precise due dates/status; accounts and packages visible per person.</td>
+</tr>
+<tr>
+<td>v32, 4 October, commit <code>3b12a26</code></td>
+<td>Dashboard <strong>Record month payment</strong>; billing period separated from actual cash date; receipt-edit coverage preview; first-bill preview; actual receipts and discounts shown separately; drafts survive polling and failed saves.</td>
+</tr>
+<tr>
+<td>v33, 4 October, commit <code>2ef5838</code></td>
+<td>Dashboard <strong>Package start / payments</strong>; independent package starts; first/next-bill previews; annual prices collected monthly, every 3/6 months or yearly; future schedule changes; exact full-year rounding; saved-settings readiness before quoting bills.</td>
+</tr>
+</tbody></table></div>
+<h3 id="why-this-structure-was-retained">Why this structure was retained</h3>
+<p>The admin interface remains one file, vanilla JavaScript with inline CSS and SVG. There is no React, build pipeline or JavaScript library dependency. The backend is small and uses SQLite rather than introducing a separate database server. One shared calculation engine feeds the dashboard, payment previews, Summary and Analytics, so a new feature should reuse those calculations.</p>
+<p>The governing decisions are that cash receipts remain factual records, charges are computed separately, only the first partial period is prorated, and deployment must preserve existing owner data. A new field normally uses an absent-value default rather than a migration.</p>
+<h2 id="3-current-installation-and-verification">3. Current installation and verification</h2>
+<div class="table-wrap" tabindex="0" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Snapshot on 4 October 2026</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Repository</td>
+<td><code>https://github.com/ssdbank9/SaaS-Payment-Tracker</code></td>
+</tr>
+<tr>
+<td>Release branch</td>
+<td><code>main</code>; a push is a production release.</td>
+</tr>
+<tr>
+<td>Application version</td>
+<td>v33; badge, <code>server/app.py</code> VERSION and newest changelog entry agree.</td>
+</tr>
+<tr>
+<td>Source and VM commit</td>
+<td><code>2ef5838</code></td>
+</tr>
+<tr>
+<td>Admin hostname</td>
+<td><code>wasooli.duckdns.org</code></td>
+</tr>
+<tr>
+<td>Public health check</td>
+<td><code>https://wasooli.duckdns.org/healthz</code></td>
+</tr>
+<tr>
+<td>Admin sign-in</td>
+<td><code>https://&lt;DOMAIN&gt;/x/&lt;effective ADMIN_PATH&gt;</code>; use the owner&#39;s private bookmark. Do not include the actual path in public documents.</td>
+</tr>
+<tr>
+<td>VM address</td>
+<td><code>141.145.157.7</code>; recheck before a future operation.</td>
+</tr>
+<tr>
+<td>Original VM configuration</td>
+<td>Oracle <code>VM.Standard.A1.Flex</code>, 1 OCPU / 6 GB, Ubuntu 24.04 arm64, according to the original deployment record.</td>
+</tr>
+<tr>
+<td>VM timezone</td>
+<td><code>Etc/UTC</code>, independently checked for this handoff. Application timezone defaults to <code>Asia/Karachi</code>.</td>
+</tr>
+<tr>
+<td>Code directory</td>
+<td><code>/opt/payments-tracker</code></td>
+</tr>
+<tr>
+<td>Owner data directory</td>
+<td><code>/var/lib/payments-tracker</code></td>
+</tr>
+<tr>
+<td>Database</td>
+<td><code>/var/lib/payments-tracker/tracker.sqlite3</code></td>
+</tr>
+<tr>
+<td>Uploaded files</td>
+<td><code>/var/lib/payments-tracker/assets/</code></td>
+</tr>
+<tr>
+<td>Private environment file</td>
+<td><code>/etc/payments-tracker.env</code></td>
+</tr>
+<tr>
+<td>HTTPS configuration</td>
+<td><code>/etc/caddy/Caddyfile</code></td>
+</tr>
+<tr>
+<td>Application service</td>
+<td><code>payments-tracker.service</code>, Gunicorn on <code>127.0.0.1:8080</code>; Caddy serves public HTTPS.</td>
+</tr>
+<tr>
+<td>Update timer</td>
+<td>Every 5 minutes, with up to 30 seconds randomized delay.</td>
+</tr>
+<tr>
+<td>Backup timer</td>
+<td>03:15 in the VM&#39;s system timezone: currently 03:15 UTC / 08:15 Karachi. Newest 30 database backups retained.</td>
+</tr>
+<tr>
+<td>Notification timer</td>
+<td>04:00 UTC / 09:00 Karachi, with up to 5 minutes randomized delay; sends only when configured and the queue has eligible work.</td>
+</tr>
+</tbody></table></div>
+<p><strong>Subscriber-domain qualification:</strong> the old deployment record names <code>pay-up.duckdns.org</code>, but the current health response has <code>linkBase: &quot;&quot;</code>. The separate subscriber hostname is therefore not confirmed as configured in the current service. Do not silently add or change it. Inspect the existing configuration privately and obtain Aly&#39;s approval before changing domains. A blank <code>linkBase</code> also does not prove the old DNS name or certificate was deleted.</p>
+<p><strong>Snapshot qualification:</strong> the live check proves the deployed version and health endpoint. It is not a complete audit of the owner database, backups, SMTP delivery, DNS tenancy or every handset. Recheck the version and relevant state when resuming this project.</p>
+<h2 id="4-architecture-and-files">4. Architecture and files</h2>
+<pre><code class="language-text">Phone or desktop browser
+        |
+        | HTTPS, ports 80/443 for Caddy and certificate handling
+        v
+Caddy reverse proxy
+        |
+        | 127.0.0.1:8080 only
+        v
+Gunicorn -&gt; Flask server/app.py
+        |                    |
+        | serves index.html  | login, docs API, uploads,
+        |                    | subscriber pages and settings
+        v                    v
+Single-file admin UI      SQLite + uploaded receipt files
+                          /var/lib/payments-tracker
+
+GitHub main -&gt; update timer -&gt; deploy/update.sh -&gt; restart application
+Backup timer -&gt; deploy/backup.sh -&gt; SQLite snapshot + assets archive
+Notify timer -&gt; server/notify.py -&gt; eligible SMTP reminders
+</code></pre>
+<div class="table-wrap" tabindex="0" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>File or directory</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AGENTS.md</code></td>
+<td>Canonical coding rules. Read first and follow them.</td>
+</tr>
+<tr>
+<td><code>docs/HANDOFF.md</code></td>
+<td>Project state, decisions, model, operations and follow-ups.</td>
+</tr>
+<tr>
+<td><code>CHANGELOG.md</code></td>
+<td>Version history, newest first.</td>
+</tr>
+<tr>
+<td><code>README.md</code></td>
+<td>Owner-facing usage and hosting overview.</td>
+</tr>
+<tr>
+<td><code>index.html</code></td>
+<td>Entire admin interface, storage adapters, money calculations, forms, charts and styles. Keep it one file.</td>
+</tr>
+<tr>
+<td><code>server/app.py</code></td>
+<td>Flask routes, VERSION, document API, public subscriber pages, exports/imports and security/provider endpoints.</td>
+</tr>
+<tr>
+<td><code>server/auth.py</code></td>
+<td>Passcode, signed sessions, known-device cookie, hidden sign-in path and rate limits.</td>
+</tr>
+<tr>
+<td><code>server/db.py</code></td>
+<td>SQLite document storage, metadata, subscriber answers, audit and login-attempt tables.</td>
+</tr>
+<tr>
+<td><code>server/notify.py</code></td>
+<td>Scheduled email reminder job; supports <code>--dry-run</code>.</td>
+</tr>
+<tr>
+<td><code>server/claude_read.py</code>, <code>server/gemini_read.py</code></td>
+<td>Optional screenshot-reading providers.</td>
+</tr>
+<tr>
+<td><code>server/templates/confirm.html</code></td>
+<td>Subscriber choice page.</td>
+</tr>
+<tr>
+<td><code>server/requirements.txt</code></td>
+<td>Pinned Python dependencies.</td>
+</tr>
+<tr>
+<td><code>deploy/setup.sh</code></td>
+<td>Ubuntu installer, preserving omitted existing environment values.</td>
+</tr>
+<tr>
+<td><code>deploy/update.sh</code></td>
+<td>Fetches main, resets only the disposable VM code checkout, refreshes units and restarts when needed.</td>
+</tr>
+<tr>
+<td><code>deploy/backup.sh</code></td>
+<td>SQLite online backup, gzip, rolling assets archive and retention.</td>
+</tr>
+<tr>
+<td><code>deploy/systemd/</code></td>
+<td>App service and update/backup/notify service/timer definitions.</td>
+</tr>
+<tr>
+<td><code>assets/</code></td>
+<td>Brand SVGs, icons and manifest. This is different from uploaded data-directory <code>assets/</code>.</td>
+</tr>
+<tr>
+<td><code>tests/payment-flow.cjs</code></td>
+<td>Local synthetic receipt/charge regression checks.</td>
+</tr>
+<tr>
+<td><code>tests/package-start-flow.cjs</code></td>
+<td>Local synthetic start/installment/schedule regression checks.</td>
+</tr>
+<tr>
+<td><code>docs/setup-runbook.html</code></td>
+<td>Older printable setup guide. Some cloud allowance statements are dated; use current official limits.</td>
+</tr>
+</tbody></table></div>
+<h3 id="storage-and-calculation-details-for-the-next-developer">Storage and calculation details for the next developer</h3>
+<p>The admin detects the Flask runtime, Claude artifact runtime or <code>localStorage</code>. The server stores JSON documents keyed by paths such as <code>settings/main</code>, <code>users/&lt;id&gt;</code>, <code>costs/&lt;id&gt;</code> and <code>confirm/&lt;token&gt;</code>. SQL tables also hold subscriber answers, audits, login attempts and private metadata.</p>
+<p>A person has <code>joinDate</code> and <code>subscriptions[]</code>. Every recurring subscription has its own <code>start</code>, prices/history, package, currency, proration settings, receipts and refunds. The person&#39;s join date, package start and receipt date are three different facts.</p>
+<p>Recurring plans have <code>kind: &quot;monthly&quot;</code>; their <code>cycle</code> distinguishes monthly from yearly pricing. Do not rename that stored kind merely because an annual plan is now paid in installments. For an annual-priced plan, optional <code>paymentEvery</code> is 1, 3, 6 or 12 months, and optional dated <code>paymentSchedule[{from,months}]</code> changes the interval. Absent values preserve the old yearly behavior. <code>prices[].price</code> remains an annual amount for yearly products.</p>
+<p>Billing periods are computed, not stored. Use <code>pStart</code>, <code>payMonthsAt</code>, <code>installmentPrice</code>, <code>periodAmt</code>, <code>periodFull</code>, <code>analyzeMonthly</code>, <code>coverPlan</code> and <code>analyze</code>. Use the existing reporting helpers for Summary and Analytics. <code>persistUser</code> saves and redraws immediately. <code>paymentDialog</code> and <code>startDialog</code> sit outside the table so background refresh cannot discard their drafts. <code>settingsLoaded</code> blocks provisional billing calculations during startup.</p>
+<p><code>nextSt</code> is a period key; <code>nextDue</code> is its actual due date, including a mid-cycle package start. Do not use those interchangeably. Custom <code>periodOverrides</code> retain their original date keys. Price history, receipts and refunds must be preserved when starts or schedules change.</p>
+<p>Private SQL metadata includes AI/mail credentials, the effective regenerated sign-in path and session-secret version. The hidden path in that table takes precedence over <code>ADMIN_PATH</code> in the environment file.</p>
+<h2 id="5-billing-and-everyday-use">5. Billing and everyday use</h2>
+<h3 id="create-a-package-or-product">Create a package or product</h3>
+<p>Open <strong>Settings → Packages &amp; products → Add package or product</strong>, enter its name, billing type, optional default price/currency and description, then <strong>Save settings</strong>. The billing types are monthly, yearly and one-time. Each product currently has one default price and currency; it does not have two independent USD and PKR list-price fields. The other currency equivalent uses the configured exchange rate.</p>
+<p>Default prices prefill new subscriptions; the owner can set a person&#39;s own price. Existing subscription prices are not automatically rewritten when a package default changes. New products were verified to save, survive reload and appear in Add user. The Settings product editor has a confirmed phone layout issue described in section 14.</p>
+<h3 id="add-a-person-and-their-package">Add a person and their package</h3>
+<p>Use <strong>Add user</strong>. Enter <strong>Joined on</strong> for the person, then <strong>Package started on</strong> for that package. Read the first-bill and next-bill preview. Saving creates the subscriber and opens a receipt form; it does not invent a payment.</p>
+<p>For another account or product held by the same person, expand the row and use <strong>Add plan or one-time item</strong>. That package gets its own start date. Use <strong>Package start / payments</strong> beside the name, or <strong>Change start / payments</strong> inside a plan, to correct a start later.</p>
+<h3 id="monthly-first-period-proration">Monthly first-period proration</h3>
+<p>Ordinary monthly periods run from the 24th to the following 23rd. On the default fixed-30-day basis, a Rs 4,200 monthly package started on 10 October has 14 chargeable days through 23 October:</p>
+<pre><code class="language-text">Daily rate:        Rs 4,200 / 30 = Rs 140
+First partial bill: 14 x Rs 140  = Rs 1,960
+Next bill:         Rs 4,200 for 24 October–23 November
+</code></pre>
+<p>Only the first partial period is prorated. Receiving the next payment late or on a different date does not prorate the next bill. The owner can select actual-day proration or explicit first-period adjustments where the existing forms provide those choices.</p>
+<h3 id="annual-price-with-installment-payments">Annual price with installment payments</h3>
+<p>G remains an annual-priced product. At Rs 50,000 per year, full 3-month bills are Rs 12,500 and full 6-month bills are Rs 25,000. Monthly installments balance rounding so twelve full installments total exactly Rs 50,000. A full year of USD installments likewise reconciles to the annual USD price.</p>
+<p>New annual plans and explicit initial start/proration edits use actual days for their first partial installment. Existing annual records keep their previous choices until the owner edits them. A prorated first installment is followed by full installments starting on the shared 24th at the selected interval. Quarterly/half-yearly boundaries follow the shared anchor; they are not a new anniversary based on the cash date.</p>
+<p>For an existing plan with receipts, changing the payment frequency defaults to <strong>Next bill</strong>, preserving earlier bills. <strong>Package start</strong> explicitly recalculates from the beginning; inspect the balance and paid-through preview before saving. Existing dated schedule entries and custom charges retain their date keys. No cash record is created by a schedule edit.</p>
+<h3 id="record-or-edit-money-received">Record or edit money received</h3>
+<p>Use <strong>Record month payment</strong> beside the person&#39;s name. Choose the account and <strong>Pay through billing month</strong>, review the exact dates and amount left, and enter the actual cash and <strong>Received on</strong> date. Currency, receipt rate and note are available in the expanded options.</p>
+<p>Cash clears older unpaid periods first. Choosing a later month includes earlier unpaid bills and names them; the app does not store allocations that skip an older debt. Extra cash carries forward as advance credit.</p>
+<p>Use <strong>Edit</strong> in receipt history to correct an actual receipt. The preview shows current/resulting coverage, cash total and paid-through date. Saving preserves its identity and updates the main screen immediately. A failed save keeps the draft for retry.</p>
+<h3 id="understand-totals-discounts-and-refunds">Understand totals, discounts and refunds</h3>
+<ul>
+<li><strong>Total paid</strong> is receipts minus refunds: money retained, not the total of listed charges.</li>
+<li>A discount changes a bill; use <strong>change charge / package</strong>. It does not add a receipt.</li>
+<li>Initial proration is the initial charge calculation, not a cash payment or ordinary discount.</li>
+<li>A refund is its own dated record and lowers retained receipts and revenue. On a recurring plan it can make a previously covered bill owed again. A one-time refund reduces the sale total as well as retained cash.</li>
+<li>Reporting Net is collected minus refunds minus costs for the selected range.</li>
+</ul>
+<p>Example: Rs 8,400 received covers a Rs 3,220 first bill and a Rs 4,200 next bill, leaving Rs 980 advance credit. The following full Rs 4,200 bill needs Rs 3,220 of new cash. Recording that cash raises Total paid to Rs 11,620. Reducing a charge alone would not raise Total paid.</p>
+<h2 id="6-what-to-keep-for-recovery">6. What to keep for recovery</h2>
+<p><strong>A GitHub clone and this guide recover the software, not the owner&#39;s records.</strong> To rebuild the same tracker, retain the following privately:</p>
+<div class="table-wrap" tabindex="0" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Recovery item</th>
+<th>What it recovers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Latest valid <code>tracker-*.sqlite3.gz</code></td>
+<td>Full SQLite records, including private metadata, subscriber answer history and audit tables.</td>
+</tr>
+<tr>
+<td><code>assets-latest.tar.gz</code></td>
+<td>Uploaded receipt files; the normal backup keeps one rolling assets archive.</td>
+</tr>
+<tr>
+<td><code>/etc/payments-tracker.env</code></td>
+<td>Runtime settings, passcode, SECRET_KEY, environment sign-in path, domains and optional environment keys.</td>
+</tr>
+<tr>
+<td><code>/etc/caddy/Caddyfile</code></td>
+<td>Existing HTTPS/proxy host configuration; the installer can regenerate it.</td>
+</tr>
+<tr>
+<td>UI <strong>Export everything (JSON)</strong></td>
+<td>Portable subscribers, plans, cash records, refunds, costs, application settings and schema/seed markers.</td>
+</tr>
+<tr>
+<td>SSH private key and account recovery access</td>
+<td>Access to the VM, Oracle account, DNS account and GitHub. Store keys in a protected location.</td>
+</tr>
+<tr>
+<td>Private sign-in bookmark and chosen domain records</td>
+<td>How the owner reaches the admin; the effective path can also be recovered from full SQL metadata.</td>
+</tr>
+</tbody></table></div>
+<p>The UI JSON export is not a full server backup. It excludes private SQL metadata/AI and SMTP secrets, SQL subscriber-answer/audit/login-attempt tables and binary uploaded files. It includes the subscriber tokens held on user records, but derived public cards should be refreshed by opening the admin/Queue after recovery. The separate <code>/api/export</code> route exports stored documents; that still does not export every SQL table or uploaded file.</p>
+<p>The full SQLite backup and environment file contain sensitive information. Do not put them in the repository or attach them to a public LLM conversation. Keep at least one verified off-server copy; backups on the same VM do not protect against losing that VM. Record when each recovery set was taken, which app version it came from, and whether it has been restored successfully.</p>
+<h2 id="7-host-a-fresh-installation">7. Host a fresh installation</h2>
+<p>This section is for a <strong>new Ubuntu VM</strong>. Hosting elsewhere is possible with the same app, but the supplied installer and units assume Ubuntu/Debian, systemd and the standard paths. A static host alone cannot replace the Flask database or subscriber routes.</p>
+<h3 id="step-1--confirm-accounts-capacity-and-the-intended-hostnames">Step 1 — Confirm accounts, capacity and the intended hostnames</h3>
+<p>Have GitHub access to the source, an Oracle account or another Ubuntu VPS, an SSH key, and DNS control. For Oracle, choose a supported Ubuntu image, a public subnet/public IPv4 and an internet route. The recorded setup uses Ubuntu 24.04 arm64 on A1 with 1 OCPU / 6 GB.</p>
+<p>Check the cloud console&#39;s actual eligibility, existing allocations and cost estimate before creating resources. The older runbook says A1 had 4 OCPUs / 24 GB free; Oracle&#39;s official page retrieved on 4 October 2026 instead describes 1,500 OCPU-hours and 9,000 GB-hours, equivalent to 2 OCPUs / 12 GB for Always Free tenancies. This does not establish Aly&#39;s remaining allowance or grandfathered account entitlement. Capacity can be unavailable and idle free instances may be reclaimed. Verify the terms again at the time of rehosting. <a href="https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm">Oracle Always Free resources</a>.</p>
+<p>Follow the current <a href="https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/launchinginstance.htm">Oracle instance creation guide</a>. Save the generated private key securely. Do not terminate an existing VM or boot volume to make room without owner approval and a verified off-server recovery set.</p>
+<h3 id="step-2--network-and-dns">Step 2 — Network and DNS</h3>
+<p>In the subnet&#39;s Security List or NSG, permit inbound TCP 80 and 443 for the website. Preserve SSH access on TCP 22, preferably restricted to the administrator&#39;s source IP where practical. Cloud rules and the VM&#39;s own firewall are separate; the installer handles the latter. <a href="https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/securitylists.htm">Oracle Security Lists</a>.</p>
+<p>Create or update the approved admin A record to the new public IP. An optional separate subscriber hostname also points to that IP. For DuckDNS, use the account that owns the names; keep its token private. <a href="https://www.duckdns.org/spec.jsp">DuckDNS update specification</a>.</p>
+<p>For an existing tracker, changing DNS is a cutover, not an ordinary code change. Freeze writes on the old site, take a final backup and restore the new site before letting the owner resume work. Obtain approval for the IP/domain change; do not let the owner edit two independent copies.</p>
+<p><strong>Done when:</strong> the new VM is running, SSH is reachable and the intended A records resolve to its address. For a migration, the final production cutover remains deliberate and approved.</p>
+<h3 id="step-3--connect-from-windows">Step 3 — Connect from Windows</h3>
+<p>Run in PowerShell, replacing both placeholders:</p>
+<pre><code class="language-powershell">ssh -i &#39;C:\path\to\your-private-key.key&#39; ubuntu@NEW_VM_PUBLIC_IP
+</code></pre>
+<p>Verify the first-connect host fingerprint against the intended VM before accepting it. If a rebuilt VM has the same IP but a different host key, verify that rebuild first; do not disable SSH host checking globally. The original key location was the owner&#39;s Downloads folder, but it is not part of the repo and must not be assumed to exist on another computer.</p>
+<p><strong>Done when:</strong> the prompt belongs to the intended Ubuntu VM.</p>
+<h3 id="step-4--inspect-and-run-the-installer">Step 4 — Inspect and run the installer</h3>
+<p>The commands below run <strong>inside the Ubuntu SSH session</strong>, not PowerShell. Use the owner&#39;s approved hostnames instead of the illustrative names if different.</p>
+<pre><code class="language-bash">curl -fsSL https://raw.githubusercontent.com/ssdbank9/SaaS-Payment-Tracker/main/deploy/setup.sh -o /tmp/wasooli-setup.sh
+less /tmp/wasooli-setup.sh
+sudo env DOMAIN=wasooli.duckdns.org LINK_DOMAIN=pay-up.duckdns.org APP_TZ=Asia/Karachi bash /tmp/wasooli-setup.sh
+</code></pre>
+<p>Using a downloaded script rather than piping it leaves a terminal available for its masked passcode prompt on a fresh install. Choose and privately retain a strong passcode; the installer requires at least eight characters and its prompt recommends twelve or more. If a separate subscriber domain is not approved, omit <code>LINK_DOMAIN=...</code> from the command. Do not add it to the current live host merely because it appears in this example.</p>
+<p>The installer installs Python/venv, Git and Caddy; fetches main into <code>/opt/payments-tracker</code>; installs pinned requirements; creates the service user and standard data directories; writes a protected environment file; installs/enables the app and timers; configures Caddy; opens VM ports 80/443; and prints health and private sign-in information. It generates SECRET_KEY and ADMIN_PATH when missing. Re-running it preserves existing omitted environment values but updates code and rewrites proxy configuration: inspect the context before using it on an existing server.</p>
+<p>Caddy obtains and renews certificates when DNS, reachability and hostname configuration meet its requirements. <a href="https://caddyserver.com/docs/automatic-https">Caddy automatic HTTPS</a>.</p>
+<p><strong>Done when:</strong> the installer completes, the app answers locally, and the private sign-in address has been stored securely.</p>
+<h3 id="step-5--verify-and-initialize">Step 5 — Verify and initialize</h3>
+<pre><code class="language-bash">sudo systemctl status payments-tracker.service caddy --no-pager
+systemctl list-timers &#39;payments-tracker*&#39; --no-pager
+curl --fail --silent --show-error http://127.0.0.1:8080/healthz
+curl --fail --silent --show-error https://wasooli.duckdns.org/healthz
+</code></pre>
+<p>Compare the deployed version with the current source; it may be later than v33 on a future install. The public root being neutral is intentional. Sign in using the printed hidden address, not an assumed <code>/login</code> URL. An empty store can seed demonstration records; they are not recovered owner data. If restoring a tracker, proceed to section 9 before normal use. Do not manually reset or delete records as a shortcut.</p>
+<p>For a genuinely new tracker, review packages/prices, currency rate, billing day and annual anchor, proration basis, contact methods and payment instructions. Configure AI and mail only if wanted. A working timer does not establish working SMTP delivery. Test delivery only with the owner&#39;s intended recipient and authorization. Add the private admin page to the phone home screen.</p>
+<p><strong>Done when:</strong> the correct records and settings are present, a phone can sign in over HTTPS, and the version badge matches the server.</p>
+<h2 id="8-back-up-and-move-an-existing-tracker">8. Back up and move an existing tracker</h2>
+<p>These are procedures for a future authorized recovery or migration. They were not executed on production while preparing this guide. An LLM must obtain approval before freezing service, changing domains or replacing a database.</p>
+<h3 id="a-portable-ui-export">A. Portable UI export</h3>
+<p>Use <strong>Settings → Your data → Export everything (JSON)</strong>. Store the file privately outside the repo and check that it is valid JSON with the expected user/cost counts and recent receipts. It is useful alongside the full server recovery set; its exclusions are listed in section 6.</p>
+<h3 id="b-full-server-recovery-set">B. Full server recovery set</h3>
+<p>The scheduled script uses SQLite&#39;s online backup API, so it can snapshot a running database safely. Do not copy only the live <code>tracker.sqlite3</code> file while ignoring its WAL state.</p>
+<p>On the <strong>old Ubuntu VM</strong>, run the following only after approving the backup and confirming standard paths:</p>
+<pre><code class="language-bash">sudo /opt/payments-tracker/deploy/backup.sh
+sudo ls -lt /var/lib/payments-tracker/backups/
+</code></pre>
+<p>Select the new <code>tracker-YYYYMMDD-HHMMSS.sqlite3.gz</code>. The directory also contains <code>assets-latest.tar.gz</code>. To assemble a private transferable recovery directory, use the selected filename below:</p>
+<pre><code class="language-bash">wasooli_stamp=$(date +%Y%m%d-%H%M%S)
+wasooli_recovery=&quot;/home/ubuntu/wasooli-recovery-$wasooli_stamp&quot;
+sudo install -d -m 700 -o ubuntu -g ubuntu &quot;$wasooli_recovery&quot;
+sudo cp /var/lib/payments-tracker/backups/tracker-CHOOSE-TIMESTAMP.sqlite3.gz &quot;$wasooli_recovery/&quot;
+sudo cp /var/lib/payments-tracker/backups/assets-latest.tar.gz &quot;$wasooli_recovery/&quot;
+sudo cp /etc/payments-tracker.env &quot;$wasooli_recovery/&quot;
+sudo cp /etc/caddy/Caddyfile &quot;$wasooli_recovery/&quot;
+sudo chown -R ubuntu:ubuntu &quot;$wasooli_recovery&quot;
+sudo chmod -R go-rwx &quot;$wasooli_recovery&quot;
+cd &quot;$wasooli_recovery&quot;
+sha256sum tracker-*.sqlite3.gz assets-latest.tar.gz payments-tracker.env Caddyfile &gt; SHA256SUMS
+gzip -t tracker-*.sqlite3.gz
+tar -tzf assets-latest.tar.gz
+</code></pre>
+<p>Use an actual chosen filename in place of <code>tracker-CHOOSE-TIMESTAMP...</code>; do not run that placeholder literally. The assets archive should contain the <code>assets/</code> directory and expected files. For a final migration snapshot, stop owner edits and prevent notification writes while taking the final set; an online backup alone does not prevent later receipts being added to the old site.</p>
+<p>From <strong>Windows PowerShell</strong>, copy the private recovery directory to a protected location outside the code checkout:</p>
+<pre><code class="language-powershell">New-Item -ItemType Directory -Path &#39;D:\PrivateBackups\Wasooli&#39; -Force
+scp -i &#39;C:\path\to\your-private-key.key&#39; -r &#39;ubuntu@OLD_VM_IP:/home/ubuntu/wasooli-recovery-CHOOSE-TIMESTAMP&#39; &#39;D:\PrivateBackups\Wasooli&#39;
+</code></pre>
+<p>Keep the recorded hashes and verify them after transfer. This archive contains secrets and business data; restrict access and use protected/encrypted storage. Keeping the environment file on the same VM is not an off-server backup. Do not remove the old host or its boot volume until the new installation has been verified and the owner accepts the cutover.</p>
+<h2 id="9-restore-the-records">9. Restore the records</h2>
+<h3 id="route-a--restore-a-ui-json-export">Route A — Restore a UI JSON export</h3>
+<p>Use this when only the portable export exists, or when the owner explicitly chooses it. On the new installation, sign in and use <strong>Settings → Your data → Import everything (JSON)</strong> with the approved file.</p>
+<p><strong>Import is destructive to the destination&#39;s users and costs:</strong> records absent from the file are removed, existing matching documents are replaced, and settings are replaced. The app asks for confirmation. An LLM must also obtain the owner&#39;s explicit approval and preserve the current destination data first. A routine code change must never perform an import.</p>
+<p>After importing, verify subscriber/plan/cost counts, recent receipts, refunds, totals, dates and annual schedules against the source export. Reconfigure private AI/mail settings and recover uploaded files separately. Open the admin/Queue to refresh derived subscriber cards; verify their amounts and links before sending anything. A JSON import does not recover the full SQL answer/audit history.</p>
+<h3 id="route-b--restore-the-full-sqlite-backup-and-assets">Route B — Restore the full SQLite backup and assets</h3>
+<p>This recovers the private database tables too. Upload the recovery directory to <code>/home/ubuntu/</code> on the new VM using <code>scp -r</code>. Check its hashes with <code>sha256sum -c SHA256SUMS</code>, then validate <code>gzip -t</code> and inspect <code>tar -tzf</code>. Inspect archive member paths before extracting; do not accept unexpected absolute or parent-traversal paths.</p>
+<p>The following sequence assumes the standard service/data paths and an explicitly approved restore. Run it on the <strong>destination Ubuntu VM</strong>. Do not run it on the live owner database as part of a code release.</p>
+<p><strong>1. Pause timers and wait for any running one-shot jobs.</strong></p>
+<pre><code class="language-bash">sudo systemctl stop payments-tracker-update.timer payments-tracker-backup.timer payments-tracker-notify.timer
+systemctl is-active payments-tracker-update.service payments-tracker-backup.service payments-tracker-notify.service
+</code></pre>
+<p><code>inactive</code> for these one-shot services is expected when they are not running. If a job is active, wait for it to finish and inspect its status; do not swap the database underneath a running notifier, backup or updater. Then stop the application:</p>
+<pre><code class="language-bash">sudo systemctl stop payments-tracker.service
+</code></pre>
+<p><strong>2. Prepare a new restore directory without overwriting the old one.</strong> Replace the recovery path and database filename with the actual uploaded values.</p>
+<p>Run each step separately and stop on any failure. Enable pipeline failure reporting in the destination&#39;s Bash shell so decompression errors cannot be hidden by <code>tee</code>.</p>
+<pre><code class="language-bash">set -o pipefail
+wasooli_stamp=$(date +%Y%m%d-%H%M%S)
+wasooli_restore=&quot;/var/lib/payments-tracker.restore-$wasooli_stamp&quot;
+wasooli_recovery=&quot;/home/ubuntu/wasooli-recovery-CHOOSE-TIMESTAMP&quot;
+wasooli_backup=&quot;$wasooli_recovery/tracker-CHOOSE-TIMESTAMP.sqlite3.gz&quot;
+sudo install -d -m 750 -o payments-tracker -g payments-tracker &quot;$wasooli_restore&quot;
+sudo gzip -dc &quot;$wasooli_backup&quot; | sudo tee &quot;$wasooli_restore/tracker.sqlite3&quot; &gt;/dev/null
+sudo tar -xzf &quot;$wasooli_recovery/assets-latest.tar.gz&quot; -C &quot;$wasooli_restore&quot;
+sudo install -d -m 750 -o payments-tracker -g payments-tracker &quot;$wasooli_restore/backups&quot;
+sudo cp &quot;$wasooli_backup&quot; &quot;$wasooli_restore/backups/&quot;
+sudo chown -R payments-tracker:payments-tracker &quot;$wasooli_restore&quot;
+sudo chmod 750 &quot;$wasooli_restore&quot;
+sudo chmod 600 &quot;$wasooli_restore/tracker.sqlite3&quot;
+</code></pre>
+<p><strong>3. Validate the restored database before replacing the destination.</strong></p>
+<pre><code class="language-bash">sudo /opt/payments-tracker/venv/bin/python - &quot;$wasooli_restore/tracker.sqlite3&quot; &lt;&lt;&#39;PY&#39;
+import sqlite3, sys
+con = sqlite3.connect(&#39;file:&#39; + sys.argv[1] + &#39;?mode=ro&#39;, uri=True)
+try:
+    rows = [r[0] for r in con.execute(&#39;PRAGMA integrity_check&#39;)]
+    assert rows == [&#39;ok&#39;], rows
+    for table in (&#39;docs&#39;, &#39;meta&#39;, &#39;confirmations&#39;, &#39;audit&#39;, &#39;login_attempts&#39;):
+        print(table, con.execute(&#39;SELECT COUNT(*) FROM &#39; + table).fetchone()[0])
+    print(&#39;Restored SQLite integrity: ok&#39;)
+finally:
+    con.close()
+PY
+</code></pre>
+<p>The table counts are private recovery evidence, not material to publish or paste into a public conversation. If validation fails or the backup is clearly from the wrong date, stop and keep the original destination intact.</p>
+<p><strong>4. Preserve and swap the entire destination directory.</strong> This keeps any old database, WAL/SHM files, assets and backups together; an old WAL cannot accidentally be applied to the restored main database.</p>
+<pre><code class="language-bash">sudo mv /var/lib/payments-tracker &quot;/var/lib/payments-tracker.before-restore-$wasooli_stamp&quot;
+sudo mv &quot;$wasooli_restore&quot; /var/lib/payments-tracker
+</code></pre>
+<p>These commands replace the destination&#39;s data location. Obtain approval before running them, verify the exact resolved paths, and never delete the preserved directory as an automatic cleanup step.</p>
+<p><strong>5. Restore or reconcile private runtime configuration.</strong> Preserve the destination environment file first. If the recovery file is confirmed appropriate for the approved hostnames, standard data directory and service, restore it:</p>
+<pre><code class="language-bash">sudo cp -a /etc/payments-tracker.env &quot;/etc/payments-tracker.env.before-restore-$wasooli_stamp&quot;
+sudo install -m 640 -o root -g payments-tracker &quot;$wasooli_recovery/payments-tracker.env&quot; /etc/payments-tracker.env
+</code></pre>
+<p>Do not blindly overwrite it if the new domains or paths differ. Have the owner approve the specific reconciliation, preserve all unrelated keys, and keep the old SECRET_KEY/passcode when recovering the same installation unless a deliberate rotation is approved. Never print its complete contents into an LLM tool log. Reconcile Caddy hosts with approved DOMAIN/LINK_DOMAIN/OLD_DOMAIN values; only restore its old Caddyfile if those hostnames still apply. The installer can regenerate Caddy, but it also starts timers, so do not use it casually in the middle of this paused restore.</p>
+<p><strong>6. Start the app, verify owner data, then resume timers deliberately.</strong></p>
+<pre><code class="language-bash">sudo systemctl start payments-tracker.service
+curl --fail --silent --show-error http://127.0.0.1:8080/healthz
+sudo systemctl status payments-tracker.service caddy --no-pager
+</code></pre>
+<p>Check the approved public domain over HTTPS and sign in at the effective hidden address. Restored SQL <code>meta.admin_path</code>, if present, overrides the environment path. Compare expected users, subscription dates, receipts/refunds, costs, totals and annual installment choices with the recovery baseline. Open the admin/Queue to refresh derived cards and inspect subscriber links without submitting answers or sending messages.</p>
+<p>When accepted, resume update and backup timers:</p>
+<pre><code class="language-bash">sudo systemctl start payments-tracker-update.timer payments-tracker-backup.timer
+systemctl list-timers &#39;payments-tracker*&#39; --no-pager
+</code></pre>
+<p>Resume <code>payments-tracker-notify.timer</code> only after confirming SMTP, queue contents and the owner&#39;s readiness for automatic email. Its persistent schedule can run overdue work when started. Keep the pre-restore directory and old host until the owner accepts the new installation. A rollback must stop writers again and restore the preserved directory/configuration; do not improvise a reset or delete during a failed recovery.</p>
+<p><strong>Recovery acceptance:</strong> a passing health check is necessary but insufficient. Recovery is complete only when the owner accepts the restored records, uploaded files, access, domains and required reminder behavior. No end-to-end production restore was performed for this handoff.</p>
+<h2 id="10-run-locally-and-verify-a-change">10. Run locally and verify a change</h2>
+<p>Use a disposable local store. Do not download the production database merely to develop or test a UI change, and never point tests at the hosted site. Empty local stores can seed sample records; that behavior is intentional for local testing, not a way to reset production.</p>
+<h3 id="ubuntulinux">Ubuntu/Linux</h3>
+<p>From the repository root:</p>
+<pre><code class="language-bash">python3 -m venv venv
+venv/bin/pip install -r server/requirements.txt
+DATA_DIR=/tmp/wasooli-qa ADMIN_PASSCODE=test1234 SECRET_KEY=x COOKIE_SECURE=0 \
+  ADMIN_PATH= DOMAIN= LINK_DOMAIN= OLD_DOMAIN= WASOOL_TODAY=2026-10-20 \
+  venv/bin/python -c &quot;import sys; sys.path.insert(0,&#39;server&#39;); import app; app.app.run(host=&#39;127.0.0.1&#39;,port=8098)&quot;
+</code></pre>
+<h3 id="windows-powershell">Windows PowerShell</h3>
+<p>Use an installed Python 3.10+; <code>py -3</code> is an example launcher, not a guarantee it is installed. A coding agent should detect the actual runtime before running it.</p>
+<pre><code class="language-powershell">py -3 -m venv venv
+.\venv\Scripts\python.exe -m pip install -r server/requirements.txt
+.\venv\Scripts\python.exe -m pip install tzdata
+$env:DATA_DIR = Join-Path (Get-Location).Path &#39;data\qa-local&#39;
+$env:ADMIN_PASSCODE = &#39;test1234&#39;
+$env:SECRET_KEY = &#39;x&#39;
+$env:COOKIE_SECURE = &#39;0&#39;
+$env:ADMIN_PATH = &#39;&#39;
+$env:DOMAIN = &#39;&#39;
+$env:LINK_DOMAIN = &#39;&#39;
+$env:OLD_DOMAIN = &#39;&#39;
+$env:WASOOL_TODAY = &#39;2026-10-20&#39;
+.\venv\Scripts\python.exe -c &quot;import sys; sys.path.insert(0,&#39;server&#39;); import app; app.app.run(host=&#39;127.0.0.1&#39;,port=8098)&quot;
+</code></pre>
+<p>Windows may need <code>tzdata</code> for Python&#39;s timezone support. This session used the bundled runtime&#39;s existing timezone files through PYTHONTZPATH instead; do not assume that machine-specific cache path exists elsewhere. The development server is Flask; production uses Gunicorn on Ubuntu. The illustrative <code>test1234</code> and <code>x</code> values are local-only credentials, never production settings.</p>
+<p>Sign in at <code>http://127.0.0.1:8098/login</code>. Pin browser calculations when necessary:</p>
+<pre><code class="language-javascript">localStorage.setItem(&#39;pt-today&#39;, &#39;2026-10-26&#39;);
+</code></pre>
+<p>The package/start test requires the disposable server&#39;s <code>WASOOL_TODAY=2026-10-20</code> and manages its browser dates. It must be able to publish the October subscriber card and then check an intervening month. Do not confuse the actual receipt date, browser pin, server pin and published card cycle.</p>
+<h3 id="browser-checks">Browser checks</h3>
+<p>Use Node 18+ and Playwright. Install browser dependencies in a scratch directory, not by adding a frontend build/dependency structure to this repo. If the module is outside normal resolution, set <code>PLAYWRIGHT_MODULE</code> to its absolute module directory. If using an installed compatible browser, set <code>PLAYWRIGHT_EXECUTABLE</code> to its verified executable path; otherwise install Playwright&#39;s Chromium in the scratch setup.</p>
+<p>In another terminal with the local server running:</p>
+<pre><code class="language-bash">node tests/payment-flow.cjs
+node tests/package-start-flow.cjs
+</code></pre>
+<p>For PowerShell the same Node commands work after setting any needed environment overrides. These tests write synthetic records to the local server. Results and screenshots go under ignored <code>data/payment-qa/</code> and <code>data/start-qa/</code>.</p>
+<p>Before every push, verify 390px and 1400px in light and dark themes, collect console/page errors, inspect screenshots and check document overflow. Include the changed panel and related flows, not just the landing dashboard. For the current known product-editor issue, Settings must be included explicitly. Font requests need network access for a console-clean browser check. Complete initial seeding before collecting acceptance errors; the two deliberate HTTP 503 tests verify failed-save retry and are separately identified expected failures.</p>
+<p>Check the extracted inline script with <code>node --check</code>, compile changed Python files, run <code>git diff --check</code>, and verify badge/VERSION/changelog agreement. Do not claim source inspection or a JavaScript harness is a substitute for a real browser pass. Stop the local server after testing; if an old process handle expires, verify the actual listener/process rather than assuming it stopped.</p>
+<h2 id="11-make-and-release-changes">11. Make and release changes</h2>
+<h3 id="what-aly-needs-to-do">What Aly needs to do</h3>
+<p>Give the LLM this document and access to the repository, then describe the requested outcome in plain words. Say which problem or screen matters and give a concrete example of the expected result. Credentials and production data are separate private material; do not attach them merely to explain a code change.</p>
+<p>Use the continuation prompt in section 15. Confirm its reported version appears on the live site after release. If something regresses, ask to revert the last release commit and push the revert. If a new release consists of several commits or reverting would reach further back than the last commit, the agent must obtain the owner&#39;s approval for the exact scope.</p>
+<h3 id="what-the-coding-llm-must-do">What the coding LLM must do</h3>
+<ol>
+<li>Read <code>AGENTS.md</code>, <code>docs/HANDOFF.md</code>, <code>CHANGELOG.md</code>, <code>README.md</code>, then this snapshot. Inspect <code>git status</code>, branch, origin and current source/version; preserve any local owner changes. Fetch to compare with main. Pull with <code>--ff-only</code> only when the checkout state permits it; never reset owner work.</li>
+<li>Convert the actual request into a checklist. Separate the owner&#39;s requirements, source facts and implementation choices. Reproduce the relevant issue with synthetic local records before claiming a fix.</li>
+<li>Make the smallest complete change in the established architecture. Preserve records, stored currency units, historical price/receipt IDs and default behavior for absent fields. Any migration must be idempotent and must not overwrite owner records.</li>
+<li>For every code release, increase the badge <code>id=&quot;app-ver&quot;</code> in <code>index.html</code>, VERSION in <code>server/app.py</code>, and the newest <code>## vNN - YYYY-MM-DD</code> entry in <code>CHANGELOG.md</code> together. Update project state/decisions/follow-ups in <code>docs/HANDOFF.md</code>. A documentation-only change does not bump the app version.</li>
+<li>Run the local checks in section 10 and the project guide. Do not push a failing or incompletely inspected change. The known Settings phone overflow remains open and must not be represented as a passed screen.</li>
+<li>Inspect the final diff for unintended files, secrets, data changes and renamed settings/units/paths. Commit straight to main with an imperative subject ending in <code>(vNN)</code>. No force-push and no PR flow unless the owner asks.</li>
+<li>Push normally. The VM fetches main and hard-resets its <strong>code checkout</strong>, refreshes units and dependencies if needed, and restarts. The data directory is separate; do not add a data reset to make deployment easier.</li>
+<li>Wait for the live badge or <code>/healthz</code> to show the intended version before claiming it is live. The updater has a five-minute interval plus randomized delay and restart time; a delay alone is not proof of failure. Inspect updater logs if needed.</li>
+<li>Tell Aly the version, what changed, meaningful checks, limitations and how to undo it. Keep the owner-facing change report plain and short.</li>
+</ol>
+<p>Example code-release commands, after all checks pass and the intended files have been reviewed:</p>
+<pre><code class="language-bash">git add index.html server/app.py CHANGELOG.md docs/HANDOFF.md
+git commit -m &quot;Describe the actual change (vNN)&quot;
+git push origin main
+</code></pre>
+<p>Add any other deliberately changed files explicitly. Use the actual next version and description. Configure a per-commit author if Git has no identity; do not change the owner&#39;s global Git configuration as a shortcut.</p>
+<h3 id="undo-an-ordinary-code-release">Undo an ordinary code release</h3>
+<pre><code class="language-bash">git revert HEAD
+git push origin main
+</code></pre>
+<p>This applies only after verifying HEAD is the intended last release commit. A code revert does not undo owner transactions or a separately authorized data import. For a larger rollback, inspect the exact commits and get approval. Never force-push, reset the owner&#39;s database, or rewrite main to simulate an undo.</p>
+<h2 id="12-operations-and-troubleshooting">12. Operations and troubleshooting</h2>
+<p>Run the following read-only commands on the VM when diagnosing the existing installation. Redact private addresses/records from logs before sharing them.</p>
+<pre><code class="language-bash">sudo systemctl status payments-tracker.service caddy --no-pager
+systemctl list-timers &#39;payments-tracker*&#39; --no-pager
+sudo journalctl -u payments-tracker -n 100 --no-pager
+sudo journalctl -u caddy -n 50 --no-pager
+sudo journalctl -u payments-tracker-update -n 50 --no-pager
+sudo journalctl -u payments-tracker-backup -n 30 --no-pager
+sudo journalctl -u payments-tracker-notify -n 50 --no-pager
+curl --fail --silent --show-error https://wasooli.duckdns.org/healthz
+</code></pre>
+<div class="table-wrap" tabindex="0" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>First checks and interpretation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Root shows a neutral page</td>
+<td>Expected for an unknown device. Use the private bookmarked sign-in address; do not expose <code>/login</code> to fix it.</td>
+</tr>
+<tr>
+<td>Version has not changed after a push</td>
+<td>Compare local/origin/VM commit and update timer/logs. Check fetch failure or package-install errors. Do not assume a successful push proves deployment.</td>
+</tr>
+<tr>
+<td>Site inaccessible or certificate fails</td>
+<td>Check VM public IP, DNS resolution, public subnet route, cloud 80/443 rules, VM firewall and Caddy logs. Local health separates app failure from proxy/DNS failure.</td>
+</tr>
+<tr>
+<td>HTTP 502</td>
+<td>Check Gunicorn/application status and logs, then localhost health on 8080.</td>
+</tr>
+<tr>
+<td>Wrong passcode / 429</td>
+<td>Check correct private URL and credentials. Repeated bad attempts can trigger per-IP/global limits; do not disable lockouts as a workaround.</td>
+</tr>
+<tr>
+<td>Effective sign-in URL differs from env</td>
+<td>A regenerated <code>meta.admin_path</code> overrides ADMIN_PATH. Recover it privately via Settings or an approved read-only helper; never paste the real URL into public docs.</td>
+</tr>
+<tr>
+<td>Apparent blank or different records</td>
+<td>Confirm the backend and exact DATA_DIR. A browser-local demo, artifact and production are separate stores. Do not reseed or import before identifying the cause.</td>
+</tr>
+<tr>
+<td>Total paid did not change after a bill edit</td>
+<td>A charge/discount edit does not record cash. Use Record month payment for actual receipts; inspect the save/error state for a receipt edit.</td>
+</tr>
+<tr>
+<td>Unexpected first charge</td>
+<td>Verify the selected package start, cycle anchor, basis, first-period waiver/overrides and annual payment interval. Cash date is not the proration date.</td>
+</tr>
+<tr>
+<td>Automatic email missing</td>
+<td>Check SMTP setup, timer, eligible queue/stage, Except list/answers and whether the admin has refreshed the cycle cards. Active timer does not prove delivery.</td>
+</tr>
+<tr>
+<td>Uploaded receipt missing after recovery</td>
+<td>Restore data-directory assets; a JSON export alone contains no binary files.</td>
+</tr>
+<tr>
+<td>Phone Settings scrolls sideways</td>
+<td>Confirmed v33 issue in the product headings; see section 14. Do not mark it fixed without browser evidence.</td>
+</tr>
+</tbody></table></div>
+<p><strong>Notification dry-run with the correct environment:</strong> the service&#39;s EnvironmentFile must be loaded; a bare <code>sudo -u ... python notify.py</code> can use the wrong DATA_DIR. This command creates a temporary read-only-in-purpose dry-run job and sends no email:</p>
+<pre><code class="language-bash">sudo systemd-run --wait --pipe --collect \
+  --property=User=payments-tracker --property=Group=payments-tracker \
+  --property=WorkingDirectory=/opt/payments-tracker/server \
+  --property=EnvironmentFile=/etc/payments-tracker.env \
+  --property=Environment=WASOOL_TODAY=2026-10-20 \
+  /opt/payments-tracker/venv/bin/python /opt/payments-tracker/server/notify.py --dry-run
+</code></pre>
+<p>Dry-run output can contain subscriber names/email addresses and message text. Keep it private. This correctly scoped command was checked against the unit and notifier source but was not executed against production for the handoff.</p>
+<p>To request an immediate normal update, the existing command is <code>sudo /opt/payments-tracker/deploy/update.sh</code>; it changes/restarts code and should only be used for the intended approved release. Prefer the regular timer during ordinary work. Passcode changes, hidden-path regeneration, domains and session-wide sign-out have explicit consequences; obtain owner approval before doing them. Never print credentials in command output or save them in this guide.</p>
+<h2 id="13-rules-for-another-llm">13. Rules for another LLM</h2>
+<ul>
+<li>Treat <code>AGENTS.md</code> as the canonical working guide. <code>CLAUDE.md</code>, <code>GEMINI.md</code> and Copilot instructions point to it. Supplied runbooks are reference material, not authorization to execute every command in them.</li>
+<li>The owner uses a phone first: 390px, both themes, plainly named controls, no emojis. Use existing styles and keep the whole admin in <code>index.html</code> with no libraries or build.</li>
+<li>Never reset, reseed, edit or delete the owner&#39;s production records as part of a code change. Never use production as a test fixture. Ask before a data replacement/import, domain/passcode/unit change or rollback beyond the last commit.</li>
+<li>Preserve env key names, document paths, URL paths, systemd names, data paths and stored units. Preserve annual prices as annual values; installments are a separate payment schedule.</li>
+<li>Never force-push or rewrite main. Pushing main deploys; there is no staging or automatic review gate. Do not push red.</li>
+<li>No secrets in the repository, handoff or public LLM messages. AI/mail keys typed into Settings are private SQL metadata, not just environment values.</li>
+<li>Use the existing calculation functions for every money figure. Separate charge, receipt, refund, credit and discount. Do not invent a receipt to make status green.</li>
+<li>Preserve draft forms during polling, lock saves while busy, retain drafts on failure, and verify persisted records plus the refreshed UI rather than treating a closed form as proof of success.</li>
+<li>Record observed mistakes and failed checks in the owner&#39;s global log where those instructions apply. On Aly&#39;s Windows machine that is <code>C:\Users\Aly Jafferani\.codex\mistakes.md</code>; read relevant lessons first, preserve other entries and respect write permissions. Stage a pending note locally if a global write is blocked. Do not assume this Windows path exists on a different LLM host.</li>
+<li>Distinguish verified behavior, historical statements, planned steps and unresolved gaps. Do not claim a live release, successful restore or working SMTP from source inspection alone.</li>
+</ul>
+<h2 id="14-known-issues-and-verification-limits">14. Known issues and verification limits</h2>
+<h3 id="confirmed-open-issue-product-editor-on-a-phone">Confirmed open issue: product editor on a phone</h3>
+<p>At 390px, opening Settings and Packages &amp; products produced a 595px-wide document in both themes. The headings retain a desktop six-column grid while rows use two columns. New product creation, saved prices/currencies and reload persistence passed, but this screen is not fully phone-ready. The 1400px layouts fit. A future correction should supply clear mobile field labels and remove the overflowing headings, then verify the entire Settings panel.</p>
+<p>The extra product check is local evidence under ignored <code>data/catalog-qa/</code>; its review script is <code>data/catalog-review.cjs</code>, not a committed repo test. If these files are not supplied to the next agent, reproduce the issue from the description. This handoff does not claim that the defect was repaired.</p>
+<h3 id="other-behavior-and-follow-ups">Other behavior and follow-ups</h3>
+<ul>
+<li>A first partial bill can still be named after its cycle start month in status pills. Exact dates and First bill are shown in receipt choices; changing the status month policy needs an explicit owner decision.</li>
+<li>Paying through a later month clears older bills first; isolated allocation to a later month is not implemented.</li>
+<li>A resumed person&#39;s table Paid through can read “nothing yet” until the new running plan is paid.</li>
+<li>A refund is reported against the plan&#39;s package on the refund date, not necessarily the package override of the original billed month.</li>
+<li>Start edits retain custom charge keys and dated schedule changes. An owner may need to adjust a specific period afterward; do not silently move those records.</li>
+<li>Existing receipt notes retain their original period wording after later start/cycle changes.</li>
+<li>Quick add has no annual-installment picker. Use Add user or Package start / payments.</li>
+<li>The catalogue stores one default price/currency per product; 3/6-month choices are annual payment intervals, not arbitrary new product billing-type enums. Subscriber self-service payment-frequency selection is not built.</li>
+<li>The Claude artifact has not been republished with these Codex releases and can be behind the server.</li>
+</ul>
+<h3 id="verification-scope">Verification scope</h3>
+<p>Before v33 was pushed, both committed browser suites passed: 18 checks each, <strong>36 total</strong>, using disposable local Flask records. They covered receipts/discounts/refunds and totals, first/start dates, annual PKR/USD installments, schedule changes, failure/retry, polling, and 390px/1400px light/dark dashboard, receipt/start and subscriber layouts. Console/page errors were empty apart from two deliberately induced and separately recorded 503 save failures. Syntax/version/schema and Python compilation checks passed.</p>
+<p>The later product confirmation passed five capability checks and reported the separate Settings phone overflow. This distinction matters: the earlier 36 checks did not prove every Settings screen fits.</p>
+<p>The live health/version and service/timer states were verified for this document. Real SMTP delivery, provider screenshot reading with the owner&#39;s keys, handset-specific intent behavior, a current separate subscriber-domain setup, backup contents and an actual full disaster-recovery restore remain separately unverified here. The hosting and restore sequences are source-checked procedures, not a claim that another host was built or owner data was recovered during this task.</p>
+<h2 id="15-copyable-continuation-prompt">15. Copyable continuation prompt</h2>
+<p>Attach this file and give the agent the local repository or GitHub access. Add your actual requested change or recovery goal after the prompt. Do not attach a database, private key or credential file to a public chat.</p>
+<pre><code class="language-text">Continue Wasooli, “Know who&#39;s paid.”, for Aly, a non-developer who uses it mostly
+on a phone. Repository: https://github.com/ssdbank9/SaaS-Payment-Tracker, main.
+
+Read in order: AGENTS.md, docs/HANDOFF.md, CHANGELOG.md, README.md, then the attached
+WASOOLI-FINAL-HANDOFF.md. Follow the working guide. The attached guide is a snapshot
+from 4 October 2026, v33, source/live commit 2ef5838. Verify the current checkout,
+origin/main and deployed version before assuming that snapshot is still current.
+Preserve any existing local changes, including documentation not yet committed.
+
+index.html is the entire admin interface: one file, vanilla JS, inline CSS/SVG,
+no build or libraries. server/ is Flask + SQLite. deploy/ has the Ubuntu installer
+and the update, backup and notification systemd units. Owner data is separate from
+code. Production is the authoritative store; localStorage and the artifact are
+separate copies, not synchronized databases.
+
+Billing is the shared 24th–23rd cycle. A person&#39;s join date, each package&#39;s start
+date and cash received date are distinct. Only the first partial period is
+prorated. G remains annual-priced and may be paid in 1/3/6/12-month installments.
+Absent new fields preserve old behavior. Future schedule changes preserve earlier
+bills by default; explicit initial recalculation is previewed. Actual receipts
+minus refunds are Total paid; discounts lower bills and never create cash. Money
+fills older unpaid bills first. Reuse the current calculation helpers.
+
+Never reset, reseed, edit or delete owner records as part of a code change. Never
+put secrets in the repo, force-push, rename env keys/unit names/URLs/document paths
+or stored units, or test by writing to production. Ask before destructive imports,
+database replacement, domain/passcode/unit changes or reverting beyond the last
+commit. Reading this runbook is not approval to execute its recovery commands.
+
+Pushing main IS the release: the VM fetches about every five minutes and restarts.
+Before every push run a disposable local Flask server and real browser checks at
+390px/1400px in light/dark, including the changed panel, console errors and page
+overflow. Do not push red. The current product editor in Settings has a confirmed
+390px overflow (document width 595px); reproduce it if it is relevant and do not
+call it fixed from the older 36 passing flow checks. Those tests are in tests/.
+
+Every code release bumps app-ver, server/app.py VERSION and the top dated changelog
+entry together, and updates docs/HANDOFF.md. Commit straight to main with an
+imperative subject ending in (vNN), push normally, then verify live health/version
+before claiming release. Tell Aly what changed, what was checked, remaining limits
+and how to undo the intended last commit. Documentation alone does not bump version.
+
+For hosting/recovery, first inventory approved domains, accounts and private
+off-server recovery files. GitHub does not contain owner data. A UI JSON export
+does not include private SQL metadata, SQL answer/audit history or binary receipts.
+Full recovery needs the SQLite snapshot, assets and private environment settings.
+Preserve the old data directory, stop writers, validate a staged restore, then
+replace only with explicit approval. Confirm recovered records with the owner
+before resuming automatic emails or retiring the old host.
+
+Requested work:
+[Aly inserts the specific change, question or hosting/recovery request here.]
+</code></pre>
+<h2 id="16-source-references-and-final-checklist">16. Source references and final checklist</h2>
+<h3 id="sources-used">Sources used</h3>
+<ul>
+<li>Current checked-out source at commit <code>2ef5838</code>, especially <code>AGENTS.md</code>, <code>docs/HANDOFF.md</code>, <code>CHANGELOG.md</code>, <code>README.md</code>, <code>index.html</code>, server storage/export/auth/notifier code, and <code>deploy/</code> scripts/units.</li>
+<li>Existing <code>docs/setup-runbook.html</code> and the owner&#39;s earlier <code>D:/DropBox/Self/AI Apps Created/Wasooli/wasooli-setup-runbook.html</code>, treated as historical reference. They are different files; both include the older 4-OCPU/24-GB allowance statement. They are not authoritative over current code or current cloud terms.</li>
+<li>Disposable local test reports under <code>data/payment-qa/</code>, <code>data/start-qa/</code> and <code>data/catalog-qa/</code>. These are ignored local artifacts and will not accompany a normal Git clone.</li>
+<li>Public <code>/healthz</code> and read-only VM commit/service/timer/timezone checks on 4 October 2026.</li>
+<li>Official Oracle, DuckDNS and Caddy sources linked beside the hosting steps. Their current terms and console interfaces must be checked again at a future rehost.</li>
+</ul>
+<h3 id="before-handing-work-to-another-llm">Before handing work to another LLM</h3>
+<ul>
+<li>Give it this guide plus repository access or a full source folder.</li>
+<li>State the exact task and expected example; separate a code change from a data recovery.</li>
+<li>Make sure it understands pushing main deploys and that the database is not in GitHub.</li>
+<li>Keep real credentials and backups private; provide controlled access only when the approved task needs it.</li>
+<li>Have it verify current state, respect local changes, use synthetic local tests and report gaps honestly.</li>
+</ul>
+<h3 id="before-accepting-a-future-rehost">Before accepting a future rehost</h3>
+<ul>
+<li>Confirm cloud eligibility/cost, SSH access, approved DNS and both firewall layers.</li>
+<li>Confirm the intended source version, application health and HTTPS/private sign-in.</li>
+<li>Validate backup hashes, gzip/archive structure and SQLite integrity before a data replacement.</li>
+<li>Compare restored records, totals, schedules and uploaded files with the recovery baseline.</li>
+<li>Verify subscriber cards and required contact flows without sending unwanted messages.</li>
+<li>Resume timers deliberately; accept the restored site before retiring the old server or preserved data.</li>
+</ul>
+<h3 id="before-accepting-a-future-code-release">Before accepting a future code release</h3>
+<ul>
+<li>Check required version markers and changelog, source diff, local Flask/browser evidence and unchanged owner data.</li>
+<li>Include Settings/catalogue when relevant; do not omit the known phone issue from acceptance.</li>
+<li>Confirm the live version after the push and keep the exact commit/undo instruction.</li>
+</ul>
+<p>This handoff is documentation saved in the project folder. It does not authorize or perform a new release, domain change, credential rotation, production backup download or database restoration.</p>
+<a class="top-link" href="#top">Back to top</a></main><footer>Keep this document with the source folder. Keep credentials and data backups in separate private storage.</footer><script>(()=>{const root=document.documentElement;let stored;try{stored=localStorage.getItem('wasooli-doc-theme')}catch{}const dark=stored?stored==='dark':matchMedia('(prefers-color-scheme: dark)').matches;root.dataset.theme=dark?'dark':'light';function label(){document.getElementById('theme').textContent=root.dataset.theme==='dark'?'Use light theme':'Use dark theme'}label();document.getElementById('theme').addEventListener('click',()=>{root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('wasooli-doc-theme',root.dataset.theme)}catch{}label()});document.getElementById('print').addEventListener('click',()=>window.print())})();</script></body></html>

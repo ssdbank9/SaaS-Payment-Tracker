@@ -627,7 +627,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v33</span>
+      <span class="small muted num" id="app-ver" title="App version">v34</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -1248,7 +1248,7 @@ function refundedInPlanCur(s){let t=0;for(const r of s.refunds||[]){const v=toCu
 /* v28: the product a refund is taken off: the plan's package on the refund date (one-time items: their own product) */
 const refundKey=(s,r)=>{const pid=s.kind==='one-time'?s.packageId:pkgIdAt(s,r.date);return (pid&&pkgById(pid))?pid:(s.kind==='one-time'?'__one':'__none');};
 function analyzeMonthly(s,today){
-  const pc=paidInPlanCur(s);const paid=pc.t;const active=k=>!s.end||pStart(s,k)<=s.end;
+  const pc=paidInPlanCur(s);const paid=pc.t;const active=k=>!s.end||(s.start<=s.end&&pStart(s,k)<=s.end);
   const curIdx=periodIndexAt(s,today);
   const periods=[];let credit=paid,k=0,kPaid=0;
   while(active(k)&&k<2400){
@@ -1275,7 +1275,8 @@ function analyzeMonthly(s,today){
   if(!amountDue&&nextDue)amountDue=nextAmount;
   const nc=nextCycleStart(today);const cp=periods.find(p=>p.st===nc);const cycleDue=cp?cp.pr-cp.covered:0;const cyclePaid=!!cp&&cp.state==='paid';
   let status;
-  if(s.start>today)status='upcoming';
+  if(s.end&&s.end<s.start)status='ended';
+  else if(s.start>today)status='upcoming';
   else if(!nextDue||(s.end&&s.end<today&&!overdue.length))status='ended';
   else if(paidThrough>=today)status='current';
   else if(overdue.length===1&&overdue[0].st===today&&overdue[0].covered===0)status='due-today';
@@ -1453,7 +1454,8 @@ async function applyAnswers(){if(state.backend!=='api'||!state.loaded||!state.se
       if(ok){for(const a of pending){try{const j=await apiJSON('/api/confirmations/'+a.id+'/applied',{method:'POST'});a.applied_at=j.applied_at||new Date().toISOString();}catch(e){}}confirmAnswers.key='';}}
     finally{delete applying[uid];}}}}
 /* the existing cancel flow, shared by the Cancel form, the Final notice "Deactivate" and the one-tap "Confirm cancel" of a Discontinue answer */
-function applyCancel(u,lastDay,reason,note){for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;if(!s.end||s.end>lastDay)s.end=lastDay;}u.cancel={lastDay,reason:reason||'',note:note||'',at:todayISO()};u.discontinue=null;}
+/* v34: correct only ends owned by this cancellation; preserve separately ended plans and all cash history. */
+function applyCancel(u,lastDay,reason,note){const old=u.cancel&&u.cancel.lastDay;for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;if(!s.end||s.end>lastDay||(old&&s.end===old))s.end=lastDay;}u.cancel={lastDay,reason:reason||'',note:note||'',at:todayISO()};u.discontinue=null;for(const s of u.subscriptions||[])settleRefunds(u,s,todayISO());}
 async function confirmDiscontinue(id){const u=clone(state.users[id]);const d=u.discontinue;if(!d||u.cancel)return;const lastDay=addDays(d.cycleStart,-1);const monthly=(u.subscriptions||[]).filter(s=>s.kind==='monthly'&&(!s.end||s.end>lastDay));const targets=d.planIds&&d.planIds.length?monthly.filter(s=>d.planIds.includes(s.id)):monthly;
   if(targets.length&&targets.length<monthly.length){for(const s of targets)s.end=lastDay;u.discontinue=null;const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: ${targets.map(s=>acctParts(u,s).label||planLabel(s)).join(', ')} ends ${fmtD(lastDay,true)}; the other plans continue.`);return;}
   applyCancel(u,lastDay,'Chose Discontinue on the link'+(d.note?' · '+d.note:''),'');const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} cancelled · last day ${fmtD(lastDay,true)}.`);}
@@ -2379,6 +2381,7 @@ function uptoForm(id,s,sa,today,open){
 function acctLine(u,s){const ac=acctParts(u,s);return `<div class="sub-acct">${/^account\b/i.test(ac.label)?'':'<span class="acct-cap">Account</span>'}${ac.label?`<span class="acct-lbl">${esc(ac.label)}</span>`:''}${ac.email?`<span class="acct-em">${esc(ac.email)}</span>`:`<span class="acct-lbl">${esc(displayName(u))}</span>`}</div>`;}
 /* Change tier: target package of the same cycle, the cycle it starts from (default: next), an editable price prefilled from the package, a note; existing entries can be removed */
 function tierForm(id,s,sa,today,open){
+  if(!(sa.periods||[]).length)return '';
   const cyc=subCycle(s);const opts=packages().filter(p=>p.cycle===cyc);if(!opts.length)return '';
   const cycles=[];for(let k=0;k<=Math.max(0,sa.curIdx)+6;k++){const st=pStart(s,k);if(s.end&&st>s.end)break;cycles.push({k,st,en:addDays(pStart(s,k+1),-1)});}
   const defK=Math.min(Math.max(0,sa.curIdx+1),cycles.length-1);const from0=cycles[defK].st;
@@ -2632,18 +2635,20 @@ function detailHTML(id,u,a,today){
   }
   return `<div class="detail-head">
       <div class="meta"><span>Joined <b>${esc(fmtD(u.joinDate,true))}</b></span>${u.cancel?`<span>Last day <b>${esc(fmtD(u.cancel.lastDay,true))}</b></span>`:''}${u.email&&u.name?`<span>Email <b class="num">${esc(u.email)}</b></span>`:''}<span>WhatsApp <b>${u.phone?esc(fmtPhone(u.phone)):'not set'}</b></span>${u.telegram?`<span>Telegram <b>${esc(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram)}</b></span>`:''}<span>Method / notes <b>${u.notes?esc(u.notes):'—'}</b></span><span>Total paid <b>${esc(ownText(a.totals,a.mainCur))}</b></span></div>
-      <div class="detail-acts">${u.cancel?'':`<span class="grp">${remindControl(u,a,today,'Remind on WhatsApp')+emailControl(u,a,today,'Email')+telegramControl(u,'Telegram')}</span>`}<span class="grp"><button class="btn sm" type="button" data-act="toggle" data-key="edit">Edit user</button>${u.cancel?`<button class="btn sm primary" type="button" data-act="toggle" data-key="react" aria-expanded="${open.react?'true':'false'}">Resume subscription</button>`:`<button class="btn sm danger" type="button" data-act="toggle" data-key="cancel" aria-expanded="${open.cancel?'true':'false'}">Cancel subscription</button>`}</span></div>
+      <div class="detail-acts">${u.cancel?'':`<span class="grp">${remindControl(u,a,today,'Remind on WhatsApp')+emailControl(u,a,today,'Email')+telegramControl(u,'Telegram')}</span>`}<span class="grp"><button class="btn sm" type="button" data-act="toggle" data-key="edit">Edit user</button>${u.cancel?`<button class="btn sm primary" type="button" data-act="toggle" data-key="react" aria-expanded="${open.react?'true':'false'}">Resume subscription</button><button class="btn sm" type="button" data-act="toggle" data-key="cancel">Edit cancellation</button>`:`<button class="btn sm danger" type="button" data-act="toggle" data-key="cancel" aria-expanded="${open.cancel?'true':'false'}">Cancel subscription</button>`}</span></div>
     </div>
     ${discNote(id,u)}${cancelHistHTML(u)}${u.cancel?`<p class="cancel-note"><b>Cancelled</b> · last day ${esc(fmtD(u.cancel.lastDay,true))}${u.cancel.reason?` · ${esc(u.cancel.reason)}`:''}${u.cancel.note?` · ${esc(u.cancel.note)}`:''} · ${a.balance.n?'still owes '+esc(ownText(a.balance,a.mainCur))+' for periods before the last day':'settled, nothing owed'}. No further periods or reminders.</p>`:''}
-    <form class="block cancel-form" data-id="${id}" ${open.cancel&&!u.cancel?'':'hidden'} novalidate>
-      <h3 style="margin-bottom:8px">Cancel subscription</h3>
+    <form class="block cancel-form" data-id="${id}" ${open.cancel?'':'hidden'} novalidate>
+      <h3 style="margin-bottom:8px">${u.cancel?'Edit cancellation':'Cancel subscription'}</h3>
       <div class="form-grid">
-        <label class="f">Last day<input id="cx-last-${id}" name="lastDay" type="date" required value="${esc((ui.cancelPre[id]||{}).lastDay||(a.paidThrough&&a.paidThrough>=today?a.paidThrough:today))}"></label>
-        <label class="f">Reason <span class="muted">(optional)</span><input id="cx-reason-${id}" name="reason" type="text" placeholder="e.g. moving to another tool" value="${esc((ui.cancelPre[id]||{}).reason||'')}"></label>
-        <label class="f">Refund note <span class="muted">(optional)</span><input id="cx-note-${id}" name="note" type="text" placeholder="e.g. Rs 677 credit refunded via NayaPay"></label>
+        <label class="f">No bills from billing month<input name="cancelMonth" type="month" required></label>
+        <label class="f">Last day of access (included)<input id="cx-last-${id}" name="lastDay" type="date" required value="${esc((ui.cancelPre[id]||{}).lastDay||(u.cancel&&u.cancel.lastDay)||(a.paidThrough&&a.paidThrough>=today?a.paidThrough:today))}"></label>
+        <label class="f">Reason <span class="muted">(optional)</span><input id="cx-reason-${id}" name="reason" type="text" placeholder="e.g. moving to another tool" value="${esc((ui.cancelPre[id]||{}).reason??(u.cancel&&u.cancel.reason)??'')}"></label>
+        <label class="f">Refund note <span class="muted">(optional)</span><input id="cx-note-${id}" name="note" type="text" value="${esc((ui.cancelPre[id]||{}).note??(u.cancel&&u.cancel.note)??'')}" placeholder="e.g. refunded via NayaPay"></label>
       </div>
-      <p class="small muted" style="margin-top:6px">All of this user's plans end on the last day. Periods that already started stay due; nothing is billed or reminded after it. Recorded payments stay as history.</p>
-      <div class="form-actions"><button class="btn danger" type="submit">Confirm cancellation</button><button class="link" type="button" data-act="toggle" data-key="cancel">Keep subscription</button><span class="err" data-role="cancel-err"></span></div>
+      <p class="small muted" style="margin-top:6px">Choose the first billing month they will not use. For September's bill starting on the 24th, the last day is September 23. You can choose a different last day; bills that already started stay due. Cancellation does not record a refund.</p>
+      <p class="small" data-role="cancel-preview" aria-live="polite"></p>
+      <div class="form-actions"><button class="btn danger" type="submit">${u.cancel?'Save cancellation':'Confirm cancellation'}</button><button class="link" type="button" data-act="toggle" data-key="cancel">Not now</button><span class="err" data-role="cancel-err"></span></div>
     </form>
     <form class="block react-form" data-id="${id}" ${open.react&&u.cancel?'':'hidden'} novalidate>
       <h3 style="margin-bottom:8px">Resume subscription</h3>
@@ -2693,6 +2698,14 @@ function detailHTML(id,u,a,today){
 }
 function wireDetail(id,today){
   const det=document.querySelector(`tr.detail[data-id="${id}"]`);if(!det)return;const u=state.users[id];
+  /* v34: retain drafts across polling and show the exact inclusive cutoff before saving. */
+  const cancelForm=det.querySelector('.cancel-form');if(cancelForm&&!cancelForm.hidden){const last=cancelForm.elements.lastDay,month=cancelForm.elements.cancelMonth;
+    const update=()=>{const d={lastDay:last.value,reason:cancelForm.elements.reason.value,note:cancelForm.elements.note.value};ui.cancelPre[id]=d;
+      if(!isDateKey(d.lastDay)){cancelForm.querySelector('[data-role=cancel-preview]').textContent='Choose a valid last day.';return;}
+      const nc=nextCycleStart(d.lastDay);month.value=nc.slice(0,7);const sim=clone(u);applyCancel(sim,d.lastDay,d.reason,d.note);const after=analyze(sim,today);
+      cancelForm.querySelector('[data-role=cancel-preview]').textContent=`Last day ${fmtD(d.lastDay,true)}. No bill starting ${fmtD(nc,true)} or later. ${after.balance.n?'Earlier bills still owed: '+ownText(after.balance,after.mainCur)+'.':'Settled: nothing owed.'} Receipts and refunds are kept.`;};
+    month.addEventListener('change',()=>{if(!/^\d{4}-\d{2}$/.test(month.value))return;const offset=monthOffset(month.value+'-01');last.value=addDays(cycleAt(offset),-1);update();});
+    cancelForm.querySelectorAll('input:not([name=cancelMonth])').forEach(el=>el.addEventListener('input',update));update();}
   det.querySelectorAll('.pay-form').forEach(form=>{
     const s=(u.subscriptions||[]).find(x=>x.id===form.dataset.sub);if(!s)return;
     const cover=form.querySelector('[data-role=cover]');const amt=form.querySelector('[name=amount]'),curEl=form.querySelector('[name=currency]'),rateEl=form.querySelector('[name=rate]');
@@ -3140,8 +3153,8 @@ function bind(){
     }else if(form.classList.contains('cancel-form')){
       setErr('cancel-err','');const lastDay=val('lastDay'),reason=val('reason').trim(),note=val('note').trim();
       if(!isDateKey(lastDay)){setErr('cancel-err','Pick the last day.');return;}
-      applyCancel(u,lastDay,reason,note);closeKey('cancel');delete ui.cancelPre[id];
-      const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} cancelled · last day ${fmtD(lastDay,true)}.`);
+      applyCancel(u,lastDay,reason,note);
+      const ok=await persistUser(id,u);if(ok){closeKey('cancel');delete ui.cancelPre[id];renderTable();toast(`${displayName(u)} cancelled · last day ${fmtD(lastDay,true)}.`);}else setErr('cancel-err','Not saved. Your entries are kept; try again.');
     }else if(form.classList.contains('react-form')){
       setErr('react-err','');const start=val('start');if(!isDateKey(start)){setErr('react-err','Pick the date to resume from.');return;}
       /* v27: Resume (was Reactivate). Only the plans the cancellation ended come back (a plan ended earlier on purpose stays ended); a resume

@@ -89,6 +89,12 @@ Write user-facing text in plain, factual words; no emojis.
   `periodOverrides` and lookups) and `nextDue` (the day money is due: `max(nextSt, s.start)`, so a plan started or resumed mid-cycle
   is due on its start date). `pFrom(p)` / `perLabel(p)` give the day a period is billed from (its `es` when prorated or waived).
   Never compare `nextDue` with a period's `st`; use `nextSt`.
+- Cancellation (v34): `cancel.lastDay` is inclusive. No bills from billing month sets it to the day before that
+  month's shared cycle start. Edit cancellation changes only ends owned by the previous cancellation or still
+  running beyond the new cutoff; independently earlier ends and cash history are retained. `applyCancel` also
+  recomputes derived `settleRefunds` adjustments, including refunds recorded before cancellation. Plans whose
+  start is after their end have no periods; detail forms must handle an empty period list. Cancellation drafts
+  use `ui.cancelPre` to survive table redraws and failed-save retry. Earlier genuine arrears are not waived.
 - Package starts / annual installments (v33): `startDialog` lives outside the polled table. Each plan's start is independent
   of `joinDate` and receipt dates. `payMonthsAt` / `pStart` compute its payment schedule; `installmentPrice` splits the annual
   price without changing stored yearly units and balances rounding across a full year. New annual plans and explicit

@@ -1,9 +1,13 @@
 # Wasooli hand-off
 
-Written 2026-09-23 at v26, updated 2026-10-04 at v33. This is the document to read first when picking the project
+Written 2026-09-23 at v26, updated 2026-10-05 at v34. This is the document to read first when picking the project
 up again in Claude Code, another AI coding tool or by hand. `AGENTS.md` is the working guide for a coding session
 (every tool reads it, see section 10); this file records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
 built is `docs/setup-runbook.html` (open it in a browser; it prints).
+
+The detailed owner and next-LLM guide is [`WASOOLI-FINAL-HANDOFF.md`](../WASOOLI-FINAL-HANDOFF.md).
+It covers build history, billing, private recovery inventory, fresh hosting, restore procedures and the
+change/release workflow, with a verified 2026-10-04 snapshot and a copyable continuation prompt.
 
 ## 1. Purpose and who
 
@@ -16,14 +20,21 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
   Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.
 - **Repo:** `ssdbank9/SaaS-Payment-Tracker` on GitHub, branch `main`. Pushing to `main` is the release.
 
-## 2. Current state (2026-10-04, v33)
+## 2. Current state (2026-10-05, v34)
+
+**Cancellation (v34).** Cancel subscription has No bills from billing month plus an inclusive last access day,
+with a balance preview. Selecting September stops bills from September 24 and sets the last day to September 23.
+Cancelled users have Edit cancellation; saving preserves cash history and separately ended plans, recalculates
+derived refund settlements, and excludes plans starting after the cutoff. Genuine unpaid earlier bills remain
+due. Existing owner records are not edited automatically. Tests: `node tests/cancellation-flow.cjs` uses a
+disposable local server; never run it against owner data. A cutoff correction is an explicit owner action.
 
 | Item | Value |
 | --- | --- |
 | Admin site | `https://wasooli.duckdns.org` (plain root shows a blank neutral page on purpose) |
 | Sign-in form | `https://wasooli.duckdns.org/x/<ADMIN_PATH>` (printed by the installer; Settings → Security) |
 | Subscriber links | `https://pay-up.duckdns.org/c/<token>` (`LINK_DOMAIN`) |
-| Health check | `https://wasooli.duckdns.org/healthz`; verify `ok: true` and `version: "33"` after pushing. The v32 release was confirmed live on 2026-10-04 with an empty `linkBase`; the subscriber-domain setup listed above is prior handoff context and needs separate verification. |
+| Health check | `https://wasooli.duckdns.org/healthz`; v33 and VM commit `2ef5838` were confirmed on 2026-10-04, with an empty `linkBase`. The subscriber-domain setup listed above is prior handoff context and needs separate verification. |
 | VM | Oracle Cloud Always Free, `VM.Standard.A1.Flex`, 1 OCPU / 6 GB, Ubuntu 24.04 aarch64, public IP `141.145.157.7`, created 2026-09-22 ~11:45 UTC in VCN `vcn-20260922-1643` / subnet `subnet-20260922-1643` |
 | Cloud firewall | Default Security List of that subnet: default rules (TCP 22, ICMP) plus TCP 80 and TCP 443 from `0.0.0.0/0` added by the owner |
 | DNS | DuckDNS (owner signed in with Google): `wasooli.duckdns.org` and `pay-up.duckdns.org` → `141.145.157.7`. The first name `wasool.duckdns.org` was deleted on 2026-09-23 |
@@ -32,8 +43,8 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
 | Data on VM | `/var/lib/payments-tracker/tracker.sqlite3` plus `assets/` (uploaded receipts) and `backups/` |
 | Secrets on VM | `/etc/payments-tracker.env` (`DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`); AI and mail keys typed in Settings live in the SQLite `meta` table |
 | Services | `payments-tracker.service` (gunicorn on 127.0.0.1:8080), `caddy` (HTTPS for all three hosts), timers `payments-tracker-update` (5 min), `payments-tracker-backup` (03:15 daily), `payments-tracker-notify` (04:00 UTC = 09:00 PKT daily) |
-| Versions | badge `v33` in `index.html`, `VERSION = "33"` in `server/app.py`, top entry `## v33` in `CHANGELOG.md` |
-| Repo head | the v33 change "Add package starts and annual payment schedules (v33)" (check with `git log -1`) |
+| Versions | badge `v34` in `index.html`, `VERSION = "34"` in `server/app.py`, top entry `## v34` in `CHANGELOG.md`; verify health after release |
+| Repo head | the v34 cancellation change (check with `git log -1`); the earlier v33 release is `2ef5838` |
 | claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: retired as the data store; v33 was edited in Codex and has not been republished there |
 
 **How updates deploy.** `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: `git fetch`,
@@ -327,8 +338,11 @@ both DuckDNS names to the new IP, then `sudo systemctl restart caddy`.
 - **Android intent links.** The `intent://send…package=com.whatsapp` links are built per the Android docs; the
   owner confirmed the wrong-app problem was solved by the phone-side "Clear defaults" and the Settings choice,
   but the intent path was not verified on his handset separately.
-- **Notify timer on the VM.** `update.sh` enables every timer on each run, so
-  `payments-tracker-notify.timer` should be present; confirm with `systemctl list-timers 'payments-tracker*'`.
+- **VM timer verification.** On 2026-10-04, the app, Caddy and update/backup/notify timers were all active;
+  the VM timezone was `Etc/UTC`. This confirms scheduling, not successful SMTP delivery or backup integrity.
+- **Settings product editor on phones.** At 390px in both themes, the product headings caused a 595px-wide
+  document. Product creation and reload persistence passed; the overflow remains open. See the final guide's
+  section 14 and local `data/catalog-qa/results.json` for the distinction from the v33 release checks.
 - **v16** has no CHANGELOG entry (the v15 work landed as four commits); nothing is missing from the code.
 - **Oracle "Out of capacity"** was not hit on this tenancy; the fallback in the runbook is standard advice.
 - **Certificate for `pay-up.duckdns.org`** was issued when the installer was re-run with `LINK_DOMAIN` on
