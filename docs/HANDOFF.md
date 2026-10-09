@@ -1,6 +1,6 @@
 # Wasooli hand-off
 
-Written 2026-09-23 at v26, updated 2026-10-05 at v35. This is the document to read first when picking the project
+Written 2026-09-23 at v26, updated 2026-10-09 at v36. This is the document to read first when picking the project
 up again in Claude Code, another AI coding tool or by hand. `AGENTS.md` is the working guide for a coding session
 (every tool reads it, see section 10); this file records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
 built is `docs/setup-runbook.html` (open it in a browser; it prints).
@@ -20,7 +20,20 @@ change/release workflow, with a verified 2026-10-04 snapshot and a copyable cont
   Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.
 - **Repo:** `ssdbank9/SaaS-Payment-Tracker` on GitHub, branch `main`. Pushing to `main` is the release.
 
-## 2. Current state (2026-10-05, v35)
+## 2. Current state (2026-10-09, v36)
+
+**Focused settings saves (v36).** Product save sits beside the catalogue; nineteen general settings each
+have an adjacent Save and live status. `settingGroups` defines the keys and validation for each save;
+`saveSettingGroup` writes a focused PATCH, then updates local state only on success. Pending form values
+are not part of other saves. Save all remains an explicit bulk action. Billing anchor saves use the saved
+counterpart, and each queue message preserves the other saved stages. A failed save retains the draft;
+editing during a request keeps Unsaved changes after success. Product IDs stay stable and displayed names
+resolve through the catalogue. Product mobile labels replace overflowing desktop headings. No owner data
+migration. `tests/settings-save-flow.cjs` checks the disposable local store, never the production database.
+Release validation: 19 settings checks plus 68 existing billing/payment/start/cancellation checks passed,
+with no unexpected console/page errors on initialized synthetic stores. Settings screenshots were inspected
+at 390px and 1400px in light/dark; JavaScript syntax and scoped whitespace checks passed. Live health must
+be checked separately after pushing. No production-record correction accompanies v36.
 
 **Bill and refund clarity (v35).** Set bill / proration is a separate dialog beside each name, and can also
 open from Record payment. Select an account and the exact billing period; a custom charge or service-date
@@ -57,8 +70,8 @@ disposable local server; never run it against owner data. A cutoff correction is
 | Data on VM | `/var/lib/payments-tracker/tracker.sqlite3` plus `assets/` (uploaded receipts) and `backups/` |
 | Secrets on VM | `/etc/payments-tracker.env` (`DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`); AI and mail keys typed in Settings live in the SQLite `meta` table |
 | Services | `payments-tracker.service` (gunicorn on 127.0.0.1:8080), `caddy` (HTTPS for all three hosts), timers `payments-tracker-update` (5 min), `payments-tracker-backup` (03:15 daily), `payments-tracker-notify` (04:00 UTC = 09:00 PKT daily) |
-| Versions | badge `v35` in `index.html`, `VERSION = "35"` in `server/app.py`, top entry `## v35` in `CHANGELOG.md`; verify health after release |
-| Repo head | the v35 bill settlement and refund change (check with `git log -1`); the earlier v34 release is `fb2b3e2` |
+| Versions | badge `v36` in `index.html`, `VERSION = "36"` in `server/app.py`, top entry `## v36` in `CHANGELOG.md`; verify health after release |
+| Repo head | the v36 focused settings saves change (check with `git log -1`); the earlier v35 billing release is `b88bc47` |
 | claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: retired as the data store; v33 was edited in Codex and has not been republished there |
 
 **How updates deploy.** `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: `git fetch`,

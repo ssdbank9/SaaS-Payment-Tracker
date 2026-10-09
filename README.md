@@ -2,6 +2,11 @@
 
 **Know who's paid.**
 
+In Settings, **Save product changes** is beside the product list. Names apply across existing subscribers,
+reports and generated reminders. Each general setting has its own **Save** and status: Unsaved changes,
+Saving, Saved, or Not saved. Saving one setting leaves other edits pending. **Save all settings** remains
+at the bottom for deliberately applying the whole form; mail and AI keep their separate save buttons.
+
 A single-file web app for tracking subscriber payments for a small SaaS. It keeps a list of users and their packages (C, C Max or G), runs everyone on a shared billing cycle anchored on the 24th with prorated first periods, records amounts in USD and PKR using a default exchange rate, supports one-time items, tracks costs and net, offers WhatsApp tap-to-send reminders, and can import costs from a statement screenshot.
 
 ## Live app

@@ -1,6 +1,12 @@
 # Wasooli final handoff and recovery guide
 
-Prepared for Aly Jafferani on 5 October 2026, Asia/Karachi. Application version: **v35**. Verified source commit: **b88bc47 — Clarify bill settlement and refund choices (v35)**.
+Update on 9 October 2026: v36 adds a nearby **Save product changes** button and nineteen focused general
+settings saves with their own status. A focused save leaves other drafts pending. Failed saves retain the
+draft for retry. Product names apply across the app by existing product IDs; default prices still only
+prefill new plans. Phone product headings and labels fit the viewport. No owner-record changes are part
+of this release. The v35 billing and recovery details below remain historical evidence.
+
+Prepared for Aly Jafferani on 5 October 2026, updated 9 October 2026, Asia/Karachi. Application version: **v36**. The verified billing release described below is **b88bc47 — Clarify bill settlement and refund choices (v35)**.
 
 This document explains how Wasooli was made, how to use and maintain it, how to host it on another server, and how to give the work to another LLM. It is a snapshot of the working application, not a backup of the owner's records or credentials. Keep this guide with the repository and keep the recovery files listed in section 6 privately, outside the repository.
 

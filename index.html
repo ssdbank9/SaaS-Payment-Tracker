@@ -518,7 +518,15 @@ table.brk tr:last-child td{border-bottom:0}
 .pkg-head{display:grid;grid-template-columns:minmax(110px,1.1fr) 110px minmax(90px,.8fr) 80px minmax(140px,1.8fr) auto;gap:8px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:8px}
 .pkg-row input,.pkg-row select{min-height:30px;padding:4px 6px;font-size:13px}
 .pkg-row .use{font-size:11px;color:var(--muted);white-space:nowrap}
-@media (max-width:700px){.pkg-row{grid-template-columns:1fr 1fr}}
+/* v36: saves belong to their setting; product labels remain readable on phones. */
+.setting-save{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.setting-save [role="status"]{font-size:12px;color:var(--muted)}
+.setting-save [data-state="error"]{color:var(--crit)}
+#s-anchor-help{grid-column:1/-1}
+.pkg-row,.pkg-head{grid-template-columns:minmax(110px,1.1fr) 110px minmax(90px,.8fr) 80px minmax(140px,1.8fr) 90px}
+.pkg-field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pkg-field>span{display:none;font-size:11px;color:var(--ink-2)}
+@media (max-width:700px){.pkg-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pkg-head{display:none}.pkg-field>span{display:block}.pkg-row .use{white-space:normal}#settingsForm>.form-grid{grid-template-columns:minmax(0,1fr)!important}}
 .drop{border:2px dashed var(--line-strong);border-radius:6px;padding:18px 16px;text-align:center;background:var(--surface-2);cursor:pointer}
 .drop.over{border-color:var(--accent);background:var(--accent-soft)}
 .drop label.link{cursor:pointer}
@@ -627,7 +635,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v35</span>
+      <span class="small muted num" id="app-ver" title="App version">v36</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -779,7 +787,7 @@ table.costs td.cat{color:var(--ink-2)}
         <div class="form-actions" style="margin-top:8px"><button class="btn" type="button" id="btn-export-all">Export everything (JSON)</button><label class="btn" for="import-all-file" style="cursor:pointer">Import everything (JSON)…<input id="import-all-file" type="file" accept="application/json,.json" hidden></label><span class="small muted" id="data-msg"></span></div>
         <textarea id="export-all-text" class="mono" hidden readonly aria-label="Exported data" style="margin-top:8px"></textarea>
       </div>
-      <div class="form-actions"><button class="btn primary" type="submit">Save settings</button><span class="small muted" id="s-msg"></span><span style="flex:1"></span><span id="reset-wrap"><button class="btn sm danger" type="button" id="btn-reset">Reset data</button></span></div>
+      <div class="form-actions"><button class="btn" type="submit">Save all settings</button><span class="small muted" id="s-msg" role="status" aria-live="polite"></span><span style="flex:1"></span><span id="reset-wrap"><button class="btn sm danger" type="button" id="btn-reset">Reset data</button></span></div>
     </form>
   </section>
 
@@ -2903,8 +2911,68 @@ function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','rem
 function syncAnalyticsBtn(){const b=$('#btn-analytics');if(b)b.setAttribute('aria-expanded',String(!$('#analyticsPanel').hidden));}
 function syncSettingsBtn(){const open=!$('#settingsPanel').hidden;const b=$('#btn-settings');b.innerHTML=open?'<span class="glyph" aria-hidden="true">‹</span>Home':'Settings';b.setAttribute('aria-expanded',String(open));b.title=open?'Back to the user list':'Open settings';}
 function closeSettings(){$('#settingsPanel').hidden=true;syncSettingsBtn();window.scrollTo({top:0,behavior:'smooth'});}
+/* v36: only a chosen setting's validated keys reach storage. Drafts stay in the form. */
+const settingGroups={
+  'app-name':{label:'App name',ids:['s-app-name'],read:()=>({appName:rawAppName($('#s-app-name').value)})},
+  tagline:{label:'Tagline',ids:['s-tagline'],read:()=>({tagline:rawTagline($('#s-tagline').value)})},
+  model:{label:'Reading model',ids:['s-model'],read:()=>({readModel:normModel($('#s-model').value)})},
+  'base-url':{label:'Public base URL',ids:['s-base-url'],read:()=>{
+    const v=$('#s-base-url').value.trim();if(v&&!/^https?:\/\//i.test(v))throw Error('Enter a full http or https URL.');
+    if(v){try{new URL(v);}catch(e){throw Error('Enter a valid URL.');}}return {publicBaseUrl:pubBaseRaw(v)};}},
+  rate:{label:'Exchange rate',ids:['s-rate'],read:()=>{const v=$('#s-rate').value,n=Number(v);if(v&&(!isFinite(n)||n<=0))throw Error('Enter a rate greater than zero, or leave it blank.');return {rate:v?n:null};}},
+  'cycle-day':{label:'Billing cycle day',ids:['s-cycle-day'],read:()=>{const n=settingDay('s-cycle-day');return {cycleDay:n,anchor:anchorFrom(n,+anchor().slice(5,7))};}},
+  'anchor-month':{label:'Yearly renewal month',ids:['s-anchor-month'],read:()=>{const m=Number($('#s-anchor-month').value);if(!Number.isInteger(m)||m<1||m>12)throw Error('Choose a renewal month.');return {anchor:anchorFrom(cycleDay(),m)};}},
+  'remind-day':{label:'Reminder day',ids:['s-remind-day'],read:()=>({remindDay:settingDay('s-remind-day')})},
+  'reply-day':{label:'Reply-by day',ids:['s-reply-day'],read:()=>({replyDay:settingDay('s-reply-day')})},
+  basis:{label:'Proration basis',ids:['s-basis'],read:()=>({prorationBasis:normBasis($('#s-basis').value)})},
+  'wa-app':{label:'WhatsApp app',ids:['s-wa-app'],read:()=>({waApp:normWaApp($('#s-wa-app').value)})},
+  dim:{label:'Paid-up user display',ids:['s-dim'],read:()=>({dimSettled:$('#s-dim').checked})},
+  packages:{label:'Products',ids:['pkgList'],read:()=>{const list=(ui.pkgEdit||clone(packages())).map(p=>({...p,name:String(p.name||'').trim()}));if(!list.length)throw Error('Keep at least one product.');if(list.some(p=>!p.name))throw Error('Every product needs a name, or remove the empty row.');if(new Set(list.map(p=>p.name.toLowerCase())).size!==list.length)throw Error('Two products have the same name.');return {packages:normalizePackages(list)};}},
+  template:{label:'WhatsApp reminder message',ids:['s-template'],read:()=>({template:tplOf($('#s-template').value.trim())})},
+  'final-template':{label:'Final notice message',ids:['s-final-template'],read:()=>({finalTemplate:finalTplOf($('#s-final-template').value)})},
+  q1:{label:'Stage 1 message',ids:['s-q1'],read:()=>({queueTemplates:normQueueTpl({...state.settings.queueTemplates,1:$('#s-q1').value})})},
+  q2:{label:'Stage 2 message',ids:['s-q2'],read:()=>({queueTemplates:normQueueTpl({...state.settings.queueTemplates,2:$('#s-q2').value})})},
+  q3:{label:'Stage 3 message',ids:['s-q3'],read:()=>({queueTemplates:normQueueTpl({...state.settings.queueTemplates,3:$('#s-q3').value})})},
+  payhow:{label:'Payment instructions',ids:['s-payhow'],read:()=>({payHow:rawPayHow($('#s-payhow').value)})}
+};
+let settingsSaving=false;
+function settingDay(id){const n=Number($('#'+id).value);if(!Number.isInteger(n)||n<1||n>31)throw Error('Enter a whole day from 1 to 31.');return n;}
+function settingStatus(key,text,error){const el=$('#setting-status-'+key);if(el){el.textContent=text;el.dataset.state=error?'error':'';}}
+function markSettingDraft(key){settingStatus(key,'Unsaved changes',false);$('#s-msg').textContent='';}
+function labelPackageFields(){document.querySelectorAll('#pkgList [data-f]').forEach(el=>{if(el.parentElement.classList.contains('pkg-field'))return;const label=document.createElement('label');label.className='pkg-field';const title=document.createElement('span');title.textContent=el.getAttribute('aria-label');el.before(label);label.append(title,el);});}
+function setupSettingSaves(){
+  for(const [key,g] of Object.entries(settingGroups)){
+    const el=$('#'+g.ids[0]);if(!el)continue;
+    const box=document.createElement('div');box.className='setting-save';box.innerHTML=`<button class="btn sm${key==='packages'?' primary':''}" type="button" data-save-setting="${key}">${key==='packages'?'Save product changes':'Save'}</button><span id="setting-status-${key}" role="status" aria-live="polite"></span>`;
+    box.querySelector('button').setAttribute('aria-label',key==='packages'?'Save product changes':'Save '+g.label.toLowerCase());
+    if(key==='packages'){el.after(box);const hint=document.createElement('p');hint.className='small muted';hint.textContent='Saved product names apply across subscribers, reports and generated reminders. Default prices only prefill new plans.';box.after(hint);}
+    else{const label=el.closest('label');const wrap=document.createElement('div');wrap.className='setting-field';label.before(wrap);wrap.append(label,box);}
+    for(const id of g.ids){const field=$('#'+id);field.addEventListener('input',()=>markSettingDraft(key));field.addEventListener('change',()=>markSettingDraft(key));}
+  }
+  $('#settingsForm').addEventListener('click',e=>{const b=e.target.closest('[data-save-setting]');if(b)saveSettingGroup(b.dataset.saveSetting);});
+  $('#pkg-add').addEventListener('click',()=>markSettingDraft('packages'));
+  $('#pkgList').addEventListener('click',e=>{if(e.target.closest('[data-act="pkg-remove"]'))markSettingDraft('packages');});
+}
+async function saveSettingGroup(key){
+  if(settingsSaving)return;if(!state.settingsLoaded){settingStatus(key,'Settings are still loading. Try again.',true);return;}
+  const keys=key==='all'?Object.keys(settingGroups):[key];let patch={};
+  try{for(const k of keys)Object.assign(patch,settingGroups[k].read());if(key==='all'){
+    patch.anchor=anchorFrom(patch.cycleDay,Number($('#s-anchor-month').value));
+    patch.queueTemplates=normQueueTpl({1:$('#s-q1').value,2:$('#s-q2').value,3:$('#s-q3').value});
+  }}catch(e){const k=keys.find(k=>{try{settingGroups[k].read();return false;}catch(x){return true;}})||keys[0];settingStatus(k,e.message,true);$('#setting-status-'+k).scrollIntoView({block:'nearest'});return;}
+  const drafts=Object.fromEntries(keys.map(k=>[k,JSON.stringify(settingGroups[k].ids.map(id=>id==='pkgList'?ui.pkgEdit:$('#'+id).type==='checkbox'?$('#'+id).checked:$('#'+id).value))]));
+  settingsSaving=true;const buttons=[...document.querySelectorAll('#settingsForm [data-save-setting],#settingsForm button[type=submit]')];buttons.forEach(b=>b.disabled=true);keys.forEach(k=>settingStatus(k,'Saving…',false));
+  try{
+    if(db){const ref=db.doc('settings/main');if(typeof ref.update==='function')await ref.update(patch);else{const snap=await ref.get();await ref.set({...settingsDoc(),...(snap.exists?snap.data():{}),...patch});}}
+    if(!db)localStorage.setItem('pt-data',JSON.stringify({users:state.users,costs:state.costs,settings:{...state.settings,...patch}}));
+    Object.assign(state.settings,patch);render();
+    for(const k of keys){const now=JSON.stringify(settingGroups[k].ids.map(id=>id==='pkgList'?ui.pkgEdit:$('#'+id).type==='checkbox'?$('#'+id).checked:$('#'+id).value));settingStatus(k,now===drafts[k]?(k==='packages'?'Saved · names applied across the app':'Saved'):'Unsaved changes',false);}
+    if(key==='all')$('#s-msg').textContent='All settings saved.';
+  }catch(e){keys.forEach(k=>settingStatus(k,'Not saved. Try again.',true));toast(dbErr(e));}
+  finally{settingsSaving=false;buttons.forEach(b=>b.disabled=false);}
+}
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
-function openSettings(){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);{const lb=serverLinkBase(),bu=$('#s-base-url');if(state.backend==='api')bu.placeholder=lb||location.origin;bu.disabled=!!lb;bu.title=lb?'Set on the server (LINK_DOMAIN in /etc/payments-tracker.env)':'';$('#s-base-url-link').hidden=!lb;if(lb)$('#s-base-url-link-val').textContent=lb;}fillQueueSettings();$('#s-wa-app').value=waApp();$('#s-dim').checked=dimOn();$('#mailBlock').hidden=state.backend!=='api';$('#aiBlock').hidden=state.backend!=='api';$('#securityBlock').hidden=state.backend!=='api';if(state.backend==='api'){loadMailSettings();loadAiSettings();loadSecurity(true);}ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
+function openSettings(){for(const k of Object.keys(settingGroups))settingStatus(k,'',false);$('#s-msg').textContent='';$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);{const lb=serverLinkBase(),bu=$('#s-base-url');if(state.backend==='api')bu.placeholder=lb||location.origin;bu.disabled=!!lb;bu.title=lb?'Set on the server (LINK_DOMAIN in /etc/payments-tracker.env)':'';$('#s-base-url-link').hidden=!lb;if(lb)$('#s-base-url-link-val').textContent=lb;}fillQueueSettings();$('#s-wa-app').value=waApp();$('#s-dim').checked=dimOn();$('#mailBlock').hidden=state.backend!=='api';$('#aiBlock').hidden=state.backend!=='api';$('#securityBlock').hidden=state.backend!=='api';if(state.backend==='api'){loadMailSettings();loadAiSettings();loadSecurity(true);}ui.pkgEdit=clone(packages());renderPkgEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
 function fillQueueSettings(){$('#s-q1').value=queueTplOf(1);$('#s-q2').value=queueTplOf(2);$('#s-q3').value=queueTplOf(3);$('#s-payhow').value=payHowOf();}
 /* v21: the billing anchor is edited as "day of the month" + "yearly month"; the hidden #s-anchor carries the date they make (year kept from the current anchor) */
 function anchorFrom(day,month){const y=+anchor().slice(0,4);const m=Math.min(12,Math.max(1,Math.round(Number(month))||+anchor().slice(5,7)));const d=clampDay(day,cycleDay());return toISO(new Date(y,m-1,Math.min(d,daysIn(y,m-1))));}
@@ -2984,7 +3052,7 @@ async function saveMailSettings(){const msg=$('#m-msg');msg.textContent='Saving�
 async function testMail(){const msg=$('#m-msg');const to=$('#m-test-to').value.trim();msg.textContent='Sending test…';try{const j=await apiJSON('/api/mail-test',apiBody('POST',{to}));msg.textContent='Test email sent to '+j.to+'. Check the inbox (and spam).';}catch(e){msg.textContent='Test failed: '+(e.message||e.code||'error')+(e.code==='not_configured'?' Save the mail settings first.':'');}}
 function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
 function openAdd(){if(!state.settingsLoaded){toast('Billing settings are loading. Try again in a moment.');return;}showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();if(!$('#a-start').value)$('#a-start').value=$('#a-join').value;const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
-function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';}
+function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';labelPackageFields();}
 function updAddConv(){const cur=$('#a-cur').value;const cyEl=$('#a-cycle');const cy=cyEl?cyEl.value:'monthly';$('#a-price-lbl').textContent=`${cy==='one-time'?'Total amount':cy==='yearly'?'Yearly price':'Monthly price'} (${cur==='USD'?'$':'Rs'})`;const n=Number($('#a-price').value)||0;const c=conv(n,cur,null);$('#a-conv').textContent=n?`${fmtAmt(n,cur)}${CYCLES[cy].per}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`:' (set an exchange rate in Settings to see the other currency)'):'Enter the price to preview the first bill.';
   /* v32: only the joining period is prorated. The receipt date never changes a charge. */
   $('#a-start-wrap').hidden=cy==='one-time';$('#a-payment-wrap').hidden=cy!=='yearly';const preview=$('#a-bill-preview'),start=$('#a-start').value;
@@ -3095,7 +3163,8 @@ function bind(){
   $('#ai-key').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveAiKey();}});
   $('#s-cycle-day').addEventListener('input',previewCycleSettings);$('#s-anchor-month').addEventListener('change',previewCycleSettings);
   document.addEventListener('click',e=>{const b=e.target.closest('[data-act="open-ai-settings"]');if(b){e.preventDefault();e.stopPropagation();openAiSettings();}},true);
-  $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const err=$('#pkg-err');err.textContent='';const list=(ui.pkgEdit||clone(packages())).map(p=>Object.assign({},p,{name:String(p.name||'').trim()}));if(list.some(p=>!p.name)){err.textContent='Every package needs a name (or remove the empty row).';return;}const names=list.map(p=>p.name.toLowerCase());if(new Set(names).size!==names.length){err.textContent='Two packages have the same name.';return;}if(!list.length){err.textContent='Keep at least one package.';return;}const cd=Number($('#s-cycle-day').value);if(!(cd>=1&&cd<=31)){err.textContent='The billing cycle day must be between 1 and 31.';return;}const an=anchorFrom(cd,$('#s-anchor-month').value);if(!isDateKey(an)){err.textContent='Pick the month yearly plans renew in.';return;}const rd=Number($('#s-remind-day').value),pd=Number($('#s-reply-day').value);if(!(rd>=1&&rd<=31)||!(pd>=1&&pd<=31)){err.textContent='Reminder day and reply-by day must be between 1 and 31.';return;}state.settings.anchor=an;state.settings.cycleDay=Math.round(cd);state.settings.waApp=normWaApp($('#s-wa-app').value);state.settings.remindDay=Math.round(rd);state.settings.replyDay=Math.round(pd);const r=Number($('#s-rate').value);state.settings.rate=r>0?r:null;state.settings.template=tplOf($('#s-template').value.trim());state.settings.finalTemplate=finalTplOf($('#s-final-template').value);state.settings.prorationBasis=normBasis($('#s-basis').value);state.settings.appName=rawAppName($('#s-app-name').value);state.settings.tagline=rawTagline($('#s-tagline').value);state.settings.readModel=normModel($('#s-model').value);state.settings.publicBaseUrl=pubBaseRaw($('#s-base-url').value);state.settings.queueTemplates=normQueueTpl({1:$('#s-q1').value,2:$('#s-q2').value,3:$('#s-q3').value});state.settings.payHow=rawPayHow($('#s-payhow').value);state.settings.dimSettled=$('#s-dim').checked;state.settings.packages=normalizePackages(list);const ok=await persistSettings();$('#s-msg').textContent=ok?'Saved.':'';});
+  setupSettingSaves();
+  $('#settingsForm').addEventListener('submit',e=>{e.preventDefault();saveSettingGroup('all');});
   $('#reset-wrap').addEventListener('click',async e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.id==='btn-reset'){$('#reset-wrap').innerHTML=`<span class="small" style="margin-right:8px">Remove every user, payment and cost? This cannot be undone.</span><button class="btn sm danger" type="button" data-act="reset-yes">Yes, reset</button> <button class="btn sm" type="button" data-act="reset-no">Cancel</button>`;}

@@ -2,6 +2,13 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v36 - 2026-10-09
+
+- Save product changes beside the product list. Saved names apply throughout the app.
+- Each general setting has its own Save button and Unsaved / Saving / Saved / Not saved status.
+- Focused saves validate and write only that setting; other drafts remain pending. Save all settings remains available.
+- Product fields have clear phone labels and fit without horizontal page scrolling.
+
 ## v35 - 2026-10-05
 
 - Set bill / proration chooses an account and the exact billing period before changing its charge. Set an agreed amount, use inclusive service dates, or restore the normal bill. The preview shows settlement, money still owing, the next bill and actual advance money. A reduced September bill does not reduce October's charge.
