@@ -42,6 +42,16 @@ G stays an annual package. Choose **Monthly**, **Every 3 months**, **Every 6 mon
 
 For an existing subscriber, a schedule change starts at **Next bill** by default and keeps earlier bills. Choose **Package start** to recalculate earlier bills explicitly; review the preview before saving. Existing custom charges stay attached to their billing dates. To record money, use **Record month payment** and choose the bill to pay through; extra cash carries forward and changing its received date never changes the bill.
 
+## Product dates and supplier costs
+
+**Add user**, **Add plan or one-time item**, each product's **Edit**, and **Edit user** show a product start date and supplier cost. Edit user lists every product separately. Joining date, each product's start, and a one-time item's due date are separate.
+
+Choose **Cost every cycle** for a regular supplier expense. Enter the amount and monthly or yearly frequency. For the first partial cycle choose **Prorate by actual days**, **Full cycle cost**, **Use my first-cycle amount**, or **No cost for first partial cycle**. The preview shows the first amount and later normal amount. Costs appear as cycles start, through the product's last access day. Avoid adding the same expense again manually.
+
+When a supplier changes its price, edit the product, enter the new cost and **New cost applies from** cycle start. Earlier cycles keep their rate. For an exceptional cycle, edit that expense in **Costs**; **Waive cycle** makes only that cycle zero. Choose **One actual expense** for an individual purchase with its own date, or leave cost unknown. Customer bills and receipts stay separate from supplier expenses.
+
+Existing dates are kept until you edit them. Changing a product start recalculates its bills and scheduled costs. The shared billing day determines cycle boundaries; the product start is when that user obtained it.
+
 ## Files
 
 - `index.html` - the whole app (markup, styles and script) in one file. It detects where it runs: the claude.ai artifact (shared `db`), your own server (the `/api/docs` store below) or a plain file (browser-local storage).

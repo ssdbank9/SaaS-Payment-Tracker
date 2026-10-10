@@ -256,6 +256,11 @@ button.tile:hover{border-color:var(--line-strong)}
 
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:12px}
 .panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px}
+.account-cost-fields [hidden],#a-due-wrap[hidden],[data-role=one-due-wrap][hidden]{display:none!important}
+.account-cost-fields{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+.account-cost-fields .form-grid{margin-top:8px;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+fieldset[data-account-fields]{min-width:0;margin-top:12px}
+@media(max-width:640px){.account-cost-fields .form-grid{grid-template-columns:minmax(0,1fr)}}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 12px;align-items:end}
 .form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
 .err{color:var(--crit);font-size:12px;font-weight:500}
@@ -635,7 +640,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v36</span>
+      <span class="small muted num" id="app-ver" title="App version">v37</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -837,6 +842,7 @@ table.costs td.cat{color:var(--ink-2)}
         <label class="f">Currency <span class="muted">(pays in)</span><select id="a-cur" required><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
         <label class="f" id="a-payment-wrap" hidden>Payment schedule<select id="a-payment"><option value="12">Yearly</option><option value="1">Monthly</option><option value="3">Every 3 months</option><option value="6">Every 6 months</option></select></label>
       </div>
+      <div id="a-account-cost"></div><label class="f" id="a-due-wrap" hidden>One-time amount due on (optional)<input id="a-due" type="date"></label>
       <details class="more" id="a-more">
         <summary>More options: billing cycle, plan label, notes, proration</summary>
         <div class="form-grid" style="margin-top:8px">
@@ -1265,7 +1271,8 @@ function normalizeUser(b,id){
     const kind=s.kind==='one-time'?'one-time':'monthly';const start=normDate(s.start)||u.joinDate;const cur=normCur(s.currency);
     const sub={id:s.id||newId('s'),kind,name:String(s.name||'').trim()||(kind==='one-time'?'Item':''),currency:cur,packageId:String(s.packageId||'').trim()||null,payments:[]};
     if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;{const ov=Number(s.prorationDaysOverride);sub.prorationDaysOverride=Number.isInteger(ov)&&ov>0?ov:null;const ro=Number(s.prorationRateOverride);sub.prorationRateOverride=isFinite(ro)&&ro>0?ro:null;const ao=s.prorationAmountOverride;sub.prorationAmountOverride=ao!=null&&ao!==''&&isFinite(Number(ao))&&Number(ao)>=0?Number(ao):null;sub.prorationBasis=rawBasis(s.prorationBasis);sub.discount=normDiscount(s.discount);sub.tierHistory=normTierHistory(s.tierHistory,cur);sub.periodOverrides=normPeriodOverrides(s.periodOverrides);}sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
-    else{sub.total=Number(s.total)||0;sub.due=normDate(s.due);}
+    else{sub.total=Number(s.total)||0;sub.due=normDate(s.due);if(isDateKey(s.start))sub.start=s.start;}
+    if(s.costId)sub.costId=String(s.costId);const ac=normAccountCost(s.accountCost);if(ac)sub.accountCost=ac;
     if(kind==='monthly'&&sub.cycle==='yearly'){if(validPayMonths(s.paymentEvery))sub.paymentEvery=Number(s.paymentEvery);const schedule=normPaymentSchedule(s.paymentSchedule);if(schedule.length)sub.paymentSchedule=schedule;}
     for(const p of s.payments||[]){const d=normDate(p.date);if(!d)continue;sub.payments.push({id:p.id||newId('p'),date:d,amount:Number(p.amount)||0,currency:p.currency?normCur(p.currency):cur,rate:normRate(p.rate),note:String(p.note||'')});}
     sub.payments.sort((a,b)=>a.date.localeCompare(b.date));
@@ -1276,7 +1283,7 @@ function normalizeUser(b,id){
   return u;
 }
 function cleanUser(u){const n=normalizeUser(u,u.id);return {name:n.name,email:n.email,phone:n.phone,telegram:n.telegram||'',joinDate:n.joinDate,notes:n.notes,createdAt:n.createdAt||new Date().toISOString(),subscriptions:n.subscriptions,reminders:n.reminders||{},cancel:n.cancel||null,cancelHistory:n.cancelHistory||[],discontinue:n.discontinue||null,confirmToken:n.confirmToken||''};}
-function normalizeCost(b,id){return {id,date:normDate(b.date)||todayISO(),description:String(b.description||'').trim(),category:String(b.category||'').trim(),packageId:String(b.packageId||'').trim(),currency:normCur(b.currency),cost:Number(b.cost)||0,tax:Number(b.tax)||0,rate:normRate(b.rate),source:String(b.source||''),receipt:String(b.receipt||''),createdAt:b.createdAt||''};}
+function normalizeCost(b,id){return {id,date:normDate(b.date)||todayISO(),description:String(b.description||'').trim(),category:String(b.category||'').trim(),packageId:String(b.packageId||'').trim(),currency:normCur(b.currency),cost:Number(b.cost)||0,tax:Number(b.tax)||0,rate:normRate(b.rate),source:String(b.source||''),receipt:String(b.receipt||''),createdAt:b.createdAt||'',userId:String(b.userId||''),subscriptionId:String(b.subscriptionId||'')};}
 /* v21: the product a cost pays for; '' = shared / unassigned (every cost recorded before v21 stays shared) */
 const costPkgId=c=>(c&&c.packageId&&pkgById(c.packageId))?c.packageId:'';
 const costPkgName=c=>{const id=costPkgId(c);return id?pkgName(id):'';};
@@ -1677,9 +1684,79 @@ function dbErr(e){const c=e&&e.code;if(c==='quota_exceeded')return 'Storage is f
    waited for the next poll of /api/version to fetch the list again, so a recorded payment showed as paid only when that round trip had
    finished (4 s, 30 s in a background tab, or never if the poll failed), which made Save look as if it had done nothing. */
 async function persistUser(id,u){const body=cleanUser(Object.assign({},u,{id}));if(db){try{await db.collection('users').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}state.users[id]=normalizeUser(clone(body),id);render();}else{state.users[id]=normalizeUser(body,id);saveLocal();render();}return true;}
+/* v37: supplier expenses remain separate from customer bills and cash. */
+let accountCostCache=null;
+function linkedCost(s){return s&&s.costId?state.costs[s.costId]||null:null;}
+function normAccountCost(v){
+  if(!v||!Array.isArray(v.entries))return null;
+  const entries=v.entries.filter(e=>e&&isDateKey(e.from)&&validAmt(e.amount)).map(e=>({from:e.from,amount:Number(e.amount),currency:normCur(e.currency),rate:normRate(e.rate),supplier:String(e.supplier||'').slice(0,200)})).sort((a,b)=>a.from.localeCompare(b.from));
+  if(!entries.length)return null;const out={frequency:v.frequency==='yearly'?'yearly':'monthly',first:['full','custom','free'].includes(v.first)?v.first:'prorated',entries,overrides:{}};
+  if(out.first==='custom'&&validAmt(v.firstAmount))out.firstAmount=Number(v.firstAmount);if(isDateKey(v.end))out.end=v.end;
+  for(const [st,c] of Object.entries(v.overrides||{}))if(isDateKey(st)&&c&&validAmt(c.cost)&&isDateKey(c.date))out.overrides[st]={date:c.date,cost:Number(c.cost),tax:Number(c.tax)||0,currency:normCur(c.currency),rate:normRate(c.rate),description:String(c.description||'').slice(0,500),category:String(c.category||'Product').slice(0,100)};
+  return out;
+}
+function costRecords(){
+  const today=todayISO();if(accountCostCache&&accountCostCache.day===today)return accountCostCache.records;const out={...state.costs};
+  for(const [uid,u] of Object.entries(state.users))for(const s of u.subscriptions||[]){const ac=s.accountCost;if(!ac||!isDateKey(s.start))continue;
+    const fake={kind:'monthly',cycle:ac.frequency,start:ac.entries[0].from>s.start?ac.entries[0].from:s.start,prices:[{from:s.start,price:1}],prorate:true,prorationBasis:'actual'};
+    const ends=[s.end,ac.end,u.cancel&&u.cancel.lastDay].filter(isDateKey).sort(),end=ends[0]||today;
+    for(let k=0;k<2400;k++){const st=pStart(fake,k),en=addDays(pStart(fake,k+1),-1),date=k===0?fake.start:st;if(date>today||date>end)break;
+      const entry=ac.entries.filter(e=>e.from<=date).pop()||ac.entries[0];let amount=entry.amount;
+      if(k===0&&fake.start>st){if(ac.first==='free')amount=0;else if(ac.first==='custom')amount=ac.firstAmount||0;else if(ac.first==='prorated')amount=Math.round(amount*(dayDiff(fake.start,en)+1)/(dayDiff(st,en)+1)*100)/100;}
+      const id='ac_'+uid+'_'+s.id+'_'+st;out[id]={id,date,description:`${displayName(u)} · ${pkgName(s.packageId)||s.name||'Product'} · ${entry.supplier||'cycle cost'}`,category:'Product',packageId:s.packageId||'',currency:entry.currency,cost:amount,tax:0,rate:entry.rate,source:'account-cycle',receipt:'',createdAt:'',userId:uid,subscriptionId:s.id,cycleStart:st,...(ac.overrides[st]||{})};
+    }
+  }accountCostCache={day:today,records:out};return out;
+}
+function accountCostFields(s,prefix){
+  const c=linkedCost(s),ac=s&&s.accountCost,e=ac&&ac.entries.at(-1),p=prefix||'',f=n=>p+n,mode=ac?'cycle':c?'once':'none';
+  const fake=ac&&s.start?{kind:'monthly',cycle:ac.frequency,start:s.start}:null,from=fake?pStart(fake,periodIndexAt(fake,todayISO())+1):s&&s.start?s.start:todayISO();
+  return `<div class="account-cost-fields" data-has-profile="${ac?'1':'0'}"><label class="f">Supplier cost<select name="${esc(f('accountCostMode'))}"><option value="none"${mode==='none'?' selected':''}>Not known yet / leave unchanged</option><option value="cycle"${mode==='cycle'?' selected':''}>Cost every cycle</option><option value="once"${mode==='once'?' selected':''}>One actual expense</option></select></label>
+    <div class="form-grid" data-role="account-cost-options"${mode==='none'?' hidden':''}>
+      <label class="f">Cost amount<input name="${esc(f('accountCost'))}" type="number" min="0" step="0.01" value="${e?e.amount:c?c.cost:''}" placeholder="Leave blank if unknown"></label>
+      <label class="f">Cost currency${curSelect('',f('accountCostCurrency'),e?e.currency:c?c.currency:s?s.currency:'PKR')}</label>
+      <label class="f">Supplier / source (optional)<input name="${esc(f('accountCostSupplier'))}" value="${esc(e?e.supplier:'')}"></label>
+      <label class="f">Exchange rate (PKR per USD, optional)<input name="${esc(f('accountCostRate'))}" type="number" min="0" step="0.01" value="${e&&e.rate?e.rate:c&&c.rate?c.rate:''}" placeholder="Default rate"></label>
+      <div data-role="account-cost-cycle"><label class="f">Supplier charges every<select name="${esc(f('accountCostFrequency'))}"${ac?' disabled':''}><option value="monthly"${!ac||ac.frequency==='monthly'?' selected':''}>Monthly cycle</option><option value="yearly"${ac&&ac.frequency==='yearly'?' selected':''}>Yearly cycle</option></select></label><label class="f">New cost applies from<input name="${esc(f('accountCostFrom'))}" type="date" value="${from}"></label><p class="small muted">For an existing cost, choose a cycle start. Earlier cycles keep their rate.</p></div>
+      <div data-role="account-cost-cycle"><label class="f">${ac?'Original first partial cycle':'First partial cycle'}<select name="${esc(f('accountCostFirst'))}"><option value="prorated"${!ac||ac.first==='prorated'?' selected':''}>Prorate by actual days</option><option value="full"${ac&&ac.first==='full'?' selected':''}>Full cycle cost</option><option value="custom"${ac&&ac.first==='custom'?' selected':''}>Use my first-cycle amount</option><option value="free"${ac&&ac.first==='free'?' selected':''}>No cost for first partial cycle</option></select></label><label class="f" data-role="account-cost-first-amount">${ac?'Original first-cycle cost ('+esc(ac.entries[0].currency)+')':'First-cycle cost'}<input name="${esc(f('accountCostFirstAmount'))}" type="number" min="0" step="0.01" value="${ac&&ac.firstAmount!=null?ac.firstAmount:''}"></label></div>
+      <label class="f" data-role="account-cost-once">Expense date<input name="${esc(f('accountCostDate'))}" type="date" value="${c?esc(c.date):todayISO()}"></label>
+    </div><p class="small muted" data-role="account-cost-preview"></p></div>`;
+}
+function wireAccountCostFields(root){root.querySelectorAll('.account-cost-fields').forEach(box=>{
+  if(box.refreshCostFields){box.refreshCostFields();return;}const read=n=>box.querySelector('[name$="'+n+'"]').value,form=box.closest('form'),from=box.querySelector('[name$="accountCostFrom"]');from.addEventListener('input',()=>from.dataset.costManual='1');
+  const upd=()=>{const mode=read('accountCostMode');box.querySelector('[data-role=account-cost-options]').hidden=mode==='none';box.querySelectorAll('[data-role=account-cost-cycle]').forEach(x=>x.hidden=mode!=='cycle');box.querySelector('[data-role=account-cost-once]').hidden=mode!=='once';box.querySelector('[data-role=account-cost-first-amount]').hidden=mode!=='cycle'||read('accountCostFirst')!=='custom';
+    const group=box.closest('[data-account-fields]'),startEl=group?group.querySelector('[name^="productStart:"]'):form&&form.id==='addForm'?$('#a-start'):form&&form.querySelector('[name=start],[name=date]'),start=startEl&&startEl.value;
+    if(box.dataset.hasProfile==='0'&&!from.dataset.costManual&&isDateKey(start))from.value=start;
+    const preview=box.querySelector('[data-role=account-cost-preview]');
+    if(mode==='cycle'&&state.settingsLoaded&&isDateKey(start)&&isDateKey(from.value)&&validAmt(read('accountCost'))){const fake={kind:'monthly',cycle:read('accountCostFrequency'),start:from.value>start?from.value:start},st=pStart(fake,0),en=addDays(pStart(fake,1),-1),full=Number(read('accountCost'));let first=full;
+      if(fake.start>st){const choice=read('accountCostFirst');if(choice==='free')first=0;else if(choice==='custom')first=Number(read('accountCostFirstAmount'))||0;else if(choice==='prorated')first=Math.round(full*(dayDiff(fake.start,en)+1)/(dayDiff(st,en)+1)*100)/100;}
+      preview.textContent=`First affected cycle ${fmtD(fake.start,true)} – ${fmtD(en,true)}: ${fmtAmt(first,read('accountCostCurrency'))}. Following cycles: ${fmtAmt(full,read('accountCostCurrency'))}. Costs count when each cycle begins; customer receipts are unchanged.`;
+    }else preview.textContent=mode==='once'?'One actual expense, dated separately. Any existing cycle-cost schedule remains in place.':'Choose the cost type and amount when known. Customer bills and receipts are separate.';
+  };box.refreshCostFields=upd;box.addEventListener('change',upd);if(form)form.addEventListener('input',upd);upd();
+});}
+function updateAccountStart(s,date){if(s.kind==='monthly'&&!isDateKey(date))throw Error('Choose the product start date.');if(date&&!isDateKey(date))throw Error('Choose a valid product start date.');if(s.end&&date&&s.end<date)throw Error('Product start must not be after its end date.');if(date)s.start=date;else if(s.kind==='one-time')delete s.start;}
+function accountCostDraft(form,s,uid,prefix){
+  const p=prefix||'',get=n=>{const el=form.elements.namedItem(p+n);return el?el.value:'';},raw=get('accountCost'),mode=get('accountCostMode');if(mode==='none'||raw==='')return null;
+  if(!validAmt(raw))throw Error('Enter a cost of zero or more, or leave it blank.');const rateRaw=get('accountCostRate');if(rateRaw&&(!isFinite(Number(rateRaw))||Number(rateRaw)<=0))throw Error('Enter a cost exchange rate greater than zero.');
+  if(mode==='cycle'){if(!isDateKey(s.start))throw Error('Choose this product’s start date before its cycle cost.');const prev=s.accountCost,entry={from:get('accountCostFrom')||s.start,amount:Number(raw),currency:normCur(get('accountCostCurrency')),rate:normRate(rateRaw),supplier:get('accountCostSupplier').trim()},first=get('accountCostFirst'),firstAmount=get('accountCostFirstAmount');
+    if(first==='custom'&&!validAmt(firstAmount))throw Error('Enter the first partial-cycle cost.');const ac=prev?clone(prev):{frequency:get('accountCostFrequency')==='yearly'?'yearly':'monthly',entries:[],overrides:{}},latest=ac.entries.at(-1);
+    if(!latest||['amount','currency','rate','supplier'].some(k=>latest[k]!==entry[k])){if(!isDateKey(entry.from))throw Error('Choose when the new cost applies.');const fake={kind:'monthly',cycle:ac.frequency,start:s.start};if(prev&&entry.from!==s.start&&pStart(fake,periodIndexAt(fake,entry.from))!==entry.from)throw Error('A cost change must start on a billing cycle boundary.');if(entry.from<s.start)throw Error('Cost change cannot precede product start.');ac.entries=ac.entries.filter(e=>e.from!==entry.from);ac.entries.push(entry);ac.entries.sort((a,b)=>a.from.localeCompare(b.from));}
+    ac.first=first;ac.firstAmount=first==='custom'?Number(firstAmount):null;s.accountCost=normAccountCost(ac);return null;
+  }
+  const date=get('accountCostDate');if(!isDateKey(date))throw Error('Choose the expense date.');const before=linkedCost(s),cid=before?before.id:s.costId||('account_'+uid+'_'+s.id);s.costId=cid;
+  return {id:cid,...(before||{}),date,description:before?before.description:`${displayName(state.users[uid]||{name:form.elements.namedItem('name')?.value||'New user'})} · ${pkgName(s.packageId)||s.name||'Product'} cost`,category:before?before.category:'Product',packageId:s.packageId||'',currency:normCur(get('accountCostCurrency')),cost:Number(raw),tax:before?before.tax:0,rate:normRate(rateRaw),source:before?before.source:'account',receipt:before?before.receipt:'',userId:uid,subscriptionId:s.id};
+}
+async function persistAccountBundle(id,u,costs){if(!costs.length)return persistUser(id,u);const body=cleanUser({...u,id}),docs={['users/'+id]:body};for(const c of costs)docs['costs/'+c.id]=cleanCost(c);
+  try{if(state.backend==='api'){const result=await apiJSON('/api/import',apiBody('POST',{docs,replace:[]}));if(result.skipped&&result.skipped.length)throw Error('Account save rejected.');apiTouch();}
+    else if(db)throw Error('Linked account costs need the live app. Save expenses separately in Costs on this older storage backend.');
+    else{const nextCosts={...state.costs};for(const c of costs)nextCosts[c.id]=normalizeCost(docs['costs/'+c.id],c.id);localStorage.setItem('pt-data',JSON.stringify({users:{...state.users,[id]:normalizeUser(body,id)},costs:nextCosts,settings:state.settings}));}
+    state.users[id]=normalizeUser(body,id);for(const c of costs)state.costs[c.id]=normalizeCost(docs['costs/'+c.id],c.id);render();return true;
+  }catch(e){toast(dbErr(e));return false;}
+}
+function accountStartInputs(u){return (u.subscriptions||[]).map(s=>`<fieldset class="block" data-account-fields="${esc(s.id)}"><legend>${esc(planLabel(s))} · ${esc(s.currency)} · ${esc(subCycle(s))}</legend><label class="f">Product started on (this user's product only)<input name="productStart:${esc(s.id)}" type="date" value="${esc(s.start||'')}"${s.kind==='monthly'?' required':''}></label><p class="small muted">${s.start?'Changing this date recalculates this account’s bills; receipts and price history are kept.':'Start date not recorded. Choose it when known.'}</p>${accountCostFields(s,s.id+':')}</fieldset>`).join('');}
+
 async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.users[id];saveLocal();render();}return true;}
-async function persistCost(id,c){const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}else{state.costs[id]=normalizeCost(body,id);saveLocal();render();}return true;}
-async function removeCost(id){if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.costs[id];saveLocal();render();}return true;}
+async function persistCost(id,c){const existing=costRecords()[id];if(existing&&existing.source==='account-cycle'){const u=clone(state.users[existing.userId]),sub=u.subscriptions.find(x=>x.id===existing.subscriptionId);if(!sub||!sub.accountCost)return false;sub.accountCost.overrides[existing.cycleStart]={date:c.date,cost:c.cost,tax:c.tax||0,currency:c.currency,rate:c.rate,description:c.description,category:c.category};return persistUser(u.id,u);}const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}state.costs[id]=normalizeCost(body,id);if(!db)saveLocal();render();return true;}
+async function removeCost(id){const existing=costRecords()[id];if(existing&&existing.source==='account-cycle')return persistCost(id,{...existing,cost:0,tax:0,description:existing.description+' · cycle cost waived'});if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}delete state.costs[id];if(!db)saveLocal();render();return true;}
 function settingsDoc(){return {rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),publicBaseUrl:pubBaseRaw(state.settings.publicBaseUrl),packages:state.settings.packages||[],anchor:anchor(),cycleDay:cycleDay(),remindDay:remindDay(),replyDay:replyDay(),queueTemplates:normQueueTpl(state.settings.queueTemplates),payHow:rawPayHow(state.settings.payHow),waApp:waApp(),dimSettled:dimOn()};}
 async function persistSettings(){if(db){try{await db.doc('settings/main').set(settingsDoc());}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
 function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||'').trim().toLowerCase();const ids=Object.keys(state.users);if(e){const hit=ids.find(id=>(state.users[id].email||'').toLowerCase()===e);if(hit)return hit;}if(n&&!e){const hit=ids.find(id=>(state.users[id].name||'').toLowerCase()===n);if(hit)return hit;}return null;}
@@ -1717,7 +1794,7 @@ function applyBranding(){const name=appName();const tag=tagline();const custom=n
   const big=markPNG(512,14,letter),mask=markPNG(512,0,letter);const icons=[{src:svg,sizes:'any',type:'image/svg+xml',purpose:'any'}];if(big)icons.push({src:big,sizes:'512x512',type:'image/png',purpose:'any'});if(mask)icons.push({src:mask,sizes:'512x512',type:'image/png',purpose:'maskable'});if(png)icons.push({src:png,sizes:'180x180',type:'image/png'});
   const man={name:name,short_name:name.length>12?name.split(/\s+/)[0].slice(0,12):name,description:tag,start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f3f5f3',theme_color:BRAND_GREEN,icons:icons};
   if(lm)lm.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));}
-function render(){applyBranding();renderSync();if(!state.settingsLoaded){renderTable();return;}renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if(!$('#analyticsPanel').hidden)renderAnalytics();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);$('#s-dim').checked=dimOn();fillQueueSettings();}}
+function render(){accountCostCache=null;applyBranding();renderSync();if(!state.settingsLoaded){renderTable();return;}renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if(!$('#analyticsPanel').hidden)renderAnalytics();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);$('#s-dim').checked=dimOn();fillQueueSettings();}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
   el.textContent=state.mode==='shared'?(state.backend==='api'?'Saved on your server, shared across your devices':'Shared with your team, saves live'):state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
@@ -1875,7 +1952,7 @@ function refTd(S,primary){if(!S.n)return `<td class="r num muted">—</td>`;cons
 function netSum(col,ref,cost){const n=sumMerge(sumMerge(col,ref,-1),cost,-1);n.n=col.n+ref.n+cost.n;return n;}
 /* v26: the By product figures as data (rows keyed by package id, __none, __one, __shared; totals that match the tiles), shared with the Analytics tab */
 function breakdownRows(rb){
-  const today=todayISO();const ids=Object.keys(state.users);const costIds=Object.keys(state.costs);
+  const today=todayISO();const ids=Object.keys(state.users);const costIds=Object.keys(costRecords());
   const rows={};const mk=(key,label)=>rows[key]||(rows[key]={key,label,users:new Set(),col:newSum(),ref:newSum(),cost:newSum(),out:newSum(),npay:0,nref:0,ncost:0});
   for(const p of packages())mk(p.id,p.name);
   for(const id of ids){const u=state.users[id];const a=analyze(u,today);
@@ -1888,14 +1965,14 @@ function breakdownRows(rb){
       for(const rf of s.refunds||[]){if(!inRange(rf.date,rb))continue;const k=refundKey(s,rf);const rr=mk(k,k==='__one'?'One-time items':k==='__none'?'Package not set':pkgName(k));sumAdd(rr.ref,rf.amount,rf.currency||s.currency,rf.rate);rr.nref++;}
       if(s.kind==='monthly'){if(sa.overdueAmount>0)sumAdd(r.out,sa.overdueAmount,s.currency,null);}else if(sa.remaining>0)sumAdd(r.out,sa.remaining,s.currency,null);}}
   const shared=mk('__shared','Shared / unassigned');
-  for(const id of costIds){const c=state.costs[id];if(!inRange(c.date,rb))continue;const pid=costPkgId(c);const r=pid?mk(pid,pkgName(pid)):shared;sumAdd(r.cost,costTotal(c),c.currency,c.rate);r.ncost++;}
+  for(const id of costIds){const c=costRecords()[id];if(!inRange(c.date,rb))continue;const pid=costPkgId(c);const r=pid?mk(pid,pkgName(pid)):shared;sumAdd(r.cost,costTotal(c),c.currency,c.rate);r.ncost++;}
   const order=[...packages().map(p=>p.id),'__none','__one','__shared'].filter(k=>rows[k]&&(rows[k].users.size||rows[k].col.n||rows[k].ref.n||rows[k].out.n||rows[k].cost.n||!k.startsWith('__')));
   let tCol=newSum(),tRef=newSum(),tCost=newSum(),tOut=newSum();const tUsers=new Set();for(const k of Object.keys(rows)){const r=rows[k];tCol=sumMerge(tCol,r.col);tRef=sumMerge(tRef,r.ref);tCost=sumMerge(tCost,r.cost);tOut=sumMerge(tOut,r.out);r.users.forEach(x=>tUsers.add(x));}
   const tNet=netSum(tCol,tRef,tCost);
   return {rows,order,tCol,tRef,tCost,tOut,tNet,tUsers};
 }
 function renderBreakdown(rb){
-  const box=$('#pkgBreak');if(!Object.keys(state.users).length&&!Object.keys(state.costs).length){box.hidden=true;return;}
+  const box=$('#pkgBreak');if(!Object.keys(state.users).length&&!Object.keys(costRecords()).length){box.hidden=true;return;}
   const {rows,order,tCol,tRef,tCost,tOut,tNet,tUsers}=breakdownRows(rb);const showRef=anyRefunds();
   const cell=(S,cls)=>{if(!S.n)return `<td class="r num muted${cls?' '+cls:''}">—</td>`;const x=sumParts(S,'PKR');return `<td class="r num${cls?' '+cls:''}">${esc(x.p)}${x.s?`<span class="s">${esc(x.s)}</span>`:''}</td>`;};
   const netOf=r=>netSum(r.col,r.ref,r.cost);
@@ -1913,7 +1990,7 @@ function renderTiles(){
   const col=newSum(),cost=newSum(),ref=newSum();let out=newSum(),unpaid=0,overdueUsers=0,soon=0,withBal=0,ncost=0,npay=0,nref=0;
   for(const p of allPayments())if(inRange(p.date,rb)){sumAdd(col,p.amount,p.currency,p.rate);npay++;}
   for(const r of allRefunds())if(inRange(r.date,rb)){sumAdd(ref,r.amount,r.currency,r.rate);nref++;}
-  for(const id in state.costs){const c=state.costs[id];if(inRange(c.date,rb)){sumAdd(cost,costTotal(c),c.currency,c.rate);ncost++;}}
+  for(const id in costRecords()){const c=costRecords()[id];if(inRange(c.date,rb)){sumAdd(cost,costTotal(c),c.currency,c.rate);ncost++;}}
   let cancOwe=newSum(),cancN=0,activeN=0;
   for(const id of ids){const u=state.users[id];const a=analyze(u,today);out=sumMerge(out,a.balance);if(a.balance.n)withBal++;if(a.unpaid)unpaid++;if(a.status==='overdue'||(a.status==='cancelled'&&a.unpaid))overdueUsers++;if(a.status==='due-soon')soon++;if(u.cancel){if(a.balance.n){cancOwe=sumMerge(cancOwe,a.balance);cancN++;}}else activeN++;}
   const net=netSum(col,ref,cost);
@@ -1936,7 +2013,7 @@ function monthlySeries(cur){const today=todayISO();const ck=monthKey(today);cons
   for(const p of allPayments()){const i=months.indexOf(monthKey(p.date));if(i<0)continue;const v=toCur(p.amount,p.currency,cur,p.rate);if(v==null)skipped++;else col[i]+=v;}
   /* v28: refunds count in the month of the refund date */
   for(const r of allRefunds()){const i=months.indexOf(monthKey(r.date));if(i<0)continue;const v=toCur(r.amount,r.currency,cur,r.rate);if(v==null)skipped++;else ref[i]+=v;}
-  for(const id in state.costs){const c=state.costs[id];const i=months.indexOf(monthKey(c.date));if(i<0)continue;const v=toCur(costTotal(c),c.currency,cur,c.rate);if(v==null)skipped++;else cost[i]+=v;}
+  for(const id in costRecords()){const c=costRecords()[id];const i=months.indexOf(monthKey(c.date));if(i<0)continue;const v=toCur(costTotal(c),c.currency,cur,c.rate);if(v==null)skipped++;else cost[i]+=v;}
   const net=months.map((m,i)=>col[i]-ref[i]-cost[i]);
   /* v30: colNet = collected less refunds, the bars both charts draw (col and ref stay for tooltips and tables) */
   const colNet=months.map((m,i)=>Math.max(0,col[i]-ref[i]));
@@ -1989,7 +2066,7 @@ function cumulativeSeries(cur){
   const ev=[];let skipped=0;
   for(const p of allPayments()){const v=toCur(p.amount,p.currency,cur,p.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(p.date),col:v,cost:0});}
   for(const r of allRefunds()){const v=toCur(r.amount,r.currency,cur,r.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(r.date),col:-v,cost:0});}
-  for(const id in state.costs){const c=state.costs[id];const v=toCur(costTotal(c),c.currency,cur,c.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(c.date),col:0,cost:v});}
+  for(const id in costRecords()){const c=costRecords()[id];const v=toCur(costTotal(c),c.currency,cur,c.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(c.date),col:0,cost:v});}
   if(!ev.length)return {months:[],col:[],cost:[],skipped};
   const idx=k=>(+k.slice(0,4))*12+(+k.slice(5,7)-1);const ck=monthKey(todayISO());
   const fi=Math.min(idx(ck),...ev.map(e=>idx(e.m))),li=Math.max(idx(ck),...ev.map(e=>idx(e.m)));
@@ -2337,6 +2414,7 @@ async function savePaymentDialog(e){e.preventDefault();const c=paymentContext();
   d.busy=false;if(ok){$('#paymentDialog').close();ui.paymentDraft=null;}else{$('#payment-error').textContent='The payment was not saved. Your entries are kept here; try again.';refreshPaymentPreview();}
 }
 function renderTable(){
+  const accountDrafts=[...document.querySelectorAll('#tbody .edit-form,#tbody .addsub-form,#tbody .subedit-form')].filter(f=>!f.hidden).map(f=>({cls:['edit-form','addsub-form','subedit-form'].find(c=>f.classList.contains(c)),id:f.dataset.id,sub:f.dataset.sub,pending:f.dataset.pendingSubId,values:[...f.elements].filter(e=>e.name).map(e=>({name:e.name,value:e.value,checked:e.checked,costManual:e.dataset.costManual}))}));
   if(ui.paymentDraft&&$('#paymentDialog').open)refreshPaymentPreview();
   if(ui.startDraft&&$('#startDialog').open)refreshStartPreview();
   if(ui.billDraft&&$('#billDialog').open)refreshBillPreview();
@@ -2373,6 +2451,7 @@ function renderTable(){
   }
   $('#tbody').innerHTML=html;
   if(ui.expanded&&state.users[ui.expanded])wireDetail(ui.expanded,today);
+  for(const d of accountDrafts){const f=[...document.querySelectorAll('#tbody form')].find(f=>f.classList.contains(d.cls)&&f.dataset.id===d.id&&f.dataset.sub===d.sub&&!f.hidden);if(!f)continue;if(d.pending)f.dataset.pendingSubId=d.pending;for(const v of d.values){const e=f.elements.namedItem(v.name);if(e){e.value=v.value;if(e.type==='checkbox'||e.type==='radio')e.checked=v.checked;if(v.costManual)e.dataset.costManual=v.costManual;}}wireAccountCostFields(f);}
 }
 function renderRemindAll(rows,today){
   const panel=$('#remindPanel');const list=rows.filter(r=>r.a.unpaid);
@@ -2687,7 +2766,7 @@ function detailHTML(id,u,a,today){
             <label class="f">Billing cycle${cycleSelect('se-cycle-'+s.id,'cycle',subCycle(s),false)}</label>
             <label class="f">Plan label <span class="muted">(optional)</span><input id="se-name-${s.id}" name="name" type="text" value="${esc(s.name==='Standard'?'':s.name)}" placeholder="only if it differs"></label>
             <label class="f">Pays in${curSelect('se-cur-'+s.id,'currency',s.currency)}</label>
-            <label class="f">Start date<input id="se-start-${s.id}" name="start" type="date" required value="${esc(s.start)}"></label>
+            <label class="f">Product started on (this user's product only)<input id="se-start-${s.id}" name="start" type="date" required value="${esc(s.start)}"></label>
             <label class="f">End date <span class="muted">(optional)</span><input id="se-end-${s.id}" name="end" type="date" value="${esc(s.end||'')}"></label>
             <label class="f">Remaining due by <span class="muted">(optional)</span><input id="se-dueby-${s.id}" name="dueBy" type="date" value="${esc(s.dueBy||'')}"></label>
             <label class="f chk"><input id="se-prorate-${s.id}" name="prorate" type="checkbox"${s.prorate===false?'':' checked'}>Prorate first period</label>
@@ -2697,6 +2776,7 @@ function detailHTML(id,u,a,today){
             <label class="f">Proration basis<select id="se-basis-${s.id}" name="basis"><option value=""${rawBasis(s.prorationBasis)?'':' selected'}>Default (Settings)</option><option value="actual"${s.prorationBasis==='actual'?' selected':''}>Actual days in cycle</option><option value="fixed30"${s.prorationBasis==='fixed30'?' selected':''}>Fixed 30-day month</option></select></label>
           </div>
           <p class="small muted" style="margin-top:6px">Periods follow the shared billing cycle (${esc(ordinal(cycleDay()))} to ${cycleDay()===1?'end of month':esc(ordinal(cycleDay()-1))}, set in Settings); the start date picks the first period. With proration on, that first period is charged by days (on the basis chosen here, or the Settings default); with the waiver on, the days before the next cycle are free and billing starts at that cycle. A discount applies to every period of this plan and shows in the header, dues, reminders and totals. Changing the currency changes what the price and existing payments are read as; it does not convert them. "Remaining due by" turns an unpaid part of the current period into an open balance until that date instead of overdue.</p>
+          ${accountCostFields(s)}
           <div class="form-actions"><button class="btn primary sm" type="submit">Save plan</button><button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Cancel</button><span style="flex:1"></span><span class="del-wrap"><button class="link danger" type="button" data-act="sub-remove" data-sub="${s.id}">Remove plan and its payments</button></span></div>
         </form>
         ${canTier?tierForm(id,s,sa,today,open['tier:'+s.id]):''}
@@ -2723,8 +2803,10 @@ function detailHTML(id,u,a,today){
             <label class="f">Item name<input id="se-name-${s.id}" name="name" type="text" value="${esc(s.name)}"></label>
             <label class="f">Currency${curSelect('se-cur-'+s.id,'currency',s.currency)}</label>
             <label class="f">Total amount<input id="se-total-${s.id}" name="total" type="number" min="0" step="0.01" required value="${s.total}"></label>
+            <label class="f">Product started on (optional for legacy items)<input name="start" type="date" value="${esc(s.start||'')}"></label>
             <label class="f">Due date <span class="muted">(optional)</span><input id="se-due-${s.id}" name="due" type="date" value="${esc(s.due||'')}"></label>
           </div>
+          ${accountCostFields(s)}
           <div class="form-actions"><button class="btn primary sm" type="submit">Save item</button><button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Cancel</button><span style="flex:1"></span><span class="del-wrap"><button class="link danger" type="button" data-act="sub-remove" data-sub="${s.id}">Remove item and its payments</button></span></div>
         </form>
         ${payRows(s)}
@@ -2766,17 +2848,19 @@ function detailHTML(id,u,a,today){
         <label class="f"><span data-role="name-label">Label (optional)</span><input id="as-name-${id}" name="name" type="text" placeholder="e.g. ChatGPT"></label>
         <label class="f">Pays in${curSelect('as-cur-'+id,'currency',a.mainCur)}</label>
         <label class="f"><span data-role="amt-label">Monthly price</span><input id="as-price-${id}" name="price" type="number" min="0" step="0.01" required></label>
-        <label class="f"><span data-role="date-label">Start date</span><input id="as-date-${id}" name="date" type="date" value="${todayISO()}"></label>
+        <label class="f"><span data-role="date-label">Product started on</span><input id="as-date-${id}" name="date" type="date" value="${todayISO()}"></label>
+        <label class="f" data-role="one-due-wrap" hidden>One-time amount due on (optional)<input name="oneDue" type="date"></label>
         <label class="f" data-role="payment-wrap" hidden>Payment schedule<select name="paymentEvery">${payScheduleOptions(12)}</select></label>
         <label class="f" data-role="dueby-wrap">Remaining due by <span class="muted">(optional)</span><input id="as-dueby-${id}" name="dueBy" type="date"></label>
         <label class="f chk" data-role="prorate-wrap"><input id="as-prorate-${id}" name="prorate" type="checkbox" checked>Prorate first period</label>
         <label class="f chk" data-role="waive-wrap"><input id="as-waive-${id}" name="waiveFirst" type="checkbox">Waive first partial period</label>
       </div>
+      ${accountCostFields(null)}
       <p class="cover" data-role="first-bill-preview" aria-live="polite"></p>
       <div class="form-actions"><button class="btn primary sm" type="submit">Add</button><button class="link" type="button" data-act="toggle" data-key="addsub">Cancel</button><span class="err" data-role="addsub-err"></span></div>
     </form>
     <form class="block edit-form" data-id="${id}" ${open.edit?'':'hidden'} novalidate>
-      <h3 style="margin-bottom:8px">Edit user</h3>
+      <h3 style="margin-bottom:8px">Edit user</h3><h3>Product start dates and supplier costs</h3>${accountStartInputs(u)}
       <div class="form-grid">
         <label class="f">Name<input id="e-name-${id}" name="name" type="text" value="${esc(u.name||'')}"></label>
         <label class="f">Email<input id="e-email-${id}" name="email" type="email" value="${esc(u.email||'')}"></label>
@@ -2796,7 +2880,7 @@ function detailHTML(id,u,a,today){
     </form>`;
 }
 function wireDetail(id,today){
-  const det=document.querySelector(`tr.detail[data-id="${id}"]`);if(!det)return;const u=state.users[id];
+  const det=document.querySelector(`tr.detail[data-id="${id}"]`);if(!det)return;const u=state.users[id];wireAccountCostFields(det);
   /* v34: retain drafts across polling and show the exact inclusive cutoff before saving. */
   const cancelForm=det.querySelector('.cancel-form');if(cancelForm&&!cancelForm.hidden){const last=cancelForm.elements.lastDay,month=cancelForm.elements.cancelMonth;
     const update=()=>{const d={lastDay:last.value,reason:cancelForm.elements.reason.value,note:cancelForm.elements.note.value};ui.cancelPre[id]=d;
@@ -2868,7 +2952,7 @@ function wireDetail(id,today){
   });
   const add=det.querySelector('.addsub-form');
   if(add){const kind=add.querySelector('[name=kind]'),pkgSel=add.querySelector('[name=packageId]');
-    const upd=()=>{const ot=kind.value==='one-time',yearly=kind.value==='yearly';add.querySelector('[data-role=dueby-wrap]').hidden=ot;add.querySelector('[data-role=prorate-wrap]').hidden=ot;add.querySelector('[data-role=waive-wrap]').hidden=ot;add.querySelector('[data-role=payment-wrap]').hidden=!yearly;add.querySelector('[data-role=name-label]').textContent=ot?'Item name':'Label (optional)';add.querySelector('[data-role=amt-label]').textContent=ot?'Total amount':yearly?'Yearly price':'Monthly price';add.querySelector('[data-role=date-label]').textContent=ot?'Due date (optional)':'Package started on';const d=add.querySelector('[name=date]');d.required=!ot;if(!ot&&!d.value)d.value=todayISO();
+    const upd=()=>{const ot=kind.value==='one-time',yearly=kind.value==='yearly';add.querySelector('[data-role=dueby-wrap]').hidden=ot;add.querySelector('[data-role=prorate-wrap]').hidden=ot;add.querySelector('[data-role=waive-wrap]').hidden=ot;add.querySelector('[data-role=payment-wrap]').hidden=!yearly;add.querySelector('[data-role=name-label]').textContent=ot?'Item name':'Label (optional)';add.querySelector('[data-role=amt-label]').textContent=ot?'Total amount':yearly?'Yearly price':'Monthly price';add.querySelector('[data-role=date-label]').textContent='Product started on';add.querySelector('[data-role=one-due-wrap]').hidden=!ot;const d=add.querySelector('[name=date]');d.required=true;
       const raw=add.querySelector('[name=price]').value,cur=add.querySelector('[name=currency]').value,preview=add.querySelector('[data-role=first-bill-preview]');
       if(!validAmt(raw)||(!ot&&!isDateKey(d.value))){preview.textContent='Choose this package’s start date and price to see its first bill.';return;}
       preview.textContent=ot?'Item total: '+fmtAmt(Number(raw),cur):firstBillText({kind:'monthly',cycle:kind.value,start:d.value,currency:cur,packageId:pkgSel.value,prorate:add.querySelector('[name=prorate]').checked,waiveFirst:add.querySelector('[name=waiveFirst]').checked,prorationBasis:yearly?'actual':'',paymentEvery:yearly?Number(add.querySelector('[name=paymentEvery]').value):undefined,prices:[{from:d.value,price:Number(raw)}]});
@@ -2881,16 +2965,16 @@ function wireDetail(id,today){
 
 /* ---------- costs ---------- */
 function renderCosts(){
-  const ids=Object.keys(state.costs).sort((a,b)=>state.costs[b].date.localeCompare(state.costs[a].date)||(state.costs[b].createdAt||'').localeCompare(state.costs[a].createdAt||''));
+  const ids=Object.keys(costRecords()).sort((a,b)=>costRecords()[b].date.localeCompare(costRecords()[a].date)||(costRecords()[b].createdAt||'').localeCompare(costRecords()[a].createdAt||''));
   $('#costEmpty').hidden=ids.length>0;
   const all=newSum();let html='';let curMonth=null;let monthSum=null;
   const flushMonth=()=>{if(curMonth&&monthSum){html+=`<tr class="month"><td colspan="6">${mLabel(curMonth)} subtotal</td><td class="r">${ownHTML(monthSum,'PKR')}</td><td colspan="2"></td></tr>`;}};
   const cats=new Set();
   for(const id of ids){
-    const c=state.costs[id];const mk=monthKey(c.date);if(c.category)cats.add(c.category);
+    const c=costRecords()[id];const mk=monthKey(c.date);if(c.category)cats.add(c.category);
     if(mk!==curMonth){flushMonth();curMonth=mk;monthSum=newSum();}
     sumAdd(monthSum,costTotal(c),c.currency,c.rate);sumAdd(all,costTotal(c),c.currency,c.rate);
-    const del=ui.costDel===id?`<span class="small">Delete? </span><button class="btn sm danger" type="button" data-act="cost-del-yes" data-cost="${id}">Yes</button> <button class="link" type="button" data-act="cost-del-no">No</button>`:`<button class="link" type="button" data-act="cost-edit" data-cost="${id}">Edit</button> <button class="link danger" type="button" data-act="cost-del" data-cost="${id}">Delete</button>`;
+    const del=ui.costDel===id?`<span class="small">${c.source==='account-cycle'?'Waive this cycle cost?':'Delete?'} </span><button class="btn sm danger" type="button" data-act="cost-del-yes" data-cost="${id}">Yes</button> <button class="link" type="button" data-act="cost-del-no">No</button>`:`<button class="link" type="button" data-act="cost-edit" data-cost="${id}">Edit</button> <button class="link danger" type="button" data-act="cost-del" data-cost="${id}">${c.source==='account-cycle'?'Waive cycle':'Delete'}</button>`;
     html+=`<tr><td class="num">${esc(c.date)}</td><td class="desc"${c.source==='screenshot'?' title="Imported from a screenshot"':''}>${esc(c.description)||'<span class="muted">—</span>'}${c.receipt?` <a class="link sm" href="/_blob/${esc(c.receipt)}" target="_blank" rel="noopener">view receipt</a>`:''}</td><td class="cat">${esc(c.category)||'<span class="muted">—</span>'}</td><td class="prod">${costPkgName(c)?esc(costPkgName(c)):'<span class="muted">Shared</span>'}</td><td class="r num">${esc(fmtAmt(c.cost,c.currency))}</td><td class="r num">${c.tax?esc(fmtAmt(c.tax,c.currency)):'<span class="muted">—</span>'}</td><td class="r num">${esc(fmtAmt(costTotal(c),c.currency))}</td><td class="r num small muted">${c.rate?'at '+c.rate.toLocaleString():''}</td><td>${del}</td></tr>`;
   }
   flushMonth();
@@ -3051,11 +3135,11 @@ async function saveMailSettings(){const msg=$('#m-msg');msg.textContent='Saving�
   try{const m=await apiJSON('/api/mail-settings',apiBody('PUT',body));$('#m-pass').value='';$('#m-pass').placeholder=m.hasPassword?'•••••••• saved · leave blank to keep':'app password';msg.textContent=m.configured?'Saved. The daily job at 09:00 will email today\'s stage.':'Saved, but not configured yet (host, user and app password are needed).';}catch(e){msg.textContent='Could not save: '+(e.message||e.code||'error');}}
 async function testMail(){const msg=$('#m-msg');const to=$('#m-test-to').value.trim();msg.textContent='Sending test…';try{const j=await apiJSON('/api/mail-test',apiBody('POST',{to}));msg.textContent='Test email sent to '+j.to+'. Check the inbox (and spam).';}catch(e){msg.textContent='Test failed: '+(e.message||e.code||'error')+(e.code==='not_configured'?' Save the mail settings first.':'');}}
 function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
-function openAdd(){if(!state.settingsLoaded){toast('Billing settings are loading. Try again in a moment.');return;}showPanel('addPanel');if(!$('#a-join').value)$('#a-join').value=todayISO();if(!$('#a-start').value)$('#a-start').value=$('#a-join').value;const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
+function openAdd(){if(!state.settingsLoaded){toast('Billing settings are loading. Try again in a moment.');return;}showPanel('addPanel');if(!$('#a-account-cost').innerHTML){$('#a-account-cost').innerHTML=accountCostFields(null);wireAccountCostFields($('#a-account-cost'));}if(!$('#a-join').value)$('#a-join').value=todayISO();if(!$('#a-start').value)$('#a-start').value=$('#a-join').value;const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
 function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';labelPackageFields();}
 function updAddConv(){const cur=$('#a-cur').value;const cyEl=$('#a-cycle');const cy=cyEl?cyEl.value:'monthly';$('#a-price-lbl').textContent=`${cy==='one-time'?'Total amount':cy==='yearly'?'Yearly price':'Monthly price'} (${cur==='USD'?'$':'Rs'})`;const n=Number($('#a-price').value)||0;const c=conv(n,cur,null);$('#a-conv').textContent=n?`${fmtAmt(n,cur)}${CYCLES[cy].per}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`:' (set an exchange rate in Settings to see the other currency)'):'Enter the price to preview the first bill.';
   /* v32: only the joining period is prorated. The receipt date never changes a charge. */
-  $('#a-start-wrap').hidden=cy==='one-time';$('#a-payment-wrap').hidden=cy!=='yearly';const preview=$('#a-bill-preview'),start=$('#a-start').value;
+  $('#a-start-wrap').hidden=false;$('#a-due-wrap').hidden=cy!=='one-time';$('#a-payment-wrap').hidden=cy!=='yearly';const preview=$('#a-bill-preview'),start=$('#a-start').value;
   if(!isDateKey(start)||!validAmt($('#a-price').value)){preview.textContent='Choose the package start date and price to see the first bill.';return;}
   if(cy==='one-time'){preview.textContent=`Item total: ${fmtAmt(n,cur)}. Record the money received after adding the user.`;return;}
   const s={kind:'monthly',cycle:cy,currency:cur,packageId:$('#a-pkg').value,start,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,prorationBasis:cy==='yearly'?'actual':'',paymentEvery:cy==='yearly'?Number($('#a-payment').value):undefined,prices:[{from:start,price:n}],payments:[]};
@@ -3202,14 +3286,14 @@ function bind(){
     if(!name&&!email){err.textContent='Enter a name or an email.';return;}
     if(email&&!EMAIL_RE.test(email)){err.textContent='That email does not look valid.';return;}
     if(!isDateKey(join)){err.textContent='Pick the day this user joined.';return;}
-    const start=$('#a-start').value;if(cy!=='one-time'&&!isDateKey(start)){err.textContent='Pick the date this package started.';return;}
+    const start=$('#a-start').value;if(!isDateKey(start)){err.textContent='Pick the date this package started.';return;}
     if(findUser(email,name)){err.textContent='That user is already tracked. Open their row to edit.';return;}
     if(!pkgById(pkg)){err.textContent='Choose the package or product (edit the list in Settings).';return;}
     if(!validAmt(priceRaw)){err.textContent='Enter the monthly price (0 is allowed for a free plan).';return;}
     if(!validPhone(phone)){err.textContent='Phone number should have 7 to 15 digits including the country code.';return;}
-    const id=newId('u');
-    const ok=await persistUser(id,{name,email,phone,telegram:normTg($('#a-tg').value),joinDate:join,notes,subscriptions:[cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,total:Number(priceRaw),due:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start,end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number($('#a-payment').value)}:{}),dueBy:null,prices:[{from:start,price:Number(priceRaw)}],payments:[]}]});
-    if(ok){$('#addForm').reset();delete $('#a-start').dataset.manual;$('#addPanel').hidden=true;ui.expanded=null;renderTable();toast('Added '+(name||email)+'. Record the first payment when the money is received.');openPaymentDialog(id);}
+    const id=$('#addForm').dataset.pendingUserId||($('#addForm').dataset.pendingUserId=newId('u'));
+    const user={name,email,phone,telegram:normTg($('#a-tg').value),joinDate:join,notes,subscriptions:[cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,start,total:Number(priceRaw),due:isDateKey($('#a-due').value)?$('#a-due').value:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start,end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number($('#a-payment').value)}:{}),dueBy:null,prices:[{from:start,price:Number(priceRaw)}],payments:[]}]};const sub=user.subscriptions[0];sub.id=$('#addForm').dataset.pendingSubId||($('#addForm').dataset.pendingSubId=sub.id);let costs=[];try{const c=accountCostDraft($('#addForm'),sub,id);if(c)costs.push(c);}catch(e){err.textContent=e.message;return;}const button=$('#addForm button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,user,costs);button.disabled=false;
+    if(ok){delete $('#addForm').dataset.pendingUserId;delete $('#addForm').dataset.pendingSubId;$('#a-account-cost').innerHTML='';$('#addForm').reset();delete $('#a-start').dataset.manual;$('#addPanel').hidden=true;ui.expanded=null;renderTable();toast('Added '+(name||email)+'. Record the first payment when the money is received.');openPaymentDialog(id);}
   });
 
   const tbody=$('#tbody');
@@ -3255,7 +3339,7 @@ function bind(){
   tbody.addEventListener('keydown',e=>{const row=e.target.closest('tr.row');if(row&&(e.key==='Enter'||e.key===' ')&&e.target===row){e.preventDefault();row.click();}});
   tbody.addEventListener('submit',async e=>{
     e.preventDefault();const form=e.target;if(form.classList.contains('amt-form')){await saveAmtForm(form);return;}if(form.classList.contains('rec-form')){await saveRecForm(form);return;}const id=form.dataset.id;if(!state.users[id])return;const u=clone(state.users[id]);u.subscriptions=u.subscriptions||[];
-    const val=n=>{const el=form.querySelector(`[name=${n}]`);return el?el.value:'';};
+    const val=n=>{const el=form.elements.namedItem(n);return el?el.value:'';};
     const setErr=(role,msg)=>{const el=form.querySelector(`[data-role=${role}]`);if(el)el.textContent=msg;else if(msg)toast(msg);};
     const closeKey=k=>{ui.open[id]=Object.assign({},ui.open[id],{[k]:false});};
     if(form.classList.contains('pay-form')){
@@ -3315,14 +3399,14 @@ function bind(){
       if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}s.packageId=pkg;s.cycle=val('cycle')==='yearly'?'yearly':'monthly';s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;const dt=val('discType'),dv=Number(val('discValue'));if(dt&&!(dv>0)){toast('Enter the discount value (above zero), or set Discount to None.');return;}if(dt==='percent'&&dv>100){toast('A percent discount cannot exceed 100.');return;}s.discount=dt&&dv>0?{type:dt,value:dv}:null;s.prorationBasis=rawBasis(val('basis'));if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start){toast('The end date must not be before the start date.');return;}
         Object.assign(s,{name,start,end:end||null,currency:cur});}
       else{const total=val('total'),due=val('due');if(!validAmt(total)){toast('Enter the total amount.');return;}const pk=val('packageId');Object.assign(s,{name,total:Number(total),due:isDateKey(due)?due:null,currency:cur,packageId:pkgById(pk)?pk:null});}
-      closeKey('edit:'+s.id);const ok=await persistUser(id,u);if(ok)toast('Saved '+planLabel(s)+'.');
+      let costs=[];try{updateAccountStart(s,val('start'));const c=accountCostDraft(form,s,id);if(c)costs.push(c);}catch(e){toast(e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('edit:'+s.id);renderTable();toast('Saved '+planLabel(s)+'.');}else button.disabled=false;
     }else if(form.classList.contains('addsub-form')){
       setErr('addsub-err','');const cy=normCycle(val('kind'));const kind=cy==='one-time'?'one-time':'monthly';const pkg=val('packageId');const name=val('name').trim()||(kind==='monthly'?'':(pkgName(pkg)||'Item'));const priceRaw=val('price'),date=val('date'),cur=normCur(val('currency')),dueBy=val('dueBy');
       if(!pkgById(pkg)){setErr('addsub-err','Choose a package or product.');return;}
       if(!validAmt(priceRaw)){setErr('addsub-err',kind==='monthly'?'Enter the monthly price.':'Enter the total amount.');return;}
       if(kind==='monthly'){if(!isDateKey(date)){setErr('addsub-err','Pick the start date.');return;}u.subscriptions.push({id:newId('s'),kind,cycle:cy,name,packageId:pkg,currency:cur,start:date,end:null,prorate:!!(form.querySelector('[name=prorate]')||{}).checked,waiveFirst:!!(form.querySelector('[name=waiveFirst]')||{}).checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number(val('paymentEvery'))}:{}),dueBy:isDateKey(dueBy)?dueBy:null,prices:[{from:date,price:Number(priceRaw)}],payments:[]});}
-      else u.subscriptions.push({id:newId('s'),kind,name,packageId:pkg,currency:cur,total:Number(priceRaw),due:isDateKey(date)?date:null,payments:[]});
-      closeKey('addsub');const ok=await persistUser(id,u);if(ok)toast('Added '+(name||pkgName(pkg))+'.');
+      else u.subscriptions.push({id:newId('s'),kind,name,packageId:pkg,currency:cur,start:date,total:Number(priceRaw),due:isDateKey(val('oneDue'))?val('oneDue'):null,payments:[]});
+      const sub=u.subscriptions.at(-1);sub.id=form.dataset.pendingSubId||(form.dataset.pendingSubId=sub.id);if(!isDateKey(sub.start)){setErr('addsub-err','Choose this product’s start date.');return;}let costs=[];try{const c=accountCostDraft(form,sub,id);if(c)costs.push(c);}catch(e){setErr('addsub-err',e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('addsub');renderTable();toast('Added '+(name||pkgName(pkg))+'.');}else{button.disabled=false;setErr('addsub-err','Not saved. Your entries are kept; try again.');}
     }else if(form.classList.contains('cancel-form')){
       setErr('cancel-err','');const lastDay=val('lastDay'),reason=val('reason').trim(),note=val('note').trim();
       if(!isDateKey(lastDay)){setErr('cancel-err','Pick the last day.');return;}
@@ -3350,8 +3434,7 @@ function bind(){
       if(!isDateKey(join)){setErr('edit-err','Pick the join date.');return;}
       const dup=findUser(email,name);if(dup&&dup!==id){setErr('edit-err','Another user already has that email or name.');return;}
       if(!validPhone(phone)){setErr('edit-err','Phone number should have 7 to 15 digits including the country code.');return;}
-      Object.assign(u,{name,email,joinDate:join,phone:digits(phone),notes,telegram:normTg(val('telegram'))});closeKey('edit');
-      const ok=await persistUser(id,u);if(ok)toast('Saved changes for '+displayName(u)+'.');
+      Object.assign(u,{name,email,joinDate:join,phone:digits(phone),notes,telegram:normTg(val('telegram'))});let costs=[];try{for(const sub of u.subscriptions){updateAccountStart(sub,val('productStart:'+sub.id));const c=accountCostDraft(form,sub,id,sub.id+':');if(c)costs.push(c);}}catch(e){setErr('edit-err',e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('edit');renderTable();toast('Saved changes for '+displayName(u)+'.');}else{button.disabled=false;setErr('edit-err','Not saved. Your entries are kept; try again.');}
     }
   });
 
@@ -3366,16 +3449,16 @@ function bind(){
     if(!desc){err.textContent='Describe the cost.';return;}
     if(!validAmt(cost)){err.textContent='Enter the cost amount.';return;}
     if(tax!==''&&!validAmt(tax)){err.textContent='Tax must be zero or more.';return;}
-    const id=$('#c-id').value||newId('c');const existing=state.costs[id];
+    const id=$('#c-id').value||newId('c');const existing=costRecords()[id];
     const ok=await persistCost(id,{date,description:desc,category:cat,packageId,currency:cur,cost:Number(cost),tax:Number(tax)||0,rate,source:existing?existing.source:'',receipt:existing?existing.receipt:'',createdAt:existing?existing.createdAt:''});
     if(ok){$('#costPanel').hidden=true;ui.costEdit=null;toast((existing?'Updated ':'Added ')+desc+' · '+fmtAmt(Number(cost)+(Number(tax)||0),cur)+'.');}
   });
   $('#costBody').addEventListener('click',async e=>{
     const b=e.target.closest('[data-act]');if(!b)return;const id=b.dataset.cost;const A=b.dataset.act;
-    if(A==='cost-edit'){openCostForm(state.costs[id]);$('#costPanel').scrollIntoView({behavior:'smooth',block:'nearest'});}
+    if(A==='cost-edit'){openCostForm(costRecords()[id]);$('#costPanel').scrollIntoView({behavior:'smooth',block:'nearest'});}
     else if(A==='cost-del'){ui.costDel=id;renderCosts();}
     else if(A==='cost-del-no'){ui.costDel=null;renderCosts();}
-    else if(A==='cost-del-yes'){const c=state.costs[id];ui.costDel=null;const ok=await removeCost(id);if(ok&&c)toast('Deleted '+c.description+'.');}
+    else if(A==='cost-del-yes'){const c=costRecords()[id];ui.costDel=null;const ok=await removeCost(id);if(ok&&c)toast((c.source==='account-cycle'?'Waived this cycle cost: ':'Deleted ')+c.description+'.');}
   });
 
   bindShot();
@@ -3634,7 +3717,7 @@ function renderReview(){
   $('#rv-save').textContent=`Apply · add ${sel.length} selected`;$('#rv-save').disabled=!sel.length||shot.busy;
   $('#rv-all').checked=rows.length>0&&sel.length===rows.length;
 }
-function isDupCost(date,desc,total,cur){const d=desc.trim().toLowerCase();return Object.values(state.costs).some(c=>c.date===date&&c.currency===cur&&Math.abs(costTotal(c)-total)<0.005&&c.description.trim().toLowerCase()===d);}
+function isDupCost(date,desc,total,cur){const d=desc.trim().toLowerCase();return Object.values(costRecords()).some(c=>c.date===date&&c.currency===cur&&Math.abs(costTotal(c)-total)<0.005&&c.description.trim().toLowerCase()===d);}
 async function saveReview(){
   const rows=reviewRows();const sel=rows.filter(r=>r.sel);if(!sel.length)return;
   const err=$('#rv-err'),msg=$('#rv-msg');err.textContent='';msg.textContent='Saving…';shot.busy=true;renderReview();
@@ -3710,7 +3793,7 @@ function buildUsersCSV(){
       for(const p of pays)lines.push([...base,...sb,p.date,p.amount,p.currency||s.currency,p.rate||'',p.note||''].map(csvCell).join(','));}}
   return lines.join('\n');
 }
-function buildCostsCSV(){const ids=Object.keys(state.costs).sort((a,b)=>state.costs[a].date.localeCompare(state.costs[b].date));return [['date','description','category','currency','cost','tax','rate','product'].join(','),...ids.map(id=>{const c=state.costs[id];return [c.date,c.description,c.category,c.currency,c.cost,c.tax||'',c.rate||'',costPkgName(c)].map(csvCell).join(',');})].join('\n');}
+function buildCostsCSV(){const ids=Object.keys(costRecords()).sort((a,b)=>costRecords()[a].date.localeCompare(costRecords()[b].date));return [['date','description','category','currency','cost','tax','rate','product'].join(','),...ids.map(id=>{const c=costRecords()[id];return [c.date,c.description,c.category,c.currency,c.cost,c.tax||'',c.rate||'',costPkgName(c)].map(csvCell).join(',');})].join('\n');}
 function blobDownload(filename,text,type){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'text/plain'}));a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);return true;}catch(e){return false;}}
 function buildExportAll(){const docs={};for(const id in state.users)docs['users/'+id]=cleanUser(Object.assign({},state.users[id],{id}));for(const id in state.costs)docs['costs/'+id]=cleanCost(Object.assign({},state.costs[id],{id}));docs['settings/main']=settingsDoc();const at=new Date().toISOString();docs['meta/schema']={version:SCHEMA,at};docs['meta/seed']={done:true,at,exported:true};return {format:'wasool-docs',version:1,exportedAt:at,app:appName(),docs};}
 async function exportAll(){const msg=$('#data-msg'),ta=$('#export-all-text');msg.textContent='';const text=JSON.stringify(buildExportAll(),null,1);const name='wasooli-export-'+todayISO()+'.json';

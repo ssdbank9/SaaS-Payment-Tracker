@@ -2,6 +2,14 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v37 - 2026-10-10
+
+- Independent product start dates and supplier costs in Add user, Add product, Edit product and Edit user, including existing yearly and one-time products.
+- Recurring monthly/yearly supplier expenses with first partial cost choices: actual-day proration, full, custom or free.
+- Dated supplier price/currency/source changes preserve earlier rates; Costs can edit or waive one cycle independently.
+- One actual expense saves atomically with the user's product on the live API. Polling and failed saves retain drafts.
+- Customer joining dates, receipts, refunds and price history remain separate. No owner-record migration or correction.
+
 ## v36 - 2026-10-09
 
 - Save product changes beside the product list. Saved names apply throughout the app.

@@ -128,7 +128,8 @@ Write user-facing text in plain, factual words; no emojis.
   `refunded`; `paid` is what was kept); a refund on a monthly plan makes the month owed again. For a cancelled user, `settleRefunds` sets `periodOverrides` marked
   `fromRefund` so a period a refund made short counts at what was kept; those entries are derived and re-computed
   whenever a refund is saved or removed.
-- Costs: `date, description, category, packageId ('' = shared), currency, cost, tax, rate, receipt, source`.
+- Product dates and supplier costs (v37): all add/edit paths expose independent product start and cost; Edit user lists every subscription. One-time items retain optional legacy start separately from due. `accountCost` stores supplier monthly/yearly frequency, dated entries `{from,amount,currency,rate,supplier}`, first partial rule (prorated/full/custom/free), optional `firstAmount` and cycle overrides. `costRecords()` derives elapsed expenses through account/user end for all analytics and CSV; full JSON keeps profiles. Start/calendar/end edits recalculate derived expenses; removing an account removes them. Do not duplicate these rows in `state.costs`. `costId` links one actual expense; `persistAccountBundle` uses atomic API import with `replace: []`. Polling preserves form drafts by form kind. Run `tests/product-cost-flow.cjs` only on a dedicated disposable loopback store (it replaces synthetic users/costs).
+- Costs: `date, description, category, packageId ('' = shared), currency, cost, tax, rate, receipt, source`, optional `userId, subscriptionId`.
 - Migrations (`maybeSeedShared`, the migrate block, `SCHEMA` in `index.html`) are lease-guarded via `meta/*` and
   idempotent: add fields with defaults, treat an absent field as the default, never overwrite or delete owner-entered
   records. Most new features need no migration (absent = default).
