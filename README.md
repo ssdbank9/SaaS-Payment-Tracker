@@ -52,6 +52,14 @@ When a supplier changes its price, edit the product, enter the new cost and **Ne
 
 Existing dates are kept until you edit them. Changing a product start recalculates its bills and scheduled costs. The shared billing day determines cycle boundaries; the product start is when that user obtained it.
 
+## Paying USD costs in PKR
+
+Enter the supplier's **USD** cost and choose **USD (no PKR tax)** or **PKR (convert + tax)**. The preview shows the conversion, tax and total. A $10 cost at 280 with 5.2% tax is Rs 2,800 + Rs 145.60 = **Rs 2,945.60**. Tax is included in Costs and profit calculations.
+
+In **Settings**, change **Tax on USD costs paid in PKR (%)** and press its nearby **Save**. The initial value is **5.2%**. The global exchange rate and tax changes apply to scheduled costs starting tomorrow onward; today and earlier cycles retain the previous values. Actual purchases retain their recorded conversion and tax. Customer receipts without their own exchange rate retain their existing default-rate behavior.
+
+Existing expenses are not guessed or rewritten. Select the payment currency when setting up or explicitly editing a supplier cost.
+
 ## Files
 
 - `index.html` - the whole app (markup, styles and script) in one file. It detects where it runs: the claude.ai artifact (shared `db`), your own server (the `/api/docs` store below) or a plain file (browser-local storage).

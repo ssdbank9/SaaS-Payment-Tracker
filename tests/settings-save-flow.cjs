@@ -14,7 +14,7 @@ const errors=[],checks=[];let browser,expectedFailure=false;
  const before=await doc('settings/main'),usersBefore=await(await ctx.request.get(base+'/api/docs?prefix=users/')).json();
  const save=k=>page.locator('[data-save-setting="'+k+'"]');const status=k=>page.locator('#setting-status-'+k);
  const check=n=>{checks.push(n);console.log('PASS '+n);};
- await page.locator('#btn-settings').click();assert.equal(await page.locator('[data-save-setting]').count(),19);check('All 19 general settings have adjacent focused saves and local statuses');
+ await page.locator('#btn-settings').click();assert.equal(await page.locator('[data-save-setting]').count(),20);check('All 20 general settings have adjacent focused saves and local statuses');
  await page.locator('#s-app-name').fill('Pending branding');await page.locator('#s-cycle-day').fill('99');
  const first=page.locator('#pkgList input[data-f=name]').first();const pid=await first.evaluate(el=>el.closest('.pkg-row').dataset.id);
  await first.fill('Renamed QA product');await save('packages').click();await assertStatus('packages',/Saved/);

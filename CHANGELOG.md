@@ -2,6 +2,13 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v38 - 2026-10-10
+
+- USD supplier costs ask whether you pay in USD or PKR, in both product cost forms and Costs.
+- USD payments have no PKR payment tax. PKR payments convert at the relevant global USD rate, add the global tax percentage, and include tax in costs and reports.
+- Global PKR payment tax starts at the owner's supplied 5.2%, with an adjacent Save control. Rate/tax changes apply to scheduled costs starting tomorrow; earlier cycles retain their original values.
+- Actual purchases retain their USD quote, payment currency, rate and tax snapshot. No migration or automatic owner-record rewrite.
+
 ## v37 - 2026-10-10
 
 - Independent product start dates and supplier costs in Add user, Add product, Edit product and Edit user, including existing yearly and one-time products.

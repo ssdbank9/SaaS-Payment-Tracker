@@ -1,6 +1,6 @@
 # Wasooli hand-off
 
-Written 2026-09-23 at v26, updated 2026-10-10 at v37. This is the document to read first when picking the project
+Written 2026-09-23 at v26, updated 2026-10-10 at v38. This is the document to read first when picking the project
 up again in Claude Code, another AI coding tool or by hand. `AGENTS.md` is the working guide for a coding session
 (every tool reads it, see section 10); this file records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
 built is `docs/setup-runbook.html` (open it in a browser; it prints).
@@ -20,7 +20,9 @@ change/release workflow, with a verified 2026-10-04 snapshot and a copyable cont
   Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.
 - **Repo:** `ssdbank9/SaaS-Payment-Tracker` on GitHub, branch `main`. Pushing to `main` is the release.
 
-## 2. Current state (2026-10-10, v37)
+## 2. Current state (2026-10-10, v38)
+
+**USD supplier payment currency and global PKR tax (v38).** Every product cost form and the ordinary expense form offer USD quote paid in USD (no PKR payment tax) or PKR (global conversion plus payment tax). Tax defaults to the owner's explicitly supplied 5.2%, with scoped Save/status. `costPolicyPatch` captures the original global cost rate/tax basis and records dated policy changes from tomorrow. Earlier elapsed cycles and actual purchases retain their previous values. Supplier entries store dated paidIn changes; actual/override `purchase` snapshots store USD amount, payment currency, rate, tax percent and optional other tax. All reports count base plus tax in the payment currency. Missing historical rates stay unavailable (computed rate 0 prevents current-rate fallback). Existing USD expenses without payment metadata keep their former USD meaning; no owner-data migration. Changing receipt default conversions remains existing behavior and is separate from cost policy. Full JSON includes profiles/policy/purchases. See `docs/v38-verification.md` and `tests/cost-payment-flow.cjs` (own disposable store) for coverage.
 
 **Independent product dates and supplier costs (v37).** All Add/Edit user and product paths expose start and cost. Edit user lists every subscription, including one-time and yearly. One-time start and due are separate; unknown legacy starts remain unknown. Supplier costs support recurring monthly/yearly profiles and one actual expense. Profiles retain dated amount/currency/rate/supplier entries, first partial rule (actual-day prorated/full/custom/free), and cycle overrides. `costRecords()` derives elapsed cycle expenses through product/user end and supplies Costs, analytics and CSV. JSON retains profiles without duplicate derived docs. Dated changes start at supplier cycle boundaries and retain earlier rates; editing/waiving one Costs row affects only that cycle. Changing start/calendar/end explicitly recalculates derived costs; removing an account removes them. Scheduled expenses are not proof of supplier cash payment; avoid entering the same expense manually. Actual expense `costId` links a normal Costs doc; account+expense use atomic `/api/import` with no replace prefixes. Local storage supports the bundle; retired artifact storage requires its separate Costs workflow. Failed-save/polling drafts remain. Customer receipts/refunds/history are retained. No owner-record corrections or migrations. See `docs/v37-verification.md` for requirements and release evidence; `tests/product-cost-flow.cjs` requires a dedicated disposable loopback store and resets synthetic users/costs.
 
@@ -72,8 +74,8 @@ disposable local server; never run it against owner data. A cutoff correction is
 | Data on VM | `/var/lib/payments-tracker/tracker.sqlite3` plus `assets/` (uploaded receipts) and `backups/` |
 | Secrets on VM | `/etc/payments-tracker.env` (`DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`); AI and mail keys typed in Settings live in the SQLite `meta` table |
 | Services | `payments-tracker.service` (gunicorn on 127.0.0.1:8080), `caddy` (HTTPS for all three hosts), timers `payments-tracker-update` (5 min), `payments-tracker-backup` (03:15 daily), `payments-tracker-notify` (04:00 UTC = 09:00 PKT daily) |
-| Versions | badge `v37` in `index.html`, `VERSION = "37"` in `server/app.py`, top entry `## v37` in `CHANGELOG.md`; verify health after release |
-| Repo head | the v37 product starts and supplier costs change (check with `git log -1`); the earlier v36 release is `a36d159` |
+| Versions | badge `v38` in `index.html`, `VERSION = "38"` in `server/app.py`, top entry `## v38` in `CHANGELOG.md`; verify health after release |
+| Repo head | the v38 USD/PKR supplier payment tax change (check with `git log -1`); the earlier v37 release is `bd113ca` |
 | claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: retired as the data store; v33 was edited in Codex and has not been republished there |
 
 **How updates deploy.** `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: `git fetch`,
