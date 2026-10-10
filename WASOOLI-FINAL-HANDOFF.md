@@ -1,12 +1,22 @@
 # Wasooli final handoff and recovery guide
 
+## Current handoff: 10 October 2026, v38
+
+The current application release is **34104bdd230c63fde03164656cb78df6e1c2fb79 (v38)**. GitHub and OCI deployed HEAD matched it after release; live health was `ok: true`, `version: "38"`, `docs_version: 653`, and application/update/backup services were active. Documentation-only commits may follow without a version bump. The current state and copyable final-review prompt are in [docs/HANDOFF.md](docs/HANDOFF.md); the requirement and verification record is [docs/v38-verification.md](docs/v38-verification.md). Use those current records before the older recovery snapshots below.
+
+v37 adds independent start dates for every user's product and supplier costs: recurring monthly/yearly costs, first partial/full/custom/free costs and dated changes. v38 separates the USD supplier quote from payment currency: paid in USD has no PKR payment tax; paid in PKR uses the applicable global exchange rate plus the globally editable **5.2%** tax supplied by Aly. Tax is included in the total cost. Global cost rate/tax changes take effect tomorrow; elapsed costs and recorded purchase snapshots keep their prior basis. No owner records were migrated or corrected in these releases.
+
+Final local v38 verification passed **134 browser checks** on disposable stores, with phone/desktop light/dark screenshots and syntax/whitespace checks. Tests are in Git; ignored local screenshot/result evidence is not part of a fresh clone. The owner requested an independent Claude review before final acceptance. That review and owner acceptance are pending; production deployment has already completed. Do not write production records or push review fixes without the owner's authorization. The retired Claude artifact is behind and was not republished.
+
+The following v35–v36 account and recovery details are dated historical evidence. In particular, the previously authorized Mohib correction and Haroon credit decision remain as documented; this handoff update does not authorize further record edits.
+
 Update on 9 October 2026: v36 adds a nearby **Save product changes** button and nineteen focused general
 settings saves with their own status. A focused save leaves other drafts pending. Failed saves retain the
 draft for retry. Product names apply across the app by existing product IDs; default prices still only
 prefill new plans. Phone product headings and labels fit the viewport. No owner-record changes are part
 of this release. The v35 billing and recovery details below remain historical evidence.
 
-Prepared for Aly Jafferani on 5 October 2026, updated 9 October 2026, Asia/Karachi. Application version: **v36**. The verified billing release described below is **b88bc47 — Clarify bill settlement and refund choices (v35)**.
+Prepared for Aly Jafferani on 5 October 2026; current handoff updated 10 October 2026, Asia/Karachi, at **v38**. The older verified billing release described below is **b88bc47 — Clarify bill settlement and refund choices (v35)**; the preceding settings update describes v36.
 
 This document explains how Wasooli was made, how to use and maintain it, how to host it on another server, and how to give the work to another LLM. It is a snapshot of the working application, not a backup of the owner's records or credentials. Keep this guide with the repository and keep the recovery files listed in section 6 privately, outside the repository.
 

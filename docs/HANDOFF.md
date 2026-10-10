@@ -22,6 +22,27 @@ change/release workflow, with a verified 2026-10-04 snapshot and a copyable cont
 
 ## 2. Current state (2026-10-10, v38)
 
+### Final review handoff to Claude
+
+The application release is `34104bdd230c63fde03164656cb78df6e1c2fb79` (v38), preceded by `bd113ca` (v37) and `a36d159` (v36). On 10 October 2026, GitHub main and OCI deployed HEAD matched the v38 release; `/healthz` returned `ok: true`, `version: "38"`, `docs_version: 653`. The updater completed with `Result=success`, `ExecMainStatus=0`; the application, update timer and backup timer were active. A later documentation-only handoff commit may be the repository tip; it does not change the application version.
+
+The owner will use Claude for an independent final review before final acceptance. Code is already live; that deployment is not evidence of independent review or owner acceptance. Read `AGENTS.md`, this document, `WASOOLI-FINAL-HANDOFF.md`, and `docs/v38-verification.md`. Review v36–v38 against the owner requirements, rather than trusting the prior test counts. All financial test writes must use disposable local stores. Review is not authorization to change production records or push fixes.
+
+Review checklist:
+
+- Independent product start dates and cost controls in every Add/Edit user and product path, including existing, yearly and one-time accounts; preserve receipts, refunds and price history.
+- Recurring supplier costs, first partial/full/custom/free cost, later supplier price or payment-currency changes, per-cycle edits/waivers, cancellation and end dates. Distinguish scheduled expense from supplier cash paid; check duplicate-entry risks.
+- USD quote paid in USD versus PKR, global editable 5.2% tax, conversion and rounding, and inclusion of tax exactly once in Costs, Summary, Analytics and exports. Check $10 at Rs 280/USD equals Rs 2,945.60 with 5.2% tax.
+- Global rate/tax changes start tomorrow; elapsed cycles and actual purchase snapshots retain their original basis. Check missing rates, same-day repeated setting changes, zero tax, legacy costs, reload and backup preservation. Customer receipt conversion remains separate.
+- Scoped Settings saves, catalogue names applying globally by stable IDs, failed-save retry, polling drafts and concurrent edits. Verify 390px and 1400px in both themes with no unexpected browser errors.
+- Re-run applicable seven browser suites on independent disposable stores. Prior result: 134 checks (22 tax, 25 product costs/starts, 21 billing/refund, 18 payments, 18 package starts, 11 cancellation, 19 settings). Source test scripts are committed; screenshots/results under ignored `data/v38-qa/` are local evidence, not available from a fresh Git clone.
+
+Return verified issues with severity, reproduction, affected lines and practical impact; separately label assumptions and unverified risks. State whether final acceptance is supported and what remains. Do not silently repair historical bills or receipts. The separately authorized Mohib correction remains historical evidence; Haroon's genuine overpayment credit must remain available for eventual departure. No owner-record edits accompanied v36–v38. The retired Claude artifact has not been republished.
+
+Copyable review prompt:
+
+> Review `ssdbank9/SaaS-Payment-Tracker` main independently before my final acceptance. Read `AGENTS.md`, `docs/HANDOFF.md`, `WASOOLI-FINAL-HANDOFF.md` and `docs/v38-verification.md`. Application release is v38 at `34104bdd230c63fde03164656cb78df6e1c2fb79`; later handoff-only commits may follow it. Review the v36–v38 changes and the checklist in HANDOFF. Verify calculations and mobile workflows yourself; run tests only against disposable local data. Report confirmed defects, severity, reproduction and exact code locations, plus unverified limits and an acceptance recommendation. Do not edit owner data, deploy or push changes during this review. Propose any fixes for my approval.
+
 **USD supplier payment currency and global PKR tax (v38).** Every product cost form and the ordinary expense form offer USD quote paid in USD (no PKR payment tax) or PKR (global conversion plus payment tax). Tax defaults to the owner's explicitly supplied 5.2%, with scoped Save/status. `costPolicyPatch` captures the original global cost rate/tax basis and records dated policy changes from tomorrow. Earlier elapsed cycles and actual purchases retain their previous values. Supplier entries store dated paidIn changes; actual/override `purchase` snapshots store USD amount, payment currency, rate, tax percent and optional other tax. All reports count base plus tax in the payment currency. Missing historical rates stay unavailable (computed rate 0 prevents current-rate fallback). Existing USD expenses without payment metadata keep their former USD meaning; no owner-data migration. Changing receipt default conversions remains existing behavior and is separate from cost policy. Full JSON includes profiles/policy/purchases. See `docs/v38-verification.md` and `tests/cost-payment-flow.cjs` (own disposable store) for coverage.
 
 **Independent product dates and supplier costs (v37).** All Add/Edit user and product paths expose start and cost. Edit user lists every subscription, including one-time and yearly. One-time start and due are separate; unknown legacy starts remain unknown. Supplier costs support recurring monthly/yearly profiles and one actual expense. Profiles retain dated amount/currency/rate/supplier entries, first partial rule (actual-day prorated/full/custom/free), and cycle overrides. `costRecords()` derives elapsed cycle expenses through product/user end and supplies Costs, analytics and CSV. JSON retains profiles without duplicate derived docs. Dated changes start at supplier cycle boundaries and retain earlier rates; editing/waiving one Costs row affects only that cycle. Changing start/calendar/end explicitly recalculates derived costs; removing an account removes them. Scheduled expenses are not proof of supplier cash payment; avoid entering the same expense manually. Actual expense `costId` links a normal Costs doc; account+expense use atomic `/api/import` with no replace prefixes. Local storage supports the bundle; retired artifact storage requires its separate Costs workflow. Failed-save/polling drafts remain. Customer receipts/refunds/history are retained. No owner-record corrections or migrations. See `docs/v37-verification.md` for requirements and release evidence; `tests/product-cost-flow.cjs` requires a dedicated disposable loopback store and resets synthetic users/costs.
@@ -65,7 +86,7 @@ disposable local server; never run it against owner data. A cutoff correction is
 | Admin site | `https://wasooli.duckdns.org` (plain root shows a blank neutral page on purpose) |
 | Sign-in form | `https://wasooli.duckdns.org/x/<ADMIN_PATH>` (printed by the installer; Settings → Security) |
 | Subscriber links | `https://pay-up.duckdns.org/c/<token>` (`LINK_DOMAIN`) |
-| Health check | `https://wasooli.duckdns.org/healthz`; v35 returned `ok: true`, `docs_version: 588` and `version: "35"` after the release on 2026-10-05, with an empty `linkBase`. |
+| Health check | `https://wasooli.duckdns.org/healthz`; verified 2026-10-10: `ok: true`, `docs_version: 653`, `version: "38"`, empty `linkBase`. |
 | VM | Oracle Cloud Always Free, `VM.Standard.A1.Flex`, 1 OCPU / 6 GB, Ubuntu 24.04 aarch64, public IP `141.145.157.7`, created 2026-09-22 ~11:45 UTC in VCN `vcn-20260922-1643` / subnet `subnet-20260922-1643` |
 | Cloud firewall | Default Security List of that subnet: default rules (TCP 22, ICMP) plus TCP 80 and TCP 443 from `0.0.0.0/0` added by the owner |
 | DNS | DuckDNS (owner signed in with Google): `wasooli.duckdns.org` and `pay-up.duckdns.org` → `141.145.157.7`. The first name `wasool.duckdns.org` was deleted on 2026-09-23 |
@@ -75,7 +96,7 @@ disposable local server; never run it against owner data. A cutoff correction is
 | Secrets on VM | `/etc/payments-tracker.env` (`DOMAIN`, `LINK_DOMAIN`, `OLD_DOMAIN`, `ADMIN_PASSCODE`, `SECRET_KEY`, `ADMIN_PATH`, `SESSION_DAYS`, `DATA_DIR`, `COOKIE_SECURE`, `ANTHROPIC_API_KEY`, `APP_TZ`); AI and mail keys typed in Settings live in the SQLite `meta` table |
 | Services | `payments-tracker.service` (gunicorn on 127.0.0.1:8080), `caddy` (HTTPS for all three hosts), timers `payments-tracker-update` (5 min), `payments-tracker-backup` (03:15 daily), `payments-tracker-notify` (04:00 UTC = 09:00 PKT daily) |
 | Versions | badge `v38` in `index.html`, `VERSION = "38"` in `server/app.py`, top entry `## v38` in `CHANGELOG.md`; verify health after release |
-| Repo head | the v38 USD/PKR supplier payment tax change (check with `git log -1`); the earlier v37 release is `bd113ca` |
+| Application release | `34104bdd230c63fde03164656cb78df6e1c2fb79` (v38); check `git log -1` for any later documentation-only handoff commit; earlier v37 release `bd113ca` |
 | claude.ai artifact | `https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`: retired as the data store; v33 was edited in Codex and has not been republished there |
 
 **How updates deploy.** `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: `git fetch`,
