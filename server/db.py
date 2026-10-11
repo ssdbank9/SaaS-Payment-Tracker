@@ -121,6 +121,25 @@ def tx():
     return _Tx()
 
 
+class Conflict(Exception):
+    """v39: a save was based on a copy of a document that has changed since (or was removed)."""
+
+    def __init__(self, path, current):
+        super().__init__(path)
+        self.path = path
+        self.current = current
+
+
+def check_base(con, base):
+    """v39: ``base`` is {path: updated_at the writer last saw}. Every listed document must still carry exactly that
+    updated_at, else nothing is written (Conflict). Runs inside the writing transaction, so check and write are atomic."""
+    for path, seen in (base or {}).items():
+        row = con.execute("SELECT updated_at FROM docs WHERE path = ?", (path,)).fetchone()
+        current = row["updated_at"] if row else None
+        if current != seen:
+            raise Conflict(path, current)
+
+
 def _bump(con):
     con.execute("UPDATE meta SET value = CAST(CAST(value AS INTEGER) + 1 AS TEXT) WHERE key = 'docs_version'")
 
@@ -189,6 +208,13 @@ def set_doc(path, data, con=None):
         return set_doc(path, data, c)
 
 
+def set_doc_if(path, data, base_at):
+    """v39: set_doc that first checks the stored updated_at is still ``base_at`` (one transaction)."""
+    with tx() as c:
+        check_base(c, {path: base_at})
+        return set_doc(path, data, c)
+
+
 def update_doc(path, patch):
     with tx() as con:
         row = con.execute("SELECT json FROM docs WHERE path = ?", (path,)).fetchone()
@@ -220,12 +246,13 @@ def list_docs(prefix=""):
         con.close()
 
 
-def import_docs(docs, replace_prefixes=()):
+def import_docs(docs, replace_prefixes=(), base=None, versions=None):
     """Bulk set.  ``docs`` is {path: data}.  Docs under any of ``replace_prefixes``
     that are not in ``docs`` are deleted (a whole-collection replace).  Returns
     (written, removed)."""
     n = removed = 0
     with tx() as con:
+        check_base(con, base)
         for prefix in replace_prefixes:
             rows = con.execute("SELECT path FROM docs WHERE path >= ? AND path < ?", (prefix, prefix + "\uffff")).fetchall()
             for r in rows:
@@ -235,7 +262,9 @@ def import_docs(docs, replace_prefixes=()):
         for path, data in docs.items():
             if not valid_path(path):
                 continue
-            set_doc(path, data, con)
+            at = set_doc(path, data, con)
+            if versions is not None:
+                versions[path] = at
             n += 1
         if removed:
             _bump(con)

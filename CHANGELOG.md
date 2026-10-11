@@ -2,6 +2,19 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v39 - 2026-10-11
+
+- Phone and desktop: a device that misses one refresh tries again instead of staying out of date, and a save made from an outdated copy is refused with "This was changed on another device" instead of overwriting the newer record. Edit user only saves the fields actually changed.
+- A page left open across an update shows "Wasooli was updated" with a Reload button and stops saving until reloaded.
+- The settings repair and the settings save keep the PKR cost tax, its dated rate history and any other stored setting.
+- A plan that starts mid-cycle is "Due today" on its start date (not overdue) and shows no balance before it starts.
+- USD bills are worked out to the cent (25 dollars at 10% off is $22.50) and dollar amounts with cents show two decimals. PKR is unchanged.
+- A payment in another currency than its plan is saved with that day's exchange rate, so changing the default rate later no longer changes old payments.
+- Yearly, 3-month and 6-month plans are prorated by actual days for a partial first period, also when Settings use the fixed 30-day month. One-time items are never prorated.
+- Typed values in the table's inline forms survive background refreshes; a refresh that changes nothing no longer redraws the table; hidden banners stay hidden (the empty Open queue bar is gone).
+- New products made in Settings: the first customer chooses a tracking plan (billed monthly, every 3 or 6 months, or yearly) or a one-time annual plan (paid once, renewal date kept for reference). A tracking plan starts the product's own billing cycle on the purchase day; later customers are prorated against it, and these plans appear in the Queue from their due date until paid. C, C Max, G and all existing plans keep the shared 24th cycle.
+- No owner records were migrated or rewritten. Reload open phone and desktop tabs once after this update.
+
 ## v38 - 2026-10-10
 
 - USD supplier costs ask whether you pay in USD or PKR, in both product cost forms and Costs.

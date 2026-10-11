@@ -131,6 +131,26 @@ Write user-facing text in plain, factual words; no emojis.
 - Product dates and supplier costs (v37): all add/edit paths expose independent product start and cost; Edit user lists every subscription. One-time items retain optional legacy start separately from due. `accountCost` stores supplier monthly/yearly frequency, dated entries `{from,amount,currency,rate,supplier}`, first partial rule (prorated/full/custom/free), optional `firstAmount` and cycle overrides. `costRecords()` derives elapsed expenses through account/user end for all analytics and CSV; full JSON keeps profiles. Start/calendar/end edits recalculate derived expenses; removing an account removes them. Do not duplicate these rows in `state.costs`. `costId` links one actual expense; `persistAccountBundle` uses atomic API import with `replace: []`. Polling preserves form drafts by form kind. Run `tests/product-cost-flow.cjs` only on a dedicated disposable loopback store (it replaces synthetic users/costs).
 - Cost payment currency/tax (v38): new USD quotes select paidIn USD|PKR. PKR payments use the dated global cost policy, convert the quote and add tax; USD payments have no PKR payment tax. Settings `pkrCostTax` defaults to owner's supplied 5.2%; `costPaymentBase` and `costPaymentHistory[{from,rate,taxPercent}]` preserve earlier cost conversion when rate/tax changes. Scoped settings saves apply changes from the next calendar day. Legacy payment metadata defaults to USD, never infer a past PKR payment. `purchase{currency:'USD',amount,paidIn,rate,taxPercent,extraTax}` retains actual quote/conversion. Cycle overrides retain purchase snapshots. A computed rate 0 means historically unavailable and must not fall back to current global rate. Customer receipt default-rate behavior remains separate. Run `tests/cost-payment-flow.cjs` on its own disposable store.
 - Costs: `date, description, category, packageId ('' = shared), currency, cost, tax, rate, receipt, source`, optional `userId, subscriptionId, purchase`.
+- Multi-device safety (v39): `apiPoll` marks the server version seen only after every list reloaded. A PUT of `users/*` or `costs/*` sends
+  `X-Base-Updated` (the `updated_at` the page last saw, `API.rev`); `/api/import` takes `base:{path:updated_at}`. The server refuses a stale save
+  with 409 `conflict` and writes nothing (`db.set_doc_if`, `check_base`); the page reloads and keeps the draft. Saves without a base (older tabs)
+  are accepted. A list fetched while this page saved to the same collection is dropped (`API.wc`). Edit user writes only fields whose value differs
+  from `fieldBase` (the value drawn from stored data, carried through redraws as `data-base`). `/api/version` returns `app` (the release);
+  a page whose `vNN` badge differs shows `#staleBanner` and blocks writes (`stale_app`). `ensureSettingsShared` and `persistSettings` merge
+  (`mergeSettings`) instead of replacing `settings/main`. Inline table forms keep typed values across redraws; `renderTable` skips a redraw whose
+  HTML is identical while nothing in the table changed (`tbodyObs`). Run `tests/conflict-flow.cjs`, `settings-repair-flow.cjs`, `stale-version-flow.cjs`.
+- Money rules (v39): a period is due from `es` (the plan's own start when it begins mid-cycle), so status/overdue use `p.es<=today`.
+  `roundCur` rounds plan money to cents for USD, whole rupees for PKR; `fmtAmt` shows two decimals for dollars with cents. `withLockedRate` saves
+  the default rate on a receipt whose currency differs from its plan's when the rate is blank (refunds already did); old blank-rate receipts are
+  not rewritten. `periodBasisDays`: periods longer than 31 days (yearly, 3/6-month instalments) always divide by actual days. Tests:
+  `due-day-flow`, `usd-cents-flow`, `locked-rate-flow`, `yearly-proration-flow`.
+- New products and own cycles (v39): a package created in Settings carries `fresh:true` (C, C Max, G never do). While a fresh product has no
+  recurring plan, Add user / Add plan ask `firstSale`: `once` makes a one-time item with `due` = purchase day and `renews` = one year later;
+  `tracking` makes a recurring plan (for a yearly product, Billed sets `paymentEvery`). A plan of a fresh product carries `anchor`: the first tracking
+  plan's start (`ownAnchorFor`, `pkgOwnAnchor`). `calOf(s)` gives a plan's calendar: `anchor` and its day, else the shared Settings anchor and
+  cycle day; `cStart`, `firstIdx`, `pStart`, `installmentPrice` use it, so plans without `anchor` compute exactly as before. Shared-cycle features
+  (stages 1-3, final notice, link cards, notify emails, cancellation month) still use the shared calendar; own-cycle plans appear in the Queue
+  section "Due on their product's own cycle" from their due date until paid (`ownCycleDueRows`). Tests: `first-sale-flow`, `own-cycle-flow`.
 - Migrations (`maybeSeedShared`, the migrate block, `SCHEMA` in `index.html`) are lease-guarded via `meta/*` and
   idempotent: add fields with defaults, treat an absent field as the default, never overwrite or delete owner-entered
   records. Most new features need no migration (absent = default).

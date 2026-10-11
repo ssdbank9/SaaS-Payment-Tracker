@@ -127,7 +127,9 @@ td.r .m2{align-items:flex-end}
 .btn .glyph{font-size:15px;line-height:1;margin-top:-1px}
 .btn .cnt{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--crit);color:#fff;font-size:11px;font-weight:600;font-family:var(--mono)}
 .banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between;background:var(--warn-bg);border:1px solid var(--warn);border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--ink)}
+.banner[hidden]{display:none}#staleReload{min-height:40px;padding:8px 18px;font-size:14px}/* v39: a banner marked hidden really is hidden (before, the display:flex above overrode the hidden attribute: an empty Open queue bar always showed and the sign-in address note could not be dismissed) */
 .banner b{font-weight:600}
+.first-sale{border:1px solid var(--accent-line);background:var(--accent-tint);border-radius:6px;padding:8px 12px;margin:8px 0;flex-basis:100%;min-width:0}.first-sale[hidden]{display:none}.first-sale legend{font-weight:600;font-size:13px;padding:0 4px}.first-sale label{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:13px;cursor:pointer}.first-sale input{margin-top:3px;flex:none}.first-sale .muted{display:block}.first-sale .first-bill{margin:2px 0 8px 26px;align-items:center}.first-sale .first-bill[hidden]{display:none}.first-sale .first-bill select{max-width:200px}
 .remind-pair{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
 .rem-badge{display:block;font-size:11px;margin-top:2px;white-space:nowrap}
 .cancel-note{font-size:12px;color:var(--ink-2);background:var(--surface-2);border-radius:4px;padding:8px 10px;margin-bottom:10px}
@@ -640,7 +642,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v38</span>
+      <span class="small muted num" id="app-ver" title="App version">v39</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -649,6 +651,9 @@ table.costs td.cat{color:var(--ink-2)}
   </header>
 
   <!-- v25: shown once per browser when the server reports the private sign-in address, so the owner bookmarks it -->
+  <!-- v39: shown when the server was updated after this page loaded; saving is blocked until the page is reloaded, so an old page cannot strip newer fields from a record -->
+  <div class="banner" id="staleBanner" hidden role="alert"><span><b>Wasooli was updated.</b> Reload this page to keep saving. Nothing already saved is lost.</span><button class="btn sm primary" type="button" id="staleReload">Reload</button></div>
+
   <div class="banner" id="secBanner" hidden role="status" data-kind="security"><span><b>Your private sign-in address is ready.</b> The old address now shows a blank page to anyone who is not signed in, so bookmark this one: <code class="mono" id="secBannerUrl"></code></span><span class="banner-acts"><button class="btn sm" type="button" id="secBannerCopy">Copy</button><button class="btn sm" type="button" id="secBannerOpen">Settings → Security</button><button class="link sm" type="button" id="secBannerHide">Got it</button></span></div>
 
   <div class="banner" id="remindBanner" hidden role="status"><span id="remindBannerText"></span><button class="btn sm primary" type="button" id="remindBannerBtn">Open reminder run</button></div>
@@ -709,7 +714,7 @@ table.costs td.cat{color:var(--ink-2)}
         <label class="f">Reply-by day <span class="muted">(of the month)</span><input id="s-reply-day" type="number" min="1" max="31" step="1" class="num" placeholder="23"></label>
         <span class="small muted" style="align-self:center">The day people should confirm or pay by, before the cycle starts on the anchor day. Used for <code>{reply_by}</code> in the message.</span>
         <label class="f">Proration basis<select id="s-basis"><option value="actual">Actual days in the cycle</option><option value="fixed30">Fixed 30-day month</option></select></label>
-        <span class="small muted" style="align-self:center">How a mid-cycle first period is charged. <b>Actual days</b>: price × days ÷ days in that cycle (31 for Aug 24 – Sep 23). <b>Fixed 30-day month</b>: a daily rate of price ÷ 30, capped at the full price (Rs 4,200 → Rs 140 a day; 22 days = Rs 3,080). The days charged can also be edited on each plan's first period.</span>
+        <span class="small muted" style="align-self:center">How a mid-cycle first period is charged. <b>Actual days</b>: price × days ÷ days in that cycle (31 for Aug 24 – Sep 23). <b>Fixed 30-day month</b>: a daily rate of price ÷ 30, capped at the full price (Rs 4,200 → Rs 140 a day; 22 days = Rs 3,080). Yearly, 3-month and 6-month periods are always charged by actual days. The days charged can also be edited on each plan's first period.</span>
         <span class="small muted" style="align-self:center" id="s-anchor-help">Every plan bills on the same cycle: monthly periods run from the billing day to the day before the next one, and yearly periods from the anchor month each year. Someone who joins mid-period pays a prorated share of that first period (by days), unless proration is turned off on their plan.</span>
         <label class="f">WhatsApp opens in<select id="s-wa-app"><option value="regular">Regular WhatsApp (default)</option><option value="business">WhatsApp Business</option><option value="ask">Ask (wa.me link; the phone picks)</option></select></label>
         <span class="small muted" style="align-self:center" id="s-wa-app-help">Which app every WhatsApp button (rows, expanded panel, Queue) opens on this device. On Android, <b>Regular</b> or <b>Business</b> opens that app directly; on iPhone and desktop, Regular uses the <code>whatsapp://</code> link and the others the <code>wa.me</code> page. Or on your phone: Settings → Apps → WhatsApp Business → Open by default → Clear defaults.</span>
@@ -843,6 +848,7 @@ table.costs td.cat{color:var(--ink-2)}
         <label class="f">Currency <span class="muted">(pays in)</span><select id="a-cur" required><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
         <label class="f" id="a-payment-wrap" hidden>Payment schedule<select id="a-payment"><option value="12">Yearly</option><option value="1">Monthly</option><option value="3">Every 3 months</option><option value="6">Every 6 months</option></select></label>
       </div>
+      <div id="a-first"></div>
       <div id="a-account-cost"></div><label class="f" id="a-due-wrap" hidden>One-time amount due on (optional)<input id="a-due" type="date"></label>
       <details class="more" id="a-more">
         <summary>More options: billing cycle, plan label, notes, proration</summary>
@@ -1021,7 +1027,7 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     </div>
     <details class="more" id="payment-more"><summary>Currency, exchange rate and note</summary><div class="form-grid">
       <label class="f">Received in<select id="payment-currency" name="currency"><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
-      <label class="f">PKR per USD <span class="muted">(blank = default)</span><input id="payment-rate" name="rate" type="number" min="0" step="0.0001" inputmode="decimal"></label>
+      <label class="f">PKR per USD <span class="muted">(blank = today's default, saved with this payment)</span><input id="payment-rate" name="rate" type="number" min="0" step="0.0001" inputmode="decimal"></label>
       <label class="f payment-wide">Note <span class="muted">(optional)</span><input id="payment-note" name="note" type="text" maxlength="140" placeholder="e.g. NayaPay reference"></label>
     </div></details>
     <p class="payment-preview" id="payment-preview" aria-live="polite"></p>
@@ -1122,6 +1128,23 @@ const parseD=s=>{const p=s.split('-').map(Number);return new Date(p[0],p[1]-1,p[
 const isDateKey=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||'');
 const isMonthKey=k=>/^\d{4}-(0[1-9]|1[0-2])$/.test(k||'');
 const daysIn=(y,m0)=>new Date(y,m0+1,0).getDate();
+/* v39: the first customer of a product created in Settings from this release (fresh) chooses how it is tracked: a one-time annual plan
+   (paid once for a year, renewal date kept for reference, never prorated) or a tracking plan (recurring; later customers are prorated).
+   The choice is offered until the product has a tracking plan. C, C Max, G and every product created before this release are never asked. */
+function pkgHasTracking(pid){for(const id in state.users)for(const s of state.users[id].subscriptions||[])if(s.kind==='monthly'&&(s.packageId===pid||(s.tierHistory||[]).some(t=>t.packageId===pid)))return true;return false;}
+function needsFirstChoice(pid){const p=pkgById(pid);return !!(p&&p.fresh&&!pkgHasTracking(pid));}
+const firstSaleHTML=nm=>`<fieldset class="first-sale" data-role="first-sale" hidden><legend>First customer for this new product: how should it be tracked?</legend><label><input type="radio" name="${nm}" value="tracking"><span><b>Start a tracking plan</b> <span class="muted">recurring bills from the purchase day, which becomes this product's own billing day; later customers are prorated against it</span></span></label><label class="first-bill" data-role="first-bill" hidden><span>Billed</span><select data-role="first-every"><option value="1">Monthly</option><option value="3">Every 3 months</option><option value="6">Every 6 months</option><option value="12" selected>Yearly</option></select></label><label><input type="radio" name="${nm}" value="once"><span><b>One-time annual plan</b> <span class="muted">paid once for a year; renewal date kept for reference; never prorated</span></span></label></fieldset>`;
+function firstChoice(root){const box=root&&root.querySelector('[data-role=first-sale]');if(!box||box.hidden)return '';const c=box.querySelector('input[type=radio]:checked');return c?c.value:'none';}
+/* the "choose a tracking plan or a one-time annual plan" message goes away as soon as a choice is made */
+/* "Billed" sits under "Start a tracking plan" for a yearly product (monthly, every 3 or 6 months, or yearly) and sets the form's payment schedule */
+const firstPkgOf=f=>{const el=f&&f.querySelector('#a-pkg,[name=packageId]');return el?el.value:'';};
+function syncFirstBill(root){const box=root&&root.querySelector('[data-role=first-sale]');if(!box)return;const wrap=box.querySelector('[data-role=first-bill]'),p=pkgById(firstPkgOf(box.closest('form')));const t=box.querySelector('input[value=tracking]');wrap.hidden=box.hidden||!t||!t.checked||!p||p.cycle!=='yearly';}
+document.addEventListener('change',e=>{const r=e.target;if(!r||!r.closest||!r.closest('[data-role=first-sale]'))return;const f=r.closest('form');if(!f)return;f.querySelectorAll('#a-err,[data-role=addsub-err]').forEach(x=>{if(/first customer for a new product/.test(x.textContent))x.textContent='';});
+  syncFirstBill(f);const every=f.querySelector('[data-role=first-every]');const pay=f.querySelector('#a-payment,[name=paymentEvery]');if(every&&pay&&!every.closest('[data-role=first-bill]').hidden&&pay.value!==every.value){pay.value=every.value;pay.dispatchEvent(new Event('input',{bubbles:true}));}});
+function syncFirstSale(root,pid){const box=root&&root.querySelector('[data-role=first-sale]');if(!box)return;const need=needsFirstChoice(pid);if(box.hidden===need)box.querySelectorAll('input[type=radio]').forEach(r=>{r.checked=false;});box.hidden=!need;syncFirstBill(root);}
+function pkgOwnAnchor(pid){let a='';for(const id in state.users)for(const s of state.users[id].subscriptions||[])if(s.kind==='monthly'&&s.packageId===pid&&isDateKey(s.anchor)&&(!a||s.anchor<a))a=s.anchor;return a;}
+function ownAnchorFor(pid,first,start){const p=pkgById(pid);if(!p||!p.fresh)return '';return pkgOwnAnchor(pid)||(first==='tracking'&&isDateKey(start)?start:'');}
+const oneTimeAnnual=(o)=>({id:newId('s'),kind:'one-time',name:o.name,packageId:o.pkg,currency:o.cur,start:o.start,total:o.total,due:o.start,renews:addMonths(o.start,12),payments:[]});
 function addMonths(iso,n){const p=iso.split('-').map(Number);const total=(p[1]-1)+n;const ny=p[0]+Math.floor(total/12);const nm=((total%12)+12)%12;return toISO(new Date(ny,nm,Math.min(p[2],daysIn(ny,nm))));}
 const addDays=(iso,n)=>{const d=parseD(iso);d.setDate(d.getDate()+n);return toISO(d);};
 const dayDiff=(a,b)=>Math.round((parseD(b)-parseD(a))/86400000);
@@ -1145,7 +1168,7 @@ let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=fa
 /* ---------- money: two currencies, per-entry rate ---------- */
 const normCur=c=>{c=String(c||'').trim();return c==='USD'||c==='$'||/usd|\$|dollar/i.test(c)?'USD':'PKR';};
 const other=c=>c==='USD'?'PKR':'USD';
-function fmtAmt(n,cur){n=Number(n)||0;const neg=n<0;const s=Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});return (neg?'\u2212':'')+(cur==='USD'?'$'+s:'Rs '+s);}
+function fmtAmt(n,cur){n=Number(n)||0;const neg=n<0;const a=Math.abs(n),cents=cur==='USD'&&Math.abs(Math.round(a*100)-Math.round(a)*100)>0;/* v39: dollars with cents always show two decimals ($22.50) */const s=a.toLocaleString(undefined,{minimumFractionDigits:cents?2:0,maximumFractionDigits:2});return (neg?'\u2212':'')+(cur==='USD'?'$'+s:'Rs '+s);}
 const defaultRate=()=>{const r=Number(state.settings.rate);return r>0?r:null;};
 const rateOf=r=>{const x=Number(r);return x>0?x:defaultRate();};
 function conv(amount,cur,rate){const r=rate===0?null:rateOf(rate);const a=Number(amount)||0;return cur==='USD'?{usd:a,pkr:r?a*r:null,ok:!!r,r}:{pkr:a,usd:r?a/r:null,ok:!!r,r};}
@@ -1169,7 +1192,7 @@ const rateNote=r=>r?` <span class="small muted">at ${Number(r).toLocaleString()}
 const DEFAULT_RATE=280;
 
 /* ---------- normalisation ---------- */
-function normalizePackages(arr){if(!Array.isArray(arr))return [];const seen={};const out=[];for(const p of arr){if(!p||typeof p!=='object')continue;const id=String(p.id||'').trim()||newId('pkg');const name=String(p.name||'').trim();if(!name||seen[id])continue;seen[id]=1;const pr=Number(p.price);out.push({id,name,cycle:normCycle(p.cycle),price:isFinite(pr)&&pr>0?pr:null,currency:p.currency?normCur(p.currency):'',description:String(p.description||'').trim()});}return out;}
+function normalizePackages(arr){if(!Array.isArray(arr))return [];const seen={};const out=[];for(const p of arr){if(!p||typeof p!=='object')continue;const id=String(p.id||'').trim()||newId('pkg');const name=String(p.name||'').trim();if(!name||seen[id])continue;seen[id]=1;const pr=Number(p.price);const o={id,name,cycle:normCycle(p.cycle),price:isFinite(pr)&&pr>0?pr:null,currency:p.currency?normCur(p.currency):'',description:String(p.description||'').trim()};if(p.fresh===true)o.fresh=true;out.push(o);}return out;}
 const packages=()=>state.settings.packages||[];
 const DEFAULT_APP_NAME='Wasooli';const LEGACY_APP_NAME='Wasool';/* v24: the app was Wasool until v23; a stored name equal to either reads as the default */const DEFAULT_TAGLINE='Know who\'s paid.';const appNameOf=v=>String(v==null?'':v).trim().slice(0,40)||DEFAULT_APP_NAME;const rawAppName=v=>{const t=String(v==null?'':v).trim().slice(0,40);return t===DEFAULT_APP_NAME||t===LEGACY_APP_NAME?'':t;};const taglineOf=v=>String(v==null?'':v).trim().slice(0,60)||DEFAULT_TAGLINE;const rawTagline=v=>{const t=String(v==null?'':v).trim().slice(0,60);return t===DEFAULT_TAGLINE?'':t;};const tagline=()=>taglineOf(state.settings.tagline);const normModel=v=>v==='default'?'default':'quick';const readModel=()=>normModel(state.settings.readModel);const appName=()=>appNameOf(state.settings.appName);
 const DEFAULT_SETTINGS=()=>({rate:null,pkrCostTax:5.2,costPaymentBase:null,costPaymentHistory:[],template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,cycleDay:null,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,appName:'',tagline:'',readModel:'quick',publicBaseUrl:'',queueTemplates:{},payHow:'',waApp:'regular',dimSettled:true});
@@ -1183,10 +1206,17 @@ const pubBaseRaw=v=>{const t=String(v==null?'':v).trim().replace(/\/+$/,'');retu
 const basis=()=>normBasis(state.settings.prorationBasis);
 const normDiscount=d=>{if(!d||typeof d!=='object')return null;const t=d.type==='percent'?'percent':d.type==='fixed'?'fixed':null;const v=Number(d.value);return t&&isFinite(v)&&v>0?{type:t,value:t==='percent'?Math.min(100,v):v}:null;};
 const discountLabel=s=>{const d=s&&s.discount;if(!d)return '';return d.type==='percent'?`${d.value}% off`:`${fmtAmt(d.value,s.currency)} off`;};
-function applyDiscount(s,price){const d=s&&s.discount;if(!d)return price;return d.type==='percent'?Math.round(price*(1-d.value/100)):Math.max(0,price-d.value);}
+/* v39: a plan's computed money is rounded to its currency's unit: cents for USD, whole rupees for PKR (before, USD discounts and partial periods
+   were rounded to whole dollars, so $25 at 10% off billed $23 instead of $22.50) */
+const roundCur=(x,cur)=>cur==='USD'?Math.round(Number(x)*100)/100:Math.round(Number(x));
+function applyDiscount(s,price){const d=s&&s.discount;if(!d)return price;const usd=s.currency==='USD';return d.type==='percent'?roundCur(price*(1-d.value/100),s.currency):Math.max(0,usd?Math.round((price-d.value)*100)/100:price-d.value);}
 const effPrice=(s,date)=>applyDiscount(s,priceAt(s,date));
 const planBasis=s=>rawBasis(s&&s.prorationBasis)||basis();
-function prorateCalc(s,full,days,total){const ov=Number(s.prorationDaysOverride);const has=Number.isInteger(ov)&&ov>0;const d=has?ov:days;const b=planBasis(s)==='fixed30'?30:total;const ro=Number(s.prorationRateOverride);const hasRate=isFinite(ro)&&ro>0;const rate=hasRate?ro:full/b;const computed=Math.min(full,Math.round(rate*d));const ao=s.prorationAmountOverride;const hasAmt=ao!=null&&isFinite(Number(ao))&&Number(ao)>=0;const amt=hasAmt?Number(ao):computed;return {days:d,basis:b,rate,computed,amt,override:has,rateOverride:hasRate,amtOverride:hasAmt,discounted:amt<Math.min(full,Math.round((full/b)*d))};}
+/* v39: the days a partial first period is divided by. The fixed 30-day month is a monthly rule (price / 30 a day). A yearly plan, or a quarterly or
+   6-monthly instalment of one, is longer than a month, so dividing by 30 charged the full price for any first period over 30 days; those periods
+   are always charged by actual days (price x days / days in the period), as new yearly plans already were. A one-time item has no periods and is never prorated. */
+const periodBasisDays=(s,total)=>total>31?total:(planBasis(s)==='fixed30'?30:total);
+function prorateCalc(s,full,days,total){const ov=Number(s.prorationDaysOverride);const has=Number.isInteger(ov)&&ov>0;const d=has?ov:days;const b=periodBasisDays(s,total);const ro=Number(s.prorationRateOverride);const hasRate=isFinite(ro)&&ro>0;const rate=hasRate?ro:full/b;const computed=Math.min(full,roundCur(rate*d,s.currency));const ao=s.prorationAmountOverride;const hasAmt=ao!=null&&isFinite(Number(ao))&&Number(ao)>=0;const amt=hasAmt?Number(ao):computed;return {days:d,basis:b,rate,computed,amt,override:has,rateOverride:hasRate,amtOverride:hasAmt,discounted:amt<Math.min(full,roundCur((full/b)*d,s.currency))};}
 /* ---------- v22: an amount set by hand for one period (a discount or a correction), per plan, keyed by the period start:
    periodOverrides: {'YYYY-MM-DD': {amount, note, at}}. Absent = the computed amount. It becomes the period's amount everywhere
    (balance, credit carried, totals, the per-product table, {amount} in the messages, the link-page document and so the public page and the emails);
@@ -1226,14 +1256,21 @@ const anchor=()=>isDateKey(state.settings.anchor)?state.settings.anchor:DEFAULT_
 /* v21: the billing day is its own setting (default: the anchor's day) so 29–31 survive a short anchor month; every cycle start is that day clamped to the month's last day.
    The anchor date keeps the year and the month yearly plans renew in. */
 const cycleDay=()=>clampDay(state.settings.cycleDay,+anchor().slice(8,10));
-function cycleAt(n){const p=anchor().split('-').map(Number);const total=(p[1]-1)+n;const ny=p[0]+Math.floor(total/12);const nm=((total%12)+12)%12;return toISO(new Date(ny,nm,Math.min(cycleDay(),daysIn(ny,nm))));}
+/* v39: a plan follows the shared calendar (the Settings anchor and billing day) unless it carries anchor: the first purchase day of a new product
+   that has its own cycle. Such a plan's periods run from that day: monthly on the same day each month (the last day in a shorter month), yearly on
+   that date each year. Every plan without anchor (all plans made before this release) is calculated exactly as before. */
+const sharedCal=()=>({a:anchor(),d:cycleDay()});
+const calOf=s=>s&&isDateKey(s.anchor)?{a:s.anchor,d:+s.anchor.slice(8,10)}:sharedCal();
+function cycleAtC(c,n){const p=c.a.split('-').map(Number);const total=(p[1]-1)+n;const ny=p[0]+Math.floor(total/12);const nm=((total%12)+12)%12;return toISO(new Date(ny,nm,Math.min(c.d,daysIn(ny,nm))));}
+function cycleAt(n){return cycleAtC(sharedCal(),n);}
 /* shared billing cycle: period j of a plan starts at anchor + j cycles; a plan's first period is the one containing its start date */
-const cStart=(s,j)=>cycleAt(j*cycMonths(s));
-function firstIdx(s){const a=anchor().split('-').map(Number),b=s.start.split('-').map(Number);let j=Math.floor(((b[0]-a[0])*12+(b[1]-a[1]))/cycMonths(s));let g=0;while(cStart(s,j+1)<=s.start&&g++<40)j++;while(cStart(s,j)>s.start&&g++<80)j--;return j;}
-const monthOffset=st=>(+st.slice(0,4)-+anchor().slice(0,4))*12+(+st.slice(5,7)-+anchor().slice(5,7));
-function pStart(s,k){if(!(s.paymentSchedule||[]).length)return cStart(s,firstIdx(s)+k);let st=cStart(s,firstIdx(s)),left=k;
-  while(left>0){const m=payMonthsAt(s,st),next=(s.paymentSchedule||[]).find(x=>x.from>st);const steps=Math.min(left,next?Math.max(1,Math.ceil((monthOffset(next.from)-monthOffset(st))/m)):left);st=cycleAt(monthOffset(st)+steps*m);left-=steps;}return st;}
-function installmentPrice(s,annual,st){if(subCycle(s)!=='yearly')return annual;const m=payMonthsAt(s,st);if(m===12)return annual;const unit=s.currency==='USD'?100:1,pos=((monthOffset(st)%12)+12)%12;return (Math.round(annual*unit*(pos+m)/12)-Math.round(annual*unit*pos/12))/unit;}
+const cStart=(s,j)=>cycleAtC(calOf(s),j*cycMonths(s));
+function firstIdx(s){const a=calOf(s).a.split('-').map(Number),b=s.start.split('-').map(Number);let j=Math.floor(((b[0]-a[0])*12+(b[1]-a[1]))/cycMonths(s));let g=0;while(cStart(s,j+1)<=s.start&&g++<40)j++;while(cStart(s,j)>s.start&&g++<80)j--;return j;}
+const monthOffsetC=(c,st)=>(+st.slice(0,4)-+c.a.slice(0,4))*12+(+st.slice(5,7)-+c.a.slice(5,7));
+const monthOffset=st=>monthOffsetC(sharedCal(),st);
+function pStart(s,k){if(!(s.paymentSchedule||[]).length)return cStart(s,firstIdx(s)+k);const c=calOf(s);let st=cStart(s,firstIdx(s)),left=k;
+  while(left>0){const m=payMonthsAt(s,st),next=(s.paymentSchedule||[]).find(x=>x.from>st);const steps=Math.min(left,next?Math.max(1,Math.ceil((monthOffsetC(c,next.from)-monthOffsetC(c,st))/m)):left);st=cycleAtC(c,monthOffsetC(c,st)+steps*m);left-=steps;}return st;}
+function installmentPrice(s,annual,st){if(subCycle(s)!=='yearly')return annual;const m=payMonthsAt(s,st);if(m===12)return annual;const unit=s.currency==='USD'?100:1,pos=((monthOffsetC(calOf(s),st)%12)+12)%12;return (Math.round(annual*unit*(pos+m)/12)-Math.round(annual*unit*pos/12))/unit;}
 function cycleIdxAfter(today){const a=anchor().split('-').map(Number),b=today.split('-').map(Number);let j=(b[0]-a[0])*12+(b[1]-a[1])-1;let g=0;while(cycleAt(j)<=today&&g++<40)j++;return j;}
 function nextCycleStart(today){return cycleAt(cycleIdxAfter(today));}
 const ordinal=n=>n+(n%10===1&&n!==11?'st':n%10===2&&n!==12?'nd':n%10===3&&n!==13?'rd':'th');
@@ -1272,8 +1309,8 @@ function normalizeUser(b,id){
   for(const s of b.subscriptions||[]){
     const kind=s.kind==='one-time'?'one-time':'monthly';const start=normDate(s.start)||u.joinDate;const cur=normCur(s.currency);
     const sub={id:s.id||newId('s'),kind,name:String(s.name||'').trim()||(kind==='one-time'?'Item':''),currency:cur,packageId:String(s.packageId||'').trim()||null,payments:[]};
-    if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;{const ov=Number(s.prorationDaysOverride);sub.prorationDaysOverride=Number.isInteger(ov)&&ov>0?ov:null;const ro=Number(s.prorationRateOverride);sub.prorationRateOverride=isFinite(ro)&&ro>0?ro:null;const ao=s.prorationAmountOverride;sub.prorationAmountOverride=ao!=null&&ao!==''&&isFinite(Number(ao))&&Number(ao)>=0?Number(ao):null;sub.prorationBasis=rawBasis(s.prorationBasis);sub.discount=normDiscount(s.discount);sub.tierHistory=normTierHistory(s.tierHistory,cur);sub.periodOverrides=normPeriodOverrides(s.periodOverrides);}sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
-    else{sub.total=Number(s.total)||0;sub.due=normDate(s.due);if(isDateKey(s.start))sub.start=s.start;}
+    if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;{const ov=Number(s.prorationDaysOverride);sub.prorationDaysOverride=Number.isInteger(ov)&&ov>0?ov:null;const ro=Number(s.prorationRateOverride);sub.prorationRateOverride=isFinite(ro)&&ro>0?ro:null;const ao=s.prorationAmountOverride;sub.prorationAmountOverride=ao!=null&&ao!==''&&isFinite(Number(ao))&&Number(ao)>=0?Number(ao):null;sub.prorationBasis=rawBasis(s.prorationBasis);sub.discount=normDiscount(s.discount);sub.tierHistory=normTierHistory(s.tierHistory,cur);sub.periodOverrides=normPeriodOverrides(s.periodOverrides);}sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);if(isDateKey(s.anchor))sub.anchor=s.anchor;const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
+    else{sub.total=Number(s.total)||0;sub.due=normDate(s.due);if(isDateKey(s.start))sub.start=s.start;if(isDateKey(s.renews))sub.renews=s.renews;}
     if(s.costId)sub.costId=String(s.costId);const ac=normAccountCost(s.accountCost);if(ac)sub.accountCost=ac;
     if(kind==='monthly'&&sub.cycle==='yearly'){if(validPayMonths(s.paymentEvery))sub.paymentEvery=Number(s.paymentEvery);const schedule=normPaymentSchedule(s.paymentSchedule);if(schedule.length)sub.paymentSchedule=schedule;}
     for(const p of s.payments||[]){const d=normDate(p.date);if(!d)continue;sub.payments.push({id:p.id||newId('p'),date:d,amount:Number(p.amount)||0,currency:p.currency?normCur(p.currency):cur,rate:normRate(p.rate),note:String(p.note||'')});}
@@ -1320,8 +1357,8 @@ function analyzeMonthly(s,today){
     let stt,covered;
     if(waived&&pr===0){stt='waived';covered=0;kPaid=k+1;}
     else if(credit+1e-9>=pr){stt='paid';covered=pr;credit-=pr;kPaid=k+1;}
-    else if(credit>0){stt=st<=today?'partial':'upcoming';covered=credit;credit=0;}
-    else{stt=st<=today?'unpaid':'upcoming';covered=0;}
+    else if(credit>0){stt=es<=today?'partial':'upcoming';covered=credit;credit=0;}/* v39: a period is due from es (the plan's own start when it begins mid-cycle), not from the cycle start st */
+    else{stt=es<=today?'unpaid':'upcoming';covered=0;}
     periods.push({k,st,en,es,months:payMonthsAt(s,st),pr,full,pkgId:pf.pid||pkgIdAt(s,es),pkgOv:!!pf.pid,prorated:prorated&&!waived,waived:waived&&pr===0,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0,listed,custom:!!ov,note:ov?ov.note:''});
     if(stt!=='paid'&&stt!=='waived'&&k>curIdx)break;
     if(stt==='paid'&&pr<=0&&k>curIdx+1)break;
@@ -1331,7 +1368,7 @@ function analyzeMonthly(s,today){
   /* v30: nextSt is the cycle start of the period that needs money next (the key its period box, overrides and lookups use); nextDue is the day the
      money is actually due: the plan's own start date when that first period begins mid-cycle (a plan started or resumed mid-cycle), else the cycle start */
   const nextSt=active(kPaid)?pStart(s,kPaid):null;const nextDue=nextSt?(nextSt<s.start?s.start:nextSt):null;
-  const overdue=periods.filter(p=>(p.state==='unpaid'||p.state==='partial')&&p.st<=today);
+  const overdue=periods.filter(p=>(p.state==='unpaid'||p.state==='partial')&&p.es<=today);
   let amountDue=0;for(const p of overdue)amountDue+=p.pr-p.covered;const overdueAmount=amountDue;
   const np=nextSt?periods.find(p=>p.st===nextSt):null;const nextAmount=np?np.pr-np.covered:(nextDue?periodFull(s,nextSt,nextDue).full:0);const nextCredit=np?np.covered:0;
   if(!amountDue&&nextDue)amountDue=nextAmount;
@@ -1341,7 +1378,7 @@ function analyzeMonthly(s,today){
   else if(s.start>today)status='upcoming';
   else if(!nextDue||(s.end&&s.end<today&&!overdue.length))status='ended';
   else if(paidThrough>=today)status='current';
-  else if(overdue.length===1&&overdue[0].st===today&&overdue[0].covered===0)status='due-today';
+  else if(overdue.length===1&&overdue[0].es===today&&overdue[0].covered===0)status='due-today';
   else status='overdue';
   if(s.dueBy&&(status==='overdue'||status==='due-today')&&overdueAmount>0)status=today>s.dueBy?'overdue':'open';
   const curP=periods[Math.max(0,Math.min(curIdx,periods.length-1))]||null;
@@ -1419,7 +1456,7 @@ function reminderFields(u,a,today,mode,x){
   const plans=(a.duePlans.length?a.duePlans:(u.subscriptions||[]).map(s=>planLabel(s))).filter((x,i,arr)=>x&&arr.indexOf(x)===i).join(' + ')||'subscription';
   let amount,period,dueDate;
   const parts=[];
-  if(mode==='overdue'){const S=a.due.n?a.due:a.balance;amount=ownText(S,a.mainCur);let st=null,en=null;for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly'||!['overdue','due-today'].includes(sa.status))continue;if(sa.overdueAmount>0)parts.push(fmtAmt(sa.overdueAmount,s.currency)+' for '+planLabel(s));for(const p of sa.periods)if((p.state==='unpaid'||p.state==='partial')&&p.st<=today){const f=pFrom(p);if(!st||f<st)st=f;if(!en||p.en>en)en=p.en;}}period=st?fmtD(st)+' – '+fmtD(en):'the current period';dueDate=st?fmtD(st,true):(a.nextDue?fmtD(a.nextDue,true):'now');}
+  if(mode==='overdue'){const S=a.due.n?a.due:a.balance;amount=ownText(S,a.mainCur);let st=null,en=null;for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly'||!['overdue','due-today'].includes(sa.status))continue;if(sa.overdueAmount>0)parts.push(fmtAmt(sa.overdueAmount,s.currency)+' for '+planLabel(s));for(const p of sa.periods)if((p.state==='unpaid'||p.state==='partial')&&p.es<=today){const f=pFrom(p);if(!st||f<st)st=f;if(!en||p.en>en)en=p.en;}}period=st?fmtD(st)+' – '+fmtD(en):'the current period';dueDate=st?fmtD(st,true):(a.nextDue?fmtD(a.nextDue,true):'now');}
   else{amount=ownText(a.cycleDue.n?a.cycleDue:a.due,a.mainCur);for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.cycleDue>0)parts.push(fmtAmt(sa.cycleDue,s.currency)+' for '+planLabel(s));}period=fmtD(w.nc)+' – '+fmtD(w.periodEnd);dueDate=fmtD(w.nc,true);}
   if(parts.length>1)amount+=' in total ('+parts.join(' + ')+')';
   if(x&&x.dueDate)dueDate=x.dueDate;
@@ -1442,8 +1479,9 @@ const serverLinkBase=()=>state.backend==='api'?pubBaseRaw(serverCfg().linkBase):
 function publicBase(){return serverLinkBase()||pubBaseRaw(state.settings.publicBaseUrl)||(state.backend==='api'?location.origin:'');}
 const confirmLinkFor=tok=>{const b=publicBase();return b&&TOKEN_RE.test(tok||'')?b+'/c/'+tok:'';};
 const confirmLink=u=>confirmLinkFor(u&&u.confirmToken);
-const tokenPending={};
-async function ensureToken(id){const u=state.users[id];if(!u)return '';if(TOKEN_RE.test(u.confirmToken||''))return u.confirmToken;if(tokenPending[id])return '';tokenPending[id]=true;const c=clone(u);c.confirmToken=newToken();const ok=await persistUser(id,c);delete tokenPending[id];return ok?c.confirmToken:'';}
+const tokenPending={},tokenSave={};
+async function ensureToken(id){const u=state.users[id];if(!u)return '';if(TOKEN_RE.test(u.confirmToken||''))return u.confirmToken;if(tokenPending[id])return '';/* v39: a background token save never races a save of a user or cost the owner just made; it tries again shortly */if(API.busy){if(!tokenWait[id])tokenWait[id]=setTimeout(()=>{delete tokenWait[id];ensureToken(id);},500);return '';}tokenPending[id]=true;const c=clone(u);c.confirmToken=newToken();const pr=persistUser(id,c,true,true);tokenSave[id]=pr;const ok=await pr;delete tokenSave[id];delete tokenPending[id];return ok?c.confirmToken:'';}
+const tokenWait={};
 function ensureConfirmTokens(){for(const id in state.users){const u=state.users[id];if(!u.cancel&&!TOKEN_RE.test(u.confirmToken||''))ensureToken(id);}}
 /* ---------- v20: cycle cards. What a subscriber sees on the choice page and what the queue messages say, per cycle:
    each monthly plan with its tier, amount due for that cycle, whether it is already covered, and the one tier it can switch to. ---------- */
@@ -1638,7 +1676,10 @@ async function maybeSeedShared(){
    (including publicBaseUrl, which the older writers dropped), and sets the proration basis: `force` (seed, and stores below
    schema 11) pins the fixed 30-day month that the owner's records use even when the doc says "actual"; otherwise a chosen basis is kept. */
 function canonicalSettings(b,force){b=b||{};let pk=normalizePackages(b.packages);if(!pk.length)pk=clone(DEFAULT_PACKAGES);for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(!p)continue;if(!p.cycle||(force&&p.cycle!==d.cycle))p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}}return {rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:force?'fixed30':(rawBasis(b.prorationBasis)||'fixed30'),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),publicBaseUrl:pubBaseRaw(b.publicBaseUrl),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,cycleDay:clampDay(b.cycleDay,+(isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR).slice(8,10)),remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY),queueTemplates:normQueueTpl(b.queueTemplates),payHow:rawPayHow(b.payHow),waApp:normWaApp(b.waApp),dimSettled:b.dimSettled!==false};}
-async function ensureSettingsShared(force){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const want=canonicalSettings(b,force);const same=sn.exists&&Object.keys(want).every(k=>JSON.stringify(want[k])===JSON.stringify(b[k]));if(!same)await db.doc('settings/main').set(want);}catch(e){}}
+/* v39: settings are written by merging onto the stored document, never by replacing it, so a field this page does not list (the v38 cost tax and
+   rate history, ownerName, anything a newer version adds) is kept. Before, the repair below and persistSettings replaced the whole document. */
+async function mergeSettings(patch){const ref=db.doc('settings/main');const sn=await ref.get();return sn.exists?ref.update(patch):ref.set(patch);}
+async function ensureSettingsShared(force){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const want=canonicalSettings(b,force);const same=sn.exists&&Object.keys(want).every(k=>JSON.stringify(want[k])===JSON.stringify(b[k]));if(!same)await mergeSettings(want);}catch(e){}}
 async function maybeMigrateShared(rawDocs){
   if(migrateChecked||seedActive)return;migrateChecked=true; /* a seed in progress writes the schema marker itself; try again on a later snapshot */
   try{
@@ -1647,7 +1688,7 @@ async function maybeMigrateShared(rawDocs){
     const lease=await db.doc('meta/schema').acquire({holder:'mig_'+Math.random().toString(36).slice(2),ttlMs:60000});if(!lease.acquired)return;
     if(verOf(await db.doc('meta/schema').get())>=SCHEMA)return;
     /* settings first, users next, the schema marker last: an interrupted run is simply redone on the next load */
-    await ensureSettingsShared(prev<11);
+    await ensureSettingsShared(prev>0&&prev<11);/* v39: a missing marker (0) no longer forces the 30-day basis over the owner's choice; only a recorded older schema does */
     let n=0,removed=0;for(const d of rawDocs){const body=d.data();if(!body)continue;if(isUntouchedSeedUqba(body)){await db.collection('users').doc(d.id).delete();removed++;continue;}const m=migrateUserV2(body);if(m){await db.collection('users').doc(d.id).set(cleanUser(Object.assign({id:d.id},m)));n++;}}
     if(removed)toast('Removed Uqba (never joined).');
     await db.doc('meta/schema').set({version:SCHEMA,at:new Date().toISOString(),migrated:n,from:prev});
@@ -1681,11 +1722,11 @@ function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const
 function saveLocal(){try{localStorage.setItem('pt-data',JSON.stringify({users:state.users,costs:state.costs,settings:state.settings}));}catch(e){}}
 function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;}catch(e){}}
 function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur}));}catch(e){}}
-function dbErr(e){const c=e&&e.code;if(c==='quota_exceeded')return 'Storage is full: delete some entries before adding more.';if(c==='invalid_argument')return 'You do not have permission to change shared data.';if(c==='resource_exhausted')return 'Too many changes at once; wait a moment and try again.';return 'Could not save ('+(c||'unknown')+'). Try again.';}
+function dbErr(e){const c=e&&e.code;if(c==='stale_app')return 'Wasooli was updated. Reload this page, then try again.';if(c==='conflict')return 'This was changed on another device. The latest details are loaded; check them and tap Save again.';if(c==='quota_exceeded')return 'Storage is full: delete some entries before adding more.';if(c==='invalid_argument')return 'You do not have permission to change shared data.';if(c==='resource_exhausted')return 'Too many changes at once; wait a moment and try again.';return 'Could not save ('+(c||'unknown')+'). Try again.';}
 /* v29: the saved user goes into state and is drawn at once on every backend. Before, on the server the page only wrote the document and
    waited for the next poll of /api/version to fetch the list again, so a recorded payment showed as paid only when that round trip had
    finished (4 s, 30 s in a background tab, or never if the poll failed), which made Save look as if it had done nothing. */
-async function persistUser(id,u){const body=cleanUser(Object.assign({},u,{id}));if(db){try{await db.collection('users').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}state.users[id]=normalizeUser(clone(body),id);render();}else{state.users[id]=normalizeUser(body,id);saveLocal();render();}return true;}
+async function persistUser(id,u,quiet,isToken){if(!isToken&&tokenSave[id])await tokenSave[id].catch(()=>{});/* v39: wait for a link-token save of this user, and never drop a token this page already holds */const body=cleanUser(Object.assign({},u,{id}));{const cur=state.users[id];if(!body.confirmToken&&cur&&cur.confirmToken)body.confirmToken=cur.confirmToken;}if(db){try{await db.collection('users').doc(id).set(body);}catch(e){if(!quiet)toast(dbErr(e));return false;}state.users[id]=normalizeUser(clone(body),id);render();}else{state.users[id]=normalizeUser(body,id);saveLocal();render();}return true;}
 /* v37: supplier expenses remain separate from customer bills and cash. */
 /* v38: supplier quote currency, payment currency and dated global cost policy. */
 const validTax=v=>v!==''&&v!=null&&isFinite(Number(v))&&Number(v)>=0&&Number(v)<=100;
@@ -1761,6 +1802,10 @@ function wireAccountCostFields(root){root.querySelectorAll('.account-cost-fields
     }else if(mode==='once'&&validAmt(read('accountCost'))&&isDateKey(read('accountCostDate'))){try{preview.textContent=costPaymentText(pricedCost(read('accountCost'),read('accountCostCurrency'),paid,read('accountCostDate'),normRate(read('accountCostRate')),saved?saved.extraTax:0,saved&&saved.paidIn===paid?saved:null))+' · one actual expense; existing cycle schedule remains.';}catch(e){preview.textContent=e.message;}}else preview.textContent='Choose the cost type and amount when known. Customer bills and receipts are separate.';
   };box.refreshCostFields=upd;box.addEventListener('change',upd);if(form)form.addEventListener('input',upd);upd();
 });}
+/* v39: the value a form field had when the form was drawn from stored data. A redraw keeps it with the draft (data-base), so Edit user can
+   write only the fields the owner actually changed and never puts a stale copy of an untouched field over a newer save from another device. */
+function fieldBase(el){if(el.dataset&&el.dataset.base!==undefined)return el.dataset.base;if(el.tagName==='SELECT'){const o=[...el.options].find(x=>x.defaultSelected)||el.options[0];return o?o.value:'';}return el.defaultValue;}
+const fieldChanged=(form,n)=>{const el=form.elements.namedItem(n);return !!el&&el.value!==fieldBase(el);};
 function updateAccountStart(s,date){if(s.kind==='monthly'&&!isDateKey(date))throw Error('Choose the product start date.');if(date&&!isDateKey(date))throw Error('Choose a valid product start date.');if(s.end&&date&&s.end<date)throw Error('Product start must not be after its end date.');if(date)s.start=date;else if(s.kind==='one-time')delete s.start;}
 function accountCostDraft(form,s,uid,prefix){
   const p=prefix||'',get=n=>{const el=form.elements.namedItem(p+n);return el?el.value:'';},raw=get('accountCost'),mode=get('accountCostMode');if(mode==='none'||raw==='')return null;
@@ -1774,7 +1819,7 @@ function accountCostDraft(form,s,uid,prefix){
   return {id:cid,...(before||{}),date,description:before?before.description:`${displayName(state.users[uid]||{name:form.elements.namedItem('name')?.value||'New user'})} · ${pkgName(s.packageId)||s.name||'Product'} cost`,category:before?before.category:'Product',packageId:s.packageId||'',currency:normCur(get('accountCostCurrency')),cost:Number(raw),tax:before?before.tax:0,rate:normRate(rateRaw),source:before?before.source:'account',receipt:before?before.receipt:'',userId:uid,subscriptionId:s.id,...payment};
 }
 async function persistAccountBundle(id,u,costs){if(!costs.length)return persistUser(id,u);const body=cleanUser({...u,id}),docs={['users/'+id]:body};for(const c of costs)docs['costs/'+c.id]=cleanCost(c);
-  try{if(state.backend==='api'){const result=await apiJSON('/api/import',apiBody('POST',{docs,replace:[]}));if(result.skipped&&result.skipped.length)throw Error('Account save rejected.');apiTouch();}
+  try{if(state.backend==='api'){const base={};for(const p of Object.keys(docs))if(API.rev[p])base[p]=API.rev[p];let result;API.busy++;try{result=await apiJSON('/api/import',apiBody('POST',{docs,replace:[],base}));}catch(e){apiConflict(e);throw e;}finally{API.busy--;}if(result.skipped&&result.skipped.length)throw Error('Account save rejected.');for(const p of Object.keys(docs))apiWrote(p);Object.assign(API.rev,result.versions||{});apiTouch();}
     else if(db)throw Error('Linked account costs need the live app. Save expenses separately in Costs on this older storage backend.');
     else{const nextCosts={...state.costs};for(const c of costs)nextCosts[c.id]=normalizeCost(docs['costs/'+c.id],c.id);localStorage.setItem('pt-data',JSON.stringify({users:{...state.users,[id]:normalizeUser(body,id)},costs:nextCosts,settings:state.settings}));}
     state.users[id]=normalizeUser(body,id);for(const c of costs)state.costs[c.id]=normalizeCost(docs['costs/'+c.id],c.id);render();return true;
@@ -1786,7 +1831,7 @@ async function removeUser(id){if(db){try{await db.collection('users').doc(id).de
 async function persistCost(id,c){const existing=costRecords()[id];if(existing&&existing.source==='account-cycle'){const u=clone(state.users[existing.userId]),sub=u.subscriptions.find(x=>x.id===existing.subscriptionId);if(!sub||!sub.accountCost)return false;sub.accountCost.overrides[existing.cycleStart]={date:c.date,cost:c.cost,tax:c.tax||0,currency:c.currency,rate:c.rate,description:c.description,category:c.category,purchase:normPurchase(c.purchase)};return persistUser(u.id,u);}const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}state.costs[id]=normalizeCost(body,id);if(!db)saveLocal();render();return true;}
 async function removeCost(id){const existing=costRecords()[id];if(existing&&existing.source==='account-cycle')return persistCost(id,{...existing,cost:0,tax:0,purchase:existing.purchase?{...existing.purchase,amount:0,extraTax:0}:null,description:existing.description+' · cycle cost waived'});if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}delete state.costs[id];if(!db)saveLocal();render();return true;}
 function settingsDoc(){return {pkrCostTax:costTax(),costPaymentBase:state.settings.costPaymentBase||null,costPaymentHistory:normCostPolicies(state.settings.costPaymentHistory),rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),publicBaseUrl:pubBaseRaw(state.settings.publicBaseUrl),packages:state.settings.packages||[],anchor:anchor(),cycleDay:cycleDay(),remindDay:remindDay(),replyDay:replyDay(),queueTemplates:normQueueTpl(state.settings.queueTemplates),payHow:rawPayHow(state.settings.payHow),waApp:waApp(),dimSettled:dimOn()};}
-async function persistSettings(){if(db){try{await db.doc('settings/main').set(settingsDoc());}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
+async function persistSettings(){if(db){try{await mergeSettings(settingsDoc());}catch(e){toast(dbErr(e));return false;}}else saveLocal();render();return true;}
 function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||'').trim().toLowerCase();const ids=Object.keys(state.users);if(e){const hit=ids.find(id=>(state.users[id].email||'').toLowerCase()===e);if(hit)return hit;}if(n&&!e){const hit=ids.find(id=>(state.users[id].name||'').toLowerCase()===n);if(hit)return hit;}return null;}
 
 /* ---------- ranges ---------- */
@@ -1843,7 +1888,7 @@ function renderReminderBits(){
   const today=todayISO();const ids=Object.keys(state.users);const ban=$('#remindBanner'),cnt=$('#rem-cnt');
   if(!ids.length||!state.loaded){ban.hidden=true;cnt.hidden=true;return;}
   const R=reminderRows(today);const w=R.w;const n=R.overdue.length+R.cycle.length;syncConfirmRequests(R,today);
-  const st=stageToday(today);const Q=st.stage?queueRows(today,st):{rows:[],todo:0};cnt.hidden=!Q.todo;cnt.textContent=Q.todo;$('#btn-reminders').title=st.stage?`Stage ${st.stage} · ${STAGE_NAMES[st.stage]}: ${Q.todo} to send`:'Today\'s messages to send, answers from the link pages, final notice';
+  const st=stageToday(today);const Q=st.stage?queueRows(today,st):{rows:[],todo:0};const qIds=new Set(Q.rows.filter(r=>!r.sent).map(r=>r.id));for(const r of ownCycleDueRows(today))qIds.add(r.id);cnt.hidden=!qIds.size;cnt.textContent=qIds.size;$('#btn-reminders').title=st.stage?`Stage ${st.stage} · ${STAGE_NAMES[st.stage]}: ${Q.todo} to send`:'Today\'s messages to send, answers from the link pages, final notice';
   const finalDay=today>=w.replyBy&&today<w.nc;
   if(finalDay){const F=finalRows(today);ban.hidden=false;ban.dataset.kind='final';$('#remindBannerBtn').textContent='Open final notice';
     $('#remindBannerText').innerHTML=`<b>Final notice day</b>: <b>${F.pending}</b> user${F.pending===1?'':'s'} not confirmed for the cycle starting <b>${esc(fmtD(w.nc,true))}</b>${F.rows.some(r=>r.deact)?` · ${F.rows.filter(r=>r.deact).length} already deactivated`:''}. Send the final notice and compile the deactivation list.`;return;}
@@ -1873,6 +1918,12 @@ function renderRemindRun(){
   if(!R.all.length)html='<p class="small muted">No users yet.</p>';
   $('#rr-body').innerHTML=html;
 }
+/* v39: plans of a product with its own cycle are not part of the shared 24th message rounds; they appear in the Queue on their own due date
+   and stay there while overdue, until paid */
+function ownCycleDueRows(today){const rows=[];for(const id in state.users){const u=state.users[id];if(u.cancel)continue;let a=null;const plans=[];
+  for(const s of u.subscriptions||[]){if(s.kind!=='monthly'||!isDateKey(s.anchor))continue;a=a||analyze(u,today);const sa=a.sa[s.id];if(sa&&sa.overdueAmount>0&&sa.nextDue&&sa.nextDue<=today)plans.push({s,sa});}
+  if(plans.length)rows.push({id,u,a,plans});}
+  return rows.sort((x,y)=>displayName(x.u).localeCompare(displayName(y.u)));}
 /* ---------- v20 queue: today's stage from the date; one row per user still to message, with the rendered text, channel buttons and a Sent tick ---------- */
 function queueRows(today,st){const cycle=st.cycle;const rows=[];
   for(const id in state.users){const u=state.users[id];if(u.cancel)continue;const a=analyze(u,today);const card=cycleCard(u,a,cycle,today);if(!card.due)continue;const rs=remState(u,cycle);if(rs.skipped)continue;
@@ -1908,6 +1959,8 @@ function renderQueue(){
   const linkify=t=>esc(t).replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
   const row=r=>{const c=r.card;const s=r.sent;return `<div class="qrow" data-user="${esc(r.id)}" data-sent="${s?'1':'0'}"><div class="qhead"><span class="who">${esc(displayName(r.u))}</span><span class="due">${esc(c.tierText)} · <b>${esc(c.amountText)}</b>${c.plans.some(p=>p.custom)?' <span class="tag custom" title="Amount set by hand">custom</span>':''} due ${esc(fmtD(cycle))}${st.stage===1&&r.answered?` · ${answerBadge(r.id,cycle)}`:''} <button class="link sm qamt" type="button" data-act="qamt" data-user="${esc(r.id)}" aria-expanded="${ui.qOpen[r.id]?'true':'false'}" title="Change the amount for this cycle (discount or correction); the message updates at once">✎ edit amount</button></span><span class="remind-pair">${chan(r)}</span><label class="chk" title="Records the stage, cycle, channel and time"><input type="checkbox" data-act="qsent" data-user="${esc(r.id)}" data-stage="${st.stage}" data-cycle="${cycle}"${s?' checked':''}>Sent${s?` <span class="when">${esc(fmtWhen(s.at)||fmtD(s.at.slice(0,10)))} · ${esc(s.channel)}${s.by==='notify'?' (auto)':''}</span>`:''}</label></div>${ui.qOpen[r.id]?qAmtBox(r,cycle):''}<pre class="qmsg">${linkify(queueText(r,st))}</pre></div>`;};
   if(st.stage)html+=Q.rows.length?Q.rows.map(row).join(''):`<p class="small muted" style="margin-top:10px">${st.stage>=2?'Everyone due for this cycle has answered on the link (or is on the Except list).':'Nobody has an amount due for this cycle.'}</p>`;
+  const own=ownCycleDueRows(today);
+  if(own.length)html+=`<div class="rr-sec"><h4>Due on their product's own cycle · ${own.length}</h4><p class="small muted">These products bill on their own day, so they are listed here from their due date until paid, outside the stages above.</p>${own.map(r=>`<div class="rr-row" data-user="${esc(r.id)}" data-own="1"><span class="who" title="${esc(displayName(r.u))}">${esc(displayName(r.u))}</span><span class="due">${r.plans.map(p=>`${esc(planLabel(p.s))} · <b>${esc(fmtAmt(p.sa.overdueAmount,p.s.currency))}</b> ${p.sa.nextDue===today?'due today':'overdue since '+esc(fmtD(p.sa.nextDue))}`).join('<br>')}</span><span class="remind-pair">${remindControl(r.u,r.a,today,'Open WhatsApp','overdue')}${emailControl(r.u,r.a,today,'Email','overdue')}${telegramControl(r.u,'Telegram')}</span></div>`).join('')}</div>`;
   if(!Object.keys(state.users).length)html='<p class="small muted">No users yet.</p>';
   $('#rr-body').innerHTML=html;
 }
@@ -1959,7 +2012,7 @@ async function copyFinalList(){
 }
 function pkgOptions(selected,blankLabel){return (blankLabel!==undefined?`<option value="">${esc(blankLabel)}</option>`:'')+packages().map(p=>`<option value="${esc(p.id)}" data-cycle="${p.cycle}"${p.id===selected?' selected':''}>${esc(p.name)} · ${CYCLES[p.cycle].label.toLowerCase()}</option>`).join('')+`<option value="__new">+ New package…</option>`;}
 const cycleSelect=(id,name,val,withOne)=>`<select id="${id}" name="${name}"><option value="monthly"${val==='monthly'?' selected':''}>Monthly</option><option value="yearly"${val==='yearly'?' selected':''}>Yearly</option>${withOne?`<option value="one-time"${val==='one-time'?' selected':''}>One-time</option>`:''}</select>`;
-function newPackageFlow(){openSettings();ui.pkgEdit=ui.pkgEdit||clone(packages());ui.pkgEdit.push({id:newId('pkg'),name:'',cycle:'monthly',price:null,currency:'',description:''});renderPkgEditor();const inputs=document.querySelectorAll('#pkgList input[data-f=name]');if(inputs.length)inputs[inputs.length-1].focus();}
+function newPackageFlow(){openSettings();ui.pkgEdit=ui.pkgEdit||clone(packages());ui.pkgEdit.push({id:newId('pkg'),name:'',cycle:'monthly',price:null,currency:'',description:'',fresh:true});renderPkgEditor();const inputs=document.querySelectorAll('#pkgList input[data-f=name]');if(inputs.length)inputs[inputs.length-1].focus();}
 function renderPkgFilter(){const sel=$('#pkgFilter');const cur=ui.pkgFilter;sel.innerHTML=`<option value="all">Package: all</option>`+packages().map(p=>`<option value="${esc(p.id)}">Package: ${esc(p.name)}</option>`).join('')+`<option value="none">Package: not set</option>`;sel.value=[...sel.options].some(o=>o.value===cur)?cur:'all';ui.pkgFilter=sel.value;}
 /* v21: which product each payment paid for. Payments fill a plan's periods in order (credit carries), so a payment is split across the tier of the
    period(s) it covers: a plan that moved C → C Max mid-way sends the later months' money to C Max. One-time items go to their own product.
@@ -2346,7 +2399,7 @@ function fillBillAccount(start){const c=moneyDialogContext('bill');if(!c)return;
 }
 function openBillDialog(id,sid,start){if(!state.settingsLoaded)return;const u=state.users[id],subs=u&&(u.subscriptions||[]).filter(s=>s.kind==='monthly');if(!subs||!subs.length)return;const s=subs.find(s=>s.id===sid)||subs[0];ui.billDraft={id,sid:s.id,busy:false};$('#bill-error').textContent='';$('#bill-who').textContent=displayName(u);$('#bill-account').innerHTML=subs.map((s,i)=>`<option value="${esc(s.id)}">${esc(paymentAccountName(u,s,i))}</option>`).join('');$('#bill-account').value=s.id;fillBillAccount(start);$('#billDialog').showModal();}
 function billDraftUser(c,includeCash=true){const {u,s}=c,p=billingPeriods(s).find(p=>p.st===$('#bill-period').value);if(!p)return {error:'This account has no bill in that period.'};const mode=$('#bill-mode').value,settlement=$('#bill-settlement').value,sim=clone(u),ss=sim.subscriptions.find(x=>x.id===s.id);let amount=Number($('#bill-amount').value),note='Agreed bill for '+fmtCycle(p.st,p.en);
-  if(mode==='normal')amount=p.full;else if(mode==='computed'){const plain=clone(s);setPeriodOverride(plain,p.st,null,undefined);amount=periodAmt(plain,p.k).pr+billRefundReduction(plain,p.st);}else if(mode==='days'){const from=$('#bill-from').value,to=$('#bill-to').value;if(!isDateKey(from)||!isDateKey(to)||from<pFrom(p)||to>p.en||to<from)return {error:'Service dates must be inside the selected bill, with the end on or after the start.'};const days=dayDiff(from,to)+1,divisor=planBasis(s)==='fixed30'?30:p.total;amount=Math.min(p.full,Math.round(p.full*days/divisor));note='Service '+fmtCycle(from,to)+'; '+days+' / '+divisor+' days';}
+  if(mode==='normal')amount=p.full;else if(mode==='computed'){const plain=clone(s);setPeriodOverride(plain,p.st,null,undefined);amount=periodAmt(plain,p.k).pr+billRefundReduction(plain,p.st);}else if(mode==='days'){const from=$('#bill-from').value,to=$('#bill-to').value;if(!isDateKey(from)||!isDateKey(to)||from<pFrom(p)||to>p.en||to<from)return {error:'Service dates must be inside the selected bill, with the end on or after the start.'};const days=dayDiff(from,to)+1,divisor=periodBasisDays(s,p.total);amount=Math.min(p.full,roundCur(p.full*days/divisor,s.currency));note='Service '+fmtCycle(from,to)+'; '+days+' / '+divisor+' days';}
   if(mode==='amount'&&!validAmt($('#bill-amount').value))return {error:'Enter the agreed amount for this bill (zero is allowed).'};
   if(mode==='computed')setPeriodOverride(ss,p.st,null,undefined);else {setPeriodOverride(ss,p.st,amount+billRefundReduction(s,p.st),note);if(p.k===0)ss.prorationAmountOverride=null;}
   if(includeCash&&(settlement==='new'||settlement==='edit')){const cash=$('#bill-cash').value,date=$('#bill-date').value;if(!validAmt(cash)||Number(cash)<=0||!isDateKey(date))return {error:'Enter the actual money received and its receipt date.'};const existing=settlement==='edit'&&(ss.payments||[]).find(p=>p.id===$('#bill-receipt').value);if(settlement==='edit'&&!existing)return {error:'Choose an existing receipt to correct.'};const receipt={id:existing?existing.id:'__bill_preview',date,amount:Number(cash),currency:existing?(existing.currency||s.currency):s.currency,rate:existing?existing.rate:null,note:existing?existing.note:'Received for '+exactBillLabel(s,p)};if(existing)ss.payments=ss.payments.map(p=>p.id===existing.id?Object.assign({},p,receipt):p);else ss.payments=(ss.payments||[]).concat(receipt);}
@@ -2437,12 +2490,15 @@ function closePaymentDialog(){if(ui.paymentDraft&&ui.paymentDraft.busy)return;$(
 async function savePaymentDialog(e){e.preventDefault();const c=paymentContext();if(!c||c.d.busy)return;refreshPaymentPreview();if($('#payment-save').disabled)return;const {d,u,s,a}=c,t=paymentTarget(s,a.sa[s.id],Number($('#payment-month').value));const list=paymentDraftList(c,t);
   if(d.payId&&!(s.payments||[]).some(p=>p.id===d.payId)){$('#payment-error').textContent='This receipt has changed. Close the form and open it again.';return;}
   d.busy=true;refreshPaymentPreview();let ok=false;
-  if(d.payId){const edited=clone(u),ss=edited.subscriptions.find(x=>x.id===s.id);ss.payments=ss.payments.map(p=>p.id===d.payId?Object.assign({},p,list[0],{id:p.id}):p);ok=await persistUser(d.id,edited);if(ok)toast(`Receipt saved for ${displayName(u)} · total paid ${ownText(analyze(state.users[d.id],todayISO()).totals,a.mainCur)}.`);}
+  if(d.payId){const edited=clone(u),ss=edited.subscriptions.find(x=>x.id===s.id);ss.payments=ss.payments.map(p=>p.id===d.payId?withLockedRate(ss,Object.assign({},p,list[0],{id:p.id})):p);ok=await persistUser(d.id,edited);if(ok)toast(`Receipt saved for ${displayName(u)} · total paid ${ownText(analyze(state.users[d.id],todayISO()).totals,a.mainCur)}.`);}
   else ok=await recordPayment(d.id,s.id,list);
   d.busy=false;if(ok){$('#paymentDialog').close();ui.paymentDraft=null;}else{$('#payment-error').textContent='The payment was not saved. Your entries are kept here; try again.';refreshPaymentPreview();}
 }
+let lastTbodyHTML='',tbodyDirty=true,tbodyObs=null;
 function renderTable(){
-  const accountDrafts=[...document.querySelectorAll('#tbody .edit-form,#tbody .addsub-form,#tbody .subedit-form')].filter(f=>!f.hidden).map(f=>({cls:['edit-form','addsub-form','subedit-form'].find(c=>f.classList.contains(c)),id:f.dataset.id,sub:f.dataset.sub,pending:f.dataset.pendingSubId,values:[...f.elements].filter(e=>e.name).map(e=>({name:e.name,value:e.value,checked:e.checked,costManual:e.dataset.costManual}))}));
+  /* v39: the typed values of every open inline form are kept across a redraw (before, only Edit user, Add plan and Edit plan were), so a refresh triggered by another device or by this page's own background save cannot wipe a half-typed bill, receipt, price, refund or tier form */
+  const formKey=f=>[f.className,f.dataset.id||'',f.dataset.sub||'',f.dataset.start||''].join('|');
+  const accountDrafts=[...document.querySelectorAll('#tbody form')].filter(f=>!f.hidden).map(f=>({key:formKey(f),id:f.dataset.id,sub:f.dataset.sub,pending:f.dataset.pendingSubId,values:[...f.elements].filter(e=>e.name).map(e=>({name:e.name,value:e.value,base:fieldBase(e),checked:e.checked,costManual:e.dataset.costManual}))}));
   if(ui.paymentDraft&&$('#paymentDialog').open)refreshPaymentPreview();
   if(ui.startDraft&&$('#startDialog').open)refreshStartPreview();
   if(ui.billDraft&&$('#billDialog').open)refreshBillPreview();
@@ -2477,9 +2533,16 @@ function renderTable(){
     </tr>`;
     if(exp)html+=`<tr class="detail" data-id="${id}"><td colspan="10"><div class="detail-card">${detailHTML(id,u,a,today)}</div></td></tr>`;
   }
-  $('#tbody').innerHTML=html;
+  /* v39: a refresh that would draw exactly the same table keeps the rows already on screen. Startup and background refreshes used to replace every
+     row even when nothing changed, so a tap landing in that instant was lost and open forms were rebuilt. Any real change still redraws. */
+  /* Only when nothing in the table was changed since (a swapped Yes/Cancel, a disabled button, a shown form: tracked by tbodyObs; typing does not count) */
+  const tb=$('#tbody');if(!tbodyObs&&window.MutationObserver){tbodyObs=new MutationObserver(()=>{tbodyDirty=true;});tbodyObs.observe(tb,{subtree:true,childList:true,attributes:true,characterData:true});}
+  if(tbodyObs&&tbodyObs.takeRecords().length)tbodyDirty=true;
+  if(tbodyObs&&!tbodyDirty&&html===lastTbodyHTML&&tb.children.length)return;lastTbodyHTML=html;
+  tb.innerHTML=html;
   if(ui.expanded&&state.users[ui.expanded])wireDetail(ui.expanded,today);
-  for(const d of accountDrafts){const f=[...document.querySelectorAll('#tbody form')].find(f=>f.classList.contains(d.cls)&&f.dataset.id===d.id&&f.dataset.sub===d.sub&&!f.hidden);if(!f)continue;if(d.pending)f.dataset.pendingSubId=d.pending;for(const v of d.values){const e=f.elements.namedItem(v.name);if(e){e.value=v.value;if(e.type==='checkbox'||e.type==='radio')e.checked=v.checked;if(v.costManual)e.dataset.costManual=v.costManual;}}wireAccountCostFields(f);}
+  for(const d of accountDrafts){const f=[...document.querySelectorAll('#tbody form')].find(x=>formKey(x)===d.key&&!x.hidden);if(!f)continue;if(d.pending)f.dataset.pendingSubId=d.pending;const typed=[];for(const v of d.values){const e=f.elements.namedItem(v.name);if(e&&e.tagName){const box=e.type==='checkbox'||e.type==='radio';if(!box&&v.value===v.base)continue;e.value=v.value;e.dataset.base=v.base;if(box)e.checked=v.checked;if(v.costManual)e.dataset.costManual=v.costManual;typed.push(e);}}wireAccountCostFields(f);for(const e of typed)e.dispatchEvent(new Event('input',{bubbles:true}));}
+  if(tbodyObs)tbodyObs.takeRecords();tbodyDirty=false;
 }
 function renderRemindAll(rows,today){
   const panel=$('#remindPanel');const list=rows.filter(r=>r.a.unpaid);
@@ -2562,7 +2625,7 @@ function refundPreview(u,s,f,today){
     txt+=`. ${f.alsoCancel?'Cancelled':'Cancelled user'} · last day ${fmtD(cx,true)}: nothing is billed after it`;
     if(kept.length)txt+=`; ${kept.map(k=>`${fmtD(k.st)} – ${fmtD(k.en)} counts as ${fmtAmt(k.kept,s.currency)} kept`).join(', ')}`;
     txt+=a2.overdueAmount>0?`; still owed ${fmtAmt(a2.overdueAmount,s.currency)}.`:'; nothing owed.';}
-  else{const short=a.periods.filter(p=>(p.state==='unpaid'||p.state==='partial')&&p.st<=today&&!((b.periods.find(x=>x.k===p.k)||{}).state!=='paid'));
+  else{const short=a.periods.filter(p=>(p.state==='unpaid'||p.state==='partial')&&p.es<=today&&!((b.periods.find(x=>x.k===p.k)||{}).state!=='paid'));
     txt+=short.length?`; ${short.map(p=>`${fmtD(p.st)} – ${fmtD(p.en)}`).join(', ')} shows as unpaid again (${fmtAmt(a.overdueAmount,s.currency)} owed). Tick "Also cancel" if they are leaving.`:'.';}
   return txt;}
 function uptoForm(id,s,sa,today,open){
@@ -2699,9 +2762,12 @@ function recNoneHTML(id,u,s,sa,today){const cur=s.currency;const ended=sa.status
       <span class="form-actions" style="margin:0"><button class="btn primary" type="submit">Record</button><button class="link" type="button" data-act="rec-cancel" data-sub="${esc(s.id)}">Not now</button></span>
     </form>
   </div>`;}
+/* v39: a receipt in another currency than its plan keeps the rate of the day it is recorded. A blank rate used to be stored as blank, which meant
+   "whatever the default rate is today" for ever, so changing the default in Settings re-valued old payments and turned paid months overdue. */
+function withLockedRate(s,p){const cur=p.currency||s.currency;if(cur!==s.currency&&!normRate(p.rate)){const r=defaultRate();if(r)return Object.assign({},p,{rate:r});}return p;}
 async function recordPayment(id,sid,pay){if(!state.users[id])return false;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return false;
   const list=Array.isArray(pay)?pay:[pay];if(!list.length)return false;
-  s.payments=(s.payments||[]).concat(list.map(x=>({id:newId('p'),date:x.date,amount:x.amount,currency:x.currency,rate:x.rate||null,note:x.note||''})));
+  s.payments=(s.payments||[]).concat(list.map(x0=>{const x=withLockedRate(s,x0);return {id:newId('p'),date:x.date,amount:x.amount,currency:x.currency,rate:x.rate||null,note:x.note||''};}));
   ui.open[id]=Object.assign({},ui.open[id],{['rec:'+sid]:false,['recmore:'+sid]:false,['upto:'+sid]:false});
   const ok=await persistUser(id,u);
   if(ok){const sa=analyze(state.users[id]||u,todayISO()).sa[sid];const sum=Math.round(list.reduce((t,x)=>t+x.amount,0)*100)/100;toast(`${list.length>1?list.length+' payments, ':''}${fmtAmt(sum,list[0].currency)} recorded for ${displayName(u)}${sa?' · '+statusLabel(sa):''}.`);}
@@ -2754,7 +2820,7 @@ function detailHTML(id,u,a,today){
       subsHtml+=`<div class="sub" data-sub="${s.id}" data-settled="${dimOn()&&!u.cancel&&sa.status==='current'?1:0}">
         <div class="sub-head">
           ${acctLine(u,s)}
-          <div class="sub-line"><span class="pkg-badge" title="Package / tier">${esc(pkgName(sa.curPkgId)||planLabel(s))}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="kind">${subCycle(s)} · ${s.currency}</span><span class="num">${s.discount?`${esc(fmtAmt(shownList,s.currency))}<span class="muted">${perOf(s)}</span> · ${esc(discountLabel(s))} = <b>${esc(fmtAmt(shownPrice,s.currency))}</b>`:`${esc(fmtAmt(shownPrice,s.currency))}<span class="muted">${perOf(s)}</span>`}</span><span class="pill" data-status="${sa.status}" title="${esc(statusHint(sa))}">${esc(statusLabel(sa))}</span>${tierBadgeHTML(s,today)}
+          <div class="sub-line"><span class="pkg-badge" title="Package / tier">${esc(pkgName(sa.curPkgId)||planLabel(s))}</span>${s.packageId?'':'<span class="pill warnp">Package not set</span>'}<span class="kind">${subCycle(s)} · ${s.currency}${isDateKey(s.anchor)?` · own cycle from ${esc(fmtD(s.anchor))}`:''}</span><span class="num">${s.discount?`${esc(fmtAmt(shownList,s.currency))}<span class="muted">${perOf(s)}</span> · ${esc(discountLabel(s))} = <b>${esc(fmtAmt(shownPrice,s.currency))}</b>`:`${esc(fmtAmt(shownPrice,s.currency))}<span class="muted">${perOf(s)}</span>`}</span><span class="pill" data-status="${sa.status}" title="${esc(statusHint(sa))}">${esc(statusLabel(sa))}</span>${tierBadgeHTML(s,today)}
           <span class="sub-acts"><button class="btn sm primary" type="button" data-act="rec" data-sub="${s.id}" data-start="${rt?rt.st:'none'}" aria-expanded="${recOpen===(rt?rt.st:'none')?'true':'false'}">Record payment</button>
           ${sa.nextDue?`<button class="btn sm" type="button" data-act="toggle" data-key="upto:${s.id}" title="Record payment for every period up to a chosen cycle or date">Paid up to…</button>`:''}
           ${(s.payments||[]).length?`<button class="btn sm" type="button" data-act="toggle" data-key="refund:${s.id}" title="Record money given back: it comes off revenue and off this plan's credit">Refund</button>`:''}
@@ -2803,7 +2869,7 @@ function detailHTML(id,u,a,today){
             <label class="f">Discount value<input id="se-discv-${s.id}" name="discValue" type="number" min="0" step="0.01" value="${s.discount?s.discount.value:''}" placeholder="e.g. 10"></label>
             <label class="f">Proration basis<select id="se-basis-${s.id}" name="basis"><option value=""${rawBasis(s.prorationBasis)?'':' selected'}>Default (Settings)</option><option value="actual"${s.prorationBasis==='actual'?' selected':''}>Actual days in cycle</option><option value="fixed30"${s.prorationBasis==='fixed30'?' selected':''}>Fixed 30-day month</option></select></label>
           </div>
-          <p class="small muted" style="margin-top:6px">Periods follow the shared billing cycle (${esc(ordinal(cycleDay()))} to ${cycleDay()===1?'end of month':esc(ordinal(cycleDay()-1))}, set in Settings); the start date picks the first period. With proration on, that first period is charged by days (on the basis chosen here, or the Settings default); with the waiver on, the days before the next cycle are free and billing starts at that cycle. A discount applies to every period of this plan and shows in the header, dues, reminders and totals. Changing the currency changes what the price and existing payments are read as; it does not convert them. "Remaining due by" turns an unpaid part of the current period into an open balance until that date instead of overdue.</p>
+          <p class="small muted" style="margin-top:6px">${isDateKey(s.anchor)?`Periods follow this product's own cycle (from ${esc(fmtD(s.anchor,true))}, renewing on the ${esc(ordinal(+s.anchor.slice(8,10)))} each ${subCycle(s)==='yearly'?'year':'month'})`:`Periods follow the shared billing cycle (${esc(ordinal(cycleDay()))} to ${cycleDay()===1?'end of month':esc(ordinal(cycleDay()-1))}, set in Settings)`}; the start date picks the first period. With proration on, that first period is charged by days (on the basis chosen here, or the Settings default); with the waiver on, the days before the next cycle are free and billing starts at that cycle. A discount applies to every period of this plan and shows in the header, dues, reminders and totals. Changing the currency changes what the price and existing payments are read as; it does not convert them. "Remaining due by" turns an unpaid part of the current period into an open balance until that date instead of overdue.</p>
           ${accountCostFields(s)}
           <div class="form-actions"><button class="btn primary sm" type="submit">Save plan</button><button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Cancel</button><span style="flex:1"></span><span class="del-wrap"><button class="link danger" type="button" data-act="sub-remove" data-sub="${s.id}">Remove plan and its payments</button></span></div>
         </form>
@@ -2815,13 +2881,13 @@ function detailHTML(id,u,a,today){
       subsHtml+=`<div class="sub" data-sub="${s.id}" data-settled="${dimOn()&&!u.cancel&&sa.status==='paid'?1:0}">
         <div class="sub-head">
           ${acctLine(u,s)}
-          <div class="sub-line"><span class="pkg-badge" title="Package / product">${esc(pkgName(s.packageId)||'One-time')}</span><span class="name">${esc(s.name)}</span><span class="kind">one-time · ${s.currency}</span><span class="num">${esc(fmtAmt(sa.total,s.currency))}${sa.refunded?` <span class="muted" title="The item's amount less what was refunded">(${esc(fmtAmt(sa.listed,s.currency))} less ${esc(fmtAmt(sa.refunded,s.currency))} refunded)</span>`:''}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>
+          <div class="sub-line"><span class="pkg-badge" title="Package / product">${esc(pkgName(s.packageId)||'One-time')}</span><span class="name">${esc(s.name)}</span><span class="kind">${s.renews?'one-time annual':'one-time'} · ${s.currency}</span><span class="num">${esc(fmtAmt(sa.total,s.currency))}${sa.refunded?` <span class="muted" title="The item's amount less what was refunded">(${esc(fmtAmt(sa.listed,s.currency))} less ${esc(fmtAmt(sa.refunded,s.currency))} refunded)</span>`:''}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>
           <span class="sub-acts">${sa.remaining>0?`<button class="btn sm primary" type="button" data-act="rec" data-sub="${s.id}" data-start="item" aria-expanded="${open['rec:'+s.id]==='item'?'true':'false'}">Record payment</button>`:''}
           ${(s.payments||[]).length?`<button class="btn sm" type="button" data-act="toggle" data-key="refund:${s.id}" title="Record money given back: it comes off revenue and off what this item has paid">Refund</button>`:''}
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
         </div>
         <div class="sub-body">
-        <div class="sub-facts"><span>Paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b>${(s.refunds||[]).length?` <span class="muted">kept (<span class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</span> refunded, taken off the item's total)</span>`:''}</span><span>Remaining <b>${esc(fmtAmt(sa.remaining,s.currency))}</b></span><span>Due <b>${s.due?esc(fmtD(s.due,true)):'no date'}</b></span>${unconvNote}</div>
+        <div class="sub-facts"><span>Paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b>${(s.refunds||[]).length?` <span class="muted">kept (<span class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</span> refunded, taken off the item's total)</span>`:''}</span><span>Remaining <b>${esc(fmtAmt(sa.remaining,s.currency))}</b></span><span>Due <b>${s.due?esc(fmtD(s.due,true)):'no date'}</b></span>${s.renews?`<span>Renews <b>${esc(fmtD(s.renews,true))}</b> <span class="muted">(for reference)</span></span>`:''}${unconvNote}</div>
         ${open['rec:'+s.id]==='item'&&sa.remaining>0?recBoxHTML(id,u,s,recTarget(s,sa),today,!!open['recmore:'+s.id]):''}
         ${payForm(id,s,sa,today,sa.remaining,payOpen,(ui.payEdit||{})[s.id]?(s.payments||[]).find(x=>x.id===ui.payEdit[s.id]):null)}
         ${refundForm(id,u,s,today,open['refund:'+s.id],refundEditOf(s))}
@@ -2877,6 +2943,7 @@ function detailHTML(id,u,a,today){
         <label class="f">Pays in${curSelect('as-cur-'+id,'currency',a.mainCur)}</label>
         <label class="f"><span data-role="amt-label">Monthly price</span><input id="as-price-${id}" name="price" type="number" min="0" step="0.01" required></label>
         <label class="f"><span data-role="date-label">Product started on</span><input id="as-date-${id}" name="date" type="date" value="${todayISO()}"></label>
+        ${firstSaleHTML('firstSale-'+id)}
         <label class="f" data-role="one-due-wrap" hidden>One-time amount due on (optional)<input name="oneDue" type="date"></label>
         <label class="f" data-role="payment-wrap" hidden>Payment schedule<select name="paymentEvery">${payScheduleOptions(12)}</select></label>
         <label class="f" data-role="dueby-wrap">Remaining due by <span class="muted">(optional)</span><input id="as-dueby-${id}" name="dueBy" type="date"></label>
@@ -2985,7 +3052,7 @@ function wireDetail(id,today){
       if(!validAmt(raw)||(!ot&&!isDateKey(d.value))){preview.textContent='Choose this package’s start date and price to see its first bill.';return;}
       preview.textContent=ot?'Item total: '+fmtAmt(Number(raw),cur):firstBillText({kind:'monthly',cycle:kind.value,start:d.value,currency:cur,packageId:pkgSel.value,prorate:add.querySelector('[name=prorate]').checked,waiveFirst:add.querySelector('[name=waiveFirst]').checked,prorationBasis:yearly?'actual':'',paymentEvery:yearly?Number(add.querySelector('[name=paymentEvery]').value):undefined,prices:[{from:d.value,price:Number(raw)}]});
     };
-    pkgSel.addEventListener('change',()=>{if(pkgSel.value==='__new'){pkgSel.value='';newPackageFlow();return;}const p=pkgById(pkgSel.value),pr=add.querySelector('[name=price]');if(p)kind.value=p.cycle;if(p&&p.price!=null&&(pr.value===''||pr.value===(pkgSel.dataset.prefilled||''))){pr.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency)add.querySelector('[name=currency]').value=p.currency;}upd();});
+    pkgSel.addEventListener('change',()=>{if(pkgSel.value==='__new'){pkgSel.value='';newPackageFlow();return;}const p=pkgById(pkgSel.value),pr=add.querySelector('[name=price]');if(p)kind.value=p.cycle;syncFirstSale(add,pkgSel.value);if(p&&p.price!=null&&(pr.value===''||pr.value===(pkgSel.dataset.prefilled||''))){pr.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency)add.querySelector('[name=currency]').value=p.currency;}upd();});
     add.addEventListener('input',upd);kind.addEventListener('change',upd);upd();
   }
   det.querySelectorAll('.subedit-form select[name=packageId]').forEach(sel=>sel.addEventListener('change',()=>{if(sel.value==='__new'){sel.value='';newPackageFlow();}}));
@@ -3166,14 +3233,15 @@ async function saveMailSettings(){const msg=$('#m-msg');msg.textContent='Saving�
   try{const m=await apiJSON('/api/mail-settings',apiBody('PUT',body));$('#m-pass').value='';$('#m-pass').placeholder=m.hasPassword?'•••••••• saved · leave blank to keep':'app password';msg.textContent=m.configured?'Saved. The daily job at 09:00 will email today\'s stage.':'Saved, but not configured yet (host, user and app password are needed).';}catch(e){msg.textContent='Could not save: '+(e.message||e.code||'error');}}
 async function testMail(){const msg=$('#m-msg');const to=$('#m-test-to').value.trim();msg.textContent='Sending test…';try{const j=await apiJSON('/api/mail-test',apiBody('POST',{to}));msg.textContent='Test email sent to '+j.to+'. Check the inbox (and spam).';}catch(e){msg.textContent='Test failed: '+(e.message||e.code||'error')+(e.code==='not_configured'?' Save the mail settings first.':'');}}
 function defaultPkg(){return pkgById('pkg_c')||packages().find(p=>p.price!=null)||packages()[0]||null;}
-function openAdd(){if(!state.settingsLoaded){toast('Billing settings are loading. Try again in a moment.');return;}showPanel('addPanel');if(!$('#a-account-cost').innerHTML){$('#a-account-cost').innerHTML=accountCostFields(null);wireAccountCostFields($('#a-account-cost'));}if(!$('#a-join').value)$('#a-join').value=todayISO();if(!$('#a-start').value)$('#a-start').value=$('#a-join').value;const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
-function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';labelPackageFields();}
-function updAddConv(){const cur=$('#a-cur').value;const cyEl=$('#a-cycle');const cy=cyEl?cyEl.value:'monthly';$('#a-price-lbl').textContent=`${cy==='one-time'?'Total amount':cy==='yearly'?'Yearly price':'Monthly price'} (${cur==='USD'?'$':'Rs'})`;const n=Number($('#a-price').value)||0;const c=conv(n,cur,null);$('#a-conv').textContent=n?`${fmtAmt(n,cur)}${CYCLES[cy].per}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`:' (set an exchange rate in Settings to see the other currency)'):'Enter the price to preview the first bill.';
+function openAdd(){if(!state.settingsLoaded){toast('Billing settings are loading. Try again in a moment.');return;}showPanel('addPanel');if(!$('#a-first').innerHTML){$('#a-first').innerHTML=firstSaleHTML('a-first');$('#a-first').addEventListener('change',updAddConv);}syncFirstSale($('#a-first'),$('#a-pkg').value);if(!$('#a-account-cost').innerHTML){$('#a-account-cost').innerHTML=accountCostFields(null);wireAccountCostFields($('#a-account-cost'));}if(!$('#a-join').value)$('#a-join').value=todayISO();if(!$('#a-start').value)$('#a-start').value=$('#a-join').value;const dp=defaultPkg();$('#a-pkg').innerHTML=pkgOptions(dp?dp.id:'','Choose a package…');$('#a-cycle-wrap').innerHTML=cycleSelect('a-cycle','cycle',dp?dp.cycle:'monthly',true);if(dp&&dp.price!=null&&!$('#a-price').value){$('#a-price').value=dp.price;$('#a-pkg').dataset.prefilled=String(dp.price);if(dp.currency)$('#a-cur').value=dp.currency;}updAddConv();$('#a-name').focus();}
+function renderPkgEditor(){const list=ui.pkgEdit||[];$('#pkgList').innerHTML=(list.length?'<div class="pkg-head"><span>Name</span><span>Billing</span><span>Default price</span><span>Currency</span><span>Description</span><span></span></div>':'')+list.map(p=>{const n=pkgUsage(p.id);return `<div class="pkg-row" data-id="${esc(p.id)}"><input type="text" data-f="name" value="${esc(p.name)}" placeholder="Package name" aria-label="Package name"><select data-f="cycle" aria-label="Billing cycle"><option value="monthly"${p.cycle==='monthly'?' selected':''}>Monthly</option><option value="yearly"${p.cycle==='yearly'?' selected':''}>Yearly</option><option value="one-time"${p.cycle==='one-time'?' selected':''}>One-time</option></select><input type="number" min="0" step="0.01" data-f="price" value="${p.price==null?'':p.price}" placeholder="Default price" aria-label="Default monthly price"><select data-f="currency" aria-label="Default currency"><option value=""${p.currency?'':' selected'}>—</option><option value="PKR"${p.currency==='PKR'?' selected':''}>PKR</option><option value="USD"${p.currency==='USD'?' selected':''}>USD</option></select><input type="text" data-f="description" value="${esc(p.description)}" placeholder="Description (optional)" aria-label="Description"><span class="use">${n?`${n} plan${n===1?'':'s'}`:''}${pkgOwnAnchor(p.id)?` · own cycle from ${esc(fmtD(pkgOwnAnchor(p.id)))}`:p.fresh?' · new':''} <button class="link danger sm" type="button" data-act="pkg-remove" data-id="${esc(p.id)}"${n?' title="In use"':''}>remove</button></span></div>`;}).join('')||'<p class="small muted">No packages yet. Add at least one.</p>';labelPackageFields();}
+function updAddConv(){const cur=$('#a-cur').value;const cyEl=$('#a-cycle');const once=firstChoice($('#a-first'))==='once';const cy=once?'one-time':(cyEl?cyEl.value:'monthly');$('#a-price-lbl').textContent=`${once?'Amount for the year':cy==='one-time'?'Total amount':cy==='yearly'?'Yearly price':'Monthly price'} (${cur==='USD'?'$':'Rs'})`;const n=Number($('#a-price').value)||0;const c=conv(n,cur,null);$('#a-conv').textContent=n?`${fmtAmt(n,cur)}${CYCLES[cy].per}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`:' (set an exchange rate in Settings to see the other currency)'):'Enter the price to preview the first bill.';
   /* v32: only the joining period is prorated. The receipt date never changes a charge. */
-  $('#a-start-wrap').hidden=false;$('#a-due-wrap').hidden=cy!=='one-time';$('#a-payment-wrap').hidden=cy!=='yearly';const preview=$('#a-bill-preview'),start=$('#a-start').value;
+  $('#a-start-wrap').hidden=false;$('#a-due-wrap').hidden=cy!=='one-time'||once;$('#a-payment-wrap').hidden=cy!=='yearly'||!!firstChoice($('#a-first'));const preview=$('#a-bill-preview'),start=$('#a-start').value;
   if(!isDateKey(start)||!validAmt($('#a-price').value)){preview.textContent='Choose the package start date and price to see the first bill.';return;}
+  if(once){const rn=addMonths(start,12);preview.textContent=`One-time annual plan: ${fmtAmt(n,cur)} paid once for ${fmtD(start,true)} – ${fmtD(addDays(rn,-1),true)}, due on the purchase day. Renews ${fmtD(rn,true)} (for reference). Not prorated.`;return;}
   if(cy==='one-time'){preview.textContent=`Item total: ${fmtAmt(n,cur)}. Record the money received after adding the user.`;return;}
-  const s={kind:'monthly',cycle:cy,currency:cur,packageId:$('#a-pkg').value,start,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,prorationBasis:cy==='yearly'?'actual':'',paymentEvery:cy==='yearly'?Number($('#a-payment').value):undefined,prices:[{from:start,price:n}],payments:[]};
+  const anc=ownAnchorFor($('#a-pkg').value,firstChoice($('#a-first')),start);const s={kind:'monthly',cycle:cy,currency:cur,packageId:$('#a-pkg').value,start,...(anc?{anchor:anc}:{}),prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,prorationBasis:cy==='yearly'?'actual':'',paymentEvery:cy==='yearly'?Number($('#a-payment').value):undefined,prices:[{from:start,price:n}],payments:[]};
   preview.textContent=firstBillText(s);
 }
 function toggleOpen(id,key){ui.open[id]=ui.open[id]||{};ui.open[id][key]=!ui.open[id][key];if(!ui.open[id][key]){if(key==='cancel')delete ui.cancelPre[id];const sid=key.split(':')[1];if(sid&&ui.priceEdit)delete ui.priceEdit[sid];if(sid&&ui.payEdit)delete ui.payEdit[sid];if(sid&&ui.refundEdit)delete ui.refundEdit[sid];}renderTable();}
@@ -3305,9 +3373,9 @@ function bind(){
     s.packageId=sel.value;sel.disabled=true;const ok=await persistUser(row.dataset.id,u);if(ok)toast(`${displayName(u)}: package set to ${pkgName(sel.value)}.`);else sel.disabled=false;
   });
   const prefillFromPkg=(pkgSel,priceEl,curEl)=>{const p=pkgById(pkgSel.value);if(!p)return;const last=pkgSel.dataset.prefilled||'';if(p.price==null){if(last&&priceEl.value===last){priceEl.value='';delete pkgSel.dataset.prefilled;priceEl.dispatchEvent(new Event('input',{bubbles:true}));}return;}if(priceEl.value===''||priceEl.value===last){priceEl.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency&&curEl)curEl.value=p.currency;priceEl.dispatchEvent(new Event('input',{bubbles:true}));if(curEl)curEl.dispatchEvent(new Event('change',{bubbles:true}));}};
-  $('#a-pkg').addEventListener('change',()=>{if($('#a-pkg').value==='__new'){$('#a-pkg').value='';newPackageFlow();return;}const p=pkgById($('#a-pkg').value);if(p){$('#a-cycle').value=p.cycle;}prefillFromPkg($('#a-pkg'),$('#a-price'),$('#a-cur'));updAddConv();});
+  $('#a-pkg').addEventListener('change',()=>{if($('#a-pkg').value==='__new'){$('#a-pkg').value='';newPackageFlow();return;}const p=pkgById($('#a-pkg').value);if(p){$('#a-cycle').value=p.cycle;}syncFirstSale($('#a-first'),$('#a-pkg').value);prefillFromPkg($('#a-pkg'),$('#a-price'),$('#a-cur'));updAddConv();});
   $('#a-cycle-wrap').addEventListener('change',updAddConv);
-  $('#pkg-add').addEventListener('click',()=>{ui.pkgEdit=ui.pkgEdit||clone(packages());ui.pkgEdit.push({id:newId('pkg'),name:'',cycle:'monthly',price:null,currency:'',description:''});renderPkgEditor();const inputs=document.querySelectorAll('#pkgList input[data-f=name]');if(inputs.length)inputs[inputs.length-1].focus();});
+  $('#pkg-add').addEventListener('click',()=>{ui.pkgEdit=ui.pkgEdit||clone(packages());ui.pkgEdit.push({id:newId('pkg'),name:'',cycle:'monthly',price:null,currency:'',description:'',fresh:true});renderPkgEditor();const inputs=document.querySelectorAll('#pkgList input[data-f=name]');if(inputs.length)inputs[inputs.length-1].focus();});
   $('#pkgList').addEventListener('input',e=>{const el=e.target.closest('[data-f]');if(!el)return;const r=(ui.pkgEdit||[]).find(x=>x.id===el.closest('.pkg-row').dataset.id);if(!r)return;const f=el.dataset.f;if(f==='price'){const n=Number(el.value);r.price=el.value!==''&&isFinite(n)&&n>0?n:null;}else r[f]=el.value;});
   $('#pkgList').addEventListener('click',e=>{const b=e.target.closest('[data-act="pkg-remove"]');if(!b)return;const id=b.dataset.id;const n=pkgUsage(id);const err=$('#pkg-err');if(n){err.textContent=`${pkgName(id)||'This package'} is used by ${n} plan${n===1?'':'s'}; move them to another package first.`;return;}err.textContent='';ui.pkgEdit=(ui.pkgEdit||clone(packages())).filter(x=>x.id!==id);renderPkgEditor();});
 
@@ -3322,8 +3390,9 @@ function bind(){
     if(!pkgById(pkg)){err.textContent='Choose the package or product (edit the list in Settings).';return;}
     if(!validAmt(priceRaw)){err.textContent='Enter the monthly price (0 is allowed for a free plan).';return;}
     if(!validPhone(phone)){err.textContent='Phone number should have 7 to 15 digits including the country code.';return;}
+    const first=firstChoice($('#a-first'));if(first==='none'){err.textContent='This is the first customer for a new product: choose a tracking plan or a one-time annual plan.';return;}
     const id=$('#addForm').dataset.pendingUserId||($('#addForm').dataset.pendingUserId=newId('u'));
-    const user={name,email,phone,telegram:normTg($('#a-tg').value),joinDate:join,notes,subscriptions:[cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,start,total:Number(priceRaw),due:isDateKey($('#a-due').value)?$('#a-due').value:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start,end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number($('#a-payment').value)}:{}),dueBy:null,prices:[{from:start,price:Number(priceRaw)}],payments:[]}]};const sub=user.subscriptions[0];sub.id=$('#addForm').dataset.pendingSubId||($('#addForm').dataset.pendingSubId=sub.id);let costs=[];try{const c=accountCostDraft($('#addForm'),sub,id);if(c)costs.push(c);}catch(e){err.textContent=e.message;return;}const button=$('#addForm button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,user,costs);button.disabled=false;
+    const user={name,email,phone,telegram:normTg($('#a-tg').value),joinDate:join,notes,subscriptions:[first==='once'?oneTimeAnnual({name:plan||pkgName(pkg),pkg,cur,start,total:Number(priceRaw)}):cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,start,total:Number(priceRaw),due:isDateKey($('#a-due').value)?$('#a-due').value:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start,...(ownAnchorFor(pkg,first,start)?{anchor:ownAnchorFor(pkg,first,start)}:{}),end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number($('#a-payment').value)}:{}),dueBy:null,prices:[{from:start,price:Number(priceRaw)}],payments:[]}]};const sub=user.subscriptions[0];sub.id=$('#addForm').dataset.pendingSubId||($('#addForm').dataset.pendingSubId=sub.id);let costs=[];try{const c=accountCostDraft($('#addForm'),sub,id);if(c)costs.push(c);}catch(e){err.textContent=e.message;return;}const button=$('#addForm button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,user,costs);button.disabled=false;
     if(ok){delete $('#addForm').dataset.pendingUserId;delete $('#addForm').dataset.pendingSubId;$('#a-account-cost').innerHTML='';$('#addForm').reset();delete $('#a-start').dataset.manual;$('#addPanel').hidden=true;ui.expanded=null;renderTable();toast('Added '+(name||email)+'. Record the first payment when the money is received.');openPaymentDialog(id);}
   });
 
@@ -3435,7 +3504,9 @@ function bind(){
       setErr('addsub-err','');const cy=normCycle(val('kind'));const kind=cy==='one-time'?'one-time':'monthly';const pkg=val('packageId');const name=val('name').trim()||(kind==='monthly'?'':(pkgName(pkg)||'Item'));const priceRaw=val('price'),date=val('date'),cur=normCur(val('currency')),dueBy=val('dueBy');
       if(!pkgById(pkg)){setErr('addsub-err','Choose a package or product.');return;}
       if(!validAmt(priceRaw)){setErr('addsub-err',kind==='monthly'?'Enter the monthly price.':'Enter the total amount.');return;}
-      if(kind==='monthly'){if(!isDateKey(date)){setErr('addsub-err','Pick the start date.');return;}u.subscriptions.push({id:newId('s'),kind,cycle:cy,name,packageId:pkg,currency:cur,start:date,end:null,prorate:!!(form.querySelector('[name=prorate]')||{}).checked,waiveFirst:!!(form.querySelector('[name=waiveFirst]')||{}).checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number(val('paymentEvery'))}:{}),dueBy:isDateKey(dueBy)?dueBy:null,prices:[{from:date,price:Number(priceRaw)}],payments:[]});}
+      const first=firstChoice(form);if(first==='none'){setErr('addsub-err','This is the first customer for a new product: choose a tracking plan or a one-time annual plan.');return;}
+      if(first==='once'){if(!isDateKey(date)){setErr('addsub-err','Pick the purchase date.');return;}u.subscriptions.push(oneTimeAnnual({name:val('name').trim()||pkgName(pkg),pkg,cur,start:date,total:Number(priceRaw)}));}
+      else if(kind==='monthly'){if(!isDateKey(date)){setErr('addsub-err','Pick the start date.');return;}const anc=ownAnchorFor(pkg,first,date);u.subscriptions.push({id:newId('s'),kind,cycle:cy,name,packageId:pkg,currency:cur,start:date,...(anc?{anchor:anc}:{}),end:null,prorate:!!(form.querySelector('[name=prorate]')||{}).checked,waiveFirst:!!(form.querySelector('[name=waiveFirst]')||{}).checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number(val('paymentEvery'))}:{}),dueBy:isDateKey(dueBy)?dueBy:null,prices:[{from:date,price:Number(priceRaw)}],payments:[]});}
       else u.subscriptions.push({id:newId('s'),kind,name,packageId:pkg,currency:cur,start:date,total:Number(priceRaw),due:isDateKey(val('oneDue'))?val('oneDue'):null,payments:[]});
       const sub=u.subscriptions.at(-1);sub.id=form.dataset.pendingSubId||(form.dataset.pendingSubId=sub.id);if(!isDateKey(sub.start)){setErr('addsub-err','Choose this product’s start date.');return;}let costs=[];try{const c=accountCostDraft(form,sub,id);if(c)costs.push(c);}catch(e){setErr('addsub-err',e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('addsub');renderTable();toast('Added '+(name||pkgName(pkg))+'.');}else{button.disabled=false;setErr('addsub-err','Not saved. Your entries are kept; try again.');}
     }else if(form.classList.contains('cancel-form')){
@@ -3459,13 +3530,13 @@ function bind(){
       const gap=ld&&dayDiff(ld,start)>1?dayDiff(ld,start)-1:0;
       const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} resumed from ${fmtD(start,true)}${gap?` · ${gap} day${gap===1?'':'s'} not billed (${fmtD(addDays(ld,1))} – ${fmtD(addDays(start,-1))})`:''}.`);
     }else if(form.classList.contains('edit-form')){
-      setErr('edit-err','');const name=val('name').trim(),email=val('email').trim(),join=val('joinDate'),phone=val('phone'),notes=val('notes').trim();
+      setErr('edit-err','');const own=(n,cur)=>fieldChanged(form,n)?val(n):(cur==null?'':cur);const name=own('name',u.name).trim(),email=own('email',u.email).trim(),join=own('joinDate',u.joinDate),phone=own('phone',u.phone),notes=own('notes',u.notes).trim();
       if(!name&&!email){setErr('edit-err','Enter a name or an email.');return;}
       if(email&&!EMAIL_RE.test(email)){setErr('edit-err','That email does not look valid.');return;}
       if(!isDateKey(join)){setErr('edit-err','Pick the join date.');return;}
       const dup=findUser(email,name);if(dup&&dup!==id){setErr('edit-err','Another user already has that email or name.');return;}
       if(!validPhone(phone)){setErr('edit-err','Phone number should have 7 to 15 digits including the country code.');return;}
-      Object.assign(u,{name,email,joinDate:join,phone:digits(phone),notes,telegram:normTg(val('telegram'))});let costs=[];try{for(const sub of u.subscriptions){updateAccountStart(sub,val('productStart:'+sub.id));const c=accountCostDraft(form,sub,id,sub.id+':');if(c)costs.push(c);}}catch(e){setErr('edit-err',e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('edit');renderTable();toast('Saved changes for '+displayName(u)+'.');}else{button.disabled=false;setErr('edit-err','Not saved. Your entries are kept; try again.');}
+      Object.assign(u,{name,email,joinDate:join,phone:digits(phone),notes,telegram:normTg(own('telegram',u.telegram))});let costs=[];try{for(const sub of u.subscriptions){if(fieldChanged(form,'productStart:'+sub.id))updateAccountStart(sub,val('productStart:'+sub.id));const pre=sub.id+':';if([...form.elements].some(el=>el.name&&el.name.startsWith(pre)&&el.value!==fieldBase(el))){const c=accountCostDraft(form,sub,id,pre);if(c)costs.push(c);}}}catch(e){setErr('edit-err',e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('edit');renderTable();toast('Saved changes for '+displayName(u)+'.');}else{button.disabled=false;setErr('edit-err','Not saved. Your entries are kept; try again.');}
     }
   });
 
@@ -3914,21 +3985,32 @@ async function importCostsCSV(){
 }
 
 /* ---------- api backend: the self-hosted server's /api/docs store, same interface as the artifact db ---------- */
-const API={version:-1,timer:null,listeners:[]};
-async function apiFetch(path,opts){const o=Object.assign({credentials:'same-origin'},opts||{});o.headers=Object.assign({'X-Requested-With':'wasool'},o.headers||{});const r=await fetch(path,o);if(r.status===401){location.href=(secUI.info&&secUI.info.signInUrl)||'/';throw {code:'unauthorized'};}return r;}
+/* v39: rev = the updated_at of each document as this page last saw it (sent with a save of a user or cost so the server can refuse a save made from an outdated copy); writes counts this page's own saves so a list fetched before one finished is dropped */
+const API={version:-1,timer:null,listeners:[],rev:{},wc:{},busy:0};
+/* v39: saves counted per collection (users, costs, settings, confirm, meta). A list is dropped only when this page saved to that same collection while
+   it was being fetched; background saves to other collections (link documents after a load) no longer delay the users or costs refresh */
+const colOf=p=>String(p).split('/')[0];
+function apiWrote(p){const c=colOf(p);API.wc[c]=(API.wc[c]||0)+1;}
+async function apiFetch(path,opts){{const m=String((opts&&opts.method)||'GET').toUpperCase();if(API.stale&&m!=='GET'&&m!=='HEAD')throw {code:'stale_app'};}const o=Object.assign({credentials:'same-origin'},opts||{});o.headers=Object.assign({'X-Requested-With':'wasool'},o.headers||{});const r=await fetch(path,o);if(r.status===401){location.href=(secUI.info&&secUI.info.signInUrl)||'/';throw {code:'unauthorized'};}return r;}
 async function apiJSON(path,opts){const r=await apiFetch(path,opts);let j=null;try{j=await r.json();}catch(e){}if(!r.ok)throw Object.assign({code:(j&&j.error)||('http_'+r.status),status:r.status},j||{});return j;}
 const apiBody=(method,body)=>({method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-async function apiPut(path,body){const j=await apiJSON('/api/docs/'+path,apiBody('PUT',body));apiTouch();return j;}
+/* v39: a save of a user or cost carries the updated_at this page last saw; if another device saved that record since, the server answers 409
+   and nothing is overwritten. The page then reloads the lists so the owner sees the newer details and can save again. */
+function apiConflict(e){if(e&&e.code==='conflict'){API.version=-1;apiTouch();}}
+async function apiPut(path,body){const seen=/^(users|costs)\//.test(path)?API.rev[path]:'';const o=apiBody('PUT',body);if(seen)o.headers['X-Base-Updated']=seen;const track=/^(users|costs)\//.test(path);let j;if(track)API.busy++;try{j=await apiJSON('/api/docs/'+path,o);}catch(e){apiConflict(e);throw e;}finally{if(track)API.busy--;}apiWrote(path);if(j&&j.updated_at)API.rev[path]=j.updated_at;apiTouch();return j;}
 function apiListen(fetcher,cb,err){const L={fetcher,cb,err,last:null};API.listeners.push(L);return apiRun(L);}
-async function apiRun(L){try{const snap=await L.fetcher();if(snap._k!==L.last){const first=L.last===null;L.last=snap._k;L.cb(snap);if(first&&state.mode==='error')state.mode='shared';}}catch(e){if(L.last===null&&L.err)L.err(e);}}
-async function apiPoll(){try{const j=await apiJSON('/api/version');if(j.version!==API.version){API.version=j.version;await Promise.all(API.listeners.map(apiRun));refreshConfirmations();}}catch(e){}apiSchedule();}
+async function apiRun(L){const before=Object.assign({},API.wc);try{const snap=await L.fetcher();const col=snap._col;if(col&&(API.wc[col]||0)!==(before[col]||0))return false;if(snap._revs){for(const p in API.rev)if(snap._revMatch(p))delete API.rev[p];Object.assign(API.rev,snap._revs);}if(snap._k!==L.last){const first=L.last===null;L.last=snap._k;L.cb(snap);if(first&&state.mode==='error')state.mode='shared';}return true;}catch(e){if(L.last===null&&L.err)L.err(e);return false;}}
+/* v39: the server version counts as seen only after every list reloaded; a failed fetch is retried on the next poll instead of leaving this device on stale records it could later save over newer ones */
+const pageVersion=()=>String(($('#app-ver')||{}).textContent||'').trim().replace(/^v/i,'');
+function markStale(app){if(API.stale)return;API.stale=String(app);const b=$('#staleBanner');if(b)b.hidden=false;}
+async function apiPoll(){try{const j=await apiJSON('/api/version');if(j.app&&String(j.app)!==pageVersion())markStale(j.app);if(j.version!==API.version){const ok=await Promise.all(API.listeners.map(apiRun));if(ok.every(Boolean))API.version=j.version;refreshConfirmations();}}catch(e){}apiSchedule();}
 function apiSchedule(){clearTimeout(API.timer);API.timer=setTimeout(apiPoll,document.hidden?30000:4000);}
 function apiTouch(){clearTimeout(API.timer);API.timer=setTimeout(apiPoll,80);}
 function makeApiDb(){
-  const snapOf=docs=>({docs:docs.map(d=>({id:d.path.split('/').pop(),data:()=>d.data})),empty:!docs.length,metadata:{fromCache:false},_k:JSON.stringify(docs.map(d=>[d.path,d.updated_at]))});
-  const getDoc=async path=>{const r=await apiFetch('/api/docs/'+path);if(r.status===404)return {exists:false,data:()=>null,_k:'null'};const j=await r.json();if(!r.ok)throw {code:j.error||'error'};return {exists:true,data:()=>j.data,_k:j.updated_at};};
-  const docRef=path=>({get:()=>getDoc(path),set:body=>apiPut(path,body),update:async body=>{const j=await apiJSON('/api/docs/'+path,apiBody('PATCH',body));apiTouch();return j;},delete:async()=>{const j=await apiJSON('/api/docs/'+path,{method:'DELETE'});apiTouch();return j;},acquire:async()=>({acquired:true}),onSnapshot:(cb,err)=>{apiListen(()=>getDoc(path),cb,err);}});
-  const coll=name=>({doc:id=>docRef(name+'/'+id),limit:()=>coll(name),get:async()=>snapOf((await apiJSON('/api/docs?prefix='+encodeURIComponent(name+'/'))).docs),onSnapshot:(cb,err)=>{apiListen(async()=>snapOf((await apiJSON('/api/docs?prefix='+encodeURIComponent(name+'/'))).docs),cb,err);}});
+  const snapOf=(docs,prefix)=>({docs:docs.map(d=>({id:d.path.split('/').pop(),data:()=>d.data})),empty:!docs.length,metadata:{fromCache:false},_k:JSON.stringify(docs.map(d=>[d.path,d.updated_at])),_revs:Object.fromEntries(docs.map(d=>[d.path,d.updated_at])),_revMatch:p=>p.startsWith(prefix),_col:colOf(prefix)});
+  const getDoc=async path=>{const r=await apiFetch('/api/docs/'+path);if(r.status===404)return {exists:false,data:()=>null,_k:'null',_revs:{},_revMatch:p=>p===path,_col:colOf(path)};const j=await r.json();if(!r.ok)throw {code:j.error||'error'};return {exists:true,data:()=>j.data,_k:j.updated_at,_revs:{[path]:j.updated_at},_revMatch:p=>p===path,_col:colOf(path)};};
+  const docRef=path=>({get:()=>getDoc(path),set:body=>apiPut(path,body),update:async body=>{const j=await apiJSON('/api/docs/'+path,apiBody('PATCH',body));apiWrote(path);delete API.rev[path];apiTouch();return j;},delete:async()=>{const j=await apiJSON('/api/docs/'+path,{method:'DELETE'});apiWrote(path);delete API.rev[path];apiTouch();return j;},acquire:async()=>({acquired:true}),onSnapshot:(cb,err)=>{apiListen(()=>getDoc(path),cb,err);}});
+  const coll=name=>({doc:id=>docRef(name+'/'+id),limit:()=>coll(name),get:async()=>snapOf((await apiJSON('/api/docs?prefix='+encodeURIComponent(name+'/'))).docs,name+'/'),onSnapshot:(cb,err)=>{apiListen(async()=>snapOf((await apiJSON('/api/docs?prefix='+encodeURIComponent(name+'/'))).docs,name+'/'),cb,err);}});
   return {collection:coll,doc:docRef};
 }
 function makeApiSample(info){return {provider:info.provider||'anthropic',model:info.model||'',limits:async()=>({images:{mediaTypes:info.mediaTypes||['image/png','image/jpeg','image/webp','image/gif'],maxBytes:5*1024*1024}}),json:async(prompt,opts)=>{const fd=new FormData();fd.append('prompt',prompt);for(const f of (opts&&opts.images)||[])fd.append('image',f,f.name||'image');const r=await apiFetch('/api/read-image',{method:'POST',body:fd});let j={};try{j=await r.json();}catch(e){}if(!r.ok||j.error){const e={code:j.error||('http_'+r.status),message:j.message||''};if(j.text)e.text=j.text;throw e;}return j.data;}};}
@@ -3940,6 +4022,7 @@ async function initApi(){
   sample=info&&info.enabled?makeApiSample(info):null;canImage=!!sample;updateShotCaption();
   state.mode='shared';$('#btn-signout').hidden=false;render();subscribe();apiSchedule();refreshConfirmations();loadSecurity(false);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)apiTouch();});
+  $('#staleReload').addEventListener('click',()=>location.reload());
 }
 /* ---------- boot ---------- */
 function applySettingsDoc(b){state.settings.pkrCostTax=validTax(b.pkrCostTax)?Number(b.pkrCostTax):5.2;state.settings.costPaymentBase=b.costPaymentBase&&typeof b.costPaymentBase==='object'?{rate:normRate(b.costPaymentBase.rate),taxPercent:validTax(b.costPaymentBase.taxPercent)?Number(b.costPaymentBase.taxPercent):5.2}:null;state.settings.costPaymentHistory=normCostPolicies(b.costPaymentHistory);state.settings.rate=normRate(b.rate);state.settings.template=tplOf(b.template);state.settings.finalTemplate=finalTplOf(b.finalTemplate);state.settings.prorationBasis=rawBasis(b.prorationBasis);state.settings.appName=rawAppName(b.appName);state.settings.tagline=rawTagline(b.tagline);state.settings.readModel=normModel(b.readModel);state.settings.publicBaseUrl=pubBaseRaw(b.publicBaseUrl);state.settings.packages=normalizePackages(b.packages);state.settings.anchor=isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR;state.settings.cycleDay=clampDay(b.cycleDay,+state.settings.anchor.slice(8,10));state.settings.remindDay=clampDay(b.remindDay,DEFAULT_REMIND_DAY);state.settings.replyDay=clampDay(b.replyDay,DEFAULT_REPLY_DAY);state.settings.queueTemplates=normQueueTpl(b.queueTemplates);state.settings.payHow=rawPayHow(b.payHow);state.settings.waApp=normWaApp(b.waApp);state.settings.dimSettled=b.dimSettled!==false;}

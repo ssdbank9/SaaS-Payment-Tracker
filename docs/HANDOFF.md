@@ -1,11 +1,19 @@
 # Wasooli hand-off
 
-Written 2026-09-23 at v26, updated 2026-10-10 at v38. This is the document to read first when picking the project
+Written 2026-09-23 at v26, updated 2026-10-11 at v39. This is the document to read first when picking the project
 up again in Claude Code, another AI coding tool or by hand. `AGENTS.md` is the working guide for a coding session
 (every tool reads it, see section 10); this file records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
 built is `docs/setup-runbook.html` (open it in a browser; it prints).
 
 The detailed owner and next-LLM guide is [`WASOOLI-FINAL-HANDOFF.md`](../WASOOLI-FINAL-HANDOFF.md).
+
+**Update 11 October 2026, v39.** Fixes from the independent review of v38; the changes are summarised in `CHANGELOG.md` (v39) and the
+working rules in `AGENTS.md`. Fixed: multi-device lost updates (stale saves refused with 409, retrying refresh, Edit user writes only
+changed fields), out-of-date tabs blocked with a reload banner, settings repair/save merging, mid-cycle start due date, USD cents, locked receipt
+rates, yearly/instalment proration, inline-form drafts and no-op redraws. New: first-customer choice for products created in Settings (tracking
+plan or one-time annual) and a product's own billing cycle for its tracking plans, listed in the Queue from their due date. Not done in v39 and
+still open from the review: items 9 onward (cross-currency residue, refund double reduction, supplier-cost edge cases, phone-number format,
+CSV safety, server hardening). Own-cycle plans are not yet in the stage 1-3 rounds, link cards, notify emails or cancellation-month logic.
 It covers build history, billing, private recovery inventory, fresh hosting, restore procedures and the
 change/release workflow, with a verified 2026-10-04 snapshot and a copyable continuation prompt.
 

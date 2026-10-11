@@ -27,7 +27,7 @@ import notify  # noqa: E402
 
 APP_NAME = "Wasooli"
 TAGLINE = "Know who's paid."
-VERSION = "38"
+VERSION = "39"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
@@ -270,7 +270,8 @@ def manifest():
 @app.get("/api/version")
 @auth.login_required
 def api_version():
-    return jsonify({"version": db.version()})
+    # v39: "app" is the release this server runs; a page loaded from an older release compares it with its own badge and stops saving
+    return jsonify({"version": db.version(), "app": VERSION})
 
 
 @app.get("/api/docs")
@@ -300,7 +301,13 @@ def api_doc(path):
     if not isinstance(body, dict):
         return jsonify({"error": "body_must_be_object"}), 400
     if request.method == "PUT":
-        at = db.set_doc(path, body)
+        # v39: a page that edited a copy sends the updated_at it last saw; if the stored document has changed since,
+        # refuse instead of silently overwriting the newer save from another device.
+        seen = request.headers.get("X-Base-Updated")
+        try:
+            at = db.set_doc_if(path, body, seen) if seen else db.set_doc(path, body)
+        except db.Conflict as c:
+            return jsonify({"error": "conflict", "path": path, "updated_at": c.current}), 409
         db.audit("admin", "doc.set", path, auth.client_ip())
         return jsonify({"ok": True, "path": path, "updated_at": at})
     data = db.update_doc(path, body)
@@ -329,9 +336,16 @@ def api_import():
     replace = body.get("replace") or []
     if not isinstance(replace, list) or any(not isinstance(r, str) or r not in ("users/", "costs/") for r in replace):
         return jsonify({"error": "replace may only list 'users/' and 'costs/'"}), 400
-    n, removed = db.import_docs({p: v for p, v in docs.items() if p not in bad}, replace)
+    base = body.get("base")
+    if base is not None and (not isinstance(base, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in base.items())):
+        return jsonify({"error": "base must be {path: updated_at}"}), 400
+    versions = {}
+    try:
+        n, removed = db.import_docs({p: v for p, v in docs.items() if p not in bad}, replace, base, versions)
+    except db.Conflict as c:
+        return jsonify({"error": "conflict", "path": c.path, "updated_at": c.current}), 409
     db.audit("admin", "docs.import", "%d docs, %d removed" % (n, removed), auth.client_ip())
-    return jsonify({"ok": True, "imported": n, "removed": removed, "skipped": bad})
+    return jsonify({"ok": True, "imported": n, "removed": removed, "skipped": bad, "versions": versions})
 
 
 # ---------- receipts ----------
