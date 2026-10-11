@@ -37,7 +37,7 @@ const USERS={
 
   /* the default rate changes later: the recorded payment keeps its dollar value */
   assert.equal((await api('PATCH','/api/docs/settings/main',{rate:290})).status,200);await reload();
-  assert.doesNotMatch(await row('fresh'),/Overdue/);assert.match(await row('fresh'),/Paid for Oct/);
+  assert.doesNotMatch(await row('fresh'),/Overdue/);assert.match(await row('fresh'),/Paid to Nov 23/);
   assert.match(await row('legacy'),/Overdue/);
   const tiles=(await page.locator('.tile').allInnerTexts()).join(' ').replace(/\s+/g,' ');
   assert.match(tiles,/Collected Rs 11,200 \$39\.31/);assert.match(tiles,/owed by 1 user/);
@@ -60,6 +60,6 @@ const USERS={
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   check('No sideways scroll at 390px');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'39',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'40',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

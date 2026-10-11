@@ -129,6 +129,7 @@ td.r .m2{align-items:flex-end}
 .banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between;background:var(--warn-bg);border:1px solid var(--warn);border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--ink)}
 .banner[hidden]{display:none}#staleReload{min-height:40px;padding:8px 18px;font-size:14px}/* v39: a banner marked hidden really is hidden (before, the display:flex above overrode the hidden attribute: an empty Open queue bar always showed and the sign-in address note could not be dismissed) */
 .banner b{font-weight:600}
+.range-custom{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}.range-custom[hidden]{display:none}.range-custom input{min-height:30px;padding:2px 6px;max-width:150px}
 .first-sale{border:1px solid var(--accent-line);background:var(--accent-tint);border-radius:6px;padding:8px 12px;margin:8px 0;flex-basis:100%;min-width:0}.first-sale[hidden]{display:none}.first-sale legend{font-weight:600;font-size:13px;padding:0 4px}.first-sale label{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:13px;cursor:pointer}.first-sale input{margin-top:3px;flex:none}.first-sale .muted{display:block}.first-sale .first-bill{margin:2px 0 8px 26px;align-items:center}.first-sale .first-bill[hidden]{display:none}.first-sale .first-bill select{max-width:200px}
 .remind-pair{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
 .rem-badge{display:block;font-size:11px;margin-top:2px;white-space:nowrap}
@@ -642,7 +643,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v39</span>
+      <span class="small muted num" id="app-ver" title="App version">v40</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -663,7 +664,7 @@ table.costs td.cat{color:var(--ink-2)}
   </section>
   <!-- v26: Analytics -->
   <section class="panel" id="analyticsPanel" hidden aria-label="Analytics">
-    <div class="panel-head an-head"><div><h3>Analytics</h3><p class="small muted" id="an-sub"></p></div><div class="chart-legend"><span class="seg" id="an-cur" aria-label="Currency"><button type="button" data-cur="PKR" aria-pressed="true">PKR</button><button type="button" data-cur="USD" aria-pressed="false">USD</button></span><button class="link" type="button" id="an-close">Close</button></div></div>
+    <div class="panel-head an-head"><div><h3>Analytics</h3><p class="small muted" id="an-sub"></p></div><div class="chart-legend"><select id="an-prod" aria-label="Product" style="min-height:30px;padding:3px 8px;max-width:160px"><option value="">All products</option></select><span class="seg" id="an-cur" aria-label="Currency"><button type="button" data-cur="PKR" aria-pressed="true">PKR</button><button type="button" data-cur="USD" aria-pressed="false">USD</button></span><button class="link" type="button" id="an-close">Close</button></div></div>
     <div id="an-body"></div>
   </section>
 
@@ -671,7 +672,9 @@ table.costs td.cat{color:var(--ink-2)}
   <div class="sum-head">
     <h2>Summary</h2>
     <span class="cycle-note" id="cycle-note"></span>
-    <label class="small muted" for="range">Range <select id="range" style="min-height:30px;padding:3px 8px;margin-left:6px"><option value="month">This month</option><option value="30d">Last 30 days</option><option value="all">All time</option></select></label>
+    <label class="small muted" for="prod-filter">Product <select id="prod-filter" style="min-height:30px;padding:3px 8px;margin-left:6px;max-width:160px"><option value="">All products</option></select></label>
+    <label class="small muted" for="range">Range <select id="range" style="min-height:30px;padding:3px 8px;margin-left:6px"><option value="month">This month</option><option value="30d">Last 30 days</option><option value="all">All time</option><option value="custom">Custom range…</option></select></label>
+    <span class="small muted range-custom" id="range-custom" hidden><input id="range-from" type="date" aria-label="Range from"> – <input id="range-to" type="date" aria-label="Range to"></span>
   </div>
   <section class="tiles" aria-label="Summary">
     <div class="tile"><span class="lbl">Collected</span><span class="val" id="t-col">—</span><span class="val2" id="t-col2">&nbsp;</span><span class="sub" id="t-col-sub">&nbsp;</span></div>
@@ -1062,7 +1065,7 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
   <form id="refundForm" novalidate>
     <div class="form-grid">
       <label class="f payment-wide">Account<select id="refund-account"></select></label>
-      <label class="f payment-wide">What should happen to the bill?<select id="refund-purpose"><option value="cash">Return money; leave bills unchanged</option><option value="bill">Reduce one bill and return money</option><option value="cancel">Stop access and return money</option></select></label>
+      <label class="f payment-wide">What should happen to the bill?<select id="refund-purpose"><option value="cash">Return money; leave bills unchanged</option><option value="bill">Reduce one bill and return money</option><option value="cancel">Stop access and return money</option><option value="" data-one hidden>Choose why the money goes back…</option><option value="courtesy" data-one hidden>Courtesy or prorated refund; the rest is still owed</option><option value="closesale" data-one hidden>Sale cancelled; nothing more owed</option></select></label>
       <label class="f payment-wide" id="refund-period-wrap" hidden>Bill to reduce<select id="refund-period"></select></label>
       <label class="f">Money returned on<input id="refund-date" type="date"></label>
       <label class="f">Amount returned<input id="refund-amount" type="number" min="0" step="0.01" inputmode="decimal"></label>
@@ -1316,7 +1319,7 @@ function normalizeUser(b,id){
     for(const p of s.payments||[]){const d=normDate(p.date);if(!d)continue;sub.payments.push({id:p.id||newId('p'),date:d,amount:Number(p.amount)||0,currency:p.currency?normCur(p.currency):cur,rate:normRate(p.rate),note:String(p.note||'')});}
     sub.payments.sort((a,b)=>a.date.localeCompare(b.date));
     /* v28: refunds given back on this plan [{id,date,amount,currency,rate,note}]; absent = none (nothing is written for plans without one) */
-    if(Array.isArray(s.refunds)){const rf=[];for(const r of s.refunds){const d=normDate(r&&r.date);const amt=Number(r&&r.amount);if(!d||!(amt>0))continue;const entry={id:r.id||newId('r'),date:d,amount:amt,currency:r.currency?normCur(r.currency):cur,rate:normRate(r.rate),note:String(r.note||'')};if(kind==='monthly'&&isDateKey(r.billStart)&&Number(r.billReduction)>0){entry.billStart=r.billStart;entry.billReduction=Math.round(Number(r.billReduction)*100)/100;}rf.push(entry);}if(rf.length)sub.refunds=rf.sort((a,b)=>a.date.localeCompare(b.date));}
+    if(Array.isArray(s.refunds)){const rf=[];for(const r of s.refunds){const d=normDate(r&&r.date);const amt=Number(r&&r.amount);if(!d||!(amt>0))continue;const entry={id:r.id||newId('r'),date:d,amount:amt,currency:r.currency?normCur(r.currency):cur,rate:normRate(r.rate),note:String(r.note||'')};if(kind==='monthly'&&isDateKey(r.billStart)&&Number(r.billReduction)>0){entry.billStart=r.billStart;entry.billReduction=Math.round(Number(r.billReduction)*100)/100;}if(kind==='one-time'&&r.closesSale===true)entry.closesSale=true;rf.push(entry);}if(rf.length)sub.refunds=rf.sort((a,b)=>a.date.localeCompare(b.date));}
     u.subscriptions.push(sub);
   }
   return u;
@@ -1345,9 +1348,9 @@ function refundedInPlanCur(s){let t=0;for(const r of s.refunds||[]){const v=toCu
 const refundKey=(s,r)=>{const pid=s.kind==='one-time'?s.packageId:pkgIdAt(s,r.date);return (pid&&pkgById(pid))?pid:(s.kind==='one-time'?'__one':'__none');};
 /* v35: only an explicitly linked bill refund reduces its bill. Cash-only legacy refunds keep their meaning. */
 function billRefundReduction(s,st){return (s.refunds||[]).reduce((n,r)=>n+(r.billStart===st&&r.billReduction>0?Number(r.billReduction):0),0);}
-function billCharge(s,st,listed){const ov=periodOverride(s,st);return Math.max(0,(ov?ov.amount:listed)-billRefundReduction(s,st));}
+function billCharge(s,st,listed){const ov=periodOverride(s,st);if(ov&&ov.fromRefund)return Math.max(0,ov.amount);/* v40: a "kept after refund" amount (settleRefunds) is worked out after the linked bill reduction, so the reduction is not taken off twice */return Math.max(0,(ov?ov.amount:listed)-billRefundReduction(s,st));}
 function analyzeMonthly(s,today){
-  const pc=paidInPlanCur(s);const paid=pc.t;const active=k=>!s.end||(s.start<=s.end&&pStart(s,k)<=s.end);
+  const pc=paidInPlanCur(s);const paid=pc.t;const tol=s.currency==='USD'?0.005:0.5;const active=k=>!s.end||(s.start<=s.end&&pStart(s,k)<=s.end);
   const curIdx=periodIndexAt(s,today);
   const periods=[];let credit=paid,k=0,kPaid=0;
   while(active(k)&&k<2400){
@@ -1356,8 +1359,8 @@ function analyzeMonthly(s,today){
     const waived=k===0&&s.waiveFirst===true&&es>st;const pa=prorateCalc(s,full,days,total);const listed=waived?0:(prorated?pa.amt:full);const ov=periodOverride(s,st);const pr=billCharge(s,st,listed);
     let stt,covered;
     if(waived&&pr===0){stt='waived';covered=0;kPaid=k+1;}
-    else if(credit+1e-9>=pr){stt='paid';covered=pr;credit-=pr;kPaid=k+1;}
-    else if(credit>0){stt=es<=today?'partial':'upcoming';covered=credit;credit=0;}/* v39: a period is due from es (the plan's own start when it begins mid-cycle), not from the cycle start st */
+    else if(credit+tol>=pr){stt='paid';covered=pr;credit=Math.max(0,credit-pr);kPaid=k+1;}/* v40: less than half a cent (USD) or half a rupee (PKR) short counts as paid: a payment converted from another currency leaves such a fraction */
+    else if(credit>tol){stt=es<=today?'partial':'upcoming';covered=credit;credit=0;}/* v39: a period is due from es (the plan's own start when it begins mid-cycle), not from the cycle start st */
     else{stt=es<=today?'unpaid':'upcoming';covered=0;}
     periods.push({k,st,en,es,months:payMonthsAt(s,st),pr,full,pkgId:pf.pid||pkgIdAt(s,es),pkgOv:!!pf.pid,prorated:prorated&&!waived,waived:waived&&pr===0,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0,listed,custom:!!ov,note:ov?ov.note:''});
     if(stt!=='paid'&&stt!=='waived'&&k>curIdx)break;
@@ -1387,15 +1390,18 @@ function analyzeMonthly(s,today){
 function analyzeOneTime(s,today){
   /* v30: a refund on a one-time item undoes that much of the sale: total = the item's amount less refunds, paid = payments less refunds (what was kept),
      remaining = total - paid. So refunding a paid item leaves nothing owed (before v30 it put the refunded amount back on the balance due). */
-  const pc=paidInPlanCur(s);const paid=pc.t;const refunded=refundedInPlanCur(s);const listed=Number(s.total)||0;const total=Math.max(0,listed-refunded);const remaining=Math.max(0,total-Math.max(0,paid));
+  const pc=paidInPlanCur(s);const paid=pc.t;const refunded=refundedInPlanCur(s);const listed=Number(s.total)||0;
+  /* v40: a refund marked "Sale cancelled" closes the item: nothing more is owed and the money kept is the item's total; otherwise a refund is a
+     courtesy or prorated refund that lowers the sale (Rs 1,000 with Rs 400 paid and Rs 100 back: a Rs 900 sale, Rs 300 kept, Rs 600 still owed) */
+  const closed=(s.refunds||[]).some(r=>r.closesSale);const total=closed?Math.max(0,paid):Math.max(0,listed-refunded);const remaining=closed?0:Math.max(0,total-Math.max(0,paid));
   let status;
-  if(remaining<=0)status='paid';else if(s.due&&s.due<today)status='overdue';else if(s.due&&s.due===today)status='due-today';else if(s.due&&dayDiff(today,s.due)<=7)status='due-soon';else status='open';
+  if(closed)status='closed';else if(remaining<=0)status='paid';else if(s.due&&s.due<today)status='overdue';else if(s.due&&s.due===today)status='due-today';else if(s.due&&dayDiff(today,s.due)<=7)status='due-soon';else status='open';
   return {kind:'one-time',paid,unconv:pc.unconv,total,listed,refunded,remaining,nextDue:remaining>0?s.due||null:null,amountDue:remaining,status,cur:s.currency,overdue:status==='overdue'?1:0};
 }
 /* amount of one cycle period of a plan (first period may be prorated or waived), and what is still owed per period from the first unpaid one up to a target period */
 function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=periodFull(s,st,es).full;const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;const ov=periodOverride(s,st),pr=billCharge(s,st,waived?0:(prorated?prorateCalc(s,full,days,total).amt:full));return {k,st,en,es,months:payMonthsAt(s,st),full,days,total,custom:!!ov,prorated:prorated&&!waived,waived:waived&&pr===0,pr};}
 function coverPlan(s,sa,targetK){const out=[];for(let k=sa.kPaid;k<=targetK&&k<sa.kPaid+240;k++){const p=periodAmt(s,k);const ex=(sa.periods||[]).find(x=>x.k===k);const cov=ex?ex.covered:0;out.push({k,st:p.st,en:p.en,es:p.es,months:p.months,prorated:p.prorated,waived:p.waived,pr:p.pr,credit:cov,due:Math.max(0,p.pr-cov)});}return out;}
-const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,paid:5,ended:5,cancelled:5,nosub:6};
+const RANK={overdue:0,'due-today':1,'due-soon':2,open:3,current:3,upcoming:4,paid:5,ended:5,cancelled:5,closed:5,nosub:6};
 function analyze(u,today){
   const subs=u.subscriptions||[];const sa={};const totals=newSum(),balance=newSum(),due=newSum(),cycleDue=newSum();let cyclePaid=false;
   let status='nosub',rank=99,paidThrough=null,nextDue=null,overdue=0,statusA=null;const planParts=[],duePlans=[],duePkgs=[];const pkgIds=new Set();
@@ -1440,12 +1446,14 @@ const perMonth=(x,p)=>paymentPeriodMonth(p,x.m.cycle);
 const pFrom=p=>(p.prorated||p.waived)&&p.es?p.es:p.st;
 const perLabel=p=>fmtD(pFrom(p))+' – '+fmtD(p.en);
 function statusLabel(a){switch(a.status){case 'cancelled':return a.balance&&a.balance.n?'Cancelled · owes':'Cancelled · settled';
-  case 'overdue':{const x=statusPeriod(a);if(!x)return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';const monthly=x.p.months<12&&x.last.months<12;const f=monthly?periodMonth(x.p.st,x.p.en,'monthly'):perMonth(x,x.p),l=monthly?periodMonth(cycleAt(monthOffset(x.last.st)+x.last.months-1),x.last.en,'monthly'):perMonth(x,x.last);return 'Overdue for '+(f===l?f:f+' – '+l);}
-  case 'due-today':{const x=statusPeriod(a);return x?'Due today for '+perMonth(x,x.p):'Due today';}
+  /* v40: the pill names dates, not bill months: "Paid to Nov 23" is the last day covered, "Overdue since Oct 24" the day the first unpaid bill was due
+     ("Paid to Oct" read as the end of October while the Oct bill runs 24 Oct to 23 Nov) */
+  case 'overdue':{const x=statusPeriod(a);if(!x)return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';return 'Overdue since '+fmtD(pFrom(x.p));}
+  case 'due-today':return 'Due today';
   case 'due-soon':return 'Due soon';
-  case 'current':{const x=statusPeriod(a);return x?(x.ahead?'Paid to ':'Paid for ')+perMonth(x,x.p):'Current';}
-  case 'open':{const x=statusPeriod(a);return x?'Open balance for '+perMonth(x,x.p):'Open balance';}
-  case 'upcoming':return 'Starts later';case 'ended':return 'Ended';case 'paid':return 'Paid';default:return 'No plan';}}
+  case 'current':{const x=statusPeriod(a);return x?'Paid to '+fmtD(x.p.en):'Current';}
+  case 'open':{const x=statusPeriod(a);return x?'Open balance since '+fmtD(pFrom(x.p)):'Open balance';}
+  case 'upcoming':return 'Starts later';case 'ended':return 'Ended';case 'paid':return 'Paid';case 'closed':return 'Sale cancelled';default:return 'No plan';}}
 /* v29: the pill's tooltip: the exact dates behind "Paid for Oct" */
 function statusHint(a){const x=statusPeriod(a);if(!x)return '';return (a.status==='current'?'Paid through ':'Owed for ')+fmtCycle(pFrom(x.p),x.last.en);}
 const displayName=u=>u.name||u.email||'(unnamed)';
@@ -1720,8 +1728,8 @@ async function resetData(){
 /* ---------- persistence ---------- */
 function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.prorationBasis=rawBasis(state.settings.prorationBasis);state.settings.appName=rawAppName(state.settings.appName);state.settings.tagline=rawTagline(state.settings.tagline);state.settings.readModel=normModel(state.settings.readModel);state.settings.cycleDay=cycleDay();state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();state.settings.queueTemplates=normQueueTpl(state.settings.queueTemplates);state.settings.payHow=rawPayHow(state.settings.payHow);state.settings.waApp=waApp();state.settings.dimSettled=dimOn();}}catch(e){}}
 function saveLocal(){try{localStorage.setItem('pt-data',JSON.stringify({users:state.users,costs:state.costs,settings:state.settings}));}catch(e){}}
-function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;}catch(e){}}
-function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur}));}catch(e){}}
+function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;if(isDateKey(p.rangeFrom))ui.rangeFrom=p.rangeFrom;if(isDateKey(p.rangeTo))ui.rangeTo=p.rangeTo;if(typeof p.prodFilter==='string')ui.prodFilter=p.prodFilter;}catch(e){}}
+function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur,rangeFrom:ui.rangeFrom||'',rangeTo:ui.rangeTo||'',prodFilter:ui.prodFilter||''}));}catch(e){}}
 function dbErr(e){const c=e&&e.code;if(c==='stale_app')return 'Wasooli was updated. Reload this page, then try again.';if(c==='conflict')return 'This was changed on another device. The latest details are loaded; check them and tap Save again.';if(c==='quota_exceeded')return 'Storage is full: delete some entries before adding more.';if(c==='invalid_argument')return 'You do not have permission to change shared data.';if(c==='resource_exhausted')return 'Too many changes at once; wait a moment and try again.';return 'Could not save ('+(c||'unknown')+'). Try again.';}
 /* v29: the saved user goes into state and is drawn at once on every backend. Before, on the server the page only wrote the document and
    waited for the next poll of /api/version to fetch the list again, so a recorded payment showed as paid only when that round trip had
@@ -1815,8 +1823,8 @@ function accountCostDraft(form,s,uid,prefix){
     if(!latest||['amount','currency','rate','supplier','paidIn'].some(k=>latest[k]!==entry[k])){if(!isDateKey(entry.from))throw Error('Choose when the new cost applies.');const fake={kind:'monthly',cycle:ac.frequency,start:s.start};if(prev&&entry.from!==s.start&&pStart(fake,periodIndexAt(fake,entry.from))!==entry.from)throw Error('A cost change must start on a billing cycle boundary.');if(entry.from<s.start)throw Error('Cost change cannot precede product start.');ac.entries=ac.entries.filter(e=>e.from!==entry.from);ac.entries.push(entry);ac.entries.sort((a,b)=>a.from.localeCompare(b.from));}
     pricedCost(raw,entry.currency,entry.paidIn,entry.from,entry.rate);ac.first=first;ac.firstAmount=first==='custom'?Number(firstAmount):null;s.accountCost=normAccountCost(ac);return null;
   }
-  const date=get('accountCostDate');if(!isDateKey(date))throw Error('Choose the expense date.');const before=linkedCost(s),cid=before?before.id:s.costId||('account_'+uid+'_'+s.id);s.costId=cid;const paid=get('accountCostPaidIn'),quoted=normCur(get('accountCostCurrency')),snapshot=before&&before.purchase&&before.purchase.paidIn===paid?before.purchase:null,payment=pricedCost(raw,quoted,paid,date,normRate(rateRaw),before&&before.purchase?before.purchase.extraTax:before?before.tax:0,snapshot);
-  return {id:cid,...(before||{}),date,description:before?before.description:`${displayName(state.users[uid]||{name:form.elements.namedItem('name')?.value||'New user'})} · ${pkgName(s.packageId)||s.name||'Product'} cost`,category:before?before.category:'Product',packageId:s.packageId||'',currency:normCur(get('accountCostCurrency')),cost:Number(raw),tax:before?before.tax:0,rate:normRate(rateRaw),source:before?before.source:'account',receipt:before?before.receipt:'',userId:uid,subscriptionId:s.id,...payment};
+  const date=get('accountCostDate');if(!isDateKey(date))throw Error('Choose the expense date.');const before=linkedCost(s),cid=before?before.id:s.costId||('account_'+uid+'_'+s.id);s.costId=cid;const paid=get('accountCostPaidIn'),quoted=normCur(get('accountCostCurrency')),snapshot=before&&before.purchase&&before.purchase.paidIn===paid?before.purchase:null,extra=!before?0:before.purchase?(quoted==='USD'?before.purchase.extraTax:0):(normCur(before.currency)===quoted?before.tax:0),payment=pricedCost(raw,quoted,paid,date,normRate(rateRaw),extra,snapshot);/* v40: extra tax is kept only in the same quote currency */
+  return {id:cid,...(before||{}),date,description:before?before.description:`${displayName(state.users[uid]||{name:form.elements.namedItem('name')?.value||'New user'})} · ${pkgName(s.packageId)||s.name||'Product'} cost`,category:before?before.category:'Product',packageId:s.packageId||'',currency:normCur(get('accountCostCurrency')),cost:Number(raw),tax:before?before.tax:0,rate:normRate(rateRaw),source:before?before.source:'account',receipt:before?before.receipt:'',userId:uid,subscriptionId:s.id,...payment,purchase:payment.purchase||null};/* v40: a PKR quote has no USD purchase record; an old one is not carried over */
 }
 async function persistAccountBundle(id,u,costs){if(!costs.length)return persistUser(id,u);const body=cleanUser({...u,id}),docs={['users/'+id]:body};for(const c of costs)docs['costs/'+c.id]=cleanCost(c);
   try{if(state.backend==='api'){const base={};for(const p of Object.keys(docs))if(API.rev[p])base[p]=API.rev[p];let result;API.busy++;try{result=await apiJSON('/api/import',apiBody('POST',{docs,replace:[],base}));}catch(e){apiConflict(e);throw e;}finally{API.busy--;}if(result.skipped&&result.skipped.length)throw Error('Account save rejected.');for(const p of Object.keys(docs))apiWrote(p);Object.assign(API.rev,result.versions||{});apiTouch();}
@@ -1835,7 +1843,8 @@ async function persistSettings(){if(db){try{await mergeSettings(settingsDoc());}
 function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||'').trim().toLowerCase();const ids=Object.keys(state.users);if(e){const hit=ids.find(id=>(state.users[id].email||'').toLowerCase()===e);if(hit)return hit;}if(n&&!e){const hit=ids.find(id=>(state.users[id].name||'').toLowerCase()===n);if(hit)return hit;}return null;}
 
 /* ---------- ranges ---------- */
-function rangeBounds(){const today=todayISO();if(ui.range==='month')return {from:today.slice(0,7)+'-01',to:today,label:mLabel(monthKey(today))};if(ui.range==='30d')return {from:addDays(today,-29),to:today,label:'last 30 days'};return {from:'0000-00-00',to:'9999-99-99',label:'all time'};}
+/* v40: Custom range: any From and To dates (inclusive), remembered on this device */
+function rangeBounds(){const today=todayISO();if(ui.range==='custom'&&isDateKey(ui.rangeFrom)&&isDateKey(ui.rangeTo)&&ui.rangeFrom<=ui.rangeTo)return {from:ui.rangeFrom,to:ui.rangeTo,label:fmtD(ui.rangeFrom,true)+' – '+fmtD(ui.rangeTo,true)};if(ui.range==='custom')return {from:today.slice(0,7)+'-01',to:today,label:mLabel(monthKey(today))+' (pick both dates)'};if(ui.range==='month')return {from:today.slice(0,7)+'-01',to:today,label:mLabel(monthKey(today))};if(ui.range==='30d')return {from:addDays(today,-29),to:today,label:'last 30 days'};return {from:'0000-00-00',to:'9999-99-99',label:'all time'};}
 const inRange=(d,rb)=>d>=rb.from&&d<=rb.to;
 function allPayments(){const out=[];for(const id in state.users)for(const s of state.users[id].subscriptions||[])for(const p of s.payments||[])out.push({date:p.date,amount:p.amount,currency:p.currency||s.currency,rate:p.rate});return out;}
 /* v28: every refund, dated when the money went back; revenue for a month = its payments minus its refunds */
@@ -2068,33 +2077,52 @@ function setTile(id,S,primary,alertNeg){
 }
 function renderTiles(){
   const today=todayISO();const ids=Object.keys(state.users);const rb=rangeBounds();
-  const col=newSum(),cost=newSum(),ref=newSum();let out=newSum(),unpaid=0,overdueUsers=0,soon=0,withBal=0,ncost=0,npay=0,nref=0;
+  let col=newSum(),cost=newSum(),ref=newSum();let out=newSum(),unpaid=0,overdueUsers=0,soon=0,withBal=0,ncost=0,npay=0,nref=0;
   for(const p of allPayments())if(inRange(p.date,rb)){sumAdd(col,p.amount,p.currency,p.rate);npay++;}
   for(const r of allRefunds())if(inRange(r.date,rb)){sumAdd(ref,r.amount,r.currency,r.rate);nref++;}
   for(const id in costRecords()){const c=costRecords()[id];if(inRange(c.date,rb)){sumAdd(cost,costTotal(c),c.currency,c.rate);ncost++;}}
   let cancOwe=newSum(),cancN=0,activeN=0;
   for(const id of ids){const u=state.users[id];const a=analyze(u,today);out=sumMerge(out,a.balance);if(a.balance.n)withBal++;if(a.unpaid)unpaid++;if(a.status==='overdue'||(a.status==='cancelled'&&a.unpaid))overdueUsers++;if(a.status==='due-soon')soon++;if(u.cancel){if(a.balance.n){cancOwe=sumMerge(cancOwe,a.balance);cancN++;}}else activeN++;}
+  const pf=prodFilterId();fillProdFilters();const pfx=pf?' · '+pkgName(pf):'';
+  if(pf){const r=breakdownRows(rb).rows[pf];col=r?r.col:newSum();ref=r?r.ref:newSum();cost=r?r.cost:newSum();out=r?r.out:newSum();npay=r?r.npay:0;nref=r?r.nref:0;ncost=r?r.ncost:0;
+    activeN=0;unpaid=0;overdueUsers=0;soon=0;withBal=0;cancN=0;cancOwe=newSum();
+    for(const id of r?[...r.users]:[]){const u=state.users[id];if(!u)continue;const a=analyze(u,today);activeN++;
+      const owes=(u.subscriptions||[]).some(s=>{const sa=a.sa[s.id];return anKey(s,today)===pf&&sa&&((sa.overdueAmount||0)>0||(s.kind==='one-time'&&sa.remaining>0));});
+      if(owes){withBal++;unpaid++;if(a.status==='overdue')overdueUsers++;}}}
   const net=netSum(col,ref,cost);
-  setTile('t-col',col,'PKR');$('#t-col-sub').textContent=`${npay} payment${npay===1?'':'s'} · ${rb.label}`;
-  setTile('t-ref',ref,'PKR');if(ref.n){$('#t-ref').textContent='\u2212'+$('#t-ref').textContent;const rp=sumParts(ref,'PKR');if(rp.s)$('#t-ref2').textContent='\u2212'+rp.s;}$('#t-ref-sub').textContent=nref?`${nref} refund${nref===1?'':'s'} · ${rb.label} · taken off Net`:`none · ${rb.label}`;$('#tile-ref').dataset.alert=nref?'1':'0';
-  setTile('t-cost',cost,'PKR');$('#t-cost-sub').textContent=`${ncost} cost entr${ncost===1?'y':'ies'} · ${rb.label}`;
+  setTile('t-col',col,'PKR');$('#t-col-sub').textContent=`${npay} payment${npay===1?'':'s'} · ${rb.label}${pfx}`;
+  setTile('t-ref',ref,'PKR');if(ref.n){$('#t-ref').textContent='\u2212'+$('#t-ref').textContent;const rp=sumParts(ref,'PKR');if(rp.s)$('#t-ref2').textContent='\u2212'+rp.s;}$('#t-ref-sub').textContent=nref?`${nref} refund${nref===1?'':'s'} · ${rb.label}${pfx} · taken off Net`:`none · ${rb.label}${pfx}`;$('#tile-ref').dataset.alert=nref?'1':'0';
+  setTile('t-cost',cost,'PKR');$('#t-cost-sub').textContent=`${ncost} cost entr${ncost===1?'y':'ies'} · ${rb.label}${pfx}`;
   setTile('t-net',net,'PKR');$('#tile-net').dataset.alert=net.n&&(net.missing?net.pkr+net.usd<0:net.pkr<0)?'1':'0';$('#tile-net').dataset.good=net.n&&!net.missing&&net.pkr>0?'1':'0';
   setTile('t-out',out,'PKR');$('#t-out-sub').textContent=withBal?`owed by ${withBal} user${withBal===1?'':'s'}`+(cancN?` · incl. ${ownText(cancOwe,'PKR')} from ${cancN} cancelled`:''):(ids.length?'nothing outstanding':' ');$('#tile-out').dataset.alert=withBal?'1':'0';
   $('#t-unpaid').textContent=unpaid;$('#t-unpaid-sub').textContent=`of ${activeN} active user${activeN===1?'':'s'}`+(cancN?` · ${cancN} cancelled still owe${cancN===1?'s':''}`:'')+(unpaid?` · ${overdueUsers} overdue · tap to list`:(soon?` · ${soon} due soon`:''));$('#tile-unpaid').dataset.alert=unpaid?'1':'0';
-  $('#range').value=ui.range;
+  $('#range').value=ui.range;$('#range-custom').hidden=ui.range!=='custom';if(ui.range==='custom'){$('#range-from').value=ui.rangeFrom||'';$('#range-to').value=ui.rangeTo||'';}
   const nc=nextCycleStart(today);const dn=dayDiff(today,nc);$('#cycle-note').innerHTML=`Next cycle starts <b>${esc(fmtD(nc,true))}</b> · ${dn===0?'today':dn===1?'tomorrow':'in '+dn+' days'} · billing runs ${ordinal(cycleDay())} to ${cycleDay()===1?'end of month':ordinal(cycleDay()-1)}`;
   renderBreakdown(rb);
 }
+/* v40: the product filter (All products, or one product), shared by the Summary and Analytics. A product's money follows the By product rules:
+   a payment is split by the product of the periods it covers, a refund goes to the plan's product on the refund date, a cost to its tagged product. */
+const prodFilterId=()=>pkgById(ui.prodFilter)?ui.prodFilter:'';
+function fillProdFilters(){const v=prodFilterId();for(const id of ['prod-filter','an-prod']){const el=$('#'+id);if(!el)continue;const html='<option value="">All products</option>'+packages().map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}el.value=v;}}
+function moneyEvents(pid){
+  if(!pid)return {pays:allPayments(),refs:allRefunds(),costs:Object.values(costRecords()).map(c=>({date:c.date,amount:costTotal(c),currency:c.currency,rate:c.rate}))};
+  const today=todayISO(),pays=[],refs=[];const keyOf=(s,k)=>(k&&pkgById(k))?k:(s.kind==='one-time'?'__one':'__none');
+  for(const id in state.users){const u=state.users[id];const a=analyze(u,today);for(const s of u.subscriptions||[]){const sa=a.sa[s.id];
+    for(const sh of paymentShares(s,sa)){let frac=0;for(const part of sh.parts)if(keyOf(s,part.pid)===pid)frac+=part.frac;if(frac>0)pays.push({date:sh.p.date,amount:sh.p.amount*frac,currency:sh.p.currency||s.currency,rate:sh.p.rate});}
+    for(const rf of s.refunds||[])if(refundKey(s,rf)===pid)refs.push({date:rf.date,amount:rf.amount,currency:rf.currency||s.currency,rate:rf.rate});}}
+  const costs=Object.values(costRecords()).filter(c=>costPkgId(c)===pid).map(c=>({date:c.date,amount:costTotal(c),currency:c.currency,rate:c.rate}));
+  return {pays,refs,costs};}
 function niceStep(max){if(max<=0)return 1000;const raw=max/4;const mag=Math.pow(10,Math.floor(Math.log10(raw)));const n=raw/mag;const s=n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10;return s*mag;}
 const kfmt=v=>v>=1000?(v/1000).toLocaleString(undefined,{maximumFractionDigits:1})+'k':v.toLocaleString(undefined,{maximumFractionDigits:0});
 /* v26: the last 12 calendar months with collected and costs per month in one currency; shared by the Summary chart and the Analytics tab so both show the same figures */
 function monthlySeries(cur){const today=todayISO();const ck=monthKey(today);const ci=(+ck.slice(0,4))*12+(+ck.slice(5,7)-1);
   const months=Array.from({length:12},(_,i)=>{const t=ci-11+i;return Math.floor(t/12)+'-'+pad((t%12)+1);});
   const col=months.map(()=>0),cost=months.map(()=>0),ref=months.map(()=>0);let skipped=0;
-  for(const p of allPayments()){const i=months.indexOf(monthKey(p.date));if(i<0)continue;const v=toCur(p.amount,p.currency,cur,p.rate);if(v==null)skipped++;else col[i]+=v;}
+  const E=moneyEvents(prodFilterId());
+  for(const p of E.pays){const i=months.indexOf(monthKey(p.date));if(i<0)continue;const v=toCur(p.amount,p.currency,cur,p.rate);if(v==null)skipped++;else col[i]+=v;}
   /* v28: refunds count in the month of the refund date */
-  for(const r of allRefunds()){const i=months.indexOf(monthKey(r.date));if(i<0)continue;const v=toCur(r.amount,r.currency,cur,r.rate);if(v==null)skipped++;else ref[i]+=v;}
-  for(const id in costRecords()){const c=costRecords()[id];const i=months.indexOf(monthKey(c.date));if(i<0)continue;const v=toCur(costTotal(c),c.currency,cur,c.rate);if(v==null)skipped++;else cost[i]+=v;}
+  for(const r of E.refs){const i=months.indexOf(monthKey(r.date));if(i<0)continue;const v=toCur(r.amount,r.currency,cur,r.rate);if(v==null)skipped++;else ref[i]+=v;}
+  for(const c of E.costs){const i=months.indexOf(monthKey(c.date));if(i<0)continue;const v=toCur(c.amount,c.currency,cur,c.rate);if(v==null)skipped++;else cost[i]+=v;}
   const net=months.map((m,i)=>col[i]-ref[i]-cost[i]);
   /* v30: colNet = collected less refunds, the bars both charts draw (col and ref stay for tooltips and tables) */
   const colNet=months.map((m,i)=>Math.max(0,col[i]-ref[i]));
@@ -2103,7 +2131,7 @@ function renderChart(){
   const box=$('#chart');const today=todayISO();const ck=monthKey(today);const cur=ui.chartCur;
   document.querySelectorAll('#chart-cur button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cur===cur)));
   const {months,col,colNet,ref,cost,skipped}=monthlySeries(cur);
-  $('#chart-note').textContent=`Last 12 months by payment, refund or cost date, in ${cur} equivalents; collected is after refunds.`+(skipped?` ${skipped} entr${skipped===1?'y':'ies'} in the other currency not shown: set an exchange rate in Settings.`:'');
+  $('#chart-note').textContent=`${prodFilterId()?pkgName(prodFilterId())+' only · ':''}Last 12 months by payment, refund or cost date, in ${cur} equivalents; collected is after refunds.`+(skipped?` ${skipped} entr${skipped===1?'y':'ies'} in the other currency not shown: set an exchange rate in Settings.`:'');
   const W=Math.max(280,box.clientWidth||560),H=200,pl=56,pr=10,pt=18,pb=26;
   const max=Math.max.apply(null,colNet.concat(cost,[0]));const step=niceStep(max);const top=Math.max(step,Math.ceil(max/step)*step);
   const innerH=H-pt-pb,innerW=W-pl-pr,band=innerW/12,bw=Math.min(14,(band-10)/2);const y=v=>pt+innerH-(v/top)*innerH;
@@ -2141,13 +2169,18 @@ function analyticsData(){
   const net=netSum(B.tCol,B.tRef,B.tCost);
   const rows=B.order.map(k=>{const r=B.rows[k];const n=netSum(r.col,r.ref,r.cost);return {key:k,label:rowLabel(k),active:k==='__shared'?null:r.users.size,cancelled:k==='__shared'?null:(pkgCanc[k]||new Set()).size,mrr:pkgMrr[k]||newSum(),col:r.col,ref:r.ref,cost:r.cost,net:n,out:r.out};});
   const owing=users.filter(x=>x.a.balance.n).sort((x,y)=>sortVal(y.a.balance)-sortVal(x.a.balance));
-  return {today,activeN,cancN,mrr,col:B.tCol,ref:B.tRef,cost:B.tCost,net,out,rows,tUsers:B.tUsers.size,owing};
+  const all={activeN,cancN,mrr,col:B.tCol,ref:B.tRef,cost:B.tCost,net};const pf=prodFilterId();
+  if(pf){const r=rows.find(x=>x.key===pf)||{active:0,cancelled:0,mrr:newSum(),col:newSum(),ref:newSum(),cost:newSum(),net:newSum(),out:newSum()};
+    const ow=owing.filter(x=>(x.u.subscriptions||[]).some(s=>{const sa=x.a.sa[s.id];return anKey(s,today)===pf&&sa&&((sa.overdueAmount||0)>0||(s.kind==='one-time'&&sa.remaining>0));}));
+    return {today,activeN:r.active||0,cancN:r.cancelled||0,mrr:r.mrr,col:r.col,ref:r.ref,cost:r.cost,net:r.net,out:r.out,rows,tUsers:B.tUsers.size,owing:ow,all,pf};}
+  return {today,activeN,cancN,mrr,col:B.tCol,ref:B.tRef,cost:B.tCost,net,out,rows,tUsers:B.tUsers.size,owing,all,pf:''};
 }
 function cumulativeSeries(cur){
   const ev=[];let skipped=0;
-  for(const p of allPayments()){const v=toCur(p.amount,p.currency,cur,p.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(p.date),col:v,cost:0});}
-  for(const r of allRefunds()){const v=toCur(r.amount,r.currency,cur,r.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(r.date),col:-v,cost:0});}
-  for(const id in costRecords()){const c=costRecords()[id];const v=toCur(costTotal(c),c.currency,cur,c.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(c.date),col:0,cost:v});}
+  const E=moneyEvents(prodFilterId());
+  for(const p of E.pays){const v=toCur(p.amount,p.currency,cur,p.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(p.date),col:v,cost:0});}
+  for(const r of E.refs){const v=toCur(r.amount,r.currency,cur,r.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(r.date),col:-v,cost:0});}
+  for(const c of E.costs){const v=toCur(c.amount,c.currency,cur,c.rate);if(v==null){skipped++;continue;}ev.push({m:monthKey(c.date),col:0,cost:v});}
   if(!ev.length)return {months:[],col:[],cost:[],skipped};
   const idx=k=>(+k.slice(0,4))*12+(+k.slice(5,7)-1);const ck=monthKey(todayISO());
   const fi=Math.min(idx(ck),...ev.map(e=>idx(e.m))),li=Math.max(idx(ck),...ev.map(e=>idx(e.m)));
@@ -2243,7 +2276,7 @@ function cumulativeSVG(box,C,cur){
   return gap;
 }
 function renderAnalytics(){
-  const panel=$('#analyticsPanel');if(panel.hidden)return;const cur=ui.chartCur;const D=analyticsData();const other_=other(cur);
+  const panel=$('#analyticsPanel');if(panel.hidden)return;const cur=ui.chartCur;const D=analyticsData();fillProdFilters();const other_=other(cur);
   document.querySelectorAll('#an-cur button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cur===cur)));
   const val=S=>{const p=sumParts(S,cur);return `<span class="val">${esc(S.n?p.p:fmtAmt(0,cur))}</span><span class="val2">${S.n&&p.s?esc(p.s):(S.n?setRateLink+' to combine':'&nbsp;')}</span>`;};
   const cellS=(S,cls)=>{if(!S.n)return `<td class="r num muted${cls?' '+cls:''}">—</td>`;const x=sumParts(S,cur);return `<td class="r num${cls?' '+cls:''}">${esc(x.p)}${x.s?`<span class="s">${esc(x.s)}</span>`:''}</td>`;};
@@ -2251,7 +2284,7 @@ function renderAnalytics(){
   const netV=n=>n.missing?n.pkr+n.usd:n.pkr;
   const showRef=anyRefunds();const refS=S=>showRef?refTd(S,cur):'';
   const S12=monthlySeries(cur);const C=cumulativeSeries(cur);
-  $('#an-sub').textContent=`All time, as of ${fmtD(D.today,true)} · amounts in ${cur}${cur==='PKR'?' with USD':' with PKR'} equivalents at the default rate${defaultRate()?' (1 USD = Rs '+defaultRate().toLocaleString()+')':' — set one in Settings'}.`;
+  $('#an-sub').textContent=`${D.pf?pkgName(D.pf)+' only · ':''}All time, as of ${fmtD(D.today,true)} · amounts in ${cur}${cur==='PKR'?' with USD':' with PKR'} equivalents at the default rate${defaultRate()?' (1 USD = Rs '+defaultRate().toLocaleString()+')':' — set one in Settings'}.`;
   let html=`<section class="an-tiles" aria-label="Headline figures">
     <div class="tile"><span class="lbl">Active users</span><span class="val">${D.activeN}</span><span class="val2">&nbsp;</span><span class="sub">not cancelled</span></div>
     <div class="tile"><span class="lbl">Cancelled users</span><span class="val">${D.cancN}</span><span class="val2">&nbsp;</span><span class="sub">${D.owing.filter(x=>x.u.cancel).length?D.owing.filter(x=>x.u.cancel).length+' still owe':'none owe anything'}</span></div>
@@ -2265,7 +2298,7 @@ function renderAnalytics(){
     <div class="chart-box" id="an-users"></div>
     <div class="table-wrap" style="border:0"><table class="brk"><thead><tr><th>Package</th><th class="r">Active</th><th class="r">Cancelled</th><th class="r">Monthly recurring</th><th class="r">Collected</th>${showRef?'<th class="r">Refunds</th>':''}<th class="r">Costs</th><th class="r">Net</th></tr></thead><tbody>
     ${D.rows.map(r=>`<tr${r.key==='__shared'?' class="shared"':''}><td>${r.key==='__none'?'<span class="pill warnp">Package not set</span>':esc(r.label)}${r.key==='__shared'?' <span class="small muted">(costs without a product)</span>':''}</td><td class="r num">${r.active==null?'<span class="muted">—</span>':r.active}</td><td class="r num">${r.cancelled==null?'<span class="muted">—</span>':r.cancelled}</td>${cellS(r.mrr)}${cellS(r.col)}${refS(r.ref)}${cellS(r.cost)}${cellS(r.net,netCls(r.net))}</tr>`).join('')}
-    </tbody><tfoot><tr><td>Total <span class="small muted">(matches the tiles)</span></td><td class="r num">${D.activeN}</td><td class="r num">${D.cancN}</td>${cellS(D.mrr)}${cellS(D.col)}${refS(D.ref)}${cellS(D.cost)}${cellS(D.net,netCls(D.net))}</tr></tfoot></table></div>
+    </tbody><tfoot><tr><td>Total <span class="small muted">(${D.pf?'all products':'matches the tiles'})</span></td><td class="r num">${D.all.activeN}</td><td class="r num">${D.all.cancN}</td>${cellS(D.all.mrr)}${cellS(D.all.col)}${refS(D.all.ref)}${cellS(D.all.cost)}${cellS(D.all.net,netCls(D.all.net))}</tr></tfoot></table></div>
     <p class="small muted" style="margin:6px 0 0">Active counts users with a running plan on that package (a user with plans on two packages counts once in each, once in the total). Collected is split by the tier each payment covered, as in By product.${showRef?' A refund is taken off the package the plan was on that day; Net is collected minus refunds minus costs.':''}</p></section>`;
   html+=`<section class="an-sec"><div class="bh"><h2>Collected vs costs by month</h2><div class="chart-legend"><span><i style="background:var(--chart-1)"></i>Collected</span><span><i style="background:var(--chart-2)"></i>Costs</span><span><i class="ln"></i>Net</span></div></div>
     <div class="chart-box" id="an-monthly"></div><p class="small muted" id="an-monthly-note"></p><div class="table-wrap" style="border:0"><table class="brk" id="an-monthly-table"></table></div></section>`;
@@ -2416,16 +2449,17 @@ function refreshBillPreview(){const c=moneyDialogContext('bill');if(!c)return;co
 }
 function closeMoneyDialog(kind){if(ui[kind+'Draft']?.busy)return;$('#'+kind+'Dialog').close();ui[kind+'Draft']=null;}
 async function saveBillDialog(e){e.preventDefault();const c=moneyDialogContext('bill');if(!c||c.d.busy)return;const change=billDraftUser(c);if(change.error){$('#bill-error').textContent=change.error;return;}const ss=change.ss;for(const p of ss.payments||[])if(p.id==='__bill_preview')p.id=newId('p');c.d.busy=true;refreshBillPreview();const ok=await persistUser(c.d.id,change.sim);c.d.busy=false;if(ok){closeMoneyDialog('bill');toast('Bill saved for '+exactBillLabel(ss,change.p)+'.');}else{$('#bill-error').textContent='Nothing was saved. Your entries are kept; try again.';refreshBillPreview();}}
-function fillRefundAccount(refId){const c=moneyDialogContext('refund');if(!c)return;const {s,u}=c,r=(s.refunds||[]).find(r=>r.id===refId);c.d.refId=r?r.id:null;$('#refund-purpose').value=r&&r.billStart?'bill':'cash';$('#refund-purpose').querySelector('[value=cancel]').disabled=!!u.cancel||s.kind!=='monthly'||!!r;$('#refund-purpose').querySelector('[value=bill]').disabled=s.kind!=='monthly';$('#refund-period').innerHTML=s.kind==='monthly'?billingOptions(s,r?.billStart||pStart(s,Math.max(0,periodIndexAt(s,todayISO())))):'';$('#refund-date').value=r?r.date:todayISO();$('#refund-currency').value=r?(r.currency||s.currency):s.currency;$('#refund-amount').value=r?r.amount:'';$('#refund-rate').value=r&&r.rate?r.rate:'';$('#refund-note').value=r?r.note||'':'';$('#refund-last').value=todayISO();$('#refund-month').value='';refreshRefundPreview();}
+function syncRefundPurposes(s){const one=s.kind==='one-time';$('#refund-purpose').querySelectorAll('option').forEach(o=>{const forOne=o.hasAttribute('data-one');o.hidden=one?!forOne:forOne;if(forOne)o.disabled=!one;});}
+function fillRefundAccount(refId){const c=moneyDialogContext('refund');if(!c)return;const {s,u}=c,r=(s.refunds||[]).find(r=>r.id===refId);c.d.refId=r?r.id:null;syncRefundPurposes(s);$('#refund-purpose').value=s.kind==='one-time'?(r?(r.closesSale?'closesale':'courtesy'):''):(r&&r.billStart?'bill':'cash');$('#refund-purpose').querySelector('[value=cancel]').disabled=!!u.cancel||s.kind!=='monthly'||!!r;$('#refund-purpose').querySelector('[value=bill]').disabled=s.kind!=='monthly';$('#refund-period').innerHTML=s.kind==='monthly'?billingOptions(s,r?.billStart||pStart(s,Math.max(0,periodIndexAt(s,todayISO())))):'';$('#refund-date').value=r?r.date:todayISO();$('#refund-currency').value=r?(r.currency||s.currency):s.currency;$('#refund-amount').value=r?r.amount:'';$('#refund-rate').value=r&&r.rate?r.rate:'';$('#refund-note').value=r?r.note||'':'';$('#refund-last').value=todayISO();$('#refund-month').value='';refreshRefundPreview();}
 function openRefundDialog(id,sid,refId){if(!state.settingsLoaded)return;const u=state.users[id];if(!u?.subscriptions?.length)return;const s=u.subscriptions.find(x=>x.id===sid)||u.subscriptions[0];ui.refundDraft={id,sid:s.id,busy:false,refId:null};$('#refund-error').textContent='';$('#refund-who').textContent=displayName(u);$('#refund-account').innerHTML=u.subscriptions.map((s,i)=>`<option value="${esc(s.id)}">${esc(paymentAccountName(u,s,i))}</option>`).join('');$('#refund-account').value=s.id;$('#refund-account').disabled=!!refId;fillRefundAccount(refId);$('#refundDialog').showModal();}
 function refundDraftUser(c){const {d,u,s}=c,amount=$('#refund-amount').value,date=$('#refund-date').value,cur=$('#refund-currency').value,rawRate=$('#refund-rate').value,purpose=$('#refund-purpose').value;const rate=normRate(rawRate)||(cur!==s.currency?defaultRate():null);if(!validAmt(amount)||Number(amount)<=0||!isDateKey(date))return {error:'Enter the amount actually returned and the date it was returned.'};const converted=toCur(Number(amount),cur,s.currency,rate);if(converted==null)return {error:'Set an exchange rate to show how this refund affects the account.'};
-  if(d.refId&&!(s.refunds||[]).some(r=>r.id===d.refId))return {error:'This refund was removed. Close the form and open the history again.'};const sim=clone(u),ss=sim.subscriptions.find(x=>x.id===s.id);ss.refunds=(ss.refunds||[]).filter(r=>r.id!==d.refId);settleRefunds(sim,ss,todayISO());if(converted>Math.max(0,paidInPlanCur(ss).t)+0.005)return {error:'The refund exceeds the money still held for this account. Check the amount or receipts.'};const r={id:d.refId||'__refund_preview',date,amount:Number(amount),currency:cur,rate,note:$('#refund-note').value.trim()};
+  if(d.refId&&!(s.refunds||[]).some(r=>r.id===d.refId))return {error:'This refund was removed. Close the form and open the history again.'};const sim=clone(u),ss=sim.subscriptions.find(x=>x.id===s.id);ss.refunds=(ss.refunds||[]).filter(r=>r.id!==d.refId);settleRefunds(sim,ss,todayISO());if(converted>Math.max(0,paidInPlanCur(ss).t)+0.005)return {error:'The refund exceeds the money still held for this account. Check the amount or receipts.'};if(s.kind==='one-time'&&purpose!=='courtesy'&&purpose!=='closesale')return {error:'Choose why the money goes back: a courtesy or prorated refund (the rest is still owed), or the sale is cancelled (nothing more owed).'};const r={id:d.refId||'__refund_preview',date,amount:Number(amount),currency:cur,rate,note:$('#refund-note').value.trim()};if(s.kind==='one-time'&&purpose==='closesale')r.closesSale=true;
   if(purpose==='bill'){const p=billingPeriods(ss).find(p=>p.st===$('#refund-period').value);if(!p)return {error:'Choose the exact bill to reduce.'};if(converted>p.pr+0.005)return {error:'The refund exceeds this bill’s remaining charge. Choose another bill or return advance money with bills unchanged.'};r.billStart=p.st;r.billReduction=Math.round(converted*100)/100;}
   ss.refunds.push(r);if(purpose==='cancel'){const last=$('#refund-last').value;if(!isDateKey(last))return {error:'Choose the inclusive last access day.'};applyCancel(sim,last,'Refunded',r.note);}for(const x of sim.subscriptions||[])settleRefunds(sim,x,todayISO());return {sim,ss,r,purpose};
 }
 function refreshRefundPreview(){const c=moneyDialogContext('refund');if(!c)return;const {d,u,s}=c,purpose=$('#refund-purpose').value;$('#refund-period-wrap').hidden=purpose!=='bill';$('#refund-last-wrap').hidden=$('#refund-month-wrap').hidden=purpose!=='cancel';$('#refundForm').querySelectorAll('input,select').forEach(el=>{el.disabled=d.busy;});$('#refund-account').disabled=d.busy||!!d.refId;$('#refund-purpose').querySelector('[value=cancel]').disabled=!!u.cancel||s.kind!=='monthly'||!!d.refId;$('#refund-purpose').querySelector('[value=bill]').disabled=s.kind!=='monthly';const change=refundDraftUser(c);$('#refund-save').disabled=d.busy||!!change.error;$('#refund-save').textContent=d.busy?'Saving…':d.refId?'Save refund correction':'Save refund';if(change.error){$('#refund-preview').textContent=change.error;return;}
   const before=s.kind==='monthly'?analyzeMonthly(s,todayISO()):analyzeOneTime(s,todayISO()),after=s.kind==='monthly'?analyzeMonthly(change.ss,todayISO()):analyzeOneTime(change.ss,todayISO());let text='Money returned: '+fmtAmt(change.r.amount,change.r.currency)+' on '+fmtD(change.r.date,true)+'. Revenue for '+mLabel(monthKey(change.r.date))+' changes by this cash refund.\nMoney kept: '+fmtAmt(before.paid,s.currency)+' → '+fmtAmt(after.paid,s.currency)+'.\n';
-  if(purpose==='bill'){const p=before.periods.find(p=>p.st===change.r.billStart)||billingPeriods(s).find(p=>p.st===change.r.billStart),q=after.periods.find(p=>p.st===change.r.billStart)||Object.assign(billingPeriods(change.ss).find(p=>p.st===change.r.billStart),{covered:0});text+='Only '+fmtCycle(q.st,q.en)+': bill '+fmtAmt(p.pr,s.currency)+' → '+fmtAmt(q.pr,s.currency)+'. Owing on this bill: '+fmtAmt(Math.max(0,q.pr-q.covered),s.currency)+'. Later bills keep their charges.\n';}else if(purpose==='cancel')text+='Last access day: '+fmtD(change.sim.cancel.lastDay,true)+'. No bill starts after that day. Earlier genuine arrears remain.\n';else text+='Bills stay unchanged'+(u.cancel?' except the existing cancellation refund settlement.':'; returned money can leave an amount owing again.')+'\n';text+='Amount owing on bills already started: '+fmtAmt(s.kind==='monthly'?after.overdueAmount:after.remaining,s.currency)+'. The refund date records cash; it never selects a billing month.';$('#refund-preview').textContent=text;
+  if(purpose==='bill'){const p=before.periods.find(p=>p.st===change.r.billStart)||billingPeriods(s).find(p=>p.st===change.r.billStart),q=after.periods.find(p=>p.st===change.r.billStart)||Object.assign(billingPeriods(change.ss).find(p=>p.st===change.r.billStart),{covered:0});text+='Only '+fmtCycle(q.st,q.en)+': bill '+fmtAmt(p.pr,s.currency)+' → '+fmtAmt(q.pr,s.currency)+'. Owing on this bill: '+fmtAmt(Math.max(0,q.pr-q.covered),s.currency)+'. Later bills keep their charges.\n';}else if(purpose==='cancel')text+='Last access day: '+fmtD(change.sim.cancel.lastDay,true)+'. No bill starts after that day. Earlier genuine arrears remain.\n';else if(s.kind==='one-time')text+=purpose==='closesale'?'Sale cancelled: nothing more is owed; '+fmtAmt(after.paid,s.currency)+' kept stays as revenue.\n':'Courtesy or prorated refund: the sale becomes '+fmtAmt(after.total,s.currency)+'; '+fmtAmt(after.paid,s.currency)+' kept; still owed '+fmtAmt(after.remaining,s.currency)+'.\n';else text+='Bills stay unchanged'+(u.cancel?' except the existing cancellation refund settlement.':'; returned money can leave an amount owing again.')+'\n';text+='Amount owing on bills already started: '+fmtAmt(s.kind==='monthly'?after.overdueAmount:after.remaining,s.currency)+'. The refund date records cash; it never selects a billing month.';$('#refund-preview').textContent=text;
 }
 async function saveRefundDialog(e){e.preventDefault();const c=moneyDialogContext('refund');if(!c||c.d.busy)return;const change=refundDraftUser(c);if(change.error){$('#refund-error').textContent=change.error;return;}if(change.r.id==='__refund_preview')change.r.id=newId('r');c.d.busy=true;refreshRefundPreview();const ok=await persistUser(c.d.id,change.sim);c.d.busy=false;if(ok){closeMoneyDialog('refund');toast('Refund saved. Receipts have been preserved.');}else{$('#refund-error').textContent='Nothing was saved. Your entries are kept; try again.';refreshRefundPreview();}}
 function closeStartDialog(){if(ui.startDraft&&ui.startDraft.busy)return;$('#startDialog').close();ui.startDraft=null;}
@@ -2518,7 +2552,7 @@ function renderTable(){
   for(const r of rows){
     const {u,a,id}=r;const exp=ui.expanded===id;const late=a.status==='overdue';const reductions=billReductions(u,a,today);
     const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):(a.planParts.length&&!u.cancel?'nothing yet':'—');
-    const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?`<span class="muted">paid for ${esc(periodMonth(nextCycleStart(today),null,'monthly'))}</span>`:'<span class="muted">—</span>');
+    const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?`<span class="muted">paid to ${esc(fmtD(addDays(nextCycleStart(nextCycleStart(today)),-1)))}</span>`:'<span class="muted">—</span>');
     html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}" data-settled="${dimOn()&&a.settled?1:0}">
       <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${contactLine(u)}${u.subscriptions.length?`<button class="btn primary sm row-pay" type="button" data-act="row-pay" data-user="${esc(id)}">Record month payment</button>`:''}${u.subscriptions.some(s=>s.kind==='monthly')?`<button class="btn sm row-start" type="button" data-act="row-start" data-user="${esc(id)}">Package start / payments</button><button class="btn sm row-bill" type="button" data-act="row-bill" data-user="${esc(id)}">Set bill / proration</button><span class="start-list">${u.subscriptions.filter(s=>s.kind==='monthly').map(s=>`${esc(planLabel(s))}: ${esc(fmtD(s.start,true))}${subCycle(s)==='yearly'?' · pays '+esc(payFrequency(payMonthsAt(s,'9999-12-31'))):''}`).join('<br>')}</span>`:''}<span class="row-money">Total paid <b data-role="row-paid">${esc(ownText(a.totals,a.mainCur))}</b><br>Discounts / reductions <b>${esc(ownText(reductions,a.mainCur))}</b><br>${esc(statusLabel(a))}</span></td>
       <td class="plan">${planCell(a)}</td>
@@ -3354,7 +3388,9 @@ function bind(){
     else if(b.dataset.act==='reset-yes'){b.disabled=true;await resetData();$('#reset-wrap').innerHTML='<button class="btn sm danger" type="button" id="btn-reset">Reset data</button>';}
     else if(b.dataset.act==='reset-no'){$('#reset-wrap').innerHTML='<button class="btn sm danger" type="button" id="btn-reset">Reset data</button>';}
   });
-  $('#range').addEventListener('change',e=>{ui.range=e.target.value;savePrefs();renderTiles();});
+  $('#range').addEventListener('change',e=>{ui.range=e.target.value;if(ui.range==='custom'){const t=todayISO();if(!isDateKey(ui.rangeFrom))ui.rangeFrom=t.slice(0,7)+'-01';if(!isDateKey(ui.rangeTo))ui.rangeTo=t;}savePrefs();renderTiles();});
+  ['range-from','range-to'].forEach(id=>$('#'+id).addEventListener('change',()=>{ui.rangeFrom=$('#range-from').value;ui.rangeTo=$('#range-to').value;savePrefs();renderTiles();}));
+  ['prod-filter','an-prod'].forEach(id=>$('#'+id).addEventListener('change',e=>{ui.prodFilter=e.target.value;savePrefs();renderTiles();renderChart();renderAnalytics();}));
   $('#chart-cur').addEventListener('click',e=>{const b=e.target.closest('button[data-cur]');if(!b)return;ui.chartCur=b.dataset.cur;savePrefs();renderChart();renderAnalytics();});
   $('#search').addEventListener('input',e=>{ui.search=e.target.value;renderTable();});
   $('#sort').addEventListener('change',e=>{ui.sort=e.target.value;ui.dir=1;savePrefs();renderTable();});

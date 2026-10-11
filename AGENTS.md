@@ -151,6 +151,12 @@ Write user-facing text in plain, factual words; no emojis.
   cycle day; `cStart`, `firstIdx`, `pStart`, `installmentPrice` use it, so plans without `anchor` compute exactly as before. Shared-cycle features
   (stages 1-3, final notice, link cards, notify emails, cancellation month) still use the shared calendar; own-cycle plans appear in the Queue
   section "Due on their product's own cycle" from their due date until paid (`ownCycleDueRows`). Tests: `first-sale-flow`, `own-cycle-flow`.
+- v40: `ui.prodFilter` / `prodFilterId()` filters the Summary tiles (from the `breakdownRows` row of that product), the Summary chart and Analytics
+  (`moneyEvents(pid)` feeds `monthlySeries` / `cumulativeSeries` with the By product attribution); the Analytics package table total stays all products.
+  `ui.range==='custom'` uses `ui.rangeFrom` / `ui.rangeTo` (inclusive). `statusLabel` names dates (`Paid to <last day>`, `Overdue since <pFrom>`).
+  `analyzeMonthly` treats less than half a unit short (0.005 USD, 0.5 PKR) as paid. `billCharge` uses a `fromRefund` override as is (no second
+  bill reduction). A one-time refund with `closesSale:true` closes the item (status `closed`, "Sale cancelled", nothing owed). `accountCostDraft`
+  clears `purchase` for a PKR quote. Tests: `filters-flow`, `residue-flow`, `refund-settle-flow`, `onetime-refund-flow`, `cost-currency-edit-flow`.
 - Migrations (`maybeSeedShared`, the migrate block, `SCHEMA` in `index.html`) are lease-guarded via `meta/*` and
   idempotent: add fields with defaults, treat an absent field as the default, never overwrite or delete owner-entered
   records. Most new features need no migration (absent = default).

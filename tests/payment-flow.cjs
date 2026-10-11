@@ -27,7 +27,7 @@ let browser;
   await page.locator('[name=passcode]').fill('test1234');
   await page.locator('button[type=submit]').click();
   await page.waitForSelector('#tbody tr.row');
-  assert.equal((await (await context.request.get(base+'/healthz')).json()).version,'39');
+  assert.equal((await (await context.request.get(base+'/healthz')).json()).version,'40');
   const get = async id => (await (await context.request.get(base+'/api/docs/users/'+id)).json()).data;
   const put = async (id,user) => assert.equal((await context.request.put(base+'/api/docs/users/'+id,{headers,data:user})).status(),200);
   const reset = async user => {if(await page.locator('#paymentDialog').evaluate(d=>d.open))await page.locator('#payment-cancel').click();await put('qa-payment',user||sample());await page.reload({waitUntil:'domcontentloaded'});await page.locator('tr.row[data-id="qa-payment"]').waitFor();};
@@ -92,7 +92,7 @@ let browser;
   assert.equal(await page.locator('#payment-amount').inputValue(),'11.5');await page.locator('#payment-rate').fill('280');
   await save();user=await get('qa-payment');assert.equal(user.subscriptions[0].payments.at(-1).currency,'USD');
   assert.equal(user.subscriptions[0].payments.at(-1).amount,11.5);assert.equal(user.subscriptions[0].payments.at(-1).rate,280);
-  assert.match(await row().innerText(),/Paid for Oct/);check('USD receipt converts at its recorded rate');
+  assert.match(await row().innerText(),/Paid to Nov 23/);check('USD receipt converts at its recorded rate');
 
   const settingsPath=base+'/api/docs/settings/main';
   const savedSettings=(await (await context.request.get(settingsPath)).json()).data;
@@ -103,7 +103,7 @@ let browser;
     assert.match(await page.locator('#payment-preview').innerText(),/Set the exchange rate/);
     await page.locator('#payment-rate').fill('280');assert.equal(await page.locator('#payment-amount').inputValue(),'11.5');
     await save();user=await get('qa-payment');assert.equal(user.subscriptions[0].payments.at(-1).rate,280);
-    assert.match(await row().innerText(),/Paid for Oct/);check('Missing default rate requires a usable receipt rate');
+    assert.match(await row().innerText(),/Paid to Nov 23/);check('Missing default rate requires a usable receipt rate');
   }finally{
     assert.equal((await context.request.put(settingsPath,{headers,data:savedSettings})).status(),200);
   }
@@ -184,7 +184,7 @@ let browser;
     await page.locator('#add-close').click();check('Layout '+width+'px '+theme+' main, receipt and joining bill');
   }
   assert.deepEqual(errors,[],'Console and page errors must be empty');
-  const summary={version:'39',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};
+  const summary={version:'40',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};
   fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary));
   await browser.close();browser=null;
 })().catch(async e=>{console.error(e);if(browser)await browser.close();process.exitCode=1;});

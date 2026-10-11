@@ -2,6 +2,16 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v40 - 2026-10-11
+
+- Summary: a Custom range with From and To dates, and a Product filter (All products or one product) that shows that product's revenue, costs and profit on the tiles, the chart and in Analytics. The By product table still lists every product.
+- Status shows dates: "Paid to Nov 23" (the last day covered) and "Overdue since Oct 24"; the Due column says "paid to Dec 23" when the coming bill is already paid.
+- A fraction of a cent (USD) or rupee (PKR) left by a currency conversion no longer keeps a paid customer overdue.
+- A bill reduction followed by "Stop access and return money" is no longer taken off the last bill twice.
+- A refund on a one-time item asks why: a courtesy or prorated refund (the sale is lowered and the rest is still owed) or the sale is cancelled (nothing more is owed).
+- Editing a one-off supplier expense from a USD quote to a PKR quote no longer keeps the old USD purchase details.
+- No owner records were migrated or rewritten.
+
 ## v39 - 2026-10-11
 
 - Phone and desktop: a device that misses one refresh tries again instead of staying out of date, and a save made from an outdated copy is refused with "This was changed on another device" instead of overwriting the newer record. Edit user only saves the fields actually changed.

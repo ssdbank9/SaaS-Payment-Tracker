@@ -33,7 +33,7 @@ const USERS={
   check('A plan that starts today (mid-cycle) is "Due today", not overdue');
   t=await row('future');assert.match(t,/Starts later/);assert.doesNotMatch(t,/Overdue/);assert.doesNotMatch(t,/Rs 3,\d{3}/);assert.doesNotMatch(t,/Rs 4,200 Rs 0/);
   check('A plan that starts in two days shows "Starts later" and no balance');
-  for(const id of ['yesterday','cycleday','old']){assert.match(await row(id),/Overdue for Oct/);}
+  for(const id of ['yesterday','cycleday','old']){assert.match(await row(id),/Overdue since Oct 2[47]/);}
   check('Plans that really are late (started yesterday, on the cycle day, long ago) are still overdue');
   const tiles=(await page.locator('.tile').allInnerTexts()).map(x=>x.replace(/\s+/g,' ')).join(' || ');
   assert.match(tiles,/Outstanding balance Rs 16,100/);assert.match(tiles,/owed by 4 users/);assert.match(tiles,/4 of 5 active users · 3 overdue/);
@@ -50,6 +50,6 @@ const USERS={
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   check('No sideways scroll at 390px');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'39',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'40',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

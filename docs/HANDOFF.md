@@ -1,6 +1,6 @@
 # Wasooli hand-off
 
-Written 2026-09-23 at v26, updated 2026-10-11 at v39. This is the document to read first when picking the project
+Written 2026-09-23 at v26, updated 2026-10-11 at v40. This is the document to read first when picking the project
 up again in Claude Code, another AI coding tool or by hand. `AGENTS.md` is the working guide for a coding session
 (every tool reads it, see section 10); this file records the state, the decisions and why they were made. The owner-facing step-by-step of how the server was
 built is `docs/setup-runbook.html` (open it in a browser; it prints).
@@ -14,6 +14,53 @@ rates, yearly/instalment proration, inline-form drafts and no-op redraws. New: f
 plan or one-time annual) and a product's own billing cycle for its tracking plans, listed in the Queue from their due date. Not done in v39 and
 still open from the review: items 9 onward (cross-currency residue, refund double reduction, supplier-cost edge cases, phone-number format,
 CSV safety, server hardening). Own-cycle plans are not yet in the stage 1-3 rounds, link cards, notify emails or cancellation-month logic.
+
+**Update 11 October 2026, v40.** Custom date range and product filter (revenue, costs, profit per product); date-based status wording;
+review items 9-12 fixed (conversion residue, refund settled twice, one-time refund reason, USD-to-PKR expense edit). See `CHANGELOG.md`.
+
+### Open items after v40 (the to-do list; keep this current)
+
+Numbers are from the independent review of v38 (findings reproduced on disposable stores; scripts were kept outside the repo).
+Done so far: 1-12 and 22 (inline form drafts, v39). Still open, roughly in priority order:
+
+- 13 Supplier costs: moving a product's start earlier leaves the gap without supplier costs (`entries[0].from` stays on the old start).
+- 14 Supplier costs: resuming after a cancellation gap drops the supplier cost profile from the resumed plan.
+- 15 Supplier costs: after a C to C Max switch, derived cost rows stay under the original package (By product split wrong; totals right).
+- 16 One-time items offer "Cost every cycle"; saving it accrues monthly cost rows.
+- 17 Deleting a user or removing a plan leaves its linked one-off expense in Costs and Analytics.
+- 18 Pakistani numbers typed as 0300... are stored as 03001234567, so WhatsApp and Telegram links break (convert a leading 0 to 92).
+- 19 A subscriber's link answer can replace the owner's own tier change for that cycle, or be silently ignored (two-package case).
+- 20 Queue "Except..." list opens off the left edge at 390px; on the cycle-start day the tick is saved for next month's cycle.
+- 21 Removing a receipt or refund takes one tap with no confirm (delete user/plan already ask Yes/Cancel).
+- 23 A cancelled user with a plan that starts after the last day cannot be edited ("Product start must not be after its end date").
+- 24 Edit plan changes currency or cycle without converting stored prices; a yearly package is accepted on a monthly plan.
+- 25 Row "Set package... > + New package..." stores packageId "__new".
+- 26 PKR amounts can show one decimal ("Rs 20,111.6"); USD now shows two decimals (v39).
+- 27 CSV export: cells starting with = + - @ are not neutralised (formula injection); +92 phone numbers break in Excel.
+- 28 CSV user import reports success when the new-package settings save failed.
+- 29 Server /api/import deletes a user it reports as skipped (null doc with replace users/).
+- 30 Browser-only (file://) copy shows "recorded" when localStorage writing failed.
+- 31 notify.py sends the SMTP password unencrypted if STARTTLS is stripped (refuse instead).
+- 32 Changing the mail host keeps the stored SMTP password and mail-test sends it to the new host.
+- 33 deploy/update.sh: a failed pip install leaves the VM on old code with no retry or restart.
+- 34 deploy/backup.sh: receipts archive is one file overwritten nightly (no history, not atomic); no SQLite integrity check.
+- 35 /healthz is public and reveals app name, AI provider, docs_version and linkBase.
+- 36 notify.py skips users who answered from stage 1; the app only from stage 2 (align if wanted).
+- 37 The subscriber choice page accepts unlimited submissions (no rate limit).
+- 38 A cleared confirmToken still lets old confirm/<token> links work.
+
+Follow-ups from the v39/v40 features:
+
+- Own-cycle plans are listed in the Queue when due, but are not in the stage 1-3 message rounds, the subscriber link cards or notify.py emails;
+  "No bills from billing month" cancellation and supplier-cost cycles still use the shared calendar.
+- Old receipts saved with a blank rate in another currency still float with the default rate (new ones are locked). Locking them needs a
+  read-only production check first and the owner's explicit approval.
+- Read-only production checks not yet done (owner approval needed): which live yearly plans were on the 30-day basis (#8), which USD plans have
+  discounts or partial first months (#6), blank-rate receipts (#7), and the meta/schema marker value (#3).
+- The claude.ai artifact: CLAUDE.md says republish after each index.html change, the v38 handoff says it is retired. Owner has not decided;
+  it was not republished for v39 or v40.
+- Testing notes: run suites one at a time (parallel loops on the Windows PC caused ERR_NO_BUFFER_SPACE and false failures); Google Fonts
+  timeouts on login are environmental; stopping a background task did not always stop the loop it started, so check for stray processes.
 It covers build history, billing, private recovery inventory, fresh hosting, restore procedures and the
 change/release workflow, with a verified 2026-10-04 snapshot and a copyable continuation prompt.
 
