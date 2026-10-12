@@ -37,6 +37,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   check('The customer shows "Cancelled · settled": nothing owed either way');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'40',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'41',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

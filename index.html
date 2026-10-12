@@ -129,6 +129,7 @@ td.r .m2{align-items:flex-end}
 .banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between;background:var(--warn-bg);border:1px solid var(--warn);border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--ink)}
 .banner[hidden]{display:none}#staleReload{min-height:40px;padding:8px 18px;font-size:14px}/* v39: a banner marked hidden really is hidden (before, the display:flex above overrode the hidden attribute: an empty Open queue bar always showed and the sign-in address note could not be dismissed) */
 .banner b{font-weight:600}
+.phone-in{display:flex;gap:6px;min-width:0}.phone-in .cc{width:64px;flex:none;text-align:center}.phone-in input:not(.cc){flex:1;min-width:0}.phone-hint{display:block;min-height:1em;margin-top:2px}@media (max-width:560px){label.f:has(.phone-in){grid-column:1/-1}}
 .range-custom{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}.range-custom[hidden]{display:none}.range-custom input{min-height:30px;padding:2px 6px;max-width:150px}
 .first-sale{border:1px solid var(--accent-line);background:var(--accent-tint);border-radius:6px;padding:8px 12px;margin:8px 0;flex-basis:100%;min-width:0}.first-sale[hidden]{display:none}.first-sale legend{font-weight:600;font-size:13px;padding:0 4px}.first-sale label{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:13px;cursor:pointer}.first-sale input{margin-top:3px;flex:none}.first-sale .muted{display:block}.first-sale .first-bill{margin:2px 0 8px 26px;align-items:center}.first-sale .first-bill[hidden]{display:none}.first-sale .first-bill select{max-width:200px}
 .remind-pair{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
@@ -179,6 +180,7 @@ table.fn tr[data-deact="1"] td.st,table.fn tr[data-deact="1"] td.who{opacity:1}
 .sec-item h4{margin:0 0 4px;font-size:14px;font-weight:600}
 .sec-item p{margin:0 0 8px}
 details.except{position:relative}
+@media (max-width:560px){.except-list{position:fixed!important;left:10px!important;right:10px!important;top:auto!important;bottom:10px!important;min-width:0!important;max-height:55vh}}
 details.except summary{cursor:pointer;font-size:12px;font-weight:500;color:var(--accent-ink);padding:5px 10px;border:1px solid var(--line-strong);border-radius:4px;background:var(--surface);list-style:none;white-space:nowrap}
 details.except summary::-webkit-details-marker{display:none}
 details.except[open] summary{background:var(--accent-soft)}
@@ -643,7 +645,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v40</span>
+      <span class="small muted num" id="app-ver" title="App version">v41</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -843,7 +845,7 @@ table.costs td.cat{color:var(--ink-2)}
       <div class="form-grid">
         <label class="f">Name<input id="a-name" type="text" autocomplete="off" placeholder="Name or email is required" autocapitalize="words"></label>
         <label class="f">Email<input id="a-email" type="email" placeholder="name@company.com" autocomplete="off" inputmode="email"></label>
-        <label class="f">WhatsApp number<input id="a-phone" type="tel" placeholder="+92 300 1234567" autocomplete="off" inputmode="tel"></label>
+        <label class="f">WhatsApp number<span class="phone-in"><input id="a-cc" class="cc" type="text" value="+92" inputmode="tel" maxlength="5" aria-label="Country code"><input id="a-phone" type="tel" placeholder="300 1234567" autocomplete="off" inputmode="tel"></span><span class="small muted phone-hint" data-role="phone-hint"></span></label>
         <label class="f">Joined on<input id="a-join" type="date" required></label>
         <label class="f">Package / product<select id="a-pkg" required></select></label>
         <label class="f" id="a-start-wrap">Package started on<input id="a-start" type="date" required></label>
@@ -1156,6 +1158,13 @@ const mLabel=k=>{const p=k.split('-');return MONTHS[(+p[1])-1]+' '+p[0];};
 function fmtD(iso,full){if(!isDateKey(iso))return iso||'—';const p=iso.split('-');const y=todayISO().slice(0,4);return MONTHS[+p[1]-1]+' '+(+p[2])+((full||p[0]!==y)?', '+p[0]:'');}
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const digits=s=>String(s||'').replace(/\D/g,'');
+/* v41: a phone number is saved with its country code. The box beside the number holds the code (+92 unless changed): a leading 0 (0300...) is
+   replaced by it and a bare local number gets it; a number typed with + or 00 keeps its own code (+90 533..., 0044 7911...). */
+const ccDigits=v=>digits(v)||'92';
+function phoneFrom(raw,cc){const t=String(raw||'').trim();const d=digits(t);if(!d)return '';const c=ccDigits(cc);if(d.startsWith('00'))return d.slice(2);if(d.startsWith('0'))return c+d.replace(/^0+/,'');if(t.startsWith('+'))return d;if(d.startsWith(c)&&d.length>=c.length+9)return d;return c+d;}
+document.addEventListener('input',e=>{const el=e.target;if(!el||!el.matches||!el.matches('#a-phone,#a-cc,[name=phone],[name=cc]'))return;const box=el.closest('label');if(!box)return;const ph=box.querySelector('#a-phone,[name=phone]'),cc=box.querySelector('#a-cc,[name=cc]'),hint=box.querySelector('[data-role=phone-hint]');if(ph&&hint)hint.textContent=phonePreview(ph.value,cc?cc.value:'+92');});
+function tgFrom(raw,cc){const t=String(raw||'').trim();if(/^\+?[\d\s\-()]+$/.test(t)&&digits(t).length>=7)return phoneFrom(t,cc);return normTg(t);}
+const phonePreview=(raw,cc)=>{const d=phoneFrom(raw,cc);return d?'Saved as +'+d+(validPhone(d)?'':' (check the number)'):'';};
 const fmtPhone=p=>p?'+'+p:'';
 const tgText=t=>t?(/^\d+$/.test(t)?'+'+t:'@'+t):'';
 const contactLine=u=>{const parts=[];if(u.phone)parts.push(fmtPhone(u.phone));if(u.telegram)parts.push(tgText(u.telegram));return parts.length?`<span class="ct">${esc(parts.join(' · '))}</span>`:'';};
@@ -1171,7 +1180,7 @@ let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=fa
 /* ---------- money: two currencies, per-entry rate ---------- */
 const normCur=c=>{c=String(c||'').trim();return c==='USD'||c==='$'||/usd|\$|dollar/i.test(c)?'USD':'PKR';};
 const other=c=>c==='USD'?'PKR':'USD';
-function fmtAmt(n,cur){n=Number(n)||0;const neg=n<0;const a=Math.abs(n),cents=cur==='USD'&&Math.abs(Math.round(a*100)-Math.round(a)*100)>0;/* v39: dollars with cents always show two decimals ($22.50) */const s=a.toLocaleString(undefined,{minimumFractionDigits:cents?2:0,maximumFractionDigits:2});return (neg?'\u2212':'')+(cur==='USD'?'$'+s:'Rs '+s);}
+function fmtAmt(n,cur){n=Number(n)||0;const neg=n<0;const a=Math.abs(n),cents=Math.abs(Math.round(a*100)-Math.round(a)*100)>0;/* v39: dollars with cents always show two decimals ($22.50) */const s=a.toLocaleString(undefined,{minimumFractionDigits:cents?2:0,maximumFractionDigits:2});return (neg?'\u2212':'')+(cur==='USD'?'$'+s:'Rs '+s);}
 const defaultRate=()=>{const r=Number(state.settings.rate);return r>0?r:null;};
 const rateOf=r=>{const x=Number(r);return x>0?x:defaultRate();};
 function conv(amount,cur,rate){const r=rate===0?null:rateOf(rate);const a=Number(amount)||0;return cur==='USD'?{usd:a,pkr:r?a*r:null,ok:!!r,r}:{pkr:a,usd:r?a/r:null,ok:!!r,r};}
@@ -1195,7 +1204,7 @@ const rateNote=r=>r?` <span class="small muted">at ${Number(r).toLocaleString()}
 const DEFAULT_RATE=280;
 
 /* ---------- normalisation ---------- */
-function normalizePackages(arr){if(!Array.isArray(arr))return [];const seen={};const out=[];for(const p of arr){if(!p||typeof p!=='object')continue;const id=String(p.id||'').trim()||newId('pkg');const name=String(p.name||'').trim();if(!name||seen[id])continue;seen[id]=1;const pr=Number(p.price);const o={id,name,cycle:normCycle(p.cycle),price:isFinite(pr)&&pr>0?pr:null,currency:p.currency?normCur(p.currency):'',description:String(p.description||'').trim()};if(p.fresh===true)o.fresh=true;out.push(o);}return out;}
+function normalizePackages(arr){if(!Array.isArray(arr))return [];const seen={};const out=[];for(const p of arr){if(!p||typeof p!=='object')continue;const id=String(p.id||'').trim()||newId('pkg');const name=String(p.name||'').trim();if(!name||seen[id])continue;seen[id]=1;const pr=Number(p.price);const o={id,name,cycle:normCycle(p.cycle),price:isFinite(pr)&&pr>0?pr:null,currency:p.currency?normCur(p.currency):'',description:String(p.description||'').trim()};if(p.fresh===true)o.fresh=true;if(Array.isArray(p.aliases)){const al=[];for(const a of p.aliases){const t=String(a||'').trim().slice(0,60);if(t&&t.toLowerCase()!==name.toLowerCase()&&!al.some(x=>x.toLowerCase()===t.toLowerCase()))al.push(t);}if(al.length)o.aliases=al.slice(-10);}out.push(o);}return out;}
 const packages=()=>state.settings.packages||[];
 const DEFAULT_APP_NAME='Wasooli';const LEGACY_APP_NAME='Wasool';/* v24: the app was Wasool until v23; a stored name equal to either reads as the default */const DEFAULT_TAGLINE='Know who\'s paid.';const appNameOf=v=>String(v==null?'':v).trim().slice(0,40)||DEFAULT_APP_NAME;const rawAppName=v=>{const t=String(v==null?'':v).trim().slice(0,40);return t===DEFAULT_APP_NAME||t===LEGACY_APP_NAME?'':t;};const taglineOf=v=>String(v==null?'':v).trim().slice(0,60)||DEFAULT_TAGLINE;const rawTagline=v=>{const t=String(v==null?'':v).trim().slice(0,60);return t===DEFAULT_TAGLINE?'':t;};const tagline=()=>taglineOf(state.settings.tagline);const normModel=v=>v==='default'?'default':'quick';const readModel=()=>normModel(state.settings.readModel);const appName=()=>appNameOf(state.settings.appName);
 const DEFAULT_SETTINGS=()=>({rate:null,pkrCostTax:5.2,costPaymentBase:null,costPaymentHistory:[],template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,cycleDay:null,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,appName:'',tagline:'',readModel:'quick',publicBaseUrl:'',queueTemplates:{},payHow:'',waApp:'regular',dimSettled:true});
@@ -1245,7 +1254,9 @@ function remState(u,key){const r=(u.reminders||{})[key];return Object.assign({re
 const remEmpty=r=>!(r.reminded||r.confirmed||r.final||r.skipped||(r.sent&&r.sent.length));
 const pkgById=id=>packages().find(p=>p.id===id)||null;
 const pkgName=id=>{const p=pkgById(id);return p?p.name:'';};
-function planLabel(s,date){const pn=pkgName(pkgIdAt(s,date||todayISO()));const extra=(s.name||'').trim();if(!pn)return extra||(s.kind==='one-time'?'Item':'Plan');return extra&&extra.toLowerCase()!=='standard'&&extra.toLowerCase()!==pn.toLowerCase()?pn+' · '+extra:pn;}
+/* v41: is this text just the product's name, today's or one it had before a rename? (plan and item labels, auto-written descriptions) */
+const isProductName=(text,pid)=>{const t=String(text||'').trim().toLowerCase();if(!t)return false;const p=pkgById(pid);return !!p&&(p.name.toLowerCase()===t||(p.aliases||[]).some(a=>a.toLowerCase()===t));};
+function planLabel(s,date){const pid=pkgIdAt(s,date||todayISO());const pn=pkgName(pid);const extra=(s.name||'').trim();if(!pn)return extra||(s.kind==='one-time'?'Item':'Plan');return extra&&extra.toLowerCase()!=='standard'&&!isProductName(extra,pid)?pn+' · '+extra:pn;}
 const subCycle=s=>s.kind==='one-time'?'one-time':normCycle(s.cycle);
 /* v33: an annual package keeps its annual price. Payment intervals are independent; absent = the existing yearly bill. */
 const validPayMonths=n=>[1,3,6,12].includes(Number(n));
@@ -1294,7 +1305,7 @@ const tierBadgeHTML=(s,today)=>tierBadges(s,today).map(d=>`<span class="tier-bad
 function tierMarkHTML(s,today){const b=tierBadges(s,today);if(!b.length)return '';const d=b[b.length-1];return `<span class="tier-mark" data-dir="${d.dir}" title="${esc(b.map(x=>x.text).join(' · '))}">${d.dir==='up'?'↗':'↘'}</span>`;}
 /* the account a plan belongs to: an email written into the plan label wins, else the user's email */
 const EMAIL_IN_TEXT=/[^\s@·,;()]+@[^\s@·,;()]+\.[^\s@·,;()]+/;
-function acctParts(u,s){const nm=String(s.name||'').trim();const m=nm.match(EMAIL_IN_TEXT);const email=m?m[0]:'';let label=(m?nm.replace(m[0],''):nm).replace(/^[\s·,;:()\-–]+|[\s·,;:()\-–]+$/g,'').trim();if(/^standard$/i.test(label))label='';return {label,email:email||u.email||'',own:!!email};}
+function acctParts(u,s){const nm=String(s.name||'').trim();const m=nm.match(EMAIL_IN_TEXT);const email=m?m[0]:'';let label=(m?nm.replace(m[0],''):nm).replace(/^[\s·,;:()\-–]+|[\s·,;:()\-–]+$/g,'').trim();if(/^standard$/i.test(label)||isProductName(label,s.packageId))label='';return {label,email:email||u.email||'',own:!!email};}
 function normDate(s){if(!s)return null;s=String(s);if(isDateKey(s))return s;if(isMonthKey(s))return s+'-01';return null;}
 const normRate=r=>{const x=Number(r);return x>0?x:null;};
 const normTg=v=>{let t=String(v||'').trim().replace(/^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\//i,'').replace(/^@+/,'').replace(/[\/?#].*$/,'');if(/^\+?[\d\s\-()]+$/.test(t)&&digits(t).length>=7)t=digits(t);return t;};
@@ -1314,7 +1325,7 @@ function normalizeUser(b,id){
     const sub={id:s.id||newId('s'),kind,name:String(s.name||'').trim()||(kind==='one-time'?'Item':''),currency:cur,packageId:String(s.packageId||'').trim()||null,payments:[]};
     if(kind==='monthly'){sub.cycle=s.cycle==='yearly'?'yearly':'monthly';sub.prorate=s.prorate!==false;sub.waiveFirst=s.waiveFirst===true;{const ov=Number(s.prorationDaysOverride);sub.prorationDaysOverride=Number.isInteger(ov)&&ov>0?ov:null;const ro=Number(s.prorationRateOverride);sub.prorationRateOverride=isFinite(ro)&&ro>0?ro:null;const ao=s.prorationAmountOverride;sub.prorationAmountOverride=ao!=null&&ao!==''&&isFinite(Number(ao))&&Number(ao)>=0?Number(ao):null;sub.prorationBasis=rawBasis(s.prorationBasis);sub.discount=normDiscount(s.discount);sub.tierHistory=normTierHistory(s.tierHistory,cur);sub.periodOverrides=normPeriodOverrides(s.periodOverrides);}sub.dueBy=normDate(s.dueBy);sub.start=start;sub.end=normDate(s.end);if(isDateKey(s.anchor))sub.anchor=s.anchor;const prices=(s.prices||[]).map(p=>({from:normDate(p.from)||start,price:Number(p.price)||0}));sub.prices=prices.length?prices:[{from:start,price:Number(s.price)||0}];}
     else{sub.total=Number(s.total)||0;sub.due=normDate(s.due);if(isDateKey(s.start))sub.start=s.start;if(isDateKey(s.renews))sub.renews=s.renews;}
-    if(s.costId)sub.costId=String(s.costId);const ac=normAccountCost(s.accountCost);if(ac)sub.accountCost=ac;
+    if(s.costId)sub.costId=String(s.costId);if(kind==='monthly'&&s.linkConflict&&typeof s.linkConflict==='object'&&isDateKey(s.linkConflict.cycle)&&PKG_ID_RE.test(String(s.linkConflict.packageId||'')))sub.linkConflict={cycle:s.linkConflict.cycle,packageId:String(s.linkConflict.packageId),at:String(s.linkConflict.at||'').slice(0,10)};const ac=normAccountCost(s.accountCost);if(ac)sub.accountCost=ac;
     if(kind==='monthly'&&sub.cycle==='yearly'){if(validPayMonths(s.paymentEvery))sub.paymentEvery=Number(s.paymentEvery);const schedule=normPaymentSchedule(s.paymentSchedule);if(schedule.length)sub.paymentSchedule=schedule;}
     for(const p of s.payments||[]){const d=normDate(p.date);if(!d)continue;sub.payments.push({id:p.id||newId('p'),date:d,amount:Number(p.amount)||0,currency:p.currency?normCur(p.currency):cur,rate:normRate(p.rate),note:String(p.note||'')});}
     sub.payments.sort((a,b)=>a.date.localeCompare(b.date));
@@ -1536,25 +1547,33 @@ function fmtWhen(iso){const d=new Date(iso);if(isNaN(d))return '';return MONTHS[
 function choiceText(a,id){const u=state.users[id];const s=u&&a.plan_id?(u.subscriptions||[]).find(x=>x.id===a.plan_id):null;const pl=s?` <span class="plan">(${esc(acctParts(u,s).label||planLabel(s))})</span>`:'';const tgt=pkgName(a.target_package_id)||'other tier';
   switch(a.answer){case 'continue':return '✓ Continue'+pl;case 'upgrade':return '↗ Upgrade → '+esc(tgt)+pl;case 'downgrade':return '↘ Move → '+esc(tgt)+pl;case 'discontinue':return '✗ Discontinue'+pl;default:return esc(a.answer)+pl;}}
 function answerBadge(id,cycle){if(state.backend!=='api')return '';const rows=answersFor(id,cycle||nextCycleStart(todayISO()));if(!rows.length)return '<span class="ans" data-ans="none">no answer on the link yet</span>';
-  return rows.map(a=>`<span class="ans" data-ans="${esc(a.answer)}">${choiceText(a,id)} <span class="when">${esc(fmtWhen(a.at))}${a.applied_at?' · applied':''}</span>${a.note?`<span class="note">· “${esc(a.note)}”</span>`:''}</span>`).join('<br>');}
+  return rows.map(a=>`<span class="ans" data-ans="${esc(a.answer)}">${choiceText(a,id)} <span class="when">${esc(fmtWhen(a.at))}${(a.answer==='upgrade'||a.answer==='downgrade')&&(state.users[id]||{subscriptions:[]}).subscriptions.some(x=>x.linkConflict&&x.linkConflict.cycle===(cycle||nextCycleStart(todayISO())))?' · differs from your tier change':a.applied_at?' · applied':''}</span>${a.note?`<span class="note">· “${esc(a.note)}”</span>`:''}</span>`).join('<br>');}
 const answerLine=(id,cycle)=>state.backend==='api'?`<br>${answerBadge(id,cycle)}`:'';
 /* apply what a subscriber chose, once per answer (the server stamps applied_at); re-running changes nothing.
    continue → confirmed tick; upgrade / downgrade → a tierHistory entry from the cycle start at the package price (marked via:'link');
    discontinue → a "Discontinue requested" mark the owner confirms with one tap; a changed answer resets the earlier one. */
 function applyAnswerSet(u,rows,cycle){const today=todayISO();const monthly=(u.subscriptions||[]).filter(s=>s.kind==='monthly'&&(!s.end||s.end>=cycle)&&periodAmt(s,Math.max(0,periodIndexAt(s,cycle))).st===cycle);
   const targetsOf=a=>a.plan_id?monthly.filter(s=>s.id===a.plan_id):monthly;const touched=new Set();for(const a of rows)for(const s of targetsOf(a))touched.add(s.id);
-  for(const s of monthly)if(touched.has(s.id))s.tierHistory=(s.tierHistory||[]).filter(t=>!(t.from===cycle&&t.via==='link'));
+  for(const s of monthly)if(touched.has(s.id)){s.tierHistory=(s.tierHistory||[]).filter(t=>!(t.from===cycle&&t.via==='link'));if(s.linkConflict&&s.linkConflict.cycle===cycle)delete s.linkConflict;}
   const keep=rows.some(a=>a.answer!=='discontinue');u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[cycle]||{});
   if(keep&&!r.confirmed)r.confirmed=today;if(remEmpty(r))delete u.reminders[cycle];else u.reminders[cycle]=r;
   const disc=[];let discNote='',discAt='';
   for(const a of rows){const when=a.at?String(a.at).slice(0,10):today;
-    if(a.answer==='upgrade'||a.answer==='downgrade'){for(const s of targetsOf(a)){const sw=switchFor(s,cycle);const pid=a.target_package_id||(sw&&sw.packageId);if(!pid||pid===pkgIdAt(s,addDays(cycle,-1)))continue;const pk=pkgById(pid);if(!pk||pk.cycle!==subCycle(s))continue;
+    if(a.answer==='upgrade'||a.answer==='downgrade'){for(const s of targetsOf(a)){const sw=switchFor(s,cycle);const pid=a.target_package_id||(sw&&sw.packageId);
+        /* v41: a tier change the owner set by hand for this cycle is never replaced or silently ignored: the difference is stored on the plan and the owner chooses */
+        const mine=(s.tierHistory||[]).find(t=>t.from===cycle&&t.via!=='link');if(mine&&pid&&mine.packageId!==pid){s.linkConflict={cycle,packageId:pid,at:when};continue;}
+        if(!pid||pid===pkgIdAt(s,addDays(cycle,-1)))continue;const pk=pkgById(pid);if(!pk||pk.cycle!==subCycle(s))continue;
         if((s.tierHistory||[]).some(t=>t.from===cycle&&t.packageId===pid))continue;let price=switchPrice(s,pid,cycle);const guess=price==null;if(guess)price=priceAt(s,addDays(cycle,-1));
-        s.tierHistory=(s.tierHistory||[]).filter(t=>t.from!==cycle);s.tierHistory.push({from:cycle,packageId:pid,price,currency:s.currency,note:'Chosen on the link '+fmtD(when)+(guess?' · price to confirm':''),via:'link'});s.tierHistory.sort((x,y)=>x.from.localeCompare(y.from));}}
+        s.tierHistory=(s.tierHistory||[]).filter(t=>!(t.from===cycle&&t.via==='link'));s.tierHistory.push({from:cycle,packageId:pid,price,currency:s.currency,note:'Chosen on the link '+fmtD(when)+(guess?' · price to confirm':''),via:'link'});s.tierHistory.sort((x,y)=>x.from.localeCompare(y.from));}}
     else if(a.answer==='discontinue'){for(const s of targetsOf(a))disc.push(s.id);if(a.note)discNote=a.note;discAt=a.at||discAt;}}
   if(disc.length)u.discontinue={cycleStart:cycle,at:discAt||new Date().toISOString(),planIds:disc.length<monthly.length?disc:[],note:discNote};
   else if(u.discontinue&&u.discontinue.cycleStart===cycle)u.discontinue=null;
   return u;}
+/* v41: the owner's decision on a link answer that differs from a tier change set by hand */
+function useLinkChoice(s,c){const cycle=c.cycle,pid=c.packageId;s.tierHistory=(s.tierHistory||[]).filter(t=>t.from!==cycle);
+  if(pid!==pkgIdAt(s,addDays(cycle,-1))){let price=switchPrice(s,pid,cycle);const guess=price==null;if(guess)price=priceAt(s,addDays(cycle,-1));s.tierHistory.push({from:cycle,packageId:pid,price,currency:s.currency,note:'Chosen on the link '+fmtD(c.at||todayISO())+(guess?' \u00b7 price to confirm':''),via:'link'});s.tierHistory.sort((x,y)=>x.from.localeCompare(y.from));}}
+function linkConflictHTML(id,s){const c=s.linkConflict;if(!c||!isDateKey(c.cycle))return '';const mine=(s.tierHistory||[]).find(t=>t.from===c.cycle&&t.via!=='link');
+  return `<div class="banner link-conflict" role="status"><span><b>Link answer differs from your tier change.</b> ${esc(displayName(state.users[id]))} chose <b>${esc(pkgName(c.packageId)||'another tier')}</b> from ${esc(fmtD(c.cycle,true))} on the link${c.at?' ('+esc(fmtD(c.at))+')':''}; you set <b>${esc(mine?(pkgName(mine.packageId)||'another tier'):'a different tier')}</b> from the same day. Nothing was changed.</span><span class="banner-acts"><button class="btn sm primary" type="button" data-act="link-use" data-sub="${esc(s.id)}">Use their choice</button><button class="btn sm" type="button" data-act="link-keep" data-sub="${esc(s.id)}">Keep mine</button></span></div>`;}
 const applying={};
 async function applyAnswers(){if(state.backend!=='api'||!state.loaded||!state.settingsLoaded)return;
   for(const cycle in confirmAnswers.byCycle){const byUser=confirmAnswers.byCycle[cycle];for(const uid in byUser){const rows=byUser[uid];const pending=rows.filter(a=>!a.applied_at);if(!pending.length)continue;const u=state.users[uid];if(!u||u.cancel||applying[uid])continue;applying[uid]=1;
@@ -1772,21 +1791,21 @@ function normAccountCost(v){
   return out;
 }
 function costRecords(){
-  const today=todayISO();if(accountCostCache&&accountCostCache.day===today)return accountCostCache.records;const out={};for(const [id,c] of Object.entries(state.costs))out[id]={...c,rate:c.purchase?(c.purchase.rate||0):(c.rate||costPolicyAt(c.date).rate||0)};
-  for(const [uid,u] of Object.entries(state.users))for(const s of u.subscriptions||[]){const ac=s.accountCost;if(!ac||!isDateKey(s.start))continue;
+  const today=todayISO();if(accountCostCache&&accountCostCache.day===today)return accountCostCache.records;const out={};for(const [id,c] of Object.entries(state.costs)){let description=c.description;/* v41: a linked expense's automatic description ("Name · Product cost") follows a product rename; a description the owner wrote is left alone */if(c.source==='account'&&c.userId&&state.users[c.userId]&&pkgById(c.packageId)){const pk=pkgById(c.packageId),dn=displayName(state.users[c.userId]);if([pk.name,...(pk.aliases||[])].some(n=>description===dn+' · '+n+' cost'))description=dn+' · '+pk.name+' cost';}out[id]={...c,description,rate:c.purchase?(c.purchase.rate||0):(c.rate||costPolicyAt(c.date).rate||0)};}
+  for(const [uid,u] of Object.entries(state.users))for(const s of u.subscriptions||[]){const ac=s.accountCost;if(!ac||!isDateKey(s.start)||s.kind==='one-time')continue;/* v41: a one-time item has no cycles, so it accrues no cycle cost */
     const fake={kind:'monthly',cycle:ac.frequency,start:ac.entries[0].from>s.start?ac.entries[0].from:s.start,prices:[{from:s.start,price:1}],prorate:true,prorationBasis:'actual'};
     const ends=[s.end,ac.end,u.cancel&&u.cancel.lastDay].filter(isDateKey).sort(),end=ends[0]||today;
     for(let k=0;k<2400;k++){const st=pStart(fake,k),en=addDays(pStart(fake,k+1),-1),date=k===0?fake.start:st;if(date>today||date>end)break;
       const entry=ac.entries.filter(e=>e.from<=date).pop()||ac.entries[0];let amount=entry.amount;
       if(k===0&&fake.start>st){if(ac.first==='free')amount=0;else if(ac.first==='custom')amount=ac.firstAmount||0;else if(ac.first==='prorated')amount=Math.round(amount*(dayDiff(fake.start,en)+1)/(dayDiff(st,en)+1)*100)/100;}
-      const id='ac_'+uid+'_'+s.id+'_'+st;let payment;try{payment=pricedCost(amount,entry.currency,entry.paidIn,date,entry.rate);}catch(e){payment={currency:'USD',cost:amount,tax:0,rate:0,paymentError:e.message};}out[id]={id,date,description:`${displayName(u)} · ${pkgName(s.packageId)||s.name||'Product'} · ${entry.supplier||'cycle cost'}`,category:'Product',packageId:s.packageId||'',currency:entry.currency,cost:amount,tax:0,rate:entry.rate,source:'account-cycle',receipt:'',createdAt:'',userId:uid,subscriptionId:s.id,cycleStart:st,...payment,...(ac.overrides[st]||{})};if(ac.overrides[st]&&!out[id].rate)out[id].rate=costPolicyAt(out[id].date).rate||0;
+      const id='ac_'+uid+'_'+s.id+'_'+st;let payment;try{payment=pricedCost(amount,entry.currency,entry.paidIn,date,entry.rate);}catch(e){payment={currency:'USD',cost:amount,tax:0,rate:0,paymentError:e.message};}const cpid=pkgIdAt(s,date)||s.packageId||'';/* v41: a cycle cost belongs to the package the plan is on that day (C to C Max switches) */out[id]={id,date,description:`${displayName(u)} · ${pkgName(cpid)||s.name||'Product'} · ${entry.supplier||'cycle cost'}`,category:'Product',packageId:cpid,currency:entry.currency,cost:amount,tax:0,rate:entry.rate,source:'account-cycle',receipt:'',createdAt:'',userId:uid,subscriptionId:s.id,cycleStart:st,...payment,...(ac.overrides[st]||{})};if(ac.overrides[st]&&!out[id].rate)out[id].rate=costPolicyAt(out[id].date).rate||0;
     }
   }accountCostCache={day:today,records:out};return out;
 }
 function accountCostFields(s,prefix){
   const c=linkedCost(s),ac=s&&s.accountCost,e=ac&&ac.entries.at(-1),p=prefix||'',f=n=>p+n,mode=ac?'cycle':c?'once':'none';
   const fake=ac&&s.start?{kind:'monthly',cycle:ac.frequency,start:s.start}:null,from=fake?pStart(fake,periodIndexAt(fake,todayISO())+1):s&&s.start?s.start:todayISO();
-  return `<div class="account-cost-fields" data-purchase="${esc(JSON.stringify(c&&c.purchase||null))}" data-has-profile="${ac?'1':'0'}"><label class="f">Supplier cost<select name="${esc(f('accountCostMode'))}"><option value="none"${mode==='none'?' selected':''}>Not known yet / leave unchanged</option><option value="cycle"${mode==='cycle'?' selected':''}>Cost every cycle</option><option value="once"${mode==='once'?' selected':''}>One actual expense</option></select></label>
+  return `<div class="account-cost-fields" data-purchase="${esc(JSON.stringify(c&&c.purchase||null))}" data-has-profile="${ac?'1':'0'}" data-kind="${esc(s&&s.kind||'')}"><label class="f">Supplier cost<select name="${esc(f('accountCostMode'))}"><option value="none"${mode==='none'?' selected':''}>Not known yet / leave unchanged</option><option value="cycle"${mode==='cycle'?' selected':''}>Cost every cycle</option><option value="once"${mode==='once'?' selected':''}>One actual expense</option></select></label>
     <div class="form-grid" data-role="account-cost-options"${mode==='none'?' hidden':''}>
       <label class="f">Cost amount<input name="${esc(f('accountCost'))}" type="number" min="0" step="0.01" value="${e?e.amount:c&&c.purchase?c.purchase.amount:c?c.cost:''}" placeholder="Leave blank if unknown"></label>
       <label class="f">Cost currency${curSelect('',f('accountCostCurrency'),e?e.currency:c&&c.purchase?'USD':c?c.currency:'USD')}</label>
@@ -1800,7 +1819,7 @@ function accountCostFields(s,prefix){
 }
 function wireAccountCostFields(root){root.querySelectorAll('.account-cost-fields').forEach(box=>{
   if(box.refreshCostFields){box.refreshCostFields();return;}const saved=normPurchase(JSON.parse(box.dataset.purchase||'null'));const read=n=>box.querySelector('[name$="'+n+'"]').value,form=box.closest('form'),from=box.querySelector('[name$="accountCostFrom"]');from.addEventListener('input',()=>from.dataset.costManual='1');
-  const upd=()=>{const mode=read('accountCostMode'),usd=read('accountCostCurrency')==='USD',paid=read('accountCostPaidIn');box.querySelector('[data-role=cost-paid-wrap]').hidden=!usd;box.querySelector('[data-role=cost-rate-wrap]').hidden=usd&&paid==='PKR';box.querySelector('[data-role=account-cost-options]').hidden=mode==='none';box.querySelectorAll('[data-role=account-cost-cycle]').forEach(x=>x.hidden=mode!=='cycle');box.querySelector('[data-role=account-cost-once]').hidden=mode!=='once';box.querySelector('[data-role=account-cost-first-amount]').hidden=mode!=='cycle'||read('accountCostFirst')!=='custom';
+  const upd=()=>{{/* v41: a one-time item takes one actual expense, not a cost every cycle */const kindEl=form&&form.querySelector('#a-cycle,[name=kind]'),one=box.dataset.kind==='one-time'||(!box.dataset.kind&&kindEl&&kindEl.value==='one-time')||firstChoice(form)==='once',sel=box.querySelector('[name$="accountCostMode"]'),opt=sel&&sel.querySelector('option[value=cycle]');if(opt&&box.dataset.hasProfile!=='1'){opt.hidden=opt.disabled=one;if(one&&sel.value==='cycle')sel.value='none';}}const mode=read('accountCostMode'),usd=read('accountCostCurrency')==='USD',paid=read('accountCostPaidIn');box.querySelector('[data-role=cost-paid-wrap]').hidden=!usd;box.querySelector('[data-role=cost-rate-wrap]').hidden=usd&&paid==='PKR';box.querySelector('[data-role=account-cost-options]').hidden=mode==='none';box.querySelectorAll('[data-role=account-cost-cycle]').forEach(x=>x.hidden=mode!=='cycle');box.querySelector('[data-role=account-cost-once]').hidden=mode!=='once';box.querySelector('[data-role=account-cost-first-amount]').hidden=mode!=='cycle'||read('accountCostFirst')!=='custom';
     const group=box.closest('[data-account-fields]'),startEl=group?group.querySelector('[name^="productStart:"]'):form&&form.id==='addForm'?$('#a-start'):form&&form.querySelector('[name=start],[name=date]'),start=startEl&&startEl.value;
     if(box.dataset.hasProfile==='0'&&!from.dataset.costManual&&isDateKey(start))from.value=start;
     const preview=box.querySelector('[data-role=account-cost-preview]');
@@ -1814,17 +1833,20 @@ function wireAccountCostFields(root){root.querySelectorAll('.account-cost-fields
    write only the fields the owner actually changed and never puts a stale copy of an untouched field over a newer save from another device. */
 function fieldBase(el){if(el.dataset&&el.dataset.base!==undefined)return el.dataset.base;if(el.tagName==='SELECT'){const o=[...el.options].find(x=>x.defaultSelected)||el.options[0];return o?o.value:'';}return el.defaultValue;}
 const fieldChanged=(form,n)=>{const el=form.elements.namedItem(n);return !!el&&el.value!==fieldBase(el);};
-function updateAccountStart(s,date){if(s.kind==='monthly'&&!isDateKey(date))throw Error('Choose the product start date.');if(date&&!isDateKey(date))throw Error('Choose a valid product start date.');if(s.end&&date&&s.end<date)throw Error('Product start must not be after its end date.');if(date)s.start=date;else if(s.kind==='one-time')delete s.start;}
+/* v41: when a product's start moves earlier, a supplier cost that began on the old start moves with it, so the earlier days are not left without cost */
+function moveCostStart(s,oldStart,newStart){const ac=s&&s.accountCost;if(!ac||!Array.isArray(ac.entries)||!ac.entries.length||!isDateKey(oldStart)||!isDateKey(newStart)||newStart>=oldStart)return;if(ac.entries[0].from===oldStart)ac.entries[0].from=newStart;}
+function updateAccountStart(s,date,u){if(s.kind==='monthly'&&!isDateKey(date))throw Error('Choose the product start date.');if(date&&!isDateKey(date))throw Error('Choose a valid product start date.');if(s.end&&date&&s.end<date&&!(u&&u.cancel&&u.cancel.lastDay===s.end))throw Error('Product start must not be after its end date.');/* v41: a plan that starts after a cancellation's last day has no periods; that is not an error */if(date){moveCostStart(s,s.start,date);s.start=date;}else if(s.kind==='one-time')delete s.start;}
 function accountCostDraft(form,s,uid,prefix){
   const p=prefix||'',get=n=>{const el=form.elements.namedItem(p+n);return el?el.value:'';},raw=get('accountCost'),mode=get('accountCostMode');if(mode==='none'||raw==='')return null;
   if(!validAmt(raw))throw Error('Enter a cost of zero or more, or leave it blank.');const rateRaw=get('accountCostRate');if(rateRaw&&(!isFinite(Number(rateRaw))||Number(rateRaw)<=0))throw Error('Enter a cost exchange rate greater than zero.');
+  if(mode==='cycle'&&s.kind==='one-time'&&!s.accountCost)throw Error('A one-time item takes one actual expense, not a cost every cycle.');
   if(mode==='cycle'){if(!isDateKey(s.start))throw Error('Choose this product’s start date before its cycle cost.');const prev=s.accountCost,entry={from:get('accountCostFrom')||s.start,amount:Number(raw),currency:normCur(get('accountCostCurrency')),rate:normRate(rateRaw),paidIn:get('accountCostPaidIn')==='PKR'?'PKR':'USD',supplier:get('accountCostSupplier').trim()},first=get('accountCostFirst'),firstAmount=get('accountCostFirstAmount');
     if(first==='custom'&&!validAmt(firstAmount))throw Error('Enter the first partial-cycle cost.');const ac=prev?clone(prev):{frequency:get('accountCostFrequency')==='yearly'?'yearly':'monthly',entries:[],overrides:{}},latest=ac.entries.at(-1);
     if(!latest||['amount','currency','rate','supplier','paidIn'].some(k=>latest[k]!==entry[k])){if(!isDateKey(entry.from))throw Error('Choose when the new cost applies.');const fake={kind:'monthly',cycle:ac.frequency,start:s.start};if(prev&&entry.from!==s.start&&pStart(fake,periodIndexAt(fake,entry.from))!==entry.from)throw Error('A cost change must start on a billing cycle boundary.');if(entry.from<s.start)throw Error('Cost change cannot precede product start.');ac.entries=ac.entries.filter(e=>e.from!==entry.from);ac.entries.push(entry);ac.entries.sort((a,b)=>a.from.localeCompare(b.from));}
     pricedCost(raw,entry.currency,entry.paidIn,entry.from,entry.rate);ac.first=first;ac.firstAmount=first==='custom'?Number(firstAmount):null;s.accountCost=normAccountCost(ac);return null;
   }
   const date=get('accountCostDate');if(!isDateKey(date))throw Error('Choose the expense date.');const before=linkedCost(s),cid=before?before.id:s.costId||('account_'+uid+'_'+s.id);s.costId=cid;const paid=get('accountCostPaidIn'),quoted=normCur(get('accountCostCurrency')),snapshot=before&&before.purchase&&before.purchase.paidIn===paid?before.purchase:null,extra=!before?0:before.purchase?(quoted==='USD'?before.purchase.extraTax:0):(normCur(before.currency)===quoted?before.tax:0),payment=pricedCost(raw,quoted,paid,date,normRate(rateRaw),extra,snapshot);/* v40: extra tax is kept only in the same quote currency */
-  return {id:cid,...(before||{}),date,description:before?before.description:`${displayName(state.users[uid]||{name:form.elements.namedItem('name')?.value||'New user'})} · ${pkgName(s.packageId)||s.name||'Product'} cost`,category:before?before.category:'Product',packageId:s.packageId||'',currency:normCur(get('accountCostCurrency')),cost:Number(raw),tax:before?before.tax:0,rate:normRate(rateRaw),source:before?before.source:'account',receipt:before?before.receipt:'',userId:uid,subscriptionId:s.id,...payment,purchase:payment.purchase||null};/* v40: a PKR quote has no USD purchase record; an old one is not carried over */
+  return {id:cid,...(before||{}),date,description:before?before.description:`${displayName(state.users[uid]||{name:form.elements.namedItem('name')?.value||'New user'})} · ${pkgName(s.packageId)||s.name||'Product'} cost`,category:before?before.category:'Product',packageId:pkgIdAt(s,date)||s.packageId||'',currency:normCur(get('accountCostCurrency')),cost:Number(raw),tax:before?before.tax:0,rate:normRate(rateRaw),source:before?before.source:'account',receipt:before?before.receipt:'',userId:uid,subscriptionId:s.id,...payment,purchase:payment.purchase||null};/* v40: a PKR quote has no USD purchase record; an old one is not carried over */
 }
 async function persistAccountBundle(id,u,costs){if(!costs.length)return persistUser(id,u);const body=cleanUser({...u,id}),docs={['users/'+id]:body};for(const c of costs)docs['costs/'+c.id]=cleanCost(c);
   try{if(state.backend==='api'){const base={};for(const p of Object.keys(docs))if(API.rev[p])base[p]=API.rev[p];let result;API.busy++;try{result=await apiJSON('/api/import',apiBody('POST',{docs,replace:[],base}));}catch(e){apiConflict(e);throw e;}finally{API.busy--;}if(result.skipped&&result.skipped.length)throw Error('Account save rejected.');for(const p of Object.keys(docs))apiWrote(p);Object.assign(API.rev,result.versions||{});apiTouch();}
@@ -1835,6 +1857,8 @@ async function persistAccountBundle(id,u,costs){if(!costs.length)return persistU
 }
 function accountStartInputs(u){return (u.subscriptions||[]).map(s=>`<fieldset class="block" data-account-fields="${esc(s.id)}"><legend>${esc(planLabel(s))} · ${esc(s.currency)} · ${esc(subCycle(s))}</legend><label class="f">Product started on (this user's product only)<input name="productStart:${esc(s.id)}" type="date" value="${esc(s.start||'')}"${s.kind==='monthly'?' required':''}></label><p class="small muted">${s.start?'Changing this date recalculates this account’s bills; receipts and price history are kept.':'Start date not recorded. Choose it when known.'}</p>${accountCostFields(s,s.id+':')}</fieldset>`).join('');}
 
+/* v41: deleting a user or removing a plan can also delete its linked one-off supplier expense (ticked by default); the derived cycle costs go with the plan */
+async function deleteLinkedCost(cid){if(!cid||!state.costs[cid])return false;if(db){try{await db.collection('costs').doc(cid).delete();}catch(e){toast(dbErr(e));return false;}}delete state.costs[cid];if(!db)saveLocal();accountCostCache=null;render();return true;}
 async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.users[id];saveLocal();render();}return true;}
 async function persistCost(id,c){const existing=costRecords()[id];if(existing&&existing.source==='account-cycle'){const u=clone(state.users[existing.userId]),sub=u.subscriptions.find(x=>x.id===existing.subscriptionId);if(!sub||!sub.accountCost)return false;sub.accountCost.overrides[existing.cycleStart]={date:c.date,cost:c.cost,tax:c.tax||0,currency:c.currency,rate:c.rate,description:c.description,category:c.category,purchase:normPurchase(c.purchase)};return persistUser(u.id,u);}const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}state.costs[id]=normalizeCost(body,id);if(!db)saveLocal();render();return true;}
 async function removeCost(id){const existing=costRecords()[id];if(existing&&existing.source==='account-cycle')return persistCost(id,{...existing,cost:0,tax:0,purchase:existing.purchase?{...existing.purchase,amount:0,extraTax:0}:null,description:existing.description+' · cycle cost waived'});if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}delete state.costs[id];if(!db)saveLocal();render();return true;}
@@ -1919,7 +1943,7 @@ function renderRemindRun(){
   const creditNote=r=>{let c=[];for(const s of r.u.subscriptions||[]){const sa=r.a.sa[s.id];if(sa&&sa.kind==='monthly'&&sa.nextSt===w.nc&&sa.nextCredit>0)c.push(fmtAmt(sa.nextCredit,s.currency));}return c.length?` <span class="muted">(recorded advance money: ${esc(c.join(' + '))}; the full bill is unchanged)</span>`:'';};
   const dueTxt=r=>r.a.unpaid?ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur)+' overdue':ownText(r.a.cycleDue,r.a.mainCur);
   const ticked=R.overdue.length+R.cycle.length-R.todo.length;
-  let html=`<div class="fn-bar"><span class="lead"><b>${R.todo.length}</b> to remind · <b>${R.skipped.length}</b> skipped${ticked?` · ${ticked} already reminded or confirmed`:''}</span><details class="except"${ui.exceptOpen?' open':''}><summary>Except… ${R.skipped.length?`(${R.skipped.length})`:''}</summary><div class="except-list"><span class="hint">Tick anyone to leave out of this run (for example, someone who has paid ahead or told you separately). Saved for this cycle only.</span>${R.due.length?R.due.map(r=>`<label class="chk"><input type="checkbox" data-act="skip" data-user="${esc(r.id)}"${remState(r.u,key).skipped?' checked':''}>${esc(displayName(r.u))}<span class="when">${esc(dueTxt(r))}</span></label>`).join(''):'<span class="hint">Nobody is due this cycle.</span>'}</div></details></div>`;
+  let html=`<div class="fn-bar"><span class="lead"><b>${R.todo.length}</b> to remind · <b>${R.skipped.length}</b> skipped${ticked?` · ${ticked} already reminded or confirmed`:''}</span><details class="except"${ui.exceptOpen?' open':''}><summary>Except… ${R.skipped.length?`(${R.skipped.length})`:''}</summary><div class="except-list"><span class="hint">Tick anyone to leave out of this run (for example, someone who has paid ahead or told you separately). Saved for this cycle only.</span>${R.due.length?R.due.map(r=>`<label class="chk"><input type="checkbox" data-act="skip" data-cycle="${esc(key)}" data-user="${esc(r.id)}"${remState(r.u,key).skipped?' checked':''}>${esc(displayName(r.u))}<span class="when">${esc(dueTxt(r))}</span></label>`).join(''):'<span class="hint">Nobody is due this cycle.</span>'}</div></details></div>`;
   if(R.skipped.length)html+=`<p class="skipped-note">Skipped this cycle: ${R.skipped.map(r=>`<b>${esc(displayName(r.u))}</b> <button class="link sm" type="button" data-act="unskip" data-user="${esc(r.id)}">undo</button>`).join(' · ')}. They are also left out of the Final notice list unless overdue from earlier.</p>`;
   if(R.overdue.length)html+=`<div class="rr-sec"><h4>Overdue from earlier cycles · ${R.overdue.length}</h4>${R.overdue.map(r=>row(r,'overdue')).join('')}</div>`;
   html+=`<div class="rr-sec"><h4>Due for the cycle starting ${esc(fmtD(w.nc))} · ${R.cycle.length}</h4>${R.cycle.length?R.cycle.map(r=>row(r,'cycle')).join(''):'<p class="small muted">Nobody else has an amount due for this cycle.</p>'}</div>`;
@@ -1954,8 +1978,8 @@ function renderQueue(){
   const stageWhy={1:`reminder · from ${fmtD(auto.w.start)} to ${fmtD(addDays(auto.w.replyBy,-1))}`,2:`repeat to anyone without an answer · from the reply-by day ${fmtD(auto.w.replyBy)}`,3:`final note to anyone still silent · the cycle started today, the account continues at the current tier`};
   $('#rr-sub').textContent=st.stage?`Today ${fmtD(today,true)} · stage ${st.stage} ${st.auto?'(from the date)':'(preview)'}: ${stageWhy[st.stage]} · cycle ${fmtCycle(cycle,ce)}. Tap Sent after sending; the tick is saved per user, stage and cycle.`:`Today ${fmtD(today,true)} · no messages are due today. Stage 1 opens on ${fmtD(auto.w.start,true)} for the cycle starting ${fmtD(auto.w.nc,true)}; stage 2 on ${fmtD(auto.w.replyBy)}; stage 3 on ${fmtD(auto.w.nc)}.`;
   const picker=`<span class="seg" id="q-stages" title="Preview another stage">${[1,2,3].map(n=>`<button type="button" data-stage="${n}" aria-pressed="${st.stage===n}">${n} · ${STAGE_NAMES[n]}${auto.stage===n?' (today)':''}</button>`).join('')}</span>`;
-  const R=reminderRows(today);const key=auto.w.nc;const dueTxt=r=>r.a.unpaid?ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur)+' overdue':ownText(r.a.cycleDue,r.a.mainCur);
-  const except=`<details class="except"${ui.exceptOpen?' open':''}><summary>Except… ${R.skipped.length?`(${R.skipped.length})`:''}</summary><div class="except-list"><span class="hint">Tick anyone to leave out of every stage this cycle (for example, someone who told you separately). Saved for the cycle starting ${esc(fmtD(key))}.</span>${R.due.length?R.due.map(r=>`<label class="chk"><input type="checkbox" data-act="skip" data-user="${esc(r.id)}"${remState(r.u,key).skipped?' checked':''}>${esc(displayName(r.u))}<span class="when">${esc(dueTxt(r))}</span></label>`).join(''):'<span class="hint">Nobody is due this cycle.</span>'}</div></details>`;
+  const R=reminderRows(today);const key=cycle||auto.w.nc;/* v41: the Except tick belongs to the cycle shown here */const nSk=R.due.filter(r=>remState(r.u,key).skipped).length;const dueTxt=r=>r.a.unpaid?ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur)+' overdue':ownText(r.a.cycleDue,r.a.mainCur);
+  const except=`<details class="except"${ui.exceptOpen?' open':''}><summary>Except… ${nSk?`(${nSk})`:''}</summary><div class="except-list"><span class="hint">Tick anyone to leave out of every stage this cycle (for example, someone who told you separately). Saved for the cycle starting ${esc(fmtD(key))}.</span>${R.due.length?R.due.map(r=>`<label class="chk"><input type="checkbox" data-act="skip" data-cycle="${esc(key)}" data-user="${esc(r.id)}"${remState(r.u,key).skipped?' checked':''}>${esc(displayName(r.u))}<span class="when">${esc(dueTxt(r))}</span></label>`).join(''):'<span class="hint">Nobody is due this cycle.</span>'}</div></details>`;
   let html=`<div class="qbar"><span class="qstage" data-stage="${st.stage}">${st.stage?`Stage ${st.stage} · ${STAGE_NAMES[st.stage]}`:'Nothing due today'}</span><span class="lead">${st.stage?`<b>${Q.todo}</b> to send · <b>${Q.sent}</b> sent${st.stage>=2?' · users who answered on the link are left out':''}`:'Pick a stage to preview its messages.'}</span>${picker}${except}</div>`;
   if(!publicBase())html+=`<p class="skipped-note">No link in the messages yet: set the <button class="link sm" type="button" data-act="open-settings">Public base URL</button> in Settings so every message carries the user's private choice page.</p>`;
   if(state.backend!=='api')html+=`<p class="skipped-note">Answers from the link pages arrive only on the self-hosted server; here the queue shows everyone due.</p>`;
@@ -2143,7 +2167,7 @@ function renderChart(){
     const cx=pl+i*band+band/2;const p=m.split('-');const lab=(+p[1]===1||i===0)?MONTHS[+p[1]-1]+' ’'+p[0].slice(2):MONTHS[+p[1]-1];
     svg+=`<rect class="hit" data-i="${i}" x="${(pl+i*band).toFixed(1)}" y="${pt}" width="${band.toFixed(1)}" height="${innerH}"/>`;
     svg+=bar(cx-bw-1,colNet[i],'bar1')+bar(cx+1,cost[i],'bar2');
-    svg+=`<text class="xlab${m===ck?' cur':''}" x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle">${lab}</text>`;
+    if(i%(band<34?2:1)===(11%(band<34?2:1)))svg+=`<text class="xlab${m===ck?' cur':''}" x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle">${lab}</text>`;
   });
   svg+='</svg><div class="tip" id="tip" hidden></div>';box.innerHTML=svg;
   const tip=$('#tip');
@@ -2400,7 +2424,7 @@ function fillStartForm(){const c=startContext();if(!c)return;const {d,s,a}=c;$('
 function openStartDialog(id,sid){if(!state.settingsLoaded)return;const u=state.users[id],subs=u&&(u.subscriptions||[]).filter(s=>s.kind==='monthly');if(!subs||!subs.length)return;const s=subs.find(x=>x.id===sid)||subs[0];ui.startDraft={id,sid:s.id,busy:false};$('#start-who').textContent=displayName(u);
   $('#start-account').innerHTML=subs.map((x,i)=>`<option value="${esc(x.id)}">${esc(paymentAccountName(u,x,i))}</option>`).join('');$('#start-account').value=s.id;$('#start-account').disabled=subs.length===1;fillStartForm();const dialog=$('#startDialog');if(!dialog.open)dialog.showModal();$('#start-date').focus();
 }
-function startDraftUser(c){const {d,u,s,a}=c,sim=clone(u),ss=sim.subscriptions.find(x=>x.id===s.id);ss.start=$('#start-date').value;ss.prorate=$('#start-prorate').checked;
+function startDraftUser(c){const {d,u,s,a}=c,sim=clone(u),ss=sim.subscriptions.find(x=>x.id===s.id);moveCostStart(ss,ss.start,$('#start-date').value);ss.start=$('#start-date').value;ss.prorate=$('#start-prorate').checked;
   const m=Number($('#start-payment').value),scheduleChanged=subCycle(s)==='yearly'&&m!==d.originalMonths;
   if(subCycle(s)==='yearly'&&(!scheduleChanged||$('#start-apply').value==='start'||ss.start!==s.start||ss.prorate!==(s.prorate!==false)))ss.prorationBasis='actual';
   if(scheduleChanged){if($('#start-apply').value==='start')ss.paymentEvery=m;else{const from=nextScheduleStart(s,a.sa[s.id]);ss.paymentSchedule=normPaymentSchedule((ss.paymentSchedule||[]).concat({from,months:m}));}}
@@ -2529,6 +2553,8 @@ async function savePaymentDialog(e){e.preventDefault();const c=paymentContext();
   d.busy=false;if(ok){$('#paymentDialog').close();ui.paymentDraft=null;}else{$('#payment-error').textContent='The payment was not saved. Your entries are kept here; try again.';refreshPaymentPreview();}
 }
 let lastTbodyHTML='',tbodyDirty=true,tbodyObs=null;
+const RM_WHAT={'pay-remove':'this receipt','refund-remove':'this refund','price-remove':'this price','tier-remove':'this tier change'};
+function rmConfirmHTML(A,d){const attrs=['sub','pay','ref','from'].filter(k=>d[k]!==undefined).map(k=>`data-${k}="${esc(d[k])}"`).join(' ');return `<span class="small rm-confirm">Remove ${RM_WHAT[A]}? <button class="link sm danger" type="button" data-act="${A}-yes" ${attrs}>Yes, remove</button> <button class="link sm" type="button" data-act="rm-no">Cancel</button></span>`;}
 function renderTable(){
   /* v39: the typed values of every open inline form are kept across a redraw (before, only Edit user, Add plan and Edit plan were), so a refresh triggered by another device or by this page's own background save cannot wipe a half-typed bill, receipt, price, refund or tier form */
   const formKey=f=>[f.className,f.dataset.id||'',f.dataset.sub||'',f.dataset.start||''].join('|');
@@ -2576,6 +2602,7 @@ function renderTable(){
   tb.innerHTML=html;
   if(ui.expanded&&state.users[ui.expanded])wireDetail(ui.expanded,today);
   for(const d of accountDrafts){const f=[...document.querySelectorAll('#tbody form')].find(x=>formKey(x)===d.key&&!x.hidden);if(!f)continue;if(d.pending)f.dataset.pendingSubId=d.pending;const typed=[];for(const v of d.values){const e=f.elements.namedItem(v.name);if(e&&e.tagName){const box=e.type==='checkbox'||e.type==='radio';if(!box&&v.value===v.base)continue;e.value=v.value;e.dataset.base=v.base;if(box)e.checked=v.checked;if(v.costManual)e.dataset.costManual=v.costManual;typed.push(e);}}wireAccountCostFields(f);for(const e of typed)e.dispatchEvent(new Event('input',{bubbles:true}));}
+  if(ui.rmConfirm){const c=ui.rmConfirm;const el=[...document.querySelectorAll('tr.detail[data-id="'+c.id+'"] [data-act="'+c.A+'"]')].find(b=>['sub','pay','ref','from'].every(k=>c.d[k]===undefined||b.dataset[k]===c.d[k]));if(el)el.outerHTML=rmConfirmHTML(c.A,c.d);else ui.rmConfirm=null;}
   if(tbodyObs)tbodyObs.takeRecords();tbodyDirty=false;
 }
 function renderRemindAll(rows,today){
@@ -2863,6 +2890,7 @@ function detailHTML(id,u,a,today){
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
         </div>
         <div class="sub-body">
+        ${linkConflictHTML(id,s)}
         <div class="sub-facts"><span>Package started <b>${esc(fmtD(s.start,true))}</b> <button class="link sm" type="button" data-act="package-start" data-sub="${s.id}">Change start / payments</button></span>${yearly?`<span>Pays <b>${esc(payFrequency(payMonthsAt(s,'9999-12-31')))}</b>${(s.paymentSchedule||[]).length?' · '+s.paymentSchedule.map(x=>esc(payFrequency(x.months)+' from '+fmtD(x.from,true))).join('; '):''}</span>`:''}${s.end?`<span>Ends <b>${esc(fmtD(s.end,true))}</b></span>`:''}<span>Paid through <b>${sa.kPaid?esc(fmtD(sa.paidThrough,true)):'nothing yet'}</b></span>${sa.nextDue?(sa.nextDue>today?`<span>Next due <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}${sa.nextCredit>0?` <span class="muted">(after ${esc(fmtAmt(sa.nextCredit,s.currency))} credit)</span>`:''}</span>`:sa.nextCredit>0?`<span>Remaining on the current period <b>${esc(fmtAmt(nextPr,s.currency))}</b></span>`:`<span>Unpaid since <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}</span>`):''}${(s.refunds||[]).length?`<span>Paid in <b>${esc(fmtAmt(sa.paid+refundedInPlanCur(s),s.currency))}</b> · refunded <b class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</b> · kept <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`:`<span>Total paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`}${yearFacts}${dueByFact}${s.waiveFirst?'<span>First partial period <b>waived</b></span>':s.prorate===false?'<span>First period <b>not prorated</b></span>':''}${unconvNote}</div>
         ${histTxt?`<div class="hist">Price history: ${histTxt}</div>`:''}${tierHist}
         <div class="periods">${cells}</div>
@@ -2921,6 +2949,7 @@ function detailHTML(id,u,a,today){
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
         </div>
         <div class="sub-body">
+        ${linkConflictHTML(id,s)}
         <div class="sub-facts"><span>Paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b>${(s.refunds||[]).length?` <span class="muted">kept (<span class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</span> refunded, taken off the item's total)</span>`:''}</span><span>Remaining <b>${esc(fmtAmt(sa.remaining,s.currency))}</b></span><span>Due <b>${s.due?esc(fmtD(s.due,true)):'no date'}</b></span>${s.renews?`<span>Renews <b>${esc(fmtD(s.renews,true))}</b> <span class="muted">(for reference)</span></span>`:''}${unconvNote}</div>
         ${open['rec:'+s.id]==='item'&&sa.remaining>0?recBoxHTML(id,u,s,recTarget(s,sa),today,!!open['recmore:'+s.id]):''}
         ${payForm(id,s,sa,today,sa.remaining,payOpen,(ui.payEdit||{})[s.id]?(s.payments||[]).find(x=>x.id===ui.payEdit[s.id]):null)}
@@ -2994,7 +3023,7 @@ function detailHTML(id,u,a,today){
         <label class="f">Name<input id="e-name-${id}" name="name" type="text" value="${esc(u.name||'')}"></label>
         <label class="f">Email<input id="e-email-${id}" name="email" type="email" value="${esc(u.email||'')}"></label>
         <label class="f">Joined on<input id="e-join-${id}" name="joinDate" type="date" required value="${esc(u.joinDate)}"></label>
-        <label class="f">WhatsApp number <span class="muted">(with country code)</span><input id="e-phone-${id}" name="phone" type="tel" placeholder="+92 300 1234567" value="${esc(fmtPhone(u.phone))}"></label>
+        <label class="f">WhatsApp number <span class="muted">(country code, then number)</span><span class="phone-in"><input name="cc" class="cc" type="text" value="+92" inputmode="tel" maxlength="5" aria-label="Country code"><input id="e-phone-${id}" name="phone" type="tel" placeholder="300 1234567" value="${esc(fmtPhone(u.phone))}"></span><span class="small muted phone-hint" data-role="phone-hint"></span></label>
         <label class="f">Telegram <span class="muted">(handle or phone, optional)</span><input id="e-tg-${id}" name="telegram" type="text" placeholder="@handle or +92…" value="${esc(u.telegram?(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram):'')}"></label>
         <label class="f">Payment method / notes<input id="e-notes-${id}" name="notes" type="text" value="${esc(u.notes||'')}"></label>
       </div>
@@ -3142,7 +3171,7 @@ const settingGroups={
   basis:{label:'Proration basis',ids:['s-basis'],read:()=>({prorationBasis:normBasis($('#s-basis').value)})},
   'wa-app':{label:'WhatsApp app',ids:['s-wa-app'],read:()=>({waApp:normWaApp($('#s-wa-app').value)})},
   dim:{label:'Paid-up user display',ids:['s-dim'],read:()=>({dimSettled:$('#s-dim').checked})},
-  packages:{label:'Products',ids:['pkgList'],read:()=>{const list=(ui.pkgEdit||clone(packages())).map(p=>({...p,name:String(p.name||'').trim()}));if(!list.length)throw Error('Keep at least one product.');if(list.some(p=>!p.name))throw Error('Every product needs a name, or remove the empty row.');if(new Set(list.map(p=>p.name.toLowerCase())).size!==list.length)throw Error('Two products have the same name.');return {packages:normalizePackages(list)};}},
+  packages:{label:'Products',ids:['pkgList'],read:()=>{const list=(ui.pkgEdit||clone(packages())).map(p=>{const n=String(p.name||'').trim();const old=pkgById(p.id);/* v41: a renamed product remembers its old name, so plan labels and descriptions that still carry it follow the rename */const al=old&&old.name&&old.name.toLowerCase()!==n.toLowerCase()?[...(old.aliases||[]),old.name,...(p.aliases||[])]:(p.aliases||(old&&old.aliases)||[]);return {...p,name:n,aliases:al};});if(!list.length)throw Error('Keep at least one product.');if(list.some(p=>!p.name))throw Error('Every product needs a name, or remove the empty row.');if(new Set(list.map(p=>p.name.toLowerCase())).size!==list.length)throw Error('Two products have the same name.');return {packages:normalizePackages(list)};}},
   template:{label:'WhatsApp reminder message',ids:['s-template'],read:()=>({template:tplOf($('#s-template').value.trim())})},
   'final-template':{label:'Final notice message',ids:['s-final-template'],read:()=>({finalTemplate:finalTplOf($('#s-final-template').value)})},
   q1:{label:'Stage 1 message',ids:['s-q1'],read:()=>({queueTemplates:normQueueTpl({...state.settings.queueTemplates,1:$('#s-q1').value})})},
@@ -3370,7 +3399,7 @@ function bind(){
       qs.disabled=true;const ok=await persistUser(id,u);if(!ok){qs.disabled=false;qs.checked=!qs.checked;}else if(db)renderRemindRun();return;}
     const cb=e.target.closest('input[data-act="rem"],input[data-act="skip"]');if(!cb)return;const id=cb.dataset.user;if(!state.users[id])return;
     const f=cb.dataset.act==='skip'?'skipped':cb.dataset.f;
-    const key=nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[key]||{});
+    const key=cb.dataset.cycle&&isDateKey(cb.dataset.cycle)?cb.dataset.cycle:nextCycleStart(todayISO());const u=clone(state.users[id]);u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[key]||{});
     r[f]=cb.checked?todayISO():null;if(!remEmpty(r))u.reminders[key]=r;else delete u.reminders[key];
     cb.disabled=true;const ok=await persistUser(id,u);if(!ok){cb.disabled=false;cb.checked=!cb.checked;}else if(db)renderRemindRun();
   });
@@ -3406,6 +3435,8 @@ function bind(){
   $('#tbody').addEventListener('change',async e=>{
     const sel=e.target.closest('select.pkg-quick');if(!sel||!sel.value)return;const row=sel.closest('tr.row');if(!row)return;
     const u=clone(state.users[row.dataset.id]);const s=(u.subscriptions||[]).find(x=>x.id===sel.dataset.sub);if(!s)return;
+    if(sel.value==='__new'){sel.value='';newPackageFlow();return;}
+    {const pk=pkgById(sel.value);if(!pk||pk.cycle!==subCycle(s)){toast('That package is billed '+(pk?pk.cycle:'differently')+'; this plan is '+subCycle(s)+'.');sel.value='';return;}}
     s.packageId=sel.value;sel.disabled=true;const ok=await persistUser(row.dataset.id,u);if(ok)toast(`${displayName(u)}: package set to ${pkgName(sel.value)}.`);else sel.disabled=false;
   });
   const prefillFromPkg=(pkgSel,priceEl,curEl)=>{const p=pkgById(pkgSel.value);if(!p)return;const last=pkgSel.dataset.prefilled||'';if(p.price==null){if(last&&priceEl.value===last){priceEl.value='';delete pkgSel.dataset.prefilled;priceEl.dispatchEvent(new Event('input',{bubbles:true}));}return;}if(priceEl.value===''||priceEl.value===last){priceEl.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency&&curEl)curEl.value=p.currency;priceEl.dispatchEvent(new Event('input',{bubbles:true}));if(curEl)curEl.dispatchEvent(new Event('change',{bubbles:true}));}};
@@ -3425,10 +3456,10 @@ function bind(){
     if(findUser(email,name)){err.textContent='That user is already tracked. Open their row to edit.';return;}
     if(!pkgById(pkg)){err.textContent='Choose the package or product (edit the list in Settings).';return;}
     if(!validAmt(priceRaw)){err.textContent='Enter the monthly price (0 is allowed for a free plan).';return;}
-    if(!validPhone(phone)){err.textContent='Phone number should have 7 to 15 digits including the country code.';return;}
+    if(!validPhone(phoneFrom(phone,$('#a-cc').value))){err.textContent='Phone number should have 7 to 15 digits including the country code.';return;}
     const first=firstChoice($('#a-first'));if(first==='none'){err.textContent='This is the first customer for a new product: choose a tracking plan or a one-time annual plan.';return;}
     const id=$('#addForm').dataset.pendingUserId||($('#addForm').dataset.pendingUserId=newId('u'));
-    const user={name,email,phone,telegram:normTg($('#a-tg').value),joinDate:join,notes,subscriptions:[first==='once'?oneTimeAnnual({name:plan||pkgName(pkg),pkg,cur,start,total:Number(priceRaw)}):cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,start,total:Number(priceRaw),due:isDateKey($('#a-due').value)?$('#a-due').value:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start,...(ownAnchorFor(pkg,first,start)?{anchor:ownAnchorFor(pkg,first,start)}:{}),end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number($('#a-payment').value)}:{}),dueBy:null,prices:[{from:start,price:Number(priceRaw)}],payments:[]}]};const sub=user.subscriptions[0];sub.id=$('#addForm').dataset.pendingSubId||($('#addForm').dataset.pendingSubId=sub.id);let costs=[];try{const c=accountCostDraft($('#addForm'),sub,id);if(c)costs.push(c);}catch(e){err.textContent=e.message;return;}const button=$('#addForm button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,user,costs);button.disabled=false;
+    const user={name,email,phone:phoneFrom(phone,$('#a-cc').value),telegram:tgFrom($('#a-tg').value,$('#a-cc').value),joinDate:join,notes,subscriptions:[first==='once'?oneTimeAnnual({name:plan||pkgName(pkg),pkg,cur,start,total:Number(priceRaw)}):cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,start,total:Number(priceRaw),due:isDateKey($('#a-due').value)?$('#a-due').value:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start,...(ownAnchorFor(pkg,first,start)?{anchor:ownAnchorFor(pkg,first,start)}:{}),end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number($('#a-payment').value)}:{}),dueBy:null,prices:[{from:start,price:Number(priceRaw)}],payments:[]}]};const sub=user.subscriptions[0];sub.id=$('#addForm').dataset.pendingSubId||($('#addForm').dataset.pendingSubId=sub.id);let costs=[];try{const c=accountCostDraft($('#addForm'),sub,id);if(c)costs.push(c);}catch(e){err.textContent=e.message;return;}const button=$('#addForm button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,user,costs);button.disabled=false;
     if(ok){delete $('#addForm').dataset.pendingUserId;delete $('#addForm').dataset.pendingSubId;$('#a-account-cost').innerHTML='';$('#addForm').reset();delete $('#a-start').dataset.manual;$('#addPanel').hidden=true;ui.expanded=null;renderTable();toast('Added '+(name||email)+'. Record the first payment when the money is received.');openPaymentDialog(id);}
   });
 
@@ -3443,6 +3474,10 @@ function bind(){
     const det=e.target.closest('tr.detail');if(!det)return;const id=det.dataset.id;
     const act=e.target.closest('[data-act]');if(!act)return;const A=act.dataset.act,sid=act.dataset.sub;
     if(A==='toggle'){if((act.dataset.key||'').startsWith('refund:'))openRefundDialog(id,sid);else if((act.dataset.key||'').startsWith('days:'))openBillDialog(id,sid,pStart(state.users[id].subscriptions.find(s=>s.id===sid),0));else toggleOpen(id,act.dataset.key);}
+    else if(A==='link-keep'){const u=clone(state.users[id]);const sb=u.subscriptions.find(x=>x.id===sid);if(!sb)return;delete sb.linkConflict;const ok=await persistUser(id,u);if(ok)toast('Kept your tier change.');}
+    else if(A==='link-use'){const u=clone(state.users[id]);const sb=u.subscriptions.find(x=>x.id===sid);if(!sb||!sb.linkConflict)return;useLinkChoice(sb,sb.linkConflict);delete sb.linkConflict;const ok=await persistUser(id,u);if(ok)toast('Applied their choice.');}
+    else if(Object.keys(RM_WHAT).includes(A)){/* v41: the same two-step Yes/Cancel that deleting a user or plan already has; remembered across redraws */ui.rmConfirm={id,A,d:Object.assign({},act.dataset)};act.outerHTML=rmConfirmHTML(A,act.dataset);}
+    else if(A==='rm-no'){ui.rmConfirm=null;renderTable();}
     else if(A==='package-start')openStartDialog(id,sid);
     /* v29: one-tap Record payment */
     else if(A==='rec')openPaymentDialog(id,sid,null,act.dataset.start);
@@ -3455,19 +3490,19 @@ function bind(){
     else if(A==='pay-edit')openPaymentDialog(id,sid,act.dataset.pay);
     else if(A==='refund-edit')openRefundDialog(id,sid,act.dataset.ref);
     else if(A==='refund-cancel'){if(ui.refundEdit)delete ui.refundEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['refund:'+sid]:false});renderTable();}
-    else if(A==='refund-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const r=(s.refunds||[]).find(x=>x.id===act.dataset.ref);s.refunds=(s.refunds||[]).filter(x=>x.id!==act.dataset.ref);if(!s.refunds.length)delete s.refunds;settleRefunds(u,s,todayISO());if(ui.refundEdit)delete ui.refundEdit[sid];const ok=await persistUser(id,u);if(ok&&r)toast(`Removed the ${fmtAmt(r.amount,r.currency||s.currency)} refund dated ${r.date}.`);}
+    else if(A==='refund-remove-yes'){ui.rmConfirm=null;const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const r=(s.refunds||[]).find(x=>x.id===act.dataset.ref);s.refunds=(s.refunds||[]).filter(x=>x.id!==act.dataset.ref);if(!s.refunds.length)delete s.refunds;settleRefunds(u,s,todayISO());if(ui.refundEdit)delete ui.refundEdit[sid];const ok=await persistUser(id,u);if(ok&&r)toast(`Removed the ${fmtAmt(r.amount,r.currency||s.currency)} refund dated ${r.date}.`);}
     else if(A==='pay-edit-cancel'){if(ui.payEdit)delete ui.payEdit[sid];ui.open[id]=Object.assign({},ui.open[id],{['pay:'+sid]:false});renderTable();}
     else if(A==='price-edit'){ui.priceEdit=ui.priceEdit||{};ui.priceEdit[sid]=act.dataset.from;ui.open[id]=Object.assign({},ui.open[id],{['price:'+sid]:true});renderTable();}
     else if(A==='days-reset'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;s.prorationDaysOverride=null;s.prorationRateOverride=null;s.prorationAmountOverride=null;setPeriodOverride(s,pStart(s,0),null);ui.open[id]=Object.assign({},ui.open[id],{['days:'+sid]:false});const ok=await persistUser(id,u);if(ok)toast('First period back to actual days.');}
     else if(A==='amt-cancel'||A==='amt-reset'){const f=act.closest('form.amt-form');if(!f)return;if(A==='amt-cancel')toggleOpen(id,'amt:'+f.dataset.sub+':'+f.dataset.start);else{act.disabled=true;await resetPeriodOverride(id,f.dataset.sub,f.dataset.start,'detail');}}
-    else if(A==='tier-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const t=(s.tierHistory||[]).find(x=>x.from===act.dataset.from);s.tierHistory=(s.tierHistory||[]).filter(x=>x.from!==act.dataset.from);const ok=await persistUser(id,u);if(ok)toast(t?`Undone: ${displayName(u)} no longer moves to ${pkgName(t.packageId)||'that tier'} from ${fmtD(t.from,true)}.`:'Tier change removed.');}
-    else if(A==='price-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;if((s.prices||[]).length<=1){toast('A plan needs at least one price. Edit it instead.');return;}s.prices=s.prices.filter(p=>p.from!==act.dataset.from);const ok=await persistUser(id,u);if(ok)toast('Price entry removed.');}
-    else if(A==='pay-remove'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const p=s.payments.find(x=>x.id===act.dataset.pay);s.payments=s.payments.filter(x=>x.id!==act.dataset.pay);const ok=await persistUser(id,u);if(ok&&p)toast(`Removed the ${fmtAmt(p.amount,p.currency||s.currency)} payment dated ${p.date}.`);}
-    else if(A==='sub-remove'){act.parentElement.innerHTML=`<span class="small" style="margin-right:8px">Remove this plan and all of its payments?</span><button class="btn sm danger" type="button" data-act="sub-remove-yes" data-sub="${sid}">Yes, remove</button> <button class="btn sm" type="button" data-act="sub-remove-no">Cancel</button>`;}
-    else if(A==='sub-remove-yes'){const u=clone(state.users[id]);u.subscriptions=(u.subscriptions||[]).filter(s=>s.id!==sid);ui.open[id]={};const ok=await persistUser(id,u);if(ok)toast('Plan removed.');}
+    else if(A==='tier-remove-yes'){ui.rmConfirm=null;const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const t=(s.tierHistory||[]).find(x=>x.from===act.dataset.from);s.tierHistory=(s.tierHistory||[]).filter(x=>x.from!==act.dataset.from);const ok=await persistUser(id,u);if(ok)toast(t?`Undone: ${displayName(u)} no longer moves to ${pkgName(t.packageId)||'that tier'} from ${fmtD(t.from,true)}.`:'Tier change removed.');}
+    else if(A==='price-remove-yes'){ui.rmConfirm=null;const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;if((s.prices||[]).length<=1){toast('A plan needs at least one price. Edit it instead.');return;}s.prices=s.prices.filter(p=>p.from!==act.dataset.from);const ok=await persistUser(id,u);if(ok)toast('Price entry removed.');}
+    else if(A==='pay-remove-yes'){ui.rmConfirm=null;const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const p=s.payments.find(x=>x.id===act.dataset.pay);s.payments=s.payments.filter(x=>x.id!==act.dataset.pay);const ok=await persistUser(id,u);if(ok&&p)toast(`Removed the ${fmtAmt(p.amount,p.currency||s.currency)} payment dated ${p.date}.`);}
+    else if(A==='sub-remove'){const lc1=linkedCost((state.users[id].subscriptions||[]).find(x=>x.id===sid));act.parentElement.innerHTML=`<span class="small" style="margin-right:8px">Remove this plan and all of its payments?</span>${lc1?`<label class="chk small" style="margin-right:8px"><input type="checkbox" data-role="del-costs" checked>Also delete its linked supplier expense (${esc(fmtAmt(costTotal(lc1),lc1.currency))})</label>`:''}<button class="btn sm danger" type="button" data-act="sub-remove-yes" data-sub="${sid}">Yes, remove</button> <button class="btn sm" type="button" data-act="sub-remove-no">Cancel</button>`;}
+    else if(A==='sub-remove-yes'){const u=clone(state.users[id]);const gone=(u.subscriptions||[]).find(s=>s.id===sid);const box=act.parentElement.querySelector('[data-role=del-costs]');const lc=box&&box.checked&&gone?linkedCost(gone):null;u.subscriptions=(u.subscriptions||[]).filter(s=>s.id!==sid);ui.open[id]={};const ok=await persistUser(id,u);if(ok){const n=lc&&await deleteLinkedCost(lc.id)?1:0;toast('Plan removed'+(n?' with its linked expense':'')+'.');}}
     else if(A==='sub-remove-no')renderTable();
-    else if(A==='del'){act.parentElement.innerHTML=`<span class="small" style="margin-right:8px">Delete <b>${esc(displayName(state.users[id]))}</b> and all payments?</span><button class="btn sm danger" type="button" data-act="del-yes">Yes, delete</button> <button class="btn sm" type="button" data-act="del-no">Cancel</button>`;}
-    else if(A==='del-yes'){const nm=displayName(state.users[id]);const ok=await removeUser(id);if(ok){ui.expanded=null;toast('Deleted '+nm+'.');}}
+    else if(A==='del'){const lc=(state.users[id].subscriptions||[]).map(linkedCost).filter(Boolean);act.parentElement.innerHTML=`<span class="small" style="margin-right:8px">Delete <b>${esc(displayName(state.users[id]))}</b> and all payments?</span>${lc.length?`<label class="chk small" style="margin-right:8px"><input type="checkbox" data-role="del-costs" checked>Also delete ${lc.length===1?'the linked supplier expense':lc.length+' linked supplier expenses'} (${esc(lc.map(c=>fmtAmt(costTotal(c),c.currency)).join(' + '))})</label>`:''}<button class="btn sm danger" type="button" data-act="del-yes">Yes, delete</button> <button class="btn sm" type="button" data-act="del-no">Cancel</button>`;}
+    else if(A==='del-yes'){const nm=displayName(state.users[id]);const box=act.parentElement.querySelector('[data-role=del-costs]');const lc=box&&box.checked?(state.users[id].subscriptions||[]).map(linkedCost).filter(Boolean):[];const ok=await removeUser(id);if(ok){let n=0;for(const c of lc)if(await deleteLinkedCost(c.id))n++;ui.expanded=null;toast('Deleted '+nm+(n?` and ${n} linked expense${n===1?'':'s'}`:'')+'.');}}
     else if(A==='del-no')renderTable();
     else if(A==='disc-confirm'){act.disabled=true;await confirmDiscontinue(id);}
     else if(A==='disc-dismiss'){const u=clone(state.users[id]);u.discontinue=null;const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: kept; the Discontinue answer stays on record.`);}
@@ -3532,10 +3567,10 @@ function bind(){
       const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: ${d.dir==='up'?'account upgraded to':'moved to'} ${d.name} at ${fmtAmt(Number(priceRaw),s.currency)}${perOf(s)} from ${fmtD(from,true)}.`);
     }else if(form.classList.contains('subedit-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const name=s.kind==='monthly'?val('name').trim():(val('name').trim()||s.name);const cur=normCur(val('currency'));
-      if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}s.packageId=pkg;s.cycle=val('cycle')==='yearly'?'yearly':'monthly';s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;const dt=val('discType'),dv=Number(val('discValue'));if(dt&&!(dv>0)){toast('Enter the discount value (above zero), or set Discount to None.');return;}if(dt==='percent'&&dv>100){toast('A percent discount cannot exceed 100.');return;}s.discount=dt&&dv>0?{type:dt,value:dv}:null;s.prorationBasis=rawBasis(val('basis'));if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start){toast('The end date must not be before the start date.');return;}
+      if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}s.packageId=pkg;s.cycle=val('cycle')==='yearly'?'yearly':'monthly';s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;const dt=val('discType'),dv=Number(val('discValue'));if(dt&&!(dv>0)){toast('Enter the discount value (above zero), or set Discount to None.');return;}if(dt==='percent'&&dv>100){toast('A percent discount cannot exceed 100.');return;}s.discount=dt&&dv>0?{type:dt,value:dv}:null;s.prorationBasis=rawBasis(val('basis'));if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start&&!(u.cancel&&u.cancel.lastDay===end)){toast('The end date must not be before the start date.');return;}
         Object.assign(s,{name,start,end:end||null,currency:cur});}
       else{const total=val('total'),due=val('due');if(!validAmt(total)){toast('Enter the total amount.');return;}const pk=val('packageId');Object.assign(s,{name,total:Number(total),due:isDateKey(due)?due:null,currency:cur,packageId:pkgById(pk)?pk:null});}
-      let costs=[];try{updateAccountStart(s,val('start'));const c=accountCostDraft(form,s,id);if(c)costs.push(c);}catch(e){toast(e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('edit:'+s.id);renderTable();toast('Saved '+planLabel(s)+'.');}else button.disabled=false;
+      let costs=[];try{updateAccountStart(s,val('start'),u);const c=accountCostDraft(form,s,id);if(c)costs.push(c);}catch(e){toast(e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('edit:'+s.id);renderTable();toast('Saved '+planLabel(s)+'.');}else button.disabled=false;
     }else if(form.classList.contains('addsub-form')){
       setErr('addsub-err','');const cy=normCycle(val('kind'));const kind=cy==='one-time'?'one-time':'monthly';const pkg=val('packageId');const name=val('name').trim()||(kind==='monthly'?'':(pkgName(pkg)||'Item'));const priceRaw=val('price'),date=val('date'),cur=normCur(val('currency')),dueBy=val('dueBy');
       if(!pkgById(pkg)){setErr('addsub-err','Choose a package or product.');return;}
@@ -3559,20 +3594,20 @@ function bind(){
       const seen={};const fresh=[];let resumed=0;
       for(const s of ended){if(addDays(s.end,1)>=start){s.end=null;resumed++;const key=(pkgIdAt(s,addDays(start,-1))||s.packageId)||('label:'+(s.name||''));seen[key]=1;}}
       for(const s of ended.slice().reverse()){if(!s.end)continue;const pid=pkgIdAt(s,s.end)||s.packageId||null;const key=pid||('label:'+(s.name||''));if(seen[key])continue;seen[key]=1;
-        const np={id:newId('s'),kind:'monthly',cycle:subCycle(s)==='yearly'?'yearly':'monthly',name:s.name||'',packageId:pid,currency:s.currency,start,end:null,prorate:true,dueBy:null,prices:[{from:start,price:priceAt(s,s.end)}],payments:[]};if(s.discount)np.discount=clone(s.discount);fresh.push(np);}
+        const np={id:newId('s'),kind:'monthly',cycle:subCycle(s)==='yearly'?'yearly':'monthly',name:s.name||'',packageId:pid,currency:s.currency,start,end:null,prorate:true,dueBy:null,prices:[{from:start,price:priceAt(s,s.end)}],payments:[]};if(s.discount)np.discount=clone(s.discount);if(s.accountCost&&Array.isArray(s.accountCost.entries)&&s.accountCost.entries.length){/* v41: the resumed account keeps its supplier cost (the latest entry), from the resume date */const last=s.accountCost.entries.at(-1);const ac=normAccountCost({frequency:s.accountCost.frequency,first:'prorated',firstAmount:null,overrides:{},entries:[Object.assign({},last,{from:start})]});if(ac)np.accountCost=ac;}fresh.push(np);}
       if(!fresh.length&&!resumed){const p=defaultPkg();fresh.push({id:newId('s'),kind:'monthly',cycle:p&&p.cycle==='yearly'?'yearly':'monthly',name:'',packageId:p?p.id:null,currency:p&&p.currency?p.currency:'PKR',start,end:null,prorate:true,dueBy:null,prices:[{from:start,price:p&&p.price!=null?p.price:0}],payments:[]});}
       if(c){u.cancelHistory=(u.cancelHistory||[]).concat([Object.assign({},c,{resumedOn:start,resumedAt:todayISO()})]);}
       u.subscriptions.push(...fresh.reverse());u.cancel=null;closeKey('react');
       const gap=ld&&dayDiff(ld,start)>1?dayDiff(ld,start)-1:0;
       const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} resumed from ${fmtD(start,true)}${gap?` · ${gap} day${gap===1?'':'s'} not billed (${fmtD(addDays(ld,1))} – ${fmtD(addDays(start,-1))})`:''}.`);
     }else if(form.classList.contains('edit-form')){
-      setErr('edit-err','');const own=(n,cur)=>fieldChanged(form,n)?val(n):(cur==null?'':cur);const name=own('name',u.name).trim(),email=own('email',u.email).trim(),join=own('joinDate',u.joinDate),phone=own('phone',u.phone),notes=own('notes',u.notes).trim();
+      setErr('edit-err','');const own=(n,cur)=>fieldChanged(form,n)?val(n):(cur==null?'':cur);const name=own('name',u.name).trim(),email=own('email',u.email).trim(),join=own('joinDate',u.joinDate),phone=fieldChanged(form,'phone')||fieldChanged(form,'cc')?phoneFrom(val('phone'),val('cc')):(u.phone||''),notes=own('notes',u.notes).trim();
       if(!name&&!email){setErr('edit-err','Enter a name or an email.');return;}
       if(email&&!EMAIL_RE.test(email)){setErr('edit-err','That email does not look valid.');return;}
       if(!isDateKey(join)){setErr('edit-err','Pick the join date.');return;}
       const dup=findUser(email,name);if(dup&&dup!==id){setErr('edit-err','Another user already has that email or name.');return;}
       if(!validPhone(phone)){setErr('edit-err','Phone number should have 7 to 15 digits including the country code.');return;}
-      Object.assign(u,{name,email,joinDate:join,phone:digits(phone),notes,telegram:normTg(own('telegram',u.telegram))});let costs=[];try{for(const sub of u.subscriptions){if(fieldChanged(form,'productStart:'+sub.id))updateAccountStart(sub,val('productStart:'+sub.id));const pre=sub.id+':';if([...form.elements].some(el=>el.name&&el.name.startsWith(pre)&&el.value!==fieldBase(el))){const c=accountCostDraft(form,sub,id,pre);if(c)costs.push(c);}}}catch(e){setErr('edit-err',e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('edit');renderTable();toast('Saved changes for '+displayName(u)+'.');}else{button.disabled=false;setErr('edit-err','Not saved. Your entries are kept; try again.');}
+      Object.assign(u,{name,email,joinDate:join,phone:digits(phone),notes,telegram:fieldChanged(form,'telegram')?tgFrom(val('telegram'),val('cc')):(u.telegram||'')});let costs=[];try{for(const sub of u.subscriptions){if(fieldChanged(form,'productStart:'+sub.id))updateAccountStart(sub,val('productStart:'+sub.id),u);const pre=sub.id+':';if([...form.elements].some(el=>el.name&&el.name.startsWith(pre)&&el.value!==fieldBase(el))){const c=accountCostDraft(form,sub,id,pre);if(c)costs.push(c);}}}catch(e){setErr('edit-err',e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('edit');renderTable();toast('Saved changes for '+displayName(u)+'.');}else{button.disabled=false;setErr('edit-err','Not saved. Your entries are kept; try again.');}
     }
   });
 
@@ -3642,7 +3677,7 @@ function quickParseLine(line){
   return out;
 }
 function quickNormalize(o,line){
-  const r={id:newId('q'),line,sel:true,name:String(o.name||'').trim(),email:String(o.email||'').trim(),phone:digits(o.phone),telegram:normTg(o.telegram),joined:normDate(o.joined)||parseLooseDate(String(o.joined||''))||todayISO(),pkg:null,pkgPrice:null,price:null,cur:'PKR',paid:null,dup:false,warn:''};
+  const r={id:newId('q'),line,sel:true,name:String(o.name||'').trim(),email:String(o.email||'').trim(),phone:phoneFrom(o.phone,'92'),telegram:tgFrom(o.telegram,'92'),joined:normDate(o.joined)||parseLooseDate(String(o.joined||''))||todayISO(),pkg:null,pkgPrice:null,price:null,cur:'PKR',paid:null,dup:false,warn:''};
   if(r.email&&!EMAIL_RE.test(r.email)){r.warn='email looks wrong';}
   if(r.phone&&!validPhone(r.phone))r.phone='';
   const pn=String(o.package||'').trim().toLowerCase();let p=pn?packages().find(x=>x.name.toLowerCase()===pn):null;if(!p)p=defaultPkg();
@@ -3690,7 +3725,7 @@ function renderQuick(){
 }
 async function quickSave(){
   const sel=qa.rows.filter(r=>r.sel&&!r.dup);if(!sel.length)return;const msg=$('#qa-save-msg');
-  for(const r of sel){r.name=r.name.trim();r.email=r.email.trim();r.phone=digits(r.phone);if(!r.name&&!r.email){r.warn='no name or email';r.sel=false;}else if(r.email&&!EMAIL_RE.test(r.email)){r.warn='email looks wrong';r.sel=false;}else if(!isDateKey(r.joined)){r.warn='pick a join date';r.sel=false;}else if(!pkgById(r.pkg)){r.warn='choose a package';r.sel=false;}else if(r.price==null||!(r.price>=0)){r.warn='enter a price';r.sel=false;}else r.warn='';}
+  for(const r of sel){r.name=r.name.trim();r.email=r.email.trim();r.phone=phoneFrom(r.phone,'92');if(!r.name&&!r.email){r.warn='no name or email';r.sel=false;}else if(r.email&&!EMAIL_RE.test(r.email)){r.warn='email looks wrong';r.sel=false;}else if(!isDateKey(r.joined)){r.warn='pick a join date';r.sel=false;}else if(!pkgById(r.pkg)){r.warn='choose a package';r.sel=false;}else if(r.price==null||!(r.price>=0)){r.warn='enter a price';r.sel=false;}else r.warn='';}
   const ok=qa.rows.filter(r=>r.sel&&!r.dup);const bad=sel.length-ok.length;
   if(!ok.length){renderQuick();msg.textContent='Fix the flagged rows first.';return;}
   qa.busy=true;renderQuick();msg.textContent='Adding…';let added=0,failed=0,pays=0;
@@ -3918,7 +3953,9 @@ function bindShot(){
 }
 
 /* ---------- CSV ---------- */
-const csvCell=v=>{v=String(v==null?'':v);return /[",\n\t]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+/* v41: a text cell that starts with = + - @ (or a tab or return) gets a leading ' so Excel and Sheets show it as text and never run it as a formula;
+   real numbers are left as they are. The CSV import removes that ' again. */
+const csvCell=v=>{const isNum=typeof v==='number';v=String(v==null?'':v);if(!isNum&&/^[=+\-@\t\r]/.test(v))v="'"+v;return /[",\n\r\t]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
 const USERS_HEAD=['name','email','phone','telegram','join_date','notes','status','last_day','package','plan','kind','currency','price','plan_start','plan_end','due_by','prorate','discount','payment_date','payment_amount','payment_currency','payment_rate','payment_note'];
 function buildUsersCSV(){
   const ids=Object.keys(state.users).sort((a,b)=>(state.users[a].joinDate||'').localeCompare(state.users[b].joinDate||'')||displayName(state.users[a]).localeCompare(displayName(state.users[b])));
@@ -3971,15 +4008,15 @@ async function importUsersCSV(){
   const col={name:find(/^(full ?)?name$|customer|contact/),email:find(/mail/),phone:find(/phone|whatsapp|mobile/),tg:find(/telegram|^tg$/),join:find(/join|signed|^date$|^joined/),notes:find(/^notes?$|method|comment/),pkg:find(/package|tier/),plan:find(/^plan(_| )?name$|^plan$|subscription|item|label/),kind:find(/kind|type/),cur:find(/^currency$|^plan_currency$|pays/),price:find(/price|^total|monthly/),pstart:find(/plan_start|^start/),pend:find(/plan_end|^end|^due(_date)?$/),dueby:find(/due_by|dueby|remaining/),prorate:find(/prorat/),disc:find(/^discount$/),status:find(/^status$/),lastday:find(/last_day|lastday|cancel/),pdate:find(/payment_date|paid_on|paid on|pay date/),pamt:find(/payment_amount|paid_amount|^payment$|^amount$/),pcur:find(/payment_currency|paid_in/),prate:find(/payment_rate|^rate/),pnote:find(/payment_note|pay note|reference/)};
   if(col.price===col.pamt&&col.price>=0)col.pamt=-1;
   if(col.name<0&&col.email<0){msg.textContent='Could not find a name or email column in the header row.';return;}
-  const get=(r,k)=>col[k]>=0?(r[col[k]]||'').trim():'';
-  const ops=new Map();let pays=0,skipped=0,newPkgs=0;
+  const get=(r,k)=>col[k]>=0?String(r[col[k]]||'').trim().replace(/^'(?=[=+\-@\t\r])/,''):'';
+  const ops=new Map();let pays=0,skipped=0,newPkgs=0;const pkgBefore=state.settings.packages;
   for(const r of rows){
     const name=get(r,'name'),email=get(r,'email');if(!name&&!email){skipped++;continue;}if(email&&!EMAIL_RE.test(email)){skipped++;continue;}
     const key=(email||name).toLowerCase();let entry=ops.get(key);
     if(!entry){const existingId=findUser(email,name);const u=existingId?clone(state.users[existingId]):{name,email,phone:'',telegram:'',joinDate:'',notes:'',subscriptions:[]};entry={id:existingId||newId('u'),u,isNew:!existingId};ops.set(key,entry);}
     const u=entry.u;const join=parseDate(get(r,'join'));if(join)u.joinDate=join;if(!u.joinDate){skipped++;continue;}
     if(name&&!u.name)u.name=name;if(email&&!u.email)u.email=email;
-    const ph=get(r,'phone');if(ph&&validPhone(ph))u.phone=digits(ph);const nt=get(r,'notes');if(nt)u.notes=nt;const tg=get(r,'tg');if(tg)u.telegram=normTg(tg);
+    const ph=get(r,'phone');if(ph&&validPhone(phoneFrom(ph,'92')))u.phone=phoneFrom(ph,'92');const nt=get(r,'notes');if(nt)u.notes=nt;const tg=get(r,'tg');if(tg)u.telegram=normTg(tg);
     const stTxt=get(r,'status');if(stTxt){if(/cancel/i.test(stTxt)){const ld=parseDate(get(r,'lastday'))||(u.cancel&&u.cancel.lastDay)||todayISO();u.cancel={lastDay:ld,reason:'',note:'',at:todayISO()};for(const s of u.subscriptions||[]){if(s.kind==='monthly'&&(!s.end||s.end>ld))s.end=ld;}}else if(/active/i.test(stTxt))u.cancel=null;}
     u.subscriptions=u.subscriptions||[];
     const plan=get(r,'plan'),price=parseAmount(get(r,'price')),curTxt=get(r,'cur'),pkgTxt=get(r,'pkg');const kindTxt=get(r,'kind');const cy=/one|once|single/i.test(kindTxt)?'one-time':(/year|annual/i.test(kindTxt)?'yearly':'monthly');const kind=cy==='one-time'?'one-time':'monthly';const dueByTxt=parseDate(get(r,'dueby'));const proTxt=get(r,'prorate');const pro=proTxt?!/^(no|n|false|0|off)$/i.test(proTxt):null;
@@ -4000,7 +4037,7 @@ async function importUsersCSV(){
   const list=[...ops.values()].filter(e=>e.u.joinDate);
   if(!list.length){msg.textContent=`Nothing imported: ${skipped} row${skipped===1?'':'s'} had no usable name/email or join date.`;return;}
   msg.textContent='Importing…';let failed=0,created=0,updated=0;
-  if(newPkgs)await persistSettings();
+  if(newPkgs&&!(await persistSettings())){/* v41: all or nothing: users must never point at a product that was not saved */state.settings.packages=pkgBefore;render();msg.textContent='Nothing was imported: the new product could not be saved. Try again.';return;}
   for(const e of list){const ok=await persistUser(e.id,e.u);if(!ok)failed++;else e.isNew?created++:updated++;}
   msg.textContent=`Imported ${created} new, ${updated} updated, ${pays} payments${skipped?`, ${skipped} rows skipped`:''}${failed?`, ${failed} failed`:''}.`;
   if(!failed)$('#importText').value='';
@@ -4012,7 +4049,7 @@ async function importCostsCSV(){
   const col={date:find(/date/),desc:find(/desc|item|name|what/),cat:find(/^cat|type/),cur:find(/curr/),cost:find(/^cost|amount|net/),tax:find(/tax|vat|gst/),rate:find(/rate/),pkg:find(/product|package/)};
   const pkgFromText=t=>{t=String(t||'').trim().toLowerCase();if(!t)return '';const p=packages().find(x=>x.name.toLowerCase()===t);return p?p.id:'';};
   if(col.date<0||col.cost<0){msg.textContent='Need at least a date column and a cost column.';return;}
-  const get=(r,k)=>col[k]>=0?(r[col[k]]||'').trim():'';
+  const get=(r,k)=>col[k]>=0?String(r[col[k]]||'').trim().replace(/^'(?=[=+\-@\t\r])/,''):'';
   let n=0,skipped=0,failed=0;
   for(const r of rows){const date=parseDate(get(r,'date')),cost=parseAmount(get(r,'cost'));if(!date||cost==null){skipped++;continue;}
     const ok=await persistCost(newId('c'),{date,description:get(r,'desc'),category:get(r,'cat'),packageId:pkgFromText(get(r,'pkg')),currency:curFromText(get(r,'cur'),'PKR'),cost,tax:parseAmount(get(r,'tax'))||0,rate:normRate(get(r,'rate'))});ok?n++:failed++;}

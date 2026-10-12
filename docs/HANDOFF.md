@@ -21,23 +21,14 @@ review items 9-12 fixed (conversion residue, refund settled twice, one-time refu
 ### Open items after v40 (the to-do list; keep this current)
 
 Numbers are from the independent review of v38 (findings reproduced on disposable stores; scripts were kept outside the repo).
-Done so far: 1-12 and 22 (inline form drafts, v39). Still open, roughly in priority order:
+Done so far: 1-12 and 22 (v39/v40, live), 13-17 (supplier-cost edge cases), 18 (phone numbers with a country code box, +92 by default) and
+19 (a link answer never replaces or silently ignores the owner's own tier change; `plan.linkConflict`, owner chooses Use their choice / Keep mine),
+and the rename rule (a renamed product remembers old names in `aliases`; `isProductName` makes plan/item labels and automatic expense
+descriptions that equal any earlier name follow the rename on the link page, messages, cards and Costs), and the small fixes 20, 21, 23, 25, 26, 39 (Queue Except list on phones and its cycle, Yes/Cancel before removing a receipt/refund/price/tier,
+cancelled customer with a later plan, Set package, two decimals, chart labels), and 27, 28 (CSV export neutralises = + - @ cells with a leading apostrophe and exports +92 phones as text; CSV import removes it and is all
+or nothing when a new product cannot be saved), ready locally for v41. Still open, roughly in priority order:
 
-- 13 Supplier costs: moving a product's start earlier leaves the gap without supplier costs (`entries[0].from` stays on the old start).
-- 14 Supplier costs: resuming after a cancellation gap drops the supplier cost profile from the resumed plan.
-- 15 Supplier costs: after a C to C Max switch, derived cost rows stay under the original package (By product split wrong; totals right).
-- 16 One-time items offer "Cost every cycle"; saving it accrues monthly cost rows.
-- 17 Deleting a user or removing a plan leaves its linked one-off expense in Costs and Analytics.
-- 18 Pakistani numbers typed as 0300... are stored as 03001234567, so WhatsApp and Telegram links break (convert a leading 0 to 92).
-- 19 A subscriber's link answer can replace the owner's own tier change for that cycle, or be silently ignored (two-package case).
-- 20 Queue "Except..." list opens off the left edge at 390px; on the cycle-start day the tick is saved for next month's cycle.
-- 21 Removing a receipt or refund takes one tap with no confirm (delete user/plan already ask Yes/Cancel).
-- 23 A cancelled user with a plan that starts after the last day cannot be edited ("Product start must not be after its end date").
 - 24 Edit plan changes currency or cycle without converting stored prices; a yearly package is accepted on a monthly plan.
-- 25 Row "Set package... > + New package..." stores packageId "__new".
-- 26 PKR amounts can show one decimal ("Rs 20,111.6"); USD now shows two decimals (v39).
-- 27 CSV export: cells starting with = + - @ are not neutralised (formula injection); +92 phone numbers break in Excel.
-- 28 CSV user import reports success when the new-package settings save failed.
 - 29 Server /api/import deletes a user it reports as skipped (null doc with replace users/).
 - 30 Browser-only (file://) copy shows "recorded" when localStorage writing failed.
 - 31 notify.py sends the SMTP password unencrypted if STARTTLS is stripped (refuse instead).
@@ -48,6 +39,7 @@ Done so far: 1-12 and 22 (inline form drafts, v39). Still open, roughly in prior
 - 36 notify.py skips users who answered from stage 1; the app only from stage 2 (align if wanted).
 - 37 The subscriber choice page accepts unlimited submissions (no rate limit).
 - 38 A cleared confirmToken still lets old confirm/<token> links work.
+- Old numbers stored without a country code (e.g. 03001234567) are not rewritten; retyping them in Edit user fixes them.
 
 Follow-ups from the v39/v40 features:
 

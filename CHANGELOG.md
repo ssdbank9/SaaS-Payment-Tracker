@@ -2,6 +2,16 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v41 - 2026-10-12
+
+- Phone numbers: a country code box (+92 unless changed) sits beside the number in Add user and Edit user, with a preview of what will be saved. "0300 1234567" becomes +92 300 1234567; a number typed with its own + or 00 code keeps it. Quick add and the CSV import use +92. Existing numbers are not rewritten.
+- A subscriber's answer on the link page no longer replaces or silently ignores a tier change you set by hand: the customer's card shows what they chose and what you set, and you pick Use their choice or Keep mine.
+- Renaming a product now shows everywhere: the link page, the reminder messages, plan and one-time item labels, and the automatic description of a linked supplier expense. The app remembers earlier names.
+- Supplier costs follow the plan: moving a product's start earlier moves its cost with it; a customer resumed after a gap keeps the supplier cost; cycle costs go to the package the plan is on that day; one-time items take one actual expense only; deleting a customer or plan offers to delete its linked expense (ticked by default).
+- Small fixes: the Queue "Except..." list fits a phone and its tick belongs to the cycle shown; removing a receipt, refund, price or tier change asks Yes/Cancel; a cancelled customer with a plan starting later can be edited; "Set package... + New package..." opens the new-product form; rupee amounts with a fraction show two decimals; the Summary chart's month labels no longer overlap on a phone.
+- CSV: exported text starting with = + - or @ (and +92 phone numbers) is protected so spreadsheets cannot run it as a formula; importing the file removes the protection. A CSV import with a new product that cannot be saved now imports nothing.
+- No owner records were migrated or rewritten.
+
 ## v40 - 2026-10-11
 
 - Summary: a Custom range with From and To dates, and a Product filter (All products or one product) that shows that product's revenue, costs and profit on the tiles, the chart and in Analytics. The By product table still lists every product.

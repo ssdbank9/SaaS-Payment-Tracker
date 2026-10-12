@@ -151,6 +151,11 @@ Write user-facing text in plain, factual words; no emojis.
   cycle day; `cStart`, `firstIdx`, `pStart`, `installmentPrice` use it, so plans without `anchor` compute exactly as before. Shared-cycle features
   (stages 1-3, final notice, link cards, notify emails, cancellation month) still use the shared calendar; own-cycle plans appear in the Queue
   section "Due on their product's own cycle" from their due date until paid (`ownCycleDueRows`). Tests: `first-sale-flow`, `own-cycle-flow`.
+- Renames (v41): a product carries `aliases` (its earlier names, set when the name is saved in Settings). `planLabel`, `acctParts` and the
+  automatic description of a linked expense treat a label equal to any alias as the product's own name, so a rename shows everywhere (link
+  page, messages, cards, Costs). Nothing stored is rewritten. Test: `rename-flow`. Never bake a product name into a stored label without this rule.
+- CSV (v41): `csvCell` prefixes a text cell starting with = + - @ tab or return with `'` (numbers are untouched); both CSV importers read cells
+  through `get`, which removes that `'`. `importUsersCSV` stops with nothing saved if the new products cannot be saved. Test: `csv-flow`.
 - v40: `ui.prodFilter` / `prodFilterId()` filters the Summary tiles (from the `breakdownRows` row of that product), the Summary chart and Analytics
   (`moneyEvents(pid)` feeds `monthlySeries` / `cumulativeSeries` with the By product attribution); the Analytics package table total stays all products.
   `ui.range==='custom'` uses `ui.rangeFrom` / `ui.rangeTo` (inclusive). `statusLabel` names dates (`Paid to <last day>`, `Overdue since <pFrom>`).
