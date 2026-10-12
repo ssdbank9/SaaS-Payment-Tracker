@@ -18,7 +18,11 @@ CSV safety, server hardening). Own-cycle plans are not yet in the stage 1-3 roun
 **Update 11 October 2026, v40.** Custom date range and product filter (revenue, costs, profit per product); date-based status wording;
 review items 9-12 fixed (conversion residue, refund settled twice, one-time refund reason, USD-to-PKR expense edit). See `CHANGELOG.md`.
 
-### Open items after v40 (the to-do list; keep this current)
+**Update 12 October 2026, v41** (commit 35616db): items 13-23, 25-28 and 39 fixed; see `CHANGELOG.md`. Full local suite 27 suites, 292 checks.
+Live check note: from the development PC the site was unreachable because that network's Fortinet firewall intercepted wasooli.duckdns.org;
+the live version must be checked from a phone or another network (`/healthz` shows `"version":"41"`).
+
+### Open items after v41 (the to-do list; keep this current)
 
 Numbers are from the independent review of v38 (findings reproduced on disposable stores; scripts were kept outside the repo).
 Done so far: 1-12 and 22 (v39/v40, live), 13-17 (supplier-cost edge cases), 18 (phone numbers with a country code box, +92 by default) and
