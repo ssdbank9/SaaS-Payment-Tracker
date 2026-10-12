@@ -30,7 +30,7 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
    'users/v4':{name:'Resume Instalment Person',joinDate:'2026-07-24',cancel:{lastDay:'2026-09-23',reason:'x',note:'',at:'2026-09-20'},subscriptions:[{id:'s1',kind:'monthly',cycle:'yearly',packageId:'pkg_g',currency:'PKR',start:'2026-07-24',end:'2026-09-23',prorate:true,prorationBasis:'actual',paymentEvery:1,prices:[{from:'2026-07-24',price:24000}],payments:[]}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v45');await page.locator('#statusFilter').selectOption('all');
+  assert.equal(await page.locator('#app-ver').textContent(),'v46');await page.locator('#statusFilter').selectOption('all');
 
   // 1. Set bill with a courtesy discount: saving the agreed amount unchanged keeps Rs 3,700 (before: the Rs 500 came off twice, Rs 3,200)
   await page.locator('tr.row[data-id=v1] .row-bill').click();await page.locator('#billDialog[open]').waitFor();await page.locator('#bill-period').selectOption('2026-10-24');
@@ -125,6 +125,6 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
   await page.screenshot({path:path.join(out,'review-v45-390.png')});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.deepEqual(errors,[]);check('No sideways scroll and no unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'45',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'46',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

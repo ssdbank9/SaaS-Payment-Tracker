@@ -645,7 +645,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v45</span>
+      <span class="small muted num" id="app-ver" title="App version">v46</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -1526,16 +1526,23 @@ function switchFor(s,cs){const cur=pkgIdAt(s,cs);const curName=pkgName(cur)||'';
   const choice=/max/i.test(t.name)&&!/max/i.test(curName)?'upgrade':/max/i.test(curName)?'downgrade':price!=null&&price<curPrice?'downgrade':price!=null&&price>curPrice?'upgrade':back?'downgrade':'upgrade';
   const label=/max/i.test(t.name)&&!/max/i.test(curName)?'Upgrade to '+t.name:/max/i.test(curName)&&back?'Move back to '+t.name:/max/i.test(curName)?'Move to '+t.name:back?'Move back to '+t.name:'Change to '+t.name;
   return {packageId:t.id,name:t.name,label,choice,price,priceText:price!=null?fmtAmt(price,s.currency)+perOf(s):''};}
+/* v46: the bill of a plan that renews during the shared cycle starting cs: on the shared calendar it starts on cs; a product on its own cycle
+   (anchor) renews on its own day inside that cycle (for example the 5th). null = this plan has no bill starting in that cycle. */
+function cycleBill(s,cs){if(!s||s.kind!=='monthly'||(s.end&&s.end<cs))return null;const nx=nextCycleStart(cs);let k=Math.max(0,periodIndexAt(s,cs));
+  for(let i=0;i<3;i++,k++){const b=periodAmt(s,k);if(b.st>=nx||(s.end&&b.st>s.end))return null;if(b.st>=cs&&s.start<=b.en)return b;}return null;}
 function cycleCard(u,a,cs,today){let ce=cycleEndOf(cs);const replyBy=dayOnOrBefore(addDays(cs,-1),replyDay());const plans=[];
-  for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;if(s.end&&s.end<cs)continue;const k=Math.max(0,periodIndexAt(s,cs)),bill=periodAmt(s,k);if(bill.st!==cs||s.start>bill.en)continue;const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly')continue;
-    const p=(sa.periods||[]).find(x=>x.st===cs);const price=bill.full;const amount=p?Math.max(0,p.pr-p.covered):bill.pr;const paid=!!p&&(p.state==='paid'||p.state==='waived');const ac=acctParts(u,s);const cpid=p&&p.pkgId?p.pkgId:pkgIdAt(s,cs);const tier=pkgName(cpid)||planLabel(s,cs);if(bill.en>ce)ce=bill.en;
-    plans.push({planId:s.id,label:ac.label||tier,periodText:fmtCycle(pFrom(bill),bill.en),custom:!!(p&&p.custom),amountNote:p&&p.custom?p.note:'',acct:[ac.label,ac.email].filter(Boolean).join(' · '),pkgId:cpid,tier,price,priceText:fmtAmt(price,s.currency)+payPer(bill.months),currency:s.currency,amount,amountText:fmtAmt(amount,s.currency),paid,
+  for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;const bill=cycleBill(s,cs);if(!bill)continue;const sa=a.sa[s.id];if(!sa||sa.kind!=='monthly')continue;const bs=bill.st,due=bs<s.start?s.start:bs;
+    const p=(sa.periods||[]).find(x=>x.st===bs);const price=bill.full;const amount=p?Math.max(0,p.pr-p.covered):bill.pr;const paid=!!p&&(p.state==='paid'||p.state==='waived');const ac=acctParts(u,s);const cpid=p&&p.pkgId?p.pkgId:pkgIdAt(s,bs);const tier=pkgName(cpid)||planLabel(s,bs);if(bill.en>ce)ce=bill.en;
+    plans.push({planId:s.id,start:bs,dueISO:due,dueDateText:fmtD(due,true),label:ac.label||tier,periodText:fmtCycle(pFrom(bill),bill.en),custom:!!(p&&p.custom),amountNote:p&&p.custom?p.note:'',acct:[ac.label,ac.email].filter(Boolean).join(' · '),pkgId:cpid,tier,price,priceText:fmtAmt(price,s.currency)+payPer(bill.months),currency:s.currency,amount,amountText:fmtAmt(amount,s.currency),paid,
       /* v30: a cycle already billed as another package by hand (v27 override, e.g. one month as C Max) gets no tier offer; the page says so instead */
-      switch:p&&p.pkgOv?null:switchFor(s,cs),switchNote:p&&p.pkgOv?'Already on '+tier+' for this cycle':''});}
+      switch:p&&p.pkgOv?null:switchFor(s,bs),switchNote:p&&p.pkgOv?'Already on '+tier+' for this cycle':''});}
+  plans.sort((x,y)=>x.dueISO.localeCompare(y.dueISO));
   const due=plans.filter(p=>!p.paid&&p.amount>0);const S=newSum();for(const p of due)sumAdd(S,p.amount,p.currency,null);
-  let amountText=due.length?ownText(S,plans[0].currency):(plans.length?'nothing (already paid)':'—');if(due.length>1)amountText+=' ('+due.map(p=>`${p.amountText} ${p.label}`).join(' + ')+')';
+  /* v46: each product keeps its own renewal date; when they differ, the message names each date */
+  const dates=plans.map(p=>p.dueISO).filter((x,i,arr)=>arr.indexOf(x)===i);const oneDate=dates.length<=1;
+  let amountText=due.length?ownText(S,plans[0].currency):(plans.length?'nothing (already paid)':'—');if(due.length>1)amountText+=' ('+due.map(p=>`${p.amountText} ${p.label}${oneDate?'':' on '+fmtD(p.dueISO)}`).join(' + ')+')';else if(due.length===1&&!oneDate)amountText+=' ('+due[0].label+' on '+fmtD(due[0].dueISO)+')';
   const tiers=plans.map(p=>p.tier).filter((x,i,arr)=>x&&arr.indexOf(x)===i);const first=plans.find(p=>p.switch);
-  return {cycleStart:cs,cycleEnd:ce,replyBy,periodText:fmtCycle(cs,ce),dueDateText:fmtD(cs,true),replyByText:fmtD(replyBy,true),plans,multi:plans.length>1,due:due.length>0,amountText,tierText:tiers.join(' + ')+(plans.length>1&&tiers.length===1?` (${plans.length} accounts)`:''),switchLabel:first?first.switch.label:'Upgrade'};}
+  return {cycleStart:cs,cycleEnd:ce,replyBy,periodText:fmtCycle(cs,ce),dueDateText:dates.length?dates.map((d,i)=>fmtD(d,i===dates.length-1)).join(dates.length>2?', ':' and ').replace(/, ([^,]*)$/,' and $1'):fmtD(cs,true),replyByText:fmtD(replyBy,true),plans,multi:plans.length>1,due:due.length>0,amountText,tierText:tiers.join(' + ')+(plans.length>1&&tiers.length===1?` (${plans.length} accounts)`:''),switchLabel:first?first.switch.label:'Upgrade'};}
 const confirmSynced={};
 /* the server renders /c/<token> from this document: the coming cycle (the one with the open reply window) and the cycle before it, for the final note on a cycle start day */
 function confirmDocFor(r,today){const u=r.u,a=r.a;const w=reminderWindow(today);const nc=w.nc,prev=cycleStartOnOrBefore(today);const cards={};cards[nc]=cycleCard(u,a,nc,today);const pc=cycleCard(u,a,prev,today);if(pc.plans.length)cards[prev]=pc;const c=cards[nc];
@@ -1548,6 +1555,8 @@ function syncConfirmRequests(R,today){
 const confirmAnswers={byCycle:{},key:''};
 const answersFor=(id,cycle)=>((confirmAnswers.byCycle[cycle]||{})[id]||[]);
 const hasAnswer=(id,cycle)=>answersFor(id,cycle).length>0;
+/* v46: a customer with several products counts as answered only when each product has an answer (an answer without a plan covers all) */
+function allAnswered(id,cycle,card){const rows=answersFor(id,cycle);if(!rows.length)return false;if(!card||!card.multi||rows.some(a=>!a.plan_id))return true;return card.plans.every(p=>rows.some(a=>a.plan_id===p.planId));}
 async function refreshConfirmations(){if(state.backend!=='api'||!state.loaded)return;const today=todayISO();const cycles=[nextCycleStart(today)];const cs=cycleStartOnOrBefore(today);if(cs===today)cycles.push(cs);const by={};
   for(const c of cycles){try{const j=await apiJSON('/api/confirmations?cycle='+c);by[c]={};for(const a of j.answers||[])if(a.user_id)(by[c][a.user_id]=by[c][a.user_id]||[]).push(a);}catch(e){by[c]=confirmAnswers.byCycle[c]||{};}}
   const k=JSON.stringify(by);const changed=k!==confirmAnswers.key;confirmAnswers.byCycle=by;confirmAnswers.key=k;if(changed)render();applyAnswers();}
@@ -1560,19 +1569,19 @@ const answerLine=(id,cycle)=>state.backend==='api'?`<br>${answerBadge(id,cycle)}
 /* apply what a subscriber chose, once per answer (the server stamps applied_at); re-running changes nothing.
    continue → confirmed tick; upgrade / downgrade → a tierHistory entry from the cycle start at the package price (marked via:'link');
    discontinue → a "Discontinue requested" mark the owner confirms with one tap; a changed answer resets the earlier one. */
-function applyAnswerSet(u,rows,cycle){const today=todayISO();const monthly=(u.subscriptions||[]).filter(s=>s.kind==='monthly'&&(!s.end||s.end>=cycle)&&periodAmt(s,Math.max(0,periodIndexAt(s,cycle))).st===cycle);
+function applyAnswerSet(u,rows,cycle){const today=todayISO();const bsOf={};const monthly=(u.subscriptions||[]).filter(s=>{const b=cycleBill(s,cycle);if(b)bsOf[s.id]=b.st;return !!b;});/* v46: each product's own bill start (own-cycle products renew on their own day) */
   const targetsOf=a=>a.plan_id?monthly.filter(s=>s.id===a.plan_id):monthly;const touched=new Set();for(const a of rows)for(const s of targetsOf(a))touched.add(s.id);
-  for(const s of monthly)if(touched.has(s.id)){s.tierHistory=(s.tierHistory||[]).filter(t=>!(t.from===cycle&&t.via==='link'));if(s.linkConflict&&s.linkConflict.cycle===cycle)delete s.linkConflict;}
+  for(const s of monthly)if(touched.has(s.id)){const bs=bsOf[s.id];s.tierHistory=(s.tierHistory||[]).filter(t=>!(t.from===bs&&t.via==='link'));if(s.linkConflict&&(s.linkConflict.cycle===bs||s.linkConflict.cycle===cycle))delete s.linkConflict;}
   const keep=rows.some(a=>a.answer!=='discontinue');u.reminders=u.reminders||{};const r=Object.assign({reminded:null,confirmed:null,final:null,skipped:null},u.reminders[cycle]||{});
   if(keep&&!r.confirmed)r.confirmed=today;if(remEmpty(r))delete u.reminders[cycle];else u.reminders[cycle]=r;
   const disc=[];let discNote='',discAt='';
   for(const a of rows){const when=a.at?String(a.at).slice(0,10):today;
-    if(a.answer==='upgrade'||a.answer==='downgrade'){for(const s of targetsOf(a)){const sw=switchFor(s,cycle);const pid=a.target_package_id||(sw&&sw.packageId);
+    if(a.answer==='upgrade'||a.answer==='downgrade'){for(const s of targetsOf(a)){const bs=bsOf[s.id];const sw=switchFor(s,bs);const pid=a.target_package_id||(sw&&sw.packageId);
         /* v41: a tier change the owner set by hand for this cycle is never replaced or silently ignored: the difference is stored on the plan and the owner chooses */
-        const mine=(s.tierHistory||[]).find(t=>t.from===cycle&&t.via!=='link');if(mine&&pid&&mine.packageId!==pid){s.linkConflict={cycle,packageId:pid,at:when};continue;}
-        if(!pid||pid===pkgIdAt(s,addDays(cycle,-1)))continue;const pk=pkgById(pid);if(!pk||pk.cycle!==subCycle(s))continue;
-        if((s.tierHistory||[]).some(t=>t.from===cycle&&t.packageId===pid))continue;let price=switchPrice(s,pid,cycle);const guess=price==null;if(guess)price=priceAt(s,addDays(cycle,-1));
-        s.tierHistory=(s.tierHistory||[]).filter(t=>!(t.from===cycle&&t.via==='link'));s.tierHistory.push({from:cycle,packageId:pid,price,currency:s.currency,note:'Chosen on the link '+fmtD(when)+(guess?' · price to confirm':''),via:'link'});s.tierHistory.sort((x,y)=>x.from.localeCompare(y.from));}}
+        const mine=(s.tierHistory||[]).find(t=>t.from===bs&&t.via!=='link');if(mine&&pid&&mine.packageId!==pid){s.linkConflict={cycle:bs,packageId:pid,at:when};continue;}
+        if(!pid||pid===pkgIdAt(s,addDays(bs,-1)))continue;const pk=pkgById(pid);if(!pk||pk.cycle!==subCycle(s))continue;
+        if((s.tierHistory||[]).some(t=>t.from===bs&&t.packageId===pid))continue;let price=switchPrice(s,pid,bs);const guess=price==null;if(guess)price=priceAt(s,addDays(bs,-1));
+        s.tierHistory=(s.tierHistory||[]).filter(t=>!(t.from===bs&&t.via==='link'));s.tierHistory.push({from:bs,packageId:pid,price,currency:s.currency,note:'Chosen on the link '+fmtD(when)+(guess?' · price to confirm':''),via:'link'});s.tierHistory.sort((x,y)=>x.from.localeCompare(y.from));}}
     else if(a.answer==='discontinue'){for(const s of targetsOf(a))disc.push(s.id);if(a.note)discNote=a.note;discAt=a.at||discAt;}}
   if(disc.length)u.discontinue={cycleStart:cycle,at:discAt||new Date().toISOString(),planIds:disc.length<monthly.length?disc:[],note:discNote};
   else if(u.discontinue&&u.discontinue.cycleStart===cycle)u.discontinue=null;
@@ -1592,11 +1601,14 @@ async function applyAnswers(){if(state.backend!=='api'||!state.loaded||!state.se
 /* v34: correct only ends owned by this cancellation; preserve separately ended plans and all cash history. */
 /* v45: cancel.ended lists the plans this cancellation ended, so Resume reopens only those (a plan already ended on the same day by a plan change stays ended) */
 function applyCancel(u,lastDay,reason,note){const old=u.cancel&&u.cancel.lastDay;const own=u.cancel&&Array.isArray(u.cancel.ended)?u.cancel.ended:null;const ended=[];for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;if(!s.end||s.end>lastDay||(old&&s.end===old&&(!own||own.includes(s.id)))){s.end=lastDay;ended.push(s.id);}}u.cancel={lastDay,reason:reason||'',note:note||'',at:todayISO(),ended};u.discontinue=null;for(const s of u.subscriptions||[])settleRefunds(u,s,todayISO());}
+/* v46: a product stops the day before its own renewal (a product on its own cycle renews on its own day inside the shared cycle) */
+const discEnd=(s,cs)=>{const b=cycleBill(s,cs);return addDays(b?b.st:cs,-1);};
+function discLastDay(u,d){const subs=(u.subscriptions||[]).filter(s=>s.kind==='monthly'&&(!d.planIds||!d.planIds.length||d.planIds.includes(s.id)));let ld=addDays(d.cycleStart,-1);for(const s of subs){const e=discEnd(s,d.cycleStart);if(e>ld)ld=e;}return ld;}
 async function confirmDiscontinue(id){const u=clone(state.users[id]);const d=u.discontinue;if(!d||u.cancel)return;const lastDay=addDays(d.cycleStart,-1);const monthly=(u.subscriptions||[]).filter(s=>s.kind==='monthly'&&(!s.end||s.end>lastDay));const targets=d.planIds&&d.planIds.length?monthly.filter(s=>d.planIds.includes(s.id)):monthly;
-  if(targets.length&&targets.length<monthly.length){for(const s of targets)s.end=lastDay;u.discontinue=null;const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: ${targets.map(s=>acctParts(u,s).label||planLabel(s)).join(', ')} ends ${fmtD(lastDay,true)}; the other plans continue.`);return;}
-  applyCancel(u,lastDay,'Chose Discontinue on the link'+(d.note?' · '+d.note:''),'');const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} cancelled · last day ${fmtD(lastDay,true)}.`);}
+  if(targets.length&&targets.length<monthly.length){for(const s of targets)s.end=discEnd(s,d.cycleStart);u.discontinue=null;const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: ${targets.map(s=>(acctParts(u,s).label||planLabel(s))+' ends '+fmtD(s.end,true)).join(', ')}; the other plans continue.`);return;}
+  const ld=discLastDay(u,d);applyCancel(u,ld,'Chose Discontinue on the link'+(d.note?' · '+d.note:''),'');for(const s of targets){if(u.cancel.ended.includes(s.id))s.end=discEnd(s,d.cycleStart);}for(const s of u.subscriptions||[])settleRefunds(u,s,todayISO());const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} cancelled · last day ${fmtD(ld,true)}.`);}
 function discBadge(u){const d=u.discontinue;if(!d||u.cancel)return '';return `<span class="rem-badge" data-k="disc" title="Chosen on the link page${d.note?': '+esc(d.note):''}">✗ Discontinue requested · from ${esc(fmtD(d.cycleStart))}</span>`;}
-function discNote(id,u){const d=u.discontinue;if(!d||u.cancel)return '';const lastDay=addDays(d.cycleStart,-1);const partial=d.planIds&&d.planIds.length?(u.subscriptions||[]).filter(s=>d.planIds.includes(s.id)).map(s=>acctParts(u,s).label||planLabel(s)).join(', '):'';
+function discNote(id,u){const d=u.discontinue;if(!d||u.cancel)return '';const lastDay=discLastDay(u,d);const partial=d.planIds&&d.planIds.length?(u.subscriptions||[]).filter(s=>d.planIds.includes(s.id)).map(s=>acctParts(u,s).label||planLabel(s)).join(', '):'';
   return `<div class="disc-note"><span><b>Discontinue requested</b> on the link ${esc(fmtWhen(d.at))}${partial?` for <b>${esc(partial)}</b>`:''} · from ${esc(fmtD(d.cycleStart,true))}${d.note?` · “${esc(d.note)}”`:''}</span><button class="btn sm danger" type="button" data-act="disc-confirm" title="${partial?'Ends that plan':'Runs Cancel subscription'} with the last day ${esc(fmtD(lastDay,true))}">Confirm cancel · last day ${esc(fmtD(lastDay))}</button><button class="link" type="button" data-act="disc-dismiss" title="Keep the account; the answer stays recorded">Dismiss</button></div>`;}
 function linkControl(id){if(!publicBase())return '';return `<button class="btn sm" type="button" data-act="copy-link" data-user="${esc(id)}" title="Copy this user's private choice page link (Continue / Upgrade / Discontinue)">Copy link</button>`;}
 function waLink(u,text){const ph=digits(u.phone);const enc=encodeURIComponent(text);const web='https://wa.me/'+ph+'?text='+enc;const app=waApp();if(app==='ask')return web;
@@ -1971,7 +1983,7 @@ function ownCycleDueRows(today){const rows=[];for(const id in state.users){const
 /* ---------- v20 queue: today's stage from the date; one row per user still to message, with the rendered text, channel buttons and a Sent tick ---------- */
 function queueRows(today,st){const cycle=st.cycle;const rows=[];
   for(const id in state.users){const u=state.users[id];if(u.cancel)continue;const a=analyze(u,today);const card=cycleCard(u,a,cycle,today);if(!card.due)continue;const rs=remState(u,cycle);if(rs.skipped)continue;
-    const answered=hasAnswer(id,cycle);if(st.stage>=2&&answered)continue;
+    const answered=allAnswered(id,cycle,card);if(st.stage>=2&&answered)continue;
     const sent=(rs.sent||[]).filter(x=>x.stage===st.stage&&x.cycleStart===cycle);rows.push({id,u,a,card,answered,sent:sent[sent.length-1]||null});}
   rows.sort((x,y)=>((x.sent?1:0)-(y.sent?1:0))||displayName(x.u).localeCompare(displayName(y.u)));
   return {rows,todo:rows.filter(r=>!r.sent).length,sent:rows.filter(r=>r.sent).length,cycle,stage:st.stage};}
@@ -1981,7 +1993,7 @@ function queueFields(r,st){const c=r.card;const ob=overdueBefore(r,st.cycle);ret
 function queueText(r,st){const tpl=queueTplOf(st.stage);const f=queueFields(r,st);let out=tpl.replace(/\{(name|amount|cycle|link|tier|dueDate|replyBy|switchLabel|payHow|appName)\}/g,(m,k)=>f[k]||'');if(f.link&&!/\{link\}/.test(tpl))out+=' Reply here: '+f.link;return out;}
 const qLastCh={};
 /* v22: the amount form(s) inside a Queue row: one per plan the cycle bills (Haroon's two accounts get two) */
-function qAmtBox(r,cycle){const forms=[];for(const pl of r.card.plans){const s=(r.u.subscriptions||[]).find(x=>x.id===pl.planId);const sa=s&&r.a.sa[s.id];const p=sa&&sa.kind==='monthly'?(sa.periods||[]).find(x=>x.st===cycle):null;if(!s||!p)continue;forms.push(amtFormHTML(r.id,s,p,'queue',r.card.multi?(pl.acct||pl.label):''));}
+function qAmtBox(r,cycle){const forms=[];for(const pl of r.card.plans){const s=(r.u.subscriptions||[]).find(x=>x.id===pl.planId);const sa=s&&r.a.sa[s.id];const p=sa&&sa.kind==='monthly'?(sa.periods||[]).find(x=>x.st===(pl.start||cycle)):null;if(!s||!p)continue;forms.push(amtFormHTML(r.id,s,p,'queue',r.card.multi?(pl.acct||pl.label):''));}
   return forms.length?`<div class="qamt-box">${forms.join('')}</div>`:'';}
 function renderQueue(){
   const today=todayISO();const auto=stageToday(today);const st=ui.qStage&&ui.qStage!==auto.stage?{stage:ui.qStage,cycle:ui.qStage===3?cycleStartOnOrBefore(today):auto.w.nc,w:auto.w,auto:false}:auto;
@@ -3692,7 +3704,7 @@ function bind(){
       /* v27: Resume (was Reactivate). Only the plans the cancellation ended come back (a plan ended earlier on purpose stays ended); a resume
          after a gap starts a fresh plan on the chosen date for the package in force on the last day, so nothing is billed for the gap, and
          the cancellation is kept in cancelHistory so the gap stays visible. */
-      const c=u.cancel;const ld=c&&c.lastDay;let ended=u.subscriptions.filter(s=>s.kind==='monthly'&&s.end&&(!ld||s.end===ld)&&(!c||!Array.isArray(c.ended)||c.ended.includes(s.id)));if(!ended.length)ended=u.subscriptions.filter(s=>s.kind==='monthly'&&s.end);
+      const c=u.cancel;const ld=c&&c.lastDay;let ended=u.subscriptions.filter(s=>s.kind==='monthly'&&s.end&&(c&&Array.isArray(c.ended)?c.ended.includes(s.id):(!ld||s.end===ld)));/* v46: by cancel.ended (a product on its own cycle ends on its own day) */if(!ended.length)ended=u.subscriptions.filter(s=>s.kind==='monthly'&&s.end);
       const seen={};const fresh=[];let resumed=0;
       for(const s of ended){if(addDays(s.end,1)>=start){s.end=null;resumed++;const key=(pkgIdAt(s,addDays(start,-1))||s.packageId)||('label:'+(s.name||''));seen[key]=1;}}
       for(const s of ended.slice().reverse()){if(!s.end)continue;const pid=pkgIdAt(s,s.end)||s.packageId||null;const key=pid||('label:'+(s.name||''));if(seen[key])continue;seen[key]=1;

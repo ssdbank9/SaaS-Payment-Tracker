@@ -2,6 +2,13 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v46 - 2026-10-12
+
+- Customers with more than one product: the link page, the Queue messages and the reminder emails list each product with its own name, renewal date and amount, and each product has its own Continue / Upgrade / Discontinue buttons.
+- A product on its own billing cycle (for example renewing on the 5th) is now included on the link page, in the stage 1 to 3 messages and in the reminder emails. It shows its own due date, and the message names each date when the dates differ.
+- A customer who has answered for only some of their products stays in the stage 2 and 3 lists and keeps getting reminder emails until every product is answered.
+- Discontinue on one product ends only that product, the day before its own renewal. An upgrade chosen on the link starts on that product's own renewal date.
+
 ## v45 - 2026-10-12
 
 Fixes from a full review of v44.

@@ -150,4 +150,26 @@ for _ in range(5):
 db.audit = real
 check("v45 while an IP stays locked out, one audit row per minute instead of one per request", len(calls) == 1, calls)
 
+# ---- v46: the reminder email treats a customer with two products as answered only when both products have an answer ----
+def _two(uid, tok):
+    db.set_doc("users/" + uid, {"name": uid, "email": uid + "@example.test", "confirmToken": tok, "subscriptions": []})
+    card = {"cycleStart": "2026-11-24", "due": True, "multi": True, "amountText": "Rs 8,200", "periodText": "24 Nov - 4 Jan", "dueDateText": "Nov 24 and Dec 5, 2026",
+            "replyByText": "Nov 23", "tierText": "C + C Max", "switchLabel": "Upgrade",
+            "plans": [{"planId": "s1", "amountText": "Rs 4,200"}, {"planId": "s2", "amountText": "Rs 4,000", "dueDateText": "Dec 5, 2026"}]}
+    db.set_doc("confirm/" + tok, {"userId": uid, "name": uid, "cycleStart": "2026-11-24", "cycles": {"2026-11-24": card}})
+tA, tB = "TwoProdA" + "x" * 14, "TwoProdB" + "x" * 14
+_two("twoA", tA); _two("twoB", tB)
+db.record_confirmation(tA, "twoA", "2026-11-24", "continue", "", "127.0.0.1", "qa", "s1", "")
+db.record_confirmation(tB, "twoB", "2026-11-24", "continue", "", "127.0.0.1", "qa", "s1", "")
+db.record_confirmation(tB, "twoB", "2026-11-24", "discontinue", "", "127.0.0.1", "qa", "s2", "")
+mails = []
+real_ms, real_mc, real_send = notify.mail_settings, notify.mail_configured, notify.send_mail
+notify.mail_settings = lambda: {"host": "x"}; notify.mail_configured = lambda m=None: True; notify.send_mail = lambda m, to, subject, body: mails.append(to)
+try:
+    notify.run(today="2026-11-23")
+finally:
+    notify.mail_settings, notify.mail_configured, notify.send_mail = real_ms, real_mc, real_send
+check("v46 a customer who answered for one of two products still gets the stage 2 email", "twoA@example.test" in mails, mails)
+check("v46 a customer who answered for both products gets no stage 2 email", "twoB@example.test" not in mails, mails)
+
 print("ALL %d CHECKS PASSED" % passed)

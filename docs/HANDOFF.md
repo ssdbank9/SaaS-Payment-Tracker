@@ -22,7 +22,7 @@ review items 9-12 fixed (conversion residue, refund settled twice, one-time refu
 Live: `/healthz` reported `"version":"41"` on 12 October 2026 (about 13 minutes after the push). Note: on one office network a Fortinet
 firewall intercepted wasooli.duckdns.org, so a failed live check can be that network, not the server; try another network before assuming an outage.
 
-### Open items after v45 (the to-do list; keep this current)
+### Open items after v46 (the to-do list; keep this current)
 
 Numbers are from the independent review of v38 (findings reproduced on disposable stores; scripts were kept outside the repo).
 Done so far: 1-12 and 22 (v39/v40, live), 13-17 (supplier-cost edge cases), 18 (phone numbers with a country code box, +92 by default) and
@@ -48,8 +48,8 @@ Review notes left open on purpose (low impact, recorded so they are not lost):
 
 Follow-ups from the v39/v40 features:
 
-- Own-cycle plans are listed in the Queue when due, but are not in the stage 1-3 message rounds, the subscriber link cards or notify.py emails;
-  "No bills from billing month" cancellation and supplier-cost cycles still use the shared calendar.
+- Own-cycle plans are now on the link page, in the stage 1-3 messages and in notify.py emails (v46, own due date per product). Still on the shared
+  calendar: the reply-by day (the link closes before an own-cycle product's later renewal) and "No bills from billing month" cancellation.
 - Old receipts saved with a blank rate in another currency still float with the default rate (new ones are locked). Locking them needs a
   read-only production check first and the owner's explicit approval.
 - Read-only production checks not yet done (owner approval needed): which live yearly plans were on the 30-day basis (#8), which USD plans have

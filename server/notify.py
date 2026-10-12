@@ -264,7 +264,11 @@ def run(today=None, dry_run=False):
         if isinstance(data, dict) and data.get("userId"):
             data = dict(data, token=d["path"].split("/", 1)[1])
             by_user[data["userId"]] = data
-    answered = {a["user_id"] for a in db.confirmations_for_cycle(cycle) if a.get("user_id")}
+    # v46: answers per product; a customer counts as answered when every product on the card has an answer (an answer without a plan covers all)
+    answered = {}
+    for a in db.confirmations_for_cycle(cycle):
+        if a.get("user_id"):
+            answered.setdefault(a["user_id"], set()).add(str(a.get("plan_id") or ""))
     sent = skipped = 0
     for d in db.list_docs("users/"):
         uid = d["path"].split("/", 1)[1]
@@ -273,9 +277,14 @@ def run(today=None, dry_run=False):
         email = str(u.get("email") or "").strip()
         if u.get("cancel") or not email:
             continue
-        if uid in answered:
-            log.info("skip %s: already answered for %s", name, cycle)
-            continue
+        got = answered.get(uid)
+        if got:
+            ctx0 = by_user.get(uid)
+            card0 = _card(ctx0, cycle) if ctx0 else None
+            ids = [str(p.get("planId") or "") for p in ((card0 or {}).get("plans") or []) if isinstance(p, dict)]
+            if "" in got or len(ids) <= 1 or all(i in got for i in ids):
+                log.info("skip %s: already answered for %s", name, cycle)
+                continue
         rem = (u.get("reminders") or {}).get(cycle) or {}
         if rem.get("skipped"):
             log.info("skip %s: on the Except list for %s", name, cycle)

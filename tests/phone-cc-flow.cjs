@@ -47,6 +47,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   check('An old number saved without a code is fixed by retyping it in Edit user: 0300 1234567 becomes 923001234567');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'45',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'46',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
