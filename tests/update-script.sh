@@ -58,4 +58,21 @@ touch "$T/FAIL_RESTART"; run; rc=$?
 [ "$rc" != 0 ] && [ -e "$T/app/.restart-pending" ] && [ "$(cat "$T/app/code.txt")" = v4 ] && ok "failed restart: run fails and the pending marker stays" || bad "failed restart: run fails and the pending marker stays"
 rm -f "$T/FAIL_RESTART"; r1=$(restarts); run; rc=$?
 [ "$rc" = 0 ] && [ ! -e "$T/app/.restart-pending" ] && [ "$(restarts)" = "$((r1 + 1))" ] && ok "next run finishes the restart and clears the marker" || { bad "next run finishes the restart and clears the marker"; cat "$T/out.txt"; }
+# 6. v45: the restart keeps failing, but a fix is pushed: the run still fetches and installs it (before, it stopped before fetching)
+MSG=five pushpush bash -c 'echo v5 > code.txt'
+touch "$T/FAIL_RESTART"; run; [ -e "$T/app/.restart-pending" ] || bad "setup: pending marker"
+MSG=six pushpush bash -c 'echo v6 > code.txt'
+run; rc=$?
+[ "$(cat "$T/app/code.txt")" = v6 ] && [ "$rc" != 0 ] && [ -e "$T/app/.restart-pending" ] && ok "v45 with a pending failed restart, a newer commit is still installed (run reports the failure)" || { bad "v45 newer commit installed despite failing restart"; cat "$T/out.txt"; }
+run; rc=$?
+[ "$rc" != 0 ] && ok "v45 nothing new and the restart still pending: the run fails visibly" || bad "v45 nothing new and the restart still pending: the run fails visibly"
+rm -f "$T/FAIL_RESTART"; run; rc=$?
+[ "$rc" = 0 ] && [ ! -e "$T/app/.restart-pending" ] && ok "v45 once restarts work, the marker clears" || bad "v45 once restarts work, the marker clears"
+# 7. v45: a new env key whose restart fails is reported (ensure_env used to hide it); the update path restarts itself
+printf 'DOMAIN=x\n' > "$T/env"; export ENV_FILE="$T/env"
+MSG=seven pushpush bash -c 'echo v7 > code.txt'
+touch "$T/FAIL_RESTART"; run; rc=$?
+[ "$rc" != 0 ] && [ -e "$T/app/.restart-pending" ] && ok "v45 a failed restart after new env keys is reported and retried" || { bad "v45 env restart failure reported"; cat "$T/out.txt"; }
+rm -f "$T/FAIL_RESTART"; run; rc=$?
+[ "$rc" = 0 ] && [ ! -e "$T/app/.restart-pending" ] && ok "v45 ...and the retry finishes" || { bad "v45 env retry"; cat "$T/out.txt"; }
 exit $fail

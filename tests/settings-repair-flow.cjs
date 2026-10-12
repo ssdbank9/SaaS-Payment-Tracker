@@ -52,6 +52,6 @@ const COST={pkrCostTax:7,costPaymentBase:{rate:280,taxPercent:5.2},costPaymentHi
   check('Adding a package through the CSV import saves settings without dropping ownerName or the cost fields');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'44',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'45',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

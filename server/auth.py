@@ -91,16 +91,31 @@ def global_brake():
     return GLOBAL_PER_MINUTE > 0 and db.login_attempts_since(60) >= GLOBAL_PER_MINUTE
 
 
+_AUDIT_SEEN = {}
+
+
+def _audit_once(action, ip):
+    """v45: while an IP stays locked out (or the brake is on) every request used to add an audit row; now one per IP and action per minute."""
+    now = time.time()
+    key = (action, ip)
+    if now - _AUDIT_SEEN.get(key, 0) < 60:
+        return
+    if len(_AUDIT_SEEN) > 5000:
+        _AUDIT_SEEN.clear()
+    _AUDIT_SEEN[key] = now
+    db.audit("anon", action, "", ip)
+
+
 def attempt_login(candidate):
     """Returns (ok, message, status).  Locks the visitor's IP after MAX_FAILURES failures in LOCK_MINUTES
     (that IP only), answers 429 while the global brake is on, and adds a small delay on failure."""
     ip = client_ip()
     if global_brake():
-        db.audit("anon", "login.brake", "", ip)
+        _audit_once("login.brake", ip)
         print("login: global brake, %d+ attempts/min (last from %s)" % (GLOBAL_PER_MINUTE, ip), file=sys.stderr)
         return False, "Too many sign-in attempts right now. Try again in a minute.", 429
     if locked_out(ip):
-        db.audit("anon", "login.locked", "", ip)
+        _audit_once("login.locked", ip)
         print("login: %s is locked out (%d failures in %d min)" % (ip, MAX_FAILURES, LOCK_MINUTES), file=sys.stderr)
         return False, "Too many attempts from this device. Try again in %d minutes." % LOCK_MINUTES, 429
     ok = check_passcode(candidate or "")

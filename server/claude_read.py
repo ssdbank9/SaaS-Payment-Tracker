@@ -20,7 +20,7 @@ MODELS_URL = "https://api.anthropic.com/v1/models"
 API_VERSION = "2023-06-01"
 # v44: the current Haiku model (the 2025 Haiku 4.5 default may be retired); READ_MODEL in the env file still overrides it
 MODEL = os.environ.get("READ_MODEL", "claude-haiku-5-5")
-MAX_TOKENS = 8192
+MAX_TOKENS = 16384  # v45: room for long statements
 MEDIA_TYPES = ("image/png", "image/jpeg", "image/webp", "image/gif")
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 NOT_SET_UP = "Screenshot reading isn't set up yet: paste an API key in Settings → AI reading."

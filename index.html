@@ -645,7 +645,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v44</span>
+      <span class="small muted num" id="app-ver" title="App version">v45</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -1312,7 +1312,7 @@ const normRate=r=>{const x=Number(r);return x>0?x:null;};
 const normTg=v=>{let t=String(v||'').trim().replace(/^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\//i,'').replace(/^@+/,'').replace(/[\/?#].*$/,'');if(/^\+?[\d\s\-()]+$/.test(t)&&digits(t).length>=7)t=digits(t);return t;};
 function normalizeUser(b,id){
   const u={id,name:String(b.name||'').trim(),email:String(b.email||'').trim(),phone:digits(b.phone),telegram:normTg(b.telegram),joinDate:normDate(b.joinDate)||todayISO(),notes:String(b.notes||'').trim(),createdAt:b.createdAt||'',subscriptions:[],reminders:{},cancel:null,discontinue:null,confirmToken:TOKEN_RE.test(String(b.confirmToken||''))?String(b.confirmToken):''};
-  if(b.cancel&&typeof b.cancel==='object'&&normDate(b.cancel.lastDay))u.cancel={lastDay:normDate(b.cancel.lastDay),reason:String(b.cancel.reason||'').trim(),note:String(b.cancel.note||'').trim(),at:normDate(b.cancel.at)||''};
+  if(b.cancel&&typeof b.cancel==='object'&&normDate(b.cancel.lastDay)){u.cancel={lastDay:normDate(b.cancel.lastDay),reason:String(b.cancel.reason||'').trim(),note:String(b.cancel.note||'').trim(),at:normDate(b.cancel.at)||''};if(Array.isArray(b.cancel.ended))u.cancel.ended=b.cancel.ended.map(String).slice(0,50);}
   /* v27: earlier cancellations that were resumed, kept as history (absent = none) */
   u.cancelHistory=Array.isArray(b.cancelHistory)?b.cancelHistory.filter(x=>x&&typeof x==='object'&&normDate(x.lastDay)).map(x=>({lastDay:normDate(x.lastDay),reason:String(x.reason||'').trim(),note:String(x.note||'').trim(),at:normDate(x.at)||'',resumedOn:normDate(x.resumedOn)||'',resumedAt:normDate(x.resumedAt)||''})).slice(-50):[];
   /* v20: a Discontinue chosen on the link page, waiting for the owner to confirm the cancellation */
@@ -1364,7 +1364,8 @@ const refundKey=(s,r)=>{const pid=s.kind==='one-time'?s.packageId:pkgIdAt(s,r.da
 function billRefundReduction(s,st){return (s.refunds||[]).reduce((n,r)=>n+(r.billStart===st&&r.billReduction>0?Number(r.billReduction):0),0);}
 /* v42: courtesy discounts [{id,from,to,amount,note,at}] in the plan's currency: the amount comes off every bill whose period starts from `from`
    to `to` (inclusive; to null = every later bill). On a one-time item (no from/to) the amount comes off the item. Any plan, any product. */
-function courtesyAt(s,st){let t=0;for(const c of (s&&s.courtesy)||[])if(c.from&&st>=c.from&&(!c.to||st<=c.to))t+=Number(c.amount)||0;return t;}
+/* v45: a bill whose period contains `from` also counts (before, a schedule or start change that moved the bill starts made a one-bill courtesy vanish) */
+function courtesyAt(s,st){let t=0,nx;for(const c of (s&&s.courtesy)||[]){if(!c.from||(c.to&&st>c.to))continue;if(st<c.from){if(nx===undefined)nx=pStart(s,Math.max(0,periodIndexAt(s,st<s.start?s.start:st))+1);if(!(c.from<nx))continue;}t+=Number(c.amount)||0;}return t;}
 const courtesyTotal=s=>((s&&s.courtesy)||[]).reduce((n,c)=>n+(Number(c.amount)||0),0);
 function billCharge(s,st,listed){const ov=periodOverride(s,st);if(ov&&ov.fromRefund)return Math.max(0,ov.amount);/* v40: a "kept after refund" amount (settleRefunds) is worked out after the linked bill reduction, so the reduction is not taken off twice */return Math.max(0,(ov?ov.amount:listed)-billRefundReduction(s,st)-courtesyAt(s,st));}
 function analyzeMonthly(s,today){
@@ -1391,7 +1392,7 @@ function analyzeMonthly(s,today){
   const nextSt=active(kPaid)?pStart(s,kPaid):null;const nextDue=nextSt?(nextSt<s.start?s.start:nextSt):null;
   const overdue=periods.filter(p=>(p.state==='unpaid'||p.state==='partial')&&p.es<=today);
   let amountDue=0;for(const p of overdue)amountDue+=p.pr-p.covered;const overdueAmount=amountDue;
-  const np=nextSt?periods.find(p=>p.st===nextSt):null;const nextAmount=np?np.pr-np.covered:(nextDue?periodFull(s,nextSt,nextDue).full:0);const nextCredit=np?np.covered:0;
+  const np=nextSt?periods.find(p=>p.st===nextSt):null;const nextAmount=np?np.pr-np.covered:(nextDue?billCharge(s,nextSt,periodFull(s,nextSt,nextDue).full):0);/* v45: billCharge, so a fully discounted next bill shows 0 */const nextCredit=np?np.covered:0;
   if(!amountDue&&nextDue)amountDue=nextAmount;
   const nc=nextCycleStart(today);const cp=periods.find(p=>p.st===nc);const cycleDue=cp?cp.pr-cp.covered:0;const cyclePaid=!!cp&&cp.state==='paid';
   let status;
@@ -1589,7 +1590,8 @@ async function applyAnswers(){if(state.backend!=='api'||!state.loaded||!state.se
     finally{delete applying[uid];}}}}
 /* the existing cancel flow, shared by the Cancel form, the Final notice "Deactivate" and the one-tap "Confirm cancel" of a Discontinue answer */
 /* v34: correct only ends owned by this cancellation; preserve separately ended plans and all cash history. */
-function applyCancel(u,lastDay,reason,note){const old=u.cancel&&u.cancel.lastDay;for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;if(!s.end||s.end>lastDay||(old&&s.end===old))s.end=lastDay;}u.cancel={lastDay,reason:reason||'',note:note||'',at:todayISO()};u.discontinue=null;for(const s of u.subscriptions||[])settleRefunds(u,s,todayISO());}
+/* v45: cancel.ended lists the plans this cancellation ended, so Resume reopens only those (a plan already ended on the same day by a plan change stays ended) */
+function applyCancel(u,lastDay,reason,note){const old=u.cancel&&u.cancel.lastDay;const own=u.cancel&&Array.isArray(u.cancel.ended)?u.cancel.ended:null;const ended=[];for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;if(!s.end||s.end>lastDay||(old&&s.end===old&&(!own||own.includes(s.id)))){s.end=lastDay;ended.push(s.id);}}u.cancel={lastDay,reason:reason||'',note:note||'',at:todayISO(),ended};u.discontinue=null;for(const s of u.subscriptions||[])settleRefunds(u,s,todayISO());}
 async function confirmDiscontinue(id){const u=clone(state.users[id]);const d=u.discontinue;if(!d||u.cancel)return;const lastDay=addDays(d.cycleStart,-1);const monthly=(u.subscriptions||[]).filter(s=>s.kind==='monthly'&&(!s.end||s.end>lastDay));const targets=d.planIds&&d.planIds.length?monthly.filter(s=>d.planIds.includes(s.id)):monthly;
   if(targets.length&&targets.length<monthly.length){for(const s of targets)s.end=lastDay;u.discontinue=null;const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: ${targets.map(s=>acctParts(u,s).label||planLabel(s)).join(', ')} ends ${fmtD(lastDay,true)}; the other plans continue.`);return;}
   applyCancel(u,lastDay,'Chose Discontinue on the link'+(d.note?' · '+d.note:''),'');const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)} cancelled · last day ${fmtD(lastDay,true)}.`);}
@@ -1712,7 +1714,7 @@ async function maybeSeedShared(){
 function canonicalSettings(b,force){b=b||{};let pk=normalizePackages(b.packages);if(!pk.length)pk=clone(DEFAULT_PACKAGES);for(const d of DEFAULT_PACKAGES){const p=pk.find(x=>x.id===d.id);if(!p)continue;if(!p.cycle||(force&&p.cycle!==d.cycle))p.cycle=d.cycle;if(p.price==null&&d.price!=null){p.price=d.price;p.currency=d.currency;}}return {rate:normRate(b.rate)||DEFAULT_RATE,template:tplOf(b.template),finalTemplate:finalTplOf(b.finalTemplate),prorationBasis:force?'fixed30':(rawBasis(b.prorationBasis)||'fixed30'),appName:rawAppName(b.appName),tagline:rawTagline(b.tagline),readModel:normModel(b.readModel),publicBaseUrl:pubBaseRaw(b.publicBaseUrl),packages:pk,anchor:isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR,cycleDay:clampDay(b.cycleDay,+(isDateKey(b.anchor)?b.anchor:DEFAULT_ANCHOR).slice(8,10)),remindDay:clampDay(b.remindDay,DEFAULT_REMIND_DAY),replyDay:clampDay(b.replyDay,DEFAULT_REPLY_DAY),queueTemplates:normQueueTpl(b.queueTemplates),payHow:rawPayHow(b.payHow),waApp:normWaApp(b.waApp),dimSettled:b.dimSettled!==false};}
 /* v39: settings are written by merging onto the stored document, never by replacing it, so a field this page does not list (the v38 cost tax and
    rate history, ownerName, anything a newer version adds) is kept. Before, the repair below and persistSettings replaced the whole document. */
-async function mergeSettings(patch){const ref=db.doc('settings/main');const sn=await ref.get();return sn.exists?ref.update(patch):ref.set(patch);}
+async function mergeSettings(patch){const ref=db.doc('settings/main');const sn=await ref.get();if(!sn.exists)return ref.set(patch);if(typeof ref.update==='function')return ref.update(patch);return ref.set(Object.assign({},sn.data()||{},patch));/* v45: a storage without update() gets the merged document */}
 async function ensureSettingsShared(force){try{const sn=await db.doc('settings/main').get();const b=sn.exists?(sn.data()||{}):{};const want=canonicalSettings(b,force);const same=sn.exists&&Object.keys(want).every(k=>JSON.stringify(want[k])===JSON.stringify(b[k]));if(!same)await mergeSettings(want);}catch(e){}}
 async function maybeMigrateShared(rawDocs){
   if(migrateChecked||seedActive)return;migrateChecked=true; /* a seed in progress writes the schema marker itself; try again on a later snapshot */
@@ -1801,7 +1803,7 @@ function normAccountCost(v){
 function costRecords(){
   const today=todayISO();if(accountCostCache&&accountCostCache.day===today)return accountCostCache.records;const out={};for(const [id,c] of Object.entries(state.costs)){let description=c.description;/* v41: a linked expense's automatic description ("Name · Product cost") follows a product rename; a description the owner wrote is left alone */if(c.source==='account'&&c.userId&&state.users[c.userId]&&pkgById(c.packageId)){const pk=pkgById(c.packageId),dn=displayName(state.users[c.userId]);if([pk.name,...(pk.aliases||[])].some(n=>description===dn+' · '+n+' cost'))description=dn+' · '+pk.name+' cost';}out[id]={...c,description,rate:c.purchase?(c.purchase.rate||0):(c.rate||costPolicyAt(c.date).rate||0)};}
   for(const [uid,u] of Object.entries(state.users))for(const s of u.subscriptions||[]){const ac=s.accountCost;if(!ac||!isDateKey(s.start)||s.kind==='one-time')continue;/* v41: a one-time item has no cycles, so it accrues no cycle cost */
-    const fake={kind:'monthly',cycle:ac.frequency,start:ac.entries[0].from>s.start?ac.entries[0].from:s.start,prices:[{from:s.start,price:1}],prorate:true,prorationBasis:'actual'};
+    const fake={kind:'monthly',cycle:ac.frequency,start:ac.entries[0].from>s.start?ac.entries[0].from:s.start,prices:[{from:s.start,price:1}],prorate:true,prorationBasis:'actual',...(isDateKey(s.anchor)?{anchor:s.anchor}:{})};/* v45: a product's own cycle (anchor) also sets its supplier-cost dates */
     const ends=[s.end,ac.end,u.cancel&&u.cancel.lastDay].filter(isDateKey).sort(),end=ends[0]||today;
     for(let k=0;k<2400;k++){const st=pStart(fake,k),en=addDays(pStart(fake,k+1),-1),date=k===0?fake.start:st;if(date>today||date>end)break;
       const entry=ac.entries.filter(e=>e.from<=date).pop()||ac.entries[0];let amount=entry.amount;
@@ -1866,10 +1868,11 @@ async function persistAccountBundle(id,u,costs){if(!costs.length)return persistU
 function accountStartInputs(u){return (u.subscriptions||[]).map(s=>`<fieldset class="block" data-account-fields="${esc(s.id)}"><legend>${esc(planLabel(s))} · ${esc(s.currency)} · ${esc(subCycle(s))}</legend><label class="f">Product started on (this user's product only)<input name="productStart:${esc(s.id)}" type="date" value="${esc(s.start||'')}"${s.kind==='monthly'?' required':''}></label><p class="small muted">${s.start?'Changing this date recalculates this account’s bills; receipts and price history are kept.':'Start date not recorded. Choose it when known.'}</p>${accountCostFields(s,s.id+':')}</fieldset>`).join('');}
 
 /* v41: deleting a user or removing a plan can also delete its linked one-off supplier expense (ticked by default); the derived cycle costs go with the plan */
-async function deleteLinkedCost(cid){if(!cid||!state.costs[cid])return false;if(db){try{await db.collection('costs').doc(cid).delete();}catch(e){toast(dbErr(e));return false;}}delete state.costs[cid];if(!db)saveLocal();accountCostCache=null;render();return true;}
-async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{delete state.users[id];saveLocal();render();}return true;}
+/* v45: browser-only deletes check that the browser stored the change (before, a failed save still reported the delete as done) */
+async function deleteLinkedCost(cid){if(!cid||!state.costs[cid])return false;if(db){try{await db.collection('costs').doc(cid).delete();}catch(e){toast(dbErr(e));return false;}}const prev=state.costs[cid];delete state.costs[cid];accountCostCache=null;if(!db&&!saveLocal()){state.costs[cid]=prev;render();return false;}render();return true;}
+async function removeUser(id){if(db){try{await db.collection('users').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}else{const prev=state.users[id];delete state.users[id];if(!saveLocal()){state.users[id]=prev;render();return false;}render();}return true;}
 async function persistCost(id,c){const existing=costRecords()[id];if(existing&&existing.source==='account-cycle'){const u=clone(state.users[existing.userId]),sub=u.subscriptions.find(x=>x.id===existing.subscriptionId);if(!sub||!sub.accountCost)return false;sub.accountCost.overrides[existing.cycleStart]={date:c.date,cost:c.cost,tax:c.tax||0,currency:c.currency,rate:c.rate,description:c.description,category:c.category,purchase:normPurchase(c.purchase)};return persistUser(u.id,u);}const body=cleanCost(Object.assign({},c,{id}));if(db){try{await db.collection('costs').doc(id).set(body);}catch(e){toast(dbErr(e));return false;}}{const prev=state.costs[id];state.costs[id]=normalizeCost(body,id);if(!db&&!saveLocal()){if(prev)state.costs[id]=prev;else delete state.costs[id];render();return false;}}render();return true;}
-async function removeCost(id){const existing=costRecords()[id];if(existing&&existing.source==='account-cycle')return persistCost(id,{...existing,cost:0,tax:0,purchase:existing.purchase?{...existing.purchase,amount:0,extraTax:0}:null,description:existing.description+' · cycle cost waived'});if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}delete state.costs[id];if(!db)saveLocal();render();return true;}
+async function removeCost(id){const existing=costRecords()[id];if(existing&&existing.source==='account-cycle')return persistCost(id,{...existing,cost:0,tax:0,purchase:existing.purchase?{...existing.purchase,amount:0,extraTax:0}:null,description:existing.description+' · cycle cost waived'});if(db){try{await db.collection('costs').doc(id).delete();}catch(e){toast(dbErr(e));return false;}}const prev=state.costs[id];delete state.costs[id];if(!db&&!saveLocal()){state.costs[id]=prev;render();return false;}render();return true;}
 function settingsDoc(){return {pkrCostTax:costTax(),costPaymentBase:state.settings.costPaymentBase||null,costPaymentHistory:normCostPolicies(state.settings.costPaymentHistory),rate:state.settings.rate,template:tplOf(state.settings.template),finalTemplate:finalTplOf(state.settings.finalTemplate),prorationBasis:basis(),appName:rawAppName(state.settings.appName),tagline:rawTagline(state.settings.tagline),readModel:readModel(),publicBaseUrl:pubBaseRaw(state.settings.publicBaseUrl),packages:state.settings.packages||[],anchor:anchor(),cycleDay:cycleDay(),remindDay:remindDay(),replyDay:replyDay(),queueTemplates:normQueueTpl(state.settings.queueTemplates),payHow:rawPayHow(state.settings.payHow),waApp:waApp(),dimSettled:dimOn()};}
 async function persistSettings(){if(db){try{await mergeSettings(settingsDoc());}catch(e){toast(dbErr(e));return false;}}else if(!saveLocal())return false;render();return true;}
 function findUser(email,name){const e=(email||'').trim().toLowerCase(),n=(name||'').trim().toLowerCase();const ids=Object.keys(state.users);if(e){const hit=ids.find(id=>(state.users[id].email||'').toLowerCase()===e);if(hit)return hit;}if(n&&!e){const hit=ids.find(id=>(state.users[id].name||'').toLowerCase()===n);if(hit)return hit;}return null;}
@@ -2466,7 +2469,7 @@ function openBillDialog(id,sid,start){if(!state.settingsLoaded)return;const u=st
 function billDraftUser(c,includeCash=true){const {u,s}=c,p=billingPeriods(s).find(p=>p.st===$('#bill-period').value);if(!p)return {error:'This account has no bill in that period.'};const mode=$('#bill-mode').value,settlement=$('#bill-settlement').value,sim=clone(u),ss=sim.subscriptions.find(x=>x.id===s.id);let amount=Number($('#bill-amount').value),note='Agreed bill for '+fmtCycle(p.st,p.en);
   if(mode==='normal')amount=p.full;else if(mode==='computed'){const plain=clone(s);setPeriodOverride(plain,p.st,null,undefined);amount=periodAmt(plain,p.k).pr+billRefundReduction(plain,p.st);}else if(mode==='days'){const from=$('#bill-from').value,to=$('#bill-to').value;if(!isDateKey(from)||!isDateKey(to)||from<pFrom(p)||to>p.en||to<from)return {error:'Service dates must be inside the selected bill, with the end on or after the start.'};const days=dayDiff(from,to)+1,divisor=periodBasisDays(s,p.total);amount=Math.min(p.full,roundCur(p.full*days/divisor,s.currency));note='Service '+fmtCycle(from,to)+'; '+days+' / '+divisor+' days';}
   if(mode==='amount'&&!validAmt($('#bill-amount').value))return {error:'Enter the agreed amount for this bill (zero is allowed).'};
-  if(mode==='computed')setPeriodOverride(ss,p.st,null,undefined);else {setPeriodOverride(ss,p.st,amount+billRefundReduction(s,p.st),note);if(p.k===0)ss.prorationAmountOverride=null;}
+  if(mode==='computed')setPeriodOverride(ss,p.st,null,undefined);else {setPeriodOverride(ss,p.st,amount+billRefundReduction(s,p.st)+(mode==='amount'?courtesyAt(s,p.st):0),note);/* v45: a typed agreed amount is the final bill, so the courtesy is added back too */if(p.k===0)ss.prorationAmountOverride=null;}
   if(includeCash&&(settlement==='new'||settlement==='edit')){const cash=$('#bill-cash').value,date=$('#bill-date').value;if(!validAmt(cash)||Number(cash)<=0||!isDateKey(date))return {error:'Enter the actual money received and its receipt date.'};const existing=settlement==='edit'&&(ss.payments||[]).find(p=>p.id===$('#bill-receipt').value);if(settlement==='edit'&&!existing)return {error:'Choose an existing receipt to correct.'};const receipt={id:existing?existing.id:'__bill_preview',date,amount:Number(cash),currency:existing?(existing.currency||s.currency):s.currency,rate:existing?existing.rate:null,note:existing?existing.note:'Received for '+exactBillLabel(s,p)};if(existing)ss.payments=ss.payments.map(p=>p.id===existing.id?Object.assign({},p,receipt):p);else ss.payments=(ss.payments||[]).concat(receipt);}
   settleRefunds(sim,ss,todayISO());return {sim,ss,p,amount:periodAmt(ss,p.k).pr,settlement};
 }
@@ -2609,7 +2612,9 @@ function renderTable(){
   if(tbodyObs&&!tbodyDirty&&html===lastTbodyHTML&&tb.children.length)return;lastTbodyHTML=html;
   tb.innerHTML=html;
   if(ui.expanded&&state.users[ui.expanded])wireDetail(ui.expanded,today);
-  for(const d of accountDrafts){const f=[...document.querySelectorAll('#tbody form')].find(x=>formKey(x)===d.key&&!x.hidden);if(!f)continue;if(d.pending)f.dataset.pendingSubId=d.pending;const typed=[];for(const v of d.values){const e=f.elements.namedItem(v.name);if(e&&e.tagName){const box=e.type==='checkbox'||e.type==='radio';if(!box&&v.value===v.base)continue;e.value=v.value;e.dataset.base=v.base;if(box)e.checked=v.checked;if(v.costManual)e.dataset.costManual=v.costManual;typed.push(e);}}wireAccountCostFields(f);for(const e of typed)e.dispatchEvent(new Event('input',{bubbles:true}));}
+  for(const d of accountDrafts){const f=[...document.querySelectorAll('#tbody form')].find(x=>formKey(x)===d.key&&!x.hidden);if(!f)continue;if(d.pending)f.dataset.pendingSubId=d.pending;const typed=[],picks=[];for(const v of d.values){const e=f.elements.namedItem(v.name);if(!e)continue;if(!e.tagName||e.type==='radio'){/* v45: a radio group (RadioNodeList, no tagName) was skipped, so the first-sale choice was lost on a redraw */if(v.checked)picks.push(v);continue;}const box=e.type==='checkbox';if(!box&&v.value===v.base)continue;e.value=v.value;e.dataset.base=v.base;if(box)e.checked=v.checked;if(v.costManual)e.dataset.costManual=v.costManual;typed.push(e);}wireAccountCostFields(f);
+    for(const e of typed){e.dispatchEvent(new Event('input',{bubbles:true}));/* v45: a changed select or box also gets change, which shows what depends on it (Number of bills, the new-price block) */if(e.tagName==='SELECT'||(e.type==='checkbox'&&e.checked!==e.defaultChecked))e.dispatchEvent(new Event('change',{bubbles:true}));}
+    for(const v of picks){const r=[...f.querySelectorAll('input[type=radio]')].find(x=>x.name===v.name&&x.value===v.value);if(r&&!r.checked){r.checked=true;r.dispatchEvent(new Event('change',{bubbles:true}));}}}
   if(ui.rmConfirm){const c=ui.rmConfirm;const el=[...document.querySelectorAll('tr.detail[data-id="'+c.id+'"] [data-act="'+c.A+'"]')].find(b=>['sub','pay','ref','from'].every(k=>c.d[k]===undefined||b.dataset[k]===c.d[k]));if(el)el.outerHTML=rmConfirmHTML(c.A,c.d);else ui.rmConfirm=null;}
   if(tbodyObs)tbodyObs.takeRecords();tbodyDirty=false;
 }
@@ -2738,7 +2743,7 @@ function syncPlanChange(f){
   blk.querySelector('[data-role=chg-per]').textContent=cyc.value==='yearly'?'year':'month';blk.querySelector('[data-role=chg-cur]').textContent=cur.value;
   const hint=blk.querySelector('[data-role=chg-hint]');
   hint.textContent=from.value==='start'?'The plan is corrected from its start with this price. Nothing is recorded on it yet, so nothing is lost.'
-    :from.value?'The current plan ends the day before '+fmtD(from.value,true)+' and keeps its receipts, refunds and old prices. A new '+(cyc.value==='yearly'?'yearly':'monthly')+' plan in '+cur.value+' starts on that date at this price. A fixed discount is not carried over.':'';
+    :from.value?'The current plan ends the day before '+fmtD(from.value,true)+' and keeps its receipts, refunds and old prices. A new '+(cyc.value==='yearly'?'yearly':'monthly')+' plan in '+cur.value+' starts on that date at this price. Money already paid for bills after that date moves to the new plan. A fixed discount is not carried over.':'';
 }
 function applyPlanChange(u,s,c){
   if(c.eff==='start'){
@@ -2750,14 +2755,27 @@ function applyPlanChange(u,s,c){
   if(!isDateKey(c.eff))return {err:'Choose when the new currency or cycle starts.'};
   if(c.eff<=s.start)return {err:'The change must start after the plan started.'};
   if(s.end&&s.end<c.eff)return {err:'This plan ends before that date.'};
-  const prevEnd=s.end||null;
+  const prevEnd=s.end||null;const notes=[];const sameCur=c.cur===s.currency,sameCyc=c.cyc===subCycle(s);
   const np={id:newId('s'),kind:'monthly',cycle:c.cyc,name:s.name||'',packageId:(c.pkg!==s.packageId?c.pkg:(pkgIdAt(s,c.eff)||s.packageId))||null,currency:c.cur,start:c.eff,end:prevEnd,prorate:s.prorate!==false,dueBy:null,prices:[{from:c.eff,price:c.price}],payments:[]};
   if(isDateKey(s.anchor))np.anchor=s.anchor;
-  if(c.cyc==='yearly'){np.prorationBasis='actual';np.paymentEvery=12;}else if(s.prorationBasis&&subCycle(s)!=='yearly')np.prorationBasis=s.prorationBasis;
+  /* v45: the instalment schedule, later courtesy discounts, tier changes and hand-set bills move to the new plan (converted at the default rate
+     when the currency changes); before, they stayed on the ended plan and were lost without a word */
+  const conv=v=>{if(sameCur)return v;const x=toCur(v,s.currency,c.cur,null);return x!=null&&isFinite(x)?roundCur(x,c.cur):null;};
+  if(c.cyc==='yearly'){np.prorationBasis='actual';np.paymentEvery=sameCyc?payMonthsAt(s,c.eff):12;if(sameCyc){const later=(s.paymentSchedule||[]).filter(x=>x.from>c.eff);if(later.length)np.paymentSchedule=clone(later);}}else if(s.prorationBasis&&subCycle(s)!=='yearly')np.prorationBasis=s.prorationBasis;
   if(s.discount&&s.discount.type==='percent')np.discount=clone(s.discount);
-  if(s.accountCost&&Array.isArray(s.accountCost.entries)&&s.accountCost.entries.length){const last=s.accountCost.entries.at(-1);const ac=normAccountCost({frequency:s.accountCost.frequency,first:'prorated',firstAmount:null,overrides:{},entries:[Object.assign({},last,{from:c.eff})]});if(ac)np.accountCost=ac;}
-  s.end=addDays(c.eff,-1);u.subscriptions.push(np);
-  return {msg:'Saved. '+planLabel(s)+' ends on '+fmtD(s.end,true)+' and a new '+(c.cyc==='yearly'?'yearly':'monthly')+' plan in '+c.cur+' starts on '+fmtD(c.eff,true)+'.'};
+  {const keep=[],move=[];let lost=0;for(const x of s.courtesy||[]){if(!x.from||(x.to&&x.to<c.eff)){keep.push(x);continue;}if(x.from<c.eff)keep.push(Object.assign({},x,{to:addDays(c.eff,-1)}));const amt=sameCyc?conv(x.amount):null;if(amt==null){lost++;continue;}move.push(Object.assign({},x,{id:newId('c'),from:x.from<c.eff?c.eff:x.from,amount:amt}));}
+    if(keep.length)s.courtesy=keep;else delete s.courtesy;if(move.length)np.courtesy=move;if(lost)notes.push(sameCyc?'a courtesy discount (set a default rate to convert it)':'courtesy discounts (the billing cycle changed; add them again if they still apply)');}
+  {const later=tierEntries(s).filter(t=>t.from>c.eff);s.tierHistory=tierEntries(s).filter(t=>t.from<c.eff);const moved=[];for(const t of later){const pr=sameCyc?conv(t.price):null;if(pr==null)continue;moved.push(Object.assign({},t,{price:pr,currency:c.cur}));}if(moved.length)np.tierHistory=moved;if(moved.length<later.length)notes.push('tier changes after that date');}
+  {const ov=s.periodOverrides||{};const keys=Object.keys(ov).filter(k=>k>=c.eff);let lost=0;for(const k of keys){const e=Object.assign({},ov[k]);delete ov[k];if(e.fromRefund)continue;if(!sameCyc){lost++;continue;}if(e.amount!=null){const a=conv(e.amount);if(a==null){lost++;continue;}e.amount=a;}(np.periodOverrides=np.periodOverrides||{})[k]=e;}if(lost)notes.push('hand-set bills after that date');}
+  if(s.accountCost&&Array.isArray(s.accountCost.entries)&&s.accountCost.entries.length){const last=s.accountCost.entries.at(-1);/* v45: 'free' first part: the old plan already counted the supplier cost of the cycle the change falls in */const ac=normAccountCost({frequency:s.accountCost.frequency,first:'free',firstAmount:null,overrides:{},entries:[Object.assign({},last,{from:c.eff})]});if(ac)np.accountCost=ac;}
+  s.end=addDays(c.eff,-1);
+  /* v45: money paid beyond the old plan's last bill moves to the new plan (a refund on the old plan and the same amount received on the new one,
+     both today, so revenue is unchanged); before, it stayed on the ended plan and the customer was billed again for the same period */
+  let movedAmt=0;{const a=analyzeMonthly(s,s.end);const owed=a.periods.reduce((n,p)=>n+p.pr,0);const extra=roundCur(a.paid-owed,s.currency);
+    if(!a.unconv&&extra>(s.currency==='USD'?0.005:0.5)){const rate=sameCur?null:defaultRate();if(!sameCur&&!rate)return {err:fmtAmt(extra,s.currency)+' is already paid for bills after that date. Set the default rate in Settings first so it can move to the new '+c.cur+' plan.'};
+      const day=todayISO();s.refunds=(s.refunds||[]).concat([{id:newId('r'),date:day,amount:extra,currency:s.currency,rate:null,note:'Moved to the new '+c.cur+' plan from '+fmtD(c.eff,true)}]);np.payments=[{id:newId('p'),date:day,amount:extra,currency:s.currency,rate,note:'Moved from the earlier '+s.currency+' plan'}];movedAmt=extra;}}
+  u.subscriptions.push(np);
+  return {msg:'Saved. '+planLabel(s)+' ends on '+fmtD(s.end,true)+' and a new '+(c.cyc==='yearly'?'yearly':'monthly')+' plan in '+c.cur+' starts on '+fmtD(c.eff,true)+'.'+(movedAmt?' '+fmtAmt(movedAmt,s.currency)+' paid in advance moved to the new plan.':'')+(notes.length?' Not carried over: '+notes.join(', ')+'.':'')};
 }
 function courtesyText(s,c){const amt=fmtAmt(c.amount,s.currency);let t;if(!c.from)t=amt+' off the item';else{const f=fmtD(c.from<s.start?s.start:c.from,true);t=c.to===c.from?amt+' off the '+f+' bill':c.to?amt+' off each bill from '+f+' to '+fmtD(c.to,true):amt+' off every bill from '+f;}return t+(c.note?' · '+c.note:'');}
 function courtesyLine(s){const l=s.courtesy||[];return l.length?`<p class="small muted courtesy-line" style="margin:6px 0 0">Courtesy discount: ${l.map(c=>esc(courtesyText(s,c))).join('; ')}</p>`:'';}
@@ -2808,8 +2826,8 @@ function amtPkgOptions(s,p){const es=p.es||p.st;const base=pkgIdAt(s,es);const s
   const opts=[`<option value="" data-listed="${listedWith(s,p.k,'')}"${sel?'':' selected'}>${esc(pkgName(base)||'Plan price')} · plan's package (${esc(fmtAmt(listedWith(s,p.k,''),cur))})</option>`];
   for(const x of packages()){if(x.id===base||x.cycle!==subCycle(s))continue;const ok=pkgPeriodPrice(s,x.id,es)!=null;const l=listedWith(s,p.k,x.id);opts.push(`<option value="${esc(x.id)}" data-listed="${l}"${sel===x.id?' selected':''}>${esc(x.name)}${ok?` (${esc(fmtAmt(l,cur))})`:' (no price set · type the amount)'}</option>`);}
   return {html:opts.join(''),n:opts.length,base:listedWith(s,p.k,''),sel};}
-function amtFormHTML(id,s,p,ctx,label){const cur=s.currency;const ov=periodOverride(s,p.st);const credit=p.state!=='paid'&&p.state!=='waived'&&p.covered>0?p.covered:0;const po=amtPkgOptions(s,p);const any=!!(ov||po.sel);const ent=(s.periodOverrides||{})[p.st]||{};
-  return `<form class="amt-form" data-id="${esc(id)}" data-sub="${esc(s.id)}" data-start="${p.st}" data-ctx="${ctx}" data-listed="${p.listed}" data-base="${po.base}" data-credit="${credit}" data-cur="${cur}" novalidate>
+function amtFormHTML(id,s,p,ctx,label){const cur=s.currency;const ov=periodOverride(s,p.st);/* v45: reductions billCharge takes off again; computed = the bill after them */const red=roundCur(billRefundReduction(s,p.st)+courtesyAt(s,p.st),cur);const computed=Math.max(0,roundCur(p.listed-red,cur));const credit=p.state!=='paid'&&p.state!=='waived'&&p.covered>0?p.covered:0;const po=amtPkgOptions(s,p);const any=!!(ov||po.sel);const ent=(s.periodOverrides||{})[p.st]||{};
+  return `<form class="amt-form" data-id="${esc(id)}" data-sub="${esc(s.id)}" data-start="${p.st}" data-ctx="${ctx}" data-listed="${computed}" data-red="${red}" data-base="${po.base}" data-credit="${credit}" data-cur="${cur}" novalidate>
     ${label?`<span class="amt-plan">${esc(label)}</span>`:''}
     ${po.n>1?`<label class="f amt-pkg">Package for this period<select name="pkg" aria-label="Package for ${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}">${po.html}</select></label>`:''}
     <label class="f">Amount for ${esc(fmtD(p.st))} – ${esc(fmtD(p.en))} (${cur})<input name="amount" type="number" min="0" step="0.01" required value="${p.pr}" aria-label="Amount for ${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}"></label>
@@ -2817,12 +2835,12 @@ function amtFormHTML(id,s,p,ctx,label){const cur=s.currency;const ov=periodOverr
     <label class="f">Note <span class="muted">(optional)</span><input name="note" type="text" maxlength="140" placeholder="e.g. Eid discount, correction" value="${esc(ent.note||'')}" aria-label="Note"></label>
     <span class="amt-warn" data-role="amt-warn" role="status" hidden></span>
     <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button>${any?`<button class="link sm" type="button" data-act="amt-reset" title="Clears the amount and the package set for this period">Reset to computed (${esc(fmtAmt(po.base,cur))})</button>`:''}<button class="link sm" type="button" data-act="amt-cancel">Cancel</button></span>
-    <span class="d"><b>This changes what is owed for the period; it does not record a payment</b> (use Record payment for that). Computed <span data-role="computed">${esc(fmtAmt(p.listed,cur))}</span>${po.n>1?' for the chosen package (its price drives the amount unless you type another)':''}${ov?` · currently set to ${esc(fmtAmt(p.pr,cur))}`:''}${credit?` · ${esc(fmtAmt(credit,cur))} credit already applies, so the message says <b data-role="net">${esc(fmtAmt(Math.max(0,p.pr-credit),cur))}</b>`:''}. Recorded payments stay as they are.</span></form>`;}
+    <span class="d"><b>This changes what is owed for the period; it does not record a payment</b> (use Record payment for that). Computed <span data-role="computed">${esc(fmtAmt(computed,cur))}</span>${po.n>1?' for the chosen package (its price drives the amount unless you type another)':''}${ov?` · currently set to ${esc(fmtAmt(p.pr,cur))}`:''}${credit?` · ${esc(fmtAmt(credit,cur))} credit already applies, so the message says <b data-role="net">${esc(fmtAmt(Math.max(0,p.pr-credit),cur))}</b>`:''}. Recorded payments stay as they are.</span></form>`;}
 /* v24: before Save, what the typed amount would do to this plan: a period that stops being covered (and by how much), an Overdue
    status, a paid-through date that moves back. Computed on a copy of the plan; nothing is stored until Save. */
 function amtPreview(form){const warn=form.querySelector('[data-role=amt-warn]');if(!warn)return;const u=state.users[form.dataset.id];const s0=u&&(u.subscriptions||[]).find(x=>x.id===form.dataset.sub);const st=form.dataset.start;
   const raw=String((form.querySelector('[name=amount]')||{}).value||'').trim();if(!s0||s0.kind!=='monthly'||!isDateKey(st)||!validAmt(raw)){warn.hidden=true;return;}
-  const amount=Math.round(Number(raw)*100)/100;const today=todayISO();const before=analyzeMonthly(s0,today);const sim=clone(s0);const pkgSel=form.querySelector('[name=pkg]');const pkg=pkgSel?pkgSel.value:(periodPkg(s0,st)||'');const same=Math.abs(amount-Number(form.dataset.listed))<0.005;setPeriodOverride(sim,st,same?null:amount,'',pkg||null);if(!same&&pStart(sim,0)===st)sim.prorationAmountOverride=null;const after=analyzeMonthly(sim,today);
+  const amount=Math.round(Number(raw)*100)/100;const today=todayISO();const before=analyzeMonthly(s0,today);const sim=clone(s0);const pkgSel=form.querySelector('[name=pkg]');const pkg=pkgSel?pkgSel.value:(periodPkg(s0,st)||'');const same=Math.abs(amount-Number(form.dataset.listed))<0.005;setPeriodOverride(sim,st,same?null:Math.round((amount+(Number(form.dataset.red)||0))*100)/100,'',pkg||null);if(!same&&pStart(sim,0)===st)sim.prorationAmountOverride=null;const after=analyzeMonthly(sim,today);
   /* periods that were covered before and are not after (the simulation stops listing periods after the first shortfall, so a missing one counts too) */
   const cur=s0.currency;const lost=[];for(const b of before.periods){if(b.state!=='paid'&&b.state!=='waived')continue;const p=after.periods.find(x=>x.st===b.st);if(!p)lost.push({st:b.st,en:b.en,short:b.pr});else if(p.state!=='paid'&&p.state!=='waived'&&p.covered<p.pr)lost.push({st:p.st,en:p.en,short:p.pr-p.covered});}
   const worse=RANK[after.status]<RANK[before.status]&&['overdue','due-today','open'].includes(after.status);const moved=after.paidThrough<before.paidThrough;
@@ -2841,7 +2859,7 @@ async function saveAmtForm(form){const id=form.dataset.id,sid=form.dataset.sub,s
   const amount=Math.round(Number(raw)*100)/100;const note=String(noteEl.value||'').trim().slice(0,140);const listed=Number(form.dataset.listed);
   /* v27: a chosen package is stored with the period; its price drives the amount, so an amount equal to it is not kept as a custom amount */
   const pkgEl=form.querySelector('[name=pkg]');const pkg=pkgEl?pkgEl.value:(periodPkg(s,st)||'');const same=Math.abs(amount-listed)<0.005;const back=!pkg&&same&&!note;const setAmt=!back&&!(pkg&&same);
-  if(back)setPeriodOverride(s,st,null,'',null);else setPeriodOverride(s,st,setAmt?amount:null,note,pkg||null);if(setAmt&&pStart(s,0)===st)s.prorationAmountOverride=null;
+  if(back)setPeriodOverride(s,st,null,'',null);else setPeriodOverride(s,st,setAmt?Math.round((amount+(Number(form.dataset.red)||0))*100)/100:null,note,pkg||null);/* v45: billCharge takes courtesy and linked refund reductions off the stored amount, so they are added back (saving unchanged took them off twice) */if(setAmt&&pStart(s,0)===st)s.prorationAmountOverride=null;
   const pn=pkg?pkgName(pkg):'';
   closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok)toast(back?`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`:`${displayName(u)}: ${fmtD(st)} period ${pn?'billed as '+pn+' at ':'set to '}${fmtAmt(amount,s.currency)}${note?' · '+note:''}${amount<listed?` (${fmtAmt(listed-amount,s.currency)} off)`:amount>listed?` (${fmtAmt(amount-listed,s.currency)} more)`:''}.`);}
 /* v27: past cancellations that were resumed: the gap in which nothing was billed */
@@ -3002,7 +3020,7 @@ function detailHTML(id,u,a,today){
             <label class="f">Proration basis<select id="se-basis-${s.id}" name="basis"><option value=""${rawBasis(s.prorationBasis)?'':' selected'}>Default (Settings)</option><option value="actual"${s.prorationBasis==='actual'?' selected':''}>Actual days in cycle</option><option value="fixed30"${s.prorationBasis==='fixed30'?' selected':''}>Fixed 30-day month</option></select></label>
           </div>
           ${planChangeBlock(s,sa,today)}
-          <p class="small muted" style="margin-top:6px">${isDateKey(s.anchor)?`Periods follow this product's own cycle (from ${esc(fmtD(s.anchor,true))}, renewing on the ${esc(ordinal(+s.anchor.slice(8,10)))} each ${subCycle(s)==='yearly'?'year':'month'})`:`Periods follow the shared billing cycle (${esc(ordinal(cycleDay()))} to ${cycleDay()===1?'end of month':esc(ordinal(cycleDay()-1))}, set in Settings)`}; the start date picks the first period. With proration on, that first period is charged by days (on the basis chosen here, or the Settings default); with the waiver on, the days before the next cycle are free and billing starts at that cycle. A discount applies to every period of this plan and shows in the header, dues, reminders and totals. Changing the currency changes what the price and existing payments are read as; it does not convert them. "Remaining due by" turns an unpaid part of the current period into an open balance until that date instead of overdue.</p>
+          <p class="small muted" style="margin-top:6px">${isDateKey(s.anchor)?`Periods follow this product's own cycle (from ${esc(fmtD(s.anchor,true))}, renewing on the ${esc(ordinal(+s.anchor.slice(8,10)))} each ${subCycle(s)==='yearly'?'year':'month'})`:`Periods follow the shared billing cycle (${esc(ordinal(cycleDay()))} to ${cycleDay()===1?'end of month':esc(ordinal(cycleDay()-1))}, set in Settings)`}; the start date picks the first period. With proration on, that first period is charged by days (on the basis chosen here, or the Settings default); with the waiver on, the days before the next cycle are free and billing starts at that cycle. A discount applies to every period of this plan and shows in the header, dues, reminders and totals. Changing the currency or billing cycle asks for the new price and the date it starts; payments stay on the old plan and money paid in advance moves to the new one. "Remaining due by" turns an unpaid part of the current period into an open balance until that date instead of overdue.</p>
           ${accountCostFields(s)}
           <div class="form-actions"><button class="btn primary sm" type="submit">Save plan</button><button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Cancel</button><span style="flex:1"></span><span class="del-wrap"><button class="link danger" type="button" data-act="sub-remove" data-sub="${s.id}">Remove plan and its payments</button></span></div>
         </form>
@@ -3534,6 +3552,7 @@ function bind(){
     if(!validAmt(priceRaw)){err.textContent='Enter the monthly price (0 is allowed for a free plan).';return;}
     if(!validPhone(phoneFrom(phone,$('#a-cc').value))){err.textContent='Phone number should have 7 to 15 digits including the country code.';return;}
     const first=firstChoice($('#a-first'));if(first==='none'){err.textContent='This is the first customer for a new product: choose a tracking plan or a one-time annual plan.';return;}
+    {const pk=pkgById(pkg);if(first!=='once'&&cy!=='one-time'&&pk.cycle&&pk.cycle!==cy){err.textContent=pk.name+' is a '+pk.cycle+' package, so Billing cycle must be '+(pk.cycle==='yearly'?'Yearly':'Monthly')+'.';return;}}/* v45: same rule as Add plan and Edit plan */
     const id=$('#addForm').dataset.pendingUserId||($('#addForm').dataset.pendingUserId=newId('u'));
     const user={name,email,phone:phoneFrom(phone,$('#a-cc').value),telegram:tgFrom($('#a-tg').value,$('#a-cc').value),joinDate:join,notes,subscriptions:[first==='once'?oneTimeAnnual({name:plan||pkgName(pkg),pkg,cur,start,total:Number(priceRaw)}):cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,start,total:Number(priceRaw),due:isDateKey($('#a-due').value)?$('#a-due').value:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start,...(ownAnchorFor(pkg,first,start)?{anchor:ownAnchorFor(pkg,first,start)}:{}),end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number($('#a-payment').value)}:{}),dueBy:null,prices:[{from:start,price:Number(priceRaw)}],payments:[]}]};const sub=user.subscriptions[0];sub.id=$('#addForm').dataset.pendingSubId||($('#addForm').dataset.pendingSubId=sub.id);let costs=[];try{const c=accountCostDraft($('#addForm'),sub,id);if(c)costs.push(c);}catch(e){err.textContent=e.message;return;}const button=$('#addForm button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,user,costs);button.disabled=false;
     if(ok){delete $('#addForm').dataset.pendingUserId;delete $('#addForm').dataset.pendingSubId;$('#a-account-cost').innerHTML='';$('#addForm').reset();delete $('#a-start').dataset.manual;$('#addPanel').hidden=true;ui.expanded=null;renderTable();toast('Added '+(name||email)+'. Record the first payment when the money is received.');openPaymentDialog(id);}
@@ -3673,11 +3692,11 @@ function bind(){
       /* v27: Resume (was Reactivate). Only the plans the cancellation ended come back (a plan ended earlier on purpose stays ended); a resume
          after a gap starts a fresh plan on the chosen date for the package in force on the last day, so nothing is billed for the gap, and
          the cancellation is kept in cancelHistory so the gap stays visible. */
-      const c=u.cancel;const ld=c&&c.lastDay;let ended=u.subscriptions.filter(s=>s.kind==='monthly'&&s.end&&(!ld||s.end===ld));if(!ended.length)ended=u.subscriptions.filter(s=>s.kind==='monthly'&&s.end);
+      const c=u.cancel;const ld=c&&c.lastDay;let ended=u.subscriptions.filter(s=>s.kind==='monthly'&&s.end&&(!ld||s.end===ld)&&(!c||!Array.isArray(c.ended)||c.ended.includes(s.id)));if(!ended.length)ended=u.subscriptions.filter(s=>s.kind==='monthly'&&s.end);
       const seen={};const fresh=[];let resumed=0;
       for(const s of ended){if(addDays(s.end,1)>=start){s.end=null;resumed++;const key=(pkgIdAt(s,addDays(start,-1))||s.packageId)||('label:'+(s.name||''));seen[key]=1;}}
       for(const s of ended.slice().reverse()){if(!s.end)continue;const pid=pkgIdAt(s,s.end)||s.packageId||null;const key=pid||('label:'+(s.name||''));if(seen[key])continue;seen[key]=1;
-        const np={id:newId('s'),kind:'monthly',cycle:subCycle(s)==='yearly'?'yearly':'monthly',name:s.name||'',packageId:pid,currency:s.currency,start,end:null,prorate:true,dueBy:null,prices:[{from:start,price:priceAt(s,s.end)}],payments:[]};if(s.discount)np.discount=clone(s.discount);if(s.accountCost&&Array.isArray(s.accountCost.entries)&&s.accountCost.entries.length){/* v41: the resumed account keeps its supplier cost (the latest entry), from the resume date */const last=s.accountCost.entries.at(-1);const ac=normAccountCost({frequency:s.accountCost.frequency,first:'prorated',firstAmount:null,overrides:{},entries:[Object.assign({},last,{from:start})]});if(ac)np.accountCost=ac;}fresh.push(np);}
+        const np={id:newId('s'),kind:'monthly',cycle:subCycle(s)==='yearly'?'yearly':'monthly',name:s.name||'',packageId:pid,currency:s.currency,start,end:null,prorate:true,dueBy:null,prices:[{from:start,price:priceAt(s,s.end)}],payments:[]};if(s.discount)np.discount=clone(s.discount);/* v45: the resumed plan keeps its own cycle, proration basis and instalment schedule */if(isDateKey(s.anchor))np.anchor=s.anchor;if(s.prorationBasis)np.prorationBasis=s.prorationBasis;if(np.cycle==='yearly'){np.prorationBasis=s.prorationBasis||'actual';const m=payMonthsAt(s,s.end);if(validPayMonths(m))np.paymentEvery=Number(m);}if(s.accountCost&&Array.isArray(s.accountCost.entries)&&s.accountCost.entries.length){/* v41: the resumed account keeps its supplier cost (the latest entry), from the resume date */const last=s.accountCost.entries.at(-1);const ac=normAccountCost({frequency:s.accountCost.frequency,first:'prorated',firstAmount:null,overrides:{},entries:[Object.assign({},last,{from:start})]});if(ac)np.accountCost=ac;}fresh.push(np);}
       if(!fresh.length&&!resumed){const p=defaultPkg();fresh.push({id:newId('s'),kind:'monthly',cycle:p&&p.cycle==='yearly'?'yearly':'monthly',name:'',packageId:p?p.id:null,currency:p&&p.currency?p.currency:'PKR',start,end:null,prorate:true,dueBy:null,prices:[{from:start,price:p&&p.price!=null?p.price:0}],payments:[]});}
       if(c){u.cancelHistory=(u.cancelHistory||[]).concat([Object.assign({},c,{resumedOn:start,resumedAt:todayISO()})]);}
       u.subscriptions.push(...fresh.reverse());u.cancel=null;closeKey('react');
@@ -3971,6 +3990,10 @@ function renderReview(){
     <td><select class="prod" data-f="pkg" aria-label="Product">${costPkgOptions(r.pkg,'(as above)')}</select></td>
     <td class="small muted">${r.img>=0?'image '+(r.img+1):'text'}${r.credit?' · credit':''}${r.dupOf?`<br><span class="dup-flag">Possible duplicate of ${esc(r.dupOf.description||'a cost')} (${esc(r.dupOf.date)}); unticked</span>`:''}</td>
   </tr>`).join('');
+  reviewTotals();
+}
+/* v45: totals only, so typing an amount no longer redraws the rows (the box lost focus after each digit) */
+function reviewTotals(){const rows=reviewRows();
   const sel=rows.filter(r=>r.sel);const cur=$('#rv-cur').value;const S=newSum();let unconv=0;
   for(const r of sel){const c=rowCur(r);sumAdd(S,r.amount,c,null);if(c!==cur&&!defaultRate())unconv++;}
   const total=cur==='USD'?S.usd:S.pkr;
@@ -3978,30 +4001,32 @@ function renderReview(){
   $('#rv-save').textContent=`Apply · add ${sel.length} selected`;$('#rv-save').disabled=!sel.length||shot.busy;
   $('#rv-all').checked=rows.length>0&&sel.length===rows.length;
 }
-function isDupCost(date,desc,total,cur){const d=desc.trim().toLowerCase();return Object.values(costRecords()).some(c=>c.date===date&&c.currency===cur&&Math.abs(costTotal(c)-total)<0.005&&c.description.trim().toLowerCase()===d);}
 async function saveReview(){
   const rows=reviewRows();const sel=rows.filter(r=>r.sel);if(!sel.length)return;
   const err=$('#rv-err'),msg=$('#rv-msg');err.textContent='';msg.textContent='Saving…';shot.busy=true;renderReview();
   const globalCat=$('#rv-cat').value.trim();const globalPkg=pkgById($('#rv-pkg').value)?$('#rv-pkg').value:'';
-  const entries=[];
-  for(const r of sel){
-    const amt=Number(r.amount)||0;if(amt<=0)continue;const cur=rowCur(r);
-    if(r.role==='taxabove'&&entries.length){const prev=entries[entries.length-1];if(prev.currency===cur){prev.tax+=amt;continue;}}
-    entries.push({date:r.date,description:r.desc||'Imported transaction',category:r.cat.trim()||globalCat,packageId:pkgById(r.pkg)?r.pkg:globalPkg,currency:cur,cost:r.role==='tax'?0:amt,tax:r.role==='tax'?amt:0,rate:null,source:'screenshot',img:r.img});
-  }
+  /* v45: "Tax of row above" joins the row directly above only when that row is ticked and in the same currency, else it is its own tax entry;
+     a ticked credit is saved as a negative cost (money back); each entry remembers its rows so only rows that were saved leave the list */
+  const entries=[],byRow={},done=new Set();
+  rows.forEach((r,i)=>{if(!r.sel)return;const amt=Number(r.amount)||0;if(amt<=0){done.add(r.id);return;}const cur=rowCur(r),sign=r.credit?-1:1;
+    if(r.role==='taxabove'){const prev=rows[i-1],pe=prev&&prev.sel&&byRow[prev.id];if(pe&&pe.currency===cur){pe.tax+=sign*amt;pe.rows.push(r.id);if(r.dupSeen)pe.force=true;byRow[r.id]=pe;return;}}
+    const desc=r.desc||'Imported transaction';const e={date:r.date,description:r.credit&&!/^refund\b/i.test(desc)?'Refund: '+desc:desc,category:r.cat.trim()||globalCat,packageId:pkgById(r.pkg)?r.pkg:globalPkg,currency:cur,cost:r.role==='cost'?sign*amt:0,tax:r.role==='cost'?0:sign*amt,rate:null,source:'screenshot',img:r.img,rows:[r.id],force:!!r.dupSeen};entries.push(e);byRow[r.id]=e;});
   const uploads={};
   if(assets){for(const e of entries){if(e.img>=0&&uploads[e.img]===undefined){const im=shot.images[e.img];try{const res=await assets.upload(im.file);uploads[e.img]=res.id;}catch(ex){uploads[e.img]='';}}}}
+  /* v45: duplicates are checked only against costs that existed before this Apply (two identical charges in one statement are both added), and
+     a row ticked again after its Possible duplicate warning is saved as the owner asked */
+  const before=Object.values(costRecords());const dupBefore=(e,total)=>{const d=e.description.trim().toLowerCase();return before.some(c=>c.date===e.date&&c.currency===e.currency&&Math.abs(costTotal(c)-total)<0.005&&String(c.description||'').trim().toLowerCase()===d);};
   let added=0,dups=0,failed=0;
   for(const e of entries){
     const total=e.cost+e.tax;
-    if(isDupCost(e.date,e.description,total,e.currency)){dups++;continue;}
+    if(!e.force&&dupBefore(e,total)){dups++;e.rows.forEach(id=>done.add(id));continue;}
     const ok=await persistCost(newId('c'),{date:e.date,description:e.description,category:e.category,packageId:e.packageId||'',currency:e.currency,cost:e.cost,tax:e.tax,rate:null,source:'screenshot',receipt:(e.img>=0&&uploads[e.img])||''});
-    ok?added++:failed++;
+    if(ok){added++;e.rows.forEach(id=>done.add(id));}else failed++;
   }
   shot.busy=false;
-  msg.textContent=`Added ${added} cost${added===1?'':'s'}${dups?`, skipped ${dups} already recorded`:''}${failed?`, ${failed} failed`:''}.`;
-  toast(`Added ${added} cost${added===1?'':'s'} from the import${dups?`; ${dups} duplicate${dups===1?'':'s'} skipped`:''}.`);
-  const savedIds=new Set(sel.map(r=>r.id));shot.rows=shot.rows.filter(r=>!savedIds.has(r.id));
+  msg.textContent=`Added ${added} cost${added===1?'':'s'}${dups?`, skipped ${dups} already recorded`:''}${failed?`, ${failed} not saved (still in the list; press Apply to try again)`:''}.`;
+  toast(`Added ${added} cost${added===1?'':'s'} from the import${dups?`; ${dups} duplicate${dups===1?'':'s'} skipped`:''}${failed?`; ${failed} not saved`:''}.`);
+  shot.rows=shot.rows.filter(r=>!done.has(r.id));
   if(!shot.rows.length){shot.images.forEach(i=>{try{URL.revokeObjectURL(i.url);}catch(e){}});shot.images=[];}
   renderThumbs();renderReview();if(!shot.rows.length)$('#review').hidden=false;
 }
@@ -4032,7 +4057,7 @@ function bindShot(){
   const body=$('#rv-body');
   body.addEventListener('input',e=>{const el=e.target.closest('[data-f]');if(!el)return;const tr=el.closest('tr');const r=shot.rows.find(x=>x.id===tr.dataset.id);if(!r)return;const f=el.dataset.f;
     if(f==='sel'){r.sel=el.checked;tr.dataset.sel=r.sel?1:0;}else if(f==='amount'){r.amount=Number(el.value)||0;}else if(f==='cur'){r.cur=el.value||null;}else if(f==='role'){r.role=el.value;tr.dataset.role=r.role;}else r[f]=el.value;
-    if(f!=='desc'&&f!=='cat'&&f!=='date'&&f!=='pkg')renderReview();else{const sel=shot.rows.filter(x=>x.sel);$('#rv-save').textContent=`Apply · add ${sel.length} selected`;}});
+    if(f==='amount')reviewTotals();else if(f!=='desc'&&f!=='cat'&&f!=='date'&&f!=='pkg')renderReview();else{const sel=shot.rows.filter(x=>x.sel);$('#rv-save').textContent=`Apply · add ${sel.length} selected`;}});
   $('#rv-all').addEventListener('change',e=>{shot.rows.forEach(r=>r.sel=e.target.checked);renderReview();});
   $('#rv-cur').addEventListener('change',renderReview);
   $('#rv-cat').addEventListener('input',()=>{body.querySelectorAll('input.cat').forEach(i=>i.placeholder=$('#rv-cat').value||'—');});
@@ -4065,14 +4090,17 @@ async function exportAll(){const msg=$('#data-msg'),ta=$('#export-all-text');msg
   ta.hidden=false;ta.value=text;ta.focus();ta.select();msg.textContent='Copy the JSON below and save it as a file.';}
 async function importAll(file){const msg=$('#data-msg');if(!file)return;msg.textContent='Reading…';let j;try{j=JSON.parse(await file.text());}catch(e){msg.textContent='That file is not valid JSON.';return;}
   const docs=j&&j.docs&&typeof j.docs==='object'?j.docs:null;if(!docs){msg.textContent='Expected a file made with "Export everything".';return;}
-  const paths=Object.keys(docs).filter(p=>/^(users|costs|settings|meta)\/[A-Za-z0-9_\-.:@]+$/.test(p)&&docs[p]&&typeof docs[p]==='object');const nu=paths.filter(p=>p.startsWith('users/')).length,nc=paths.filter(p=>p.startsWith('costs/')).length;
+  const okPath=p=>/^(users|costs|settings|meta)\/[A-Za-z0-9_\-.:@]+$/.test(p)&&docs[p]&&typeof docs[p]==='object';
+  /* v45: one invalid user or cost refuses the whole file (before, it was left out and then deleted here as "not in the file") */
+  const bad=Object.keys(docs).filter(p=>/^(users|costs)\//.test(p)&&!okPath(p));if(bad.length){msg.textContent=`Nothing was imported: ${bad.length} user or cost record${bad.length===1?' is':'s are'} not valid in that file.`;return;}
+  const paths=Object.keys(docs).filter(okPath);const nu=paths.filter(p=>p.startsWith('users/')).length,nc=paths.filter(p=>p.startsWith('costs/')).length;
   if(!paths.length){msg.textContent='No records found in that file.';return;}
   if(!window.confirm(`Import ${nu} user${nu===1?'':'s'} and ${nc} cost${nc===1?'':'s'} from ${file.name}? Users and costs already here that are not in the file will be removed, and settings replaced. This cannot be undone.`)){msg.textContent='';return;}
   msg.textContent='Importing…';
   try{
     if(state.backend==='api'){const body={docs:{},replace:['users/','costs/']};for(const p of paths)body.docs[p]=docs[p];const r=await apiJSON('/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});msg.textContent=`Imported ${r.imported} records.`;apiTouch();}
     else if(db){for(const id of Object.keys(state.users))if(!docs['users/'+id])await db.collection('users').doc(id).delete();for(const id of Object.keys(state.costs))if(!docs['costs/'+id])await db.collection('costs').doc(id).delete();let n=0;for(const p of paths){await db.doc(p).set(docs[p]);n++;}msg.textContent=`Imported ${n} records.`;}
-    else{state.users={};state.costs={};for(const p of paths){const c=p.split('/')[0],id=p.slice(c.length+1);if(c==='users')state.users[id]=normalizeUser(docs[p],id);else if(c==='costs')state.costs[id]=normalizeCost(docs[p],id);else if(p==='settings/main')applySettingsDoc(docs[p]);}saveLocal();try{localStorage.setItem('pt-seeded','1');localStorage.setItem('pt-schema',String(SCHEMA));}catch(e){}render();msg.textContent=`Imported ${paths.length} records into this browser.`;}
+    else{const snap={users:state.users,costs:state.costs,settings:clone(state.settings)};state.users={};state.costs={};for(const p of paths){const c=p.split('/')[0],id=p.slice(c.length+1);if(c==='users')state.users[id]=normalizeUser(docs[p],id);else if(c==='costs')state.costs[id]=normalizeCost(docs[p],id);else if(p==='settings/main')applySettingsDoc(docs[p]);}if(!saveLocal()){state.users=snap.users;state.costs=snap.costs;state.settings=snap.settings;render();msg.textContent='Import failed: this browser could not store the data. Nothing was changed.';return;}try{localStorage.setItem('pt-seeded','1');localStorage.setItem('pt-schema',String(SCHEMA));}catch(e){}render();msg.textContent=`Imported ${paths.length} records into this browser.`;}
     toast('Import finished.');
   }catch(e){msg.textContent='Import failed: '+((e&&(e.message||e.code))||'unknown');}
 }
@@ -4097,7 +4125,7 @@ async function importUsersCSV(){
   if(col.price===col.pamt&&col.price>=0)col.pamt=-1;
   if(col.name<0&&col.email<0){msg.textContent='Could not find a name or email column in the header row.';return;}
   const get=(r,k)=>col[k]>=0?String(r[col[k]]||'').trim().replace(/^'(?=[=+\-@\t\r])/,''):'';
-  const ops=new Map();let pays=0,skipped=0,newPkgs=0;const pkgBefore=state.settings.packages;
+  const ops=new Map();let pays=0,skipped=0,newPkgs=0,clash=0,held=0;const pkgBefore=state.settings.packages;
   for(const r of rows){
     const name=get(r,'name'),email=get(r,'email');if(!name&&!email){skipped++;continue;}if(email&&!EMAIL_RE.test(email)){skipped++;continue;}
     const key=(email||name).toLowerCase();let entry=ops.get(key);
@@ -4107,16 +4135,19 @@ async function importUsersCSV(){
     const ph=get(r,'phone');if(ph&&validPhone(phoneFrom(ph,'92')))u.phone=phoneFrom(ph,'92');const nt=get(r,'notes');if(nt)u.notes=nt;const tg=get(r,'tg');if(tg)u.telegram=normTg(tg);
     const stTxt=get(r,'status');if(stTxt){if(/cancel/i.test(stTxt)){const ld=parseDate(get(r,'lastday'))||(u.cancel&&u.cancel.lastDay)||todayISO();u.cancel={lastDay:ld,reason:'',note:'',at:todayISO()};for(const s of u.subscriptions||[]){if(s.kind==='monthly'&&(!s.end||s.end>ld))s.end=ld;}}else if(/active/i.test(stTxt))u.cancel=null;}
     u.subscriptions=u.subscriptions||[];
-    const plan=get(r,'plan'),price=parseAmount(get(r,'price')),curTxt=get(r,'cur'),pkgTxt=get(r,'pkg');const kindTxt=get(r,'kind');const cy=/one|once|single/i.test(kindTxt)?'one-time':(/year|annual/i.test(kindTxt)?'yearly':'monthly');const kind=cy==='one-time'?'one-time':'monthly';const dueByTxt=parseDate(get(r,'dueby'));const proTxt=get(r,'prorate');const pro=proTxt?!/^(no|n|false|0|off)$/i.test(proTxt):null;
-    let pkgId=null;if(pkgTxt){let p=packages().find(x=>x.name.toLowerCase()===pkgTxt.toLowerCase());if(!p){p={id:newId('pkg'),name:pkgTxt,price:null,currency:'',description:''};state.settings.packages=packages().concat([p]);newPkgs++;}pkgId=p.id;}
+    const plan=get(r,'plan'),price=parseAmount(get(r,'price')),curTxt=get(r,'cur'),pkgTxt=get(r,'pkg');const kindTxt=get(r,'kind');let pkgObj=pkgTxt?packages().find(x=>x.name.toLowerCase()===pkgTxt.toLowerCase())||null:null;
+    /* v45: without a kind the package's own cycle is used (a yearly package used to be imported as a monthly plan) */
+    const cy=/one|once|single/i.test(kindTxt)?'one-time':(/year|annual/i.test(kindTxt)?'yearly':(kindTxt?'monthly':((pkgObj&&pkgObj.cycle)||'monthly')));const kind=cy==='one-time'?'one-time':'monthly';const dueByTxt=parseDate(get(r,'dueby'));const proTxt=get(r,'prorate');const pro=proTxt?!/^(no|n|false|0|off)$/i.test(proTxt):null;
+    let pkgId=null;if(pkgTxt){if(!pkgObj){pkgObj={id:newId('pkg'),name:pkgTxt,cycle:cy==='yearly'?'yearly':'monthly',price:null,currency:'',description:''};state.settings.packages=packages().concat([pkgObj]);newPkgs++;}pkgId=pkgObj.id;}
+    const cycleClash=kind==='monthly'&&pkgObj&&pkgObj.cycle&&pkgObj.cycle!==cy;if(cycleClash)clash++;
     let s=null;
-    if(plan||pkgTxt||price!=null||monthCols.length||get(r,'pdate')){
+    if(!cycleClash&&(plan||pkgTxt||price!=null||monthCols.length||get(r,'pdate'))){
       const monthlies=u.subscriptions.filter(x=>x.kind==='monthly');
       if(plan)s=u.subscriptions.find(x=>(x.name||'').toLowerCase()===plan.toLowerCase())||null;
       if(!s&&pkgId)s=monthlies.find(x=>x.packageId===pkgId)||monthlies.find(x=>!x.packageId)||(monthlies.length===1?monthlies[0]:null);
       if(!s&&!plan&&!pkgId)s=monthlies[0]||u.subscriptions[0]||null;
       if(!s){const start=parseDate(get(r,'pstart'))||u.joinDate;const cur=curFromText(curTxt,'PKR');s=kind==='monthly'?{id:newId('s'),kind,cycle:cy,name:plan||'',packageId:pkgId,currency:cur,start,end:parseDate(get(r,'pend')),dueBy:dueByTxt,prorate:pro!==false,prices:[{from:start,price:price==null?0:price}],payments:[]}:{id:newId('s'),kind,name:plan||'Item',packageId:pkgId,currency:cur,total:price==null?0:price,due:parseDate(get(r,'pend')),payments:[]};u.subscriptions.push(s);}
-      else{if(curTxt)s.currency=normCur(curTxt);if(pkgId)s.packageId=pkgId;if(s.kind==='monthly'&&kindTxt)s.cycle=cy==='yearly'?'yearly':'monthly';if(s.kind==='monthly'&&dueByTxt)s.dueBy=dueByTxt;if(s.kind==='monthly'&&pro!=null)s.prorate=pro;{const dtx=get(r,'disc');if(dtx&&s.kind==='monthly'){const m=dtx.match(/^([\d.]+)\s*(%)?$/);if(m)s.discount=m[2]?{type:'percent',value:Number(m[1])}:{type:'fixed',value:Number(m[1])};}}if(price!=null){if(s.kind==='monthly'){if((s.prices||[]).length<=1)s.prices=[{from:s.start,price}];}else s.total=price;}}
+      else{{const nc=curTxt?normCur(curTxt):s.currency,ny=s.kind==='monthly'&&kindTxt?(cy==='yearly'?'yearly':'monthly'):s.cycle;if(nc!==s.currency||ny!==s.cycle){/* v45: as in Edit plan, recorded money is never reinterpreted in another currency or cycle */if(!(s.payments||[]).length&&!(s.refunds||[]).length&&price!=null){s.currency=nc;if(s.kind==='monthly')s.cycle=ny;}else held++;}}if(pkgId){if(s.kind==='monthly'&&pkgObj.cycle&&pkgObj.cycle!==subCycle(s))clash++;else s.packageId=pkgId;}if(s.kind==='monthly'&&dueByTxt)s.dueBy=dueByTxt;if(s.kind==='monthly'&&pro!=null)s.prorate=pro;{const dtx=get(r,'disc');if(dtx&&s.kind==='monthly'){const m=dtx.match(/^([\d.]+)\s*(%)?$/);if(m)s.discount=m[2]?{type:'percent',value:Number(m[1])}:{type:'fixed',value:Number(m[1])};}}if(price!=null){if(s.kind==='monthly'){if((s.prices||[]).length<=1)s.prices=[{from:s.start,price}];}else s.total=price;}}
     }
     if(s){const pd=parseDate(get(r,'pdate')),pa=parseAmount(get(r,'pamt'));
       if(pd&&pa!=null&&pa>0){s.payments=(s.payments||[]).filter(p=>p.date!==pd);s.payments.push({id:newId('p'),date:pd,amount:pa,currency:curFromText(get(r,'pcur'),s.currency),rate:normRate(get(r,'prate')),note:get(r,'pnote')});pays++;}
@@ -4127,7 +4158,7 @@ async function importUsersCSV(){
   msg.textContent='Importing…';let failed=0,created=0,updated=0;
   if(newPkgs&&!(await persistSettings())){/* v41: all or nothing: users must never point at a product that was not saved */state.settings.packages=pkgBefore;render();msg.textContent='Nothing was imported: the new product could not be saved. Try again.';return;}
   for(const e of list){const ok=await persistUser(e.id,e.u);if(!ok)failed++;else e.isNew?created++:updated++;}
-  msg.textContent=`Imported ${created} new, ${updated} updated, ${pays} payments${skipped?`, ${skipped} rows skipped`:''}${failed?`, ${failed} failed`:''}.`;
+  msg.textContent=`Imported ${created} new, ${updated} updated, ${pays} payments${skipped?`, ${skipped} rows skipped`:''}${failed?`, ${failed} failed`:''}${clash?`, ${clash} plan${clash===1?'':'s'} left out because the billing cycle differs from the package's`:''}${held?`, currency or cycle kept on ${held} plan${held===1?'':'s'} with money recorded (use Edit plan)`:''}.`;
   if(!failed)$('#importText').value='';
 }
 async function importCostsCSV(){

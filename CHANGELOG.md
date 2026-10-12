@@ -2,6 +2,32 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v45 - 2026-10-12
+
+Fixes from a full review of v44.
+
+- Changing a plan's currency or billing cycle (Edit plan) now moves money paid in advance to the new plan, so the customer is not billed again for a period already paid. It shows as a refund on the old plan and the same amount received on the new one, on the same day, so revenue does not change.
+- The same change now keeps the payment schedule (for example a yearly package paid monthly), courtesy discounts, later tier changes and hand-set bills. They are converted at the default rate when the currency changes, and the message lists anything that could not be kept. The supplier cost is no longer counted twice for the cycle the change falls in.
+- Resume after a gap keeps a yearly plan's payment schedule and a product's own billing cycle. Before, it billed a full year or switched to the shared calendar.
+- Cancelling after a plan change and then resuming restarts only the plans the cancellation ended. Before, the old plan came back too and both were billed.
+- Courtesy discounts: saving a bill amount unchanged (Set bill or a period's amount) no longer takes the discount off a second time. A fully discounted next bill shows Rs 0. A one-bill courtesy still applies when a schedule or start change moves the bill dates.
+- Supplier costs of a product with its own billing cycle follow that cycle.
+- Add user and the CSV import follow the package/cycle rule. A CSV row without a kind uses its package's cycle. A row whose cycle differs from its package is left out. An existing plan with recorded money keeps its currency and cycle (use Edit plan).
+- Statement import:
+  - Two identical charges in the same statement are both added.
+  - A Possible duplicate that you tick again is saved.
+  - A row that fails to save stays in the list.
+  - "Tax of row above" joins only a ticked row directly above it; otherwise it becomes its own tax entry.
+  - A ticked credit is saved as a negative cost.
+  - Typing an amount no longer jumps out of the box.
+- Forms open in a customer's row keep a chosen first-sale option, the courtesy "Number of bills" field and the Edit plan new-price block when the page refreshes in the background.
+- Browser-only use: deleting a customer or a cost, and importing a file, now report a failure when the browser could not store the change. An import file with an invalid customer or cost record is refused as a whole.
+- Server: two saves of one record in the same millisecond can no longer bypass the multi-device conflict check. Receipts are cached privately only. A locked-out device writes one audit line per minute instead of one per attempt. The daily reminder job no longer overwrites a change saved while it ran.
+- Deploy:
+  - The auto-update still installs a newer commit when an earlier restart keeps failing, and reports a failed restart instead of hiding it.
+  - The nightly backup no longer creates an empty backup when the database file is missing.
+  - The backup no longer fails when there are no receipt archives yet.
+
 ## v44 - 2026-10-12
 
 - Removed the Customer account matching in the statement import (added in v43; not needed). Imported charges are added as ordinary costs again.

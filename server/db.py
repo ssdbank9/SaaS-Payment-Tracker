@@ -9,7 +9,7 @@ import json
 import os
 import sqlite3
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 DATA_DIR = os.environ.get("DATA_DIR") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
 DB_PATH = os.path.join(DATA_DIR, "tracker.sqlite3")
@@ -201,6 +201,12 @@ def set_doc(path, data, con=None):
     body = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     at = now_iso()
     if con is not None:
+        # v45: two saves in the same millisecond used to get the same updated_at, so a page holding the first version could overwrite
+        # the second without a conflict. Each save of a document now gets a strictly later stamp.
+        row = con.execute("SELECT updated_at FROM docs WHERE path = ?", (path,)).fetchone()
+        if row and row["updated_at"] and at <= row["updated_at"]:
+            prev = datetime.fromisoformat(row["updated_at"].replace("Z", "+00:00"))
+            at = (prev + timedelta(milliseconds=1)).isoformat(timespec="milliseconds").replace("+00:00", "Z")
         con.execute("INSERT INTO docs (path, json, updated_at) VALUES (?, ?, ?) ON CONFLICT(path) DO UPDATE SET json = excluded.json, updated_at = excluded.updated_at", (path, body, at))
         _bump(con)
         return at

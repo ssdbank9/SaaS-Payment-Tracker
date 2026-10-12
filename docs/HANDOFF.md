@@ -22,7 +22,7 @@ review items 9-12 fixed (conversion residue, refund settled twice, one-time refu
 Live: `/healthz` reported `"version":"41"` on 12 October 2026 (about 13 minutes after the push). Note: on one office network a Fortinet
 firewall intercepted wasooli.duckdns.org, so a failed live check can be that network, not the server; try another network before assuming an outage.
 
-### Open items after v44 (the to-do list; keep this current)
+### Open items after v45 (the to-do list; keep this current)
 
 Numbers are from the independent review of v38 (findings reproduced on disposable stores; scripts were kept outside the repo).
 Done so far: 1-12 and 22 (v39/v40, live), 13-17 (supplier-cost edge cases), 18 (phone numbers with a country code box, +92 by default) and
@@ -32,7 +32,15 @@ descriptions that equal any earlier name follow the rename on the link page, mes
 cancelled customer with a later plan, Set package, two decimals, chart labels), and 27, 28 (CSV export neutralises = + - @ cells with a leading apostrophe and exports +92 phones as text; CSV import removes it and is all
 or nothing when a new product cannot be saved), and in v42 #24 (Edit plan currency/cycle change asks for a new price and start date; see AGENTS.md) and the hardening items 29-38 (import never deletes what it reports as skipped; browser-only saves report storage failure; SMTP password refused without STARTTLS and cleared when the host changes; update.sh installs requirements before switching code and retries a failed restart; backup.sh integrity check and atomic dated receipt archives; /healthz minimal for the public; rate limit on the choice page; cleared link tokens inactive; #36 left as is on purpose, see AGENTS.md). Still open, roughly in priority order:
 
-v42 and v43 are live (confirmed 2026-10-12 via /healthz). v44 removes the v43 customer-account matching (owner: not needed), keeps the duplicate warning (now also against calculated supplier costs) and moves screenshot reading to claude-haiku-5-5. The screenshot path is tested end to end with `tests/fake-reader-server.py`; a real statement picture has not been read yet because no API key is set.
+v42-v44 are live (confirmed 2026-10-12 via /healthz). v45 fixes the confirmed findings of a three-part adversarial review of v44 (billing, UI and server/deploy); see CHANGELOG. The screenshot path is tested end to end with `tests/fake-reader-server.py`; a real statement picture has not been read on the live server because no API key is set.
+
+Review notes left open on purpose (low impact, recorded so they are not lost):
+- A courtesy "for N bills" is stored as a date range when saved; a later schedule change can change how many bills it covers.
+- The Monthly recurring tile uses the plan price, so it ignores courtesy discounts and hand-set bills.
+- After a cancellation, a courtesy added to a period that has a derived `fromRefund` amount has no effect on that period.
+- "Recalculate from the package start" in the start dialog keeps later dated schedule entries.
+- Period labels longer than 12 months leave out the first year. Export everything does not include link-page answers (confirmations).
+- A stage-3 notice is skipped if the VM is down on its day. Linked supplier costs cannot be saved on the old claude.ai artifact storage backend.
 
 - Old numbers stored without a country code (e.g. 03001234567) are not rewritten; retyping them in Edit user fixes them.
 - Screenshot reading is not set up on the live server (the signed-in /healthz shows `reading: ""`): the owner adds an API key in
@@ -46,8 +54,8 @@ Follow-ups from the v39/v40 features:
   read-only production check first and the owner's explicit approval.
 - Read-only production checks not yet done (owner approval needed): which live yearly plans were on the 30-day basis (#8), which USD plans have
   discounts or partial first months (#6), blank-rate receipts (#7), and the meta/schema marker value (#3).
-- The claude.ai artifact: CLAUDE.md says republish after each index.html change, the v38 handoff says it is retired. Owner has not decided;
-  it was not republished for v39 or v40.
+- The claude.ai artifact: the owner asked for it to be updated with v45 (2026-10-12), so it is kept identical to `index.html` again
+  (republish after each change, per CLAUDE.md). It runs on browser/artifact storage, where linked supplier costs cannot be saved.
 - Testing notes: run suites one at a time (parallel loops on the Windows PC caused ERR_NO_BUFFER_SPACE and false failures); Google Fonts
   timeouts on login are environmental; stopping a background task did not always stop the loop it started, so check for stray processes.
 It covers build history, billing, private recovery inventory, fresh hosting, restore procedures and the
@@ -416,7 +424,7 @@ both DuckDNS names to the new IP, then `sudo systemctl restart caddy`.
 - **Sessions:** signed cookie, `SESSION_DAYS` (90), sliding renewal, HttpOnly, Secure, SameSite=Lax. **Sign
   out everywhere** bumps `meta.secret_version`, invalidating every session without touching the env file.
 - **API:** `/api/*` without a session is `401` JSON; state-changing calls need the `X-Requested-With: wasool`
-  header the page sends (CSRF guard). Host header must match a configured domain.
+  header the page sends (CSRF guard). The Host header is not checked by the app; Caddy only serves the configured domains.
 - **Secrets:** passcode, `SECRET_KEY`, `ADMIN_PATH` in `/etc/payments-tracker.env` (mode 640,
   root:payments-tracker); AI keys and the SMTP app password in the SQLite `meta` table, masked on read, never in
   exports. Nothing secret is in the repository.

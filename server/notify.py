@@ -301,16 +301,24 @@ def run(today=None, dry_run=False):
             log.error("stage %d to %s <%s> failed: %s", stage, name, email, e)
             continue
         at = db.now_iso()
-        fresh = db.get_doc(d["path"])
-        u2 = (fresh or d)["data"]
-        rm = u2.setdefault("reminders", {})
-        r = rm.setdefault(cycle, {})
-        r.setdefault("sent", []).append({"stage": stage, "cycleStart": cycle, "channel": "email", "at": at, "by": "notify"})
-        if stage == 1 and not r.get("reminded"):
-            r["reminded"] = today
-        if stage == 2 and not r.get("final"):
-            r["final"] = today
-        db.set_doc(d["path"], u2)
+        # v45: write the Sent tick only onto the version just read (set_doc_if); if the owner saved this user in between, read again
+        for _try in range(5):
+            fresh = db.get_doc(d["path"])
+            if not fresh:
+                break
+            u2 = fresh["data"]
+            rm = u2.setdefault("reminders", {})
+            r = rm.setdefault(cycle, {})
+            r.setdefault("sent", []).append({"stage": stage, "cycleStart": cycle, "channel": "email", "at": at, "by": "notify"})
+            if stage == 1 and not r.get("reminded"):
+                r["reminded"] = today
+            if stage == 2 and not r.get("final"):
+                r["final"] = today
+            try:
+                db.set_doc_if(d["path"], u2, fresh["updated_at"])
+                break
+            except db.Conflict:
+                continue
         db.audit("notify", "mail.sent", "stage %d %s %s" % (stage, cycle, email))
         sent += 1
         log.info("stage %d sent to %s <%s>", stage, name, email)

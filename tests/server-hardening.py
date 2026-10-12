@@ -131,4 +131,23 @@ admin.put("/api/docs/users/u7", json={"name": "U7", "confirmToken": tok7}, heade
 admin.put("/api/docs/confirm/" + tok7, json={"userId": "u7", "name": "U7 Visible", "cycleStart": "2026-10-24", "cycles": {"2026-10-24": {"plans": [], "amountText": "PKR 1"}}}, headers=H)
 check("38 a link whose token matches its user still works", anon.get("/c/" + tok7).status_code == 200)
 
+# ---- v45: same-millisecond saves, receipt caching, audit rows while locked out ----
+stamps = [db.set_doc("users/ms", {"n": i}) for i in range(5)]
+check("v45 saves of one document in the same millisecond still get strictly later updated_at", all(a < b for a, b in zip(stamps, stamps[1:])), stamps)
+os.makedirs(db.ASSETS_DIR, exist_ok=True)
+aid = "a" * 32 + ".png"
+with open(os.path.join(db.ASSETS_DIR, aid), "wb") as f:
+    f.write(b"receipt")
+rb = admin.get("/_blob/" + aid)
+check("v45 a receipt is served with private caching only", rb.status_code == 200 and "private" in rb.headers.get("Cache-Control", "") and "public" not in rb.headers.get("Cache-Control", ""), dict(rb.headers))
+import auth as AU  # noqa: E402
+calls = []
+real = db.audit
+db.audit = lambda *a: calls.append(a)
+AU._AUDIT_SEEN.clear()
+for _ in range(5):
+    AU._audit_once("login.locked", "203.0.113.9")
+db.audit = real
+check("v45 while an IP stays locked out, one audit row per minute instead of one per request", len(calls) == 1, calls)
+
 print("ALL %d CHECKS PASSED" % passed)

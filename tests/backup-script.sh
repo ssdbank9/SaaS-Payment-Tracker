@@ -9,7 +9,7 @@ mkdir -p "$T/app/venv/bin" "$T/data/assets"
 printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "$PYBIN" > "$T/app/venv/bin/python"; chmod +x "$T/app/venv/bin/python"
 "$PYBIN" -c "
 import sqlite3,sys
-c=sqlite3.connect(sys.argv[1]); c.execute('create table t(x)'); c.executemany('insert into t values(?)',[(i,) for i in range(50)]); c.commit()" "$T/data/tracker.sqlite3"
+c=sqlite3.connect(sys.argv[1]); c.execute('create table docs(path text)'); c.execute('create table t(x)'); c.executemany('insert into t values(?)',[(i,) for i in range(50)]); c.commit()" "$T/data/tracker.sqlite3"
 echo receipt > "$T/data/assets/r1.txt"
 export DATA_DIR="$T/data" APP_DIR="$T/app" KEEP=3 KEEP_ASSETS=2
 fail=0; ok(){ echo "PASS $1"; }; bad(){ echo "FAIL $1"; fail=1; }
@@ -38,4 +38,13 @@ after=$(ls "$B"/tracker-*.sqlite3.gz | sort | tr '\n' ' ')
 [ "$rc" != 0 ] && ok "a damaged database makes the run fail" || bad "a damaged database makes the run fail"
 [ "$before" = "$after" ] && ok "...and older backups are untouched" || bad "...and older backups are untouched"
 ls "$B"/*.sqlite3 >/dev/null 2>&1 && bad "...and no half-made file is left" || ok "...and no half-made file is left"
+# v45: a missing database is an error and never becomes an empty backup (before, sqlite3.connect created an empty file)
+T2=$(mktemp -d); mkdir -p "$T2/data"
+DATA_DIR="$T2/data" bash "$ROOT/deploy/backup.sh" >/dev/null 2>&1; rc=$?
+[ "$rc" != 0 ] && ok "v45 a missing database makes the run fail" || bad "v45 a missing database makes the run fail"
+[ ! -e "$T2/data/tracker.sqlite3" ] && ! ls "$T2/data/backups"/tracker-*.gz >/dev/null 2>&1 && ok "v45 ...no empty database or backup is created" || bad "v45 ...no empty database or backup is created"
+# v45: a store with no receipts yet (no dated archive) still finishes
+"$PYBIN" -c "import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute('create table docs(path text)'); c.commit()" "$T2/data/tracker.sqlite3"
+DATA_DIR="$T2/data" bash "$ROOT/deploy/backup.sh" >/dev/null 2>&1 && ok "v45 a run with no receipt archives succeeds" || bad "v45 a run with no receipt archives succeeds"
+rm -rf "$T2"
 exit $fail

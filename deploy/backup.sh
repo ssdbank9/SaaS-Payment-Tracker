@@ -19,8 +19,15 @@ mkdir -p "$B"
 stamp=$(date +%Y%m%d-%H%M%S)
 out="$B/tracker-$stamp.sqlite3"
 if ! "$PY" - "$DATA_DIR/tracker.sqlite3" "$out" <<'PYEOF'
-import sqlite3, sys
-src = sqlite3.connect(sys.argv[1]); dst = sqlite3.connect(sys.argv[2])
+import pathlib, sqlite3, sys
+# v45: open the live database read-only (a missing file is an error, never a new empty database) and require the docs table
+src_path = pathlib.Path(sys.argv[1])
+if not src_path.is_file():
+    print("database not found: " + str(src_path)); sys.exit(3)
+src = sqlite3.connect(src_path.resolve().as_uri() + "?mode=ro", uri=True)
+if not src.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='docs'").fetchone():
+    print("database has no docs table: " + str(src_path)); sys.exit(3)
+dst = sqlite3.connect(sys.argv[2])
 with dst:
     src.backup(dst)
 res = dst.execute("PRAGMA integrity_check").fetchone()[0]
@@ -45,6 +52,7 @@ if [ -d "$DATA_DIR/assets" ]; then
     echo "backup: the receipts archive failed; the previous receipt copies were kept" >&2
   fi
 fi
-ls -1t "$B"/tracker-*.sqlite3.gz 2>/dev/null | tail -n +"$((KEEP + 1))" | xargs -r rm -f
-ls -1t "$B"/assets-2*.tar.gz 2>/dev/null | tail -n +"$((KEEP_ASSETS + 1))" | xargs -r rm -f
-echo "backup: wrote $out.gz ($(ls -1 "$B"/tracker-*.sqlite3.gz | wc -l) database backups, $(ls -1 "$B"/assets-2*.tar.gz 2>/dev/null | wc -l) receipt archives kept)"
+# v45: "|| true" because an empty match (no dated receipt archive yet) must not fail the whole run under pipefail
+{ ls -1t "$B"/tracker-*.sqlite3.gz 2>/dev/null || true; } | tail -n +"$((KEEP + 1))" | xargs -r rm -f
+{ ls -1t "$B"/assets-2*.tar.gz 2>/dev/null || true; } | tail -n +"$((KEEP_ASSETS + 1))" | xargs -r rm -f
+echo "backup: wrote $out.gz ($( { ls -1 "$B"/tracker-*.sqlite3.gz 2>/dev/null || true; } | wc -l) database backups, $( { ls -1 "$B"/assets-2*.tar.gz 2>/dev/null || true; } | wc -l) receipt archives kept)"

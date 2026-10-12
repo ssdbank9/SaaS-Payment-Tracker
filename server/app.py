@@ -27,7 +27,7 @@ import notify  # noqa: E402
 
 APP_NAME = "Wasooli"
 TAGLINE = "Know who's paid."
-VERSION = "44"
+VERSION = "45"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
@@ -376,7 +376,10 @@ def api_upload_asset():
 def blob(asset_id):
     if not ASSET_RE.match(asset_id):
         abort(404)
-    return send_from_directory(db.ASSETS_DIR, asset_id, max_age=86400 * 30)
+    # v45: receipts are private; a shared cache or proxy must not keep a copy (was public, 30 days)
+    resp = send_from_directory(db.ASSETS_DIR, asset_id, max_age=86400 * 30)
+    resp.headers["Cache-Control"] = "private, max-age=2592000"
+    return resp
 
 
 # ---------- screenshot reading (v23: Anthropic or Google Gemini, chosen in Settings → AI reading) ----------

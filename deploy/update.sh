@@ -10,9 +10,10 @@ ENV_FILE=${ENV_FILE:-/etc/payments-tracker.env}
 cd "$APP_DIR"
 PENDING="$APP_DIR/.restart-pending"
 # v42: if an earlier run switched the code but the restart did not finish, finish it first (before, that run's failure was never retried)
+# v45: a restart that still fails no longer stops the run: a newer commit (the fix) is still fetched and installed below
 if [ -f "$PENDING" ]; then
   echo "update: an earlier update did not finish restarting; restarting $SERVICE now"
-  systemctl restart "$SERVICE" && rm -f "$PENDING" || { echo "update: restart still failing" >&2; exit 1; }
+  if systemctl restart "$SERVICE"; then rm -f "$PENDING"; else echo "update: restart still failing; checking for a newer commit" >&2; fi
 fi
 
 # Make sure every unit in deploy/systemd is installed and every timer is enabled, even when
@@ -40,6 +41,8 @@ ensure_units() {
 # on its next pull without anyone touching the file. ADMIN_PATH is the secret part of the sign-in address
 # (https://DOMAIN/x/<ADMIN_PATH>); the app shows it in Settings -> Security. Restarts the service when it added one.
 ensure_env() {
+  # v45: "norestart" = the caller restarts the service itself (and reports a failure)
+  local no_restart="${1:-}"
   [ -f "$ENV_FILE" ] || return 0
   local added=0
   if ! grep -q '^ADMIN_PATH=' "$ENV_FILE"; then
@@ -50,8 +53,9 @@ ensure_env() {
   if ! grep -q '^SESSION_DAYS=' "$ENV_FILE"; then
     printf '# how long a signed-in device stays signed in (renewed on every visit)\nSESSION_DAYS=90\n' >> "$ENV_FILE"; added=1
   fi
-  if [ "$added" = 1 ]; then
-    systemctl restart "$SERVICE" && echo "update: restarted $SERVICE for the new env settings"
+  if [ "$added" = 1 ] && [ -z "$no_restart" ]; then
+    systemctl restart "$SERVICE" || { echo "update: restart for the new env settings failed" >&2; return 1; }
+    echo "update: restarted $SERVICE for the new env settings"
   fi
   return 0
 }
@@ -62,6 +66,8 @@ remote_sha=$(git rev-parse "origin/$BRANCH")
 if [ "$local_sha" = "$remote_sha" ]; then
   ensure_units
   ensure_env
+  # v45: nothing new to install, but an earlier restart is still unfinished: fail visibly (the next run tries again)
+  [ -f "$PENDING" ] && { echo "update: $SERVICE restart is still pending" >&2; exit 1; }
   exit 0
 fi
 echo "update: $local_sha -> $remote_sha"
@@ -81,11 +87,12 @@ if [ "$req_before" != "$req_new" ]; then
   fi
   rm -f "$req_tmp"
 fi
-touch "$PENDING"
+# v45: the marker is set only once the code really switched (a failed reset, e.g. a stale .git/index.lock, no longer makes every later run restart the service)
 git reset --quiet --hard "origin/$BRANCH"
+touch "$PENDING"
 ensure_units
 chmod +x deploy/*.sh
-if [ -f "$ENV_FILE" ] && ! grep -q '^ADMIN_PATH=' "$ENV_FILE"; then SERVICE_RESTART_DONE=1; ensure_env; else SERVICE_RESTART_DONE=0; fi
-[ "${SERVICE_RESTART_DONE:-0}" = 1 ] || systemctl restart "$SERVICE" || { echo "update: restart failed; it will be retried on the next run" >&2; exit 1; }
+ensure_env norestart
+systemctl restart "$SERVICE" || { echo "update: restart failed; it will be retried on the next run" >&2; exit 1; }
 rm -f "$PENDING"
 echo "update: restarted $SERVICE at $(git rev-parse --short HEAD)"
