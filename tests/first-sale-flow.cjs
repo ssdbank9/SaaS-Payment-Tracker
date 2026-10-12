@@ -69,6 +69,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   check('Once the product has a tracking plan, later customers are not asked again');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'46',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'47',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

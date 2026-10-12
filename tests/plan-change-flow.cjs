@@ -80,6 +80,6 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
 
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.deepEqual(errors,[]);check('No sideways scroll and no unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'46',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'47',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

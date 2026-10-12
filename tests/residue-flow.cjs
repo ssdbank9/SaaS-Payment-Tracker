@@ -40,6 +40,6 @@ const USERS={
   t=await row('ahead2');assert.match(t,/paid to Dec 23/);assert.match(t,/Paid to Dec 23/);assert.doesNotMatch(t,/paid for Nov/);
   check('When the coming bill is already paid, the Due column says "paid to Dec 23" (the last day it covers)');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'46',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'47',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

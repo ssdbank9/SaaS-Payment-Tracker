@@ -2,6 +2,14 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v47 - 2026-10-12
+
+- Every plan can renew on its own start date. Edit plan has a new "Renews on" choice: the shared billing day (the 24th) or its own start date. A plan that started Aug 30 then runs Aug 30 to Aug 29 each year (or the 30th to the 29th each month), with no pro rata first period.
+- Existing plans stay on the shared billing day until you change them one by one. Payments are kept; bills, remaining amounts and the link page are worked out again.
+- Add user and Add plan have a "Renews on its own start date" box (under More options in Add user), unticked by default.
+- Changing the start date of such a plan moves its renewal date with it. A currency or cycle change and a resume keep the plan on its own date.
+- The Queue section for plans that renew on their own day is now called "Due on their own renewal date".
+
 ## v46 - 2026-10-12
 
 - Customers with more than one product: the link page, the Queue messages and the reminder emails list each product with its own name, renewal date and amount, and each product has its own Continue / Upgrade / Discontinue buttons.

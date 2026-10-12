@@ -33,6 +33,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   check('Opening the expense again shows it as PKR 3,000 (not the old USD 10)');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'46',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'47',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

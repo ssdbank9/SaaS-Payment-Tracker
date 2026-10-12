@@ -57,6 +57,6 @@ const cost=(date,pkg,amount)=>({date,description:'QA '+pkg+' '+date,category:'Pr
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:path.join(out,'filters-390.png')});
   check('Product filter and custom dates fit a 390px phone without sideways scroll');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'46',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'47',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

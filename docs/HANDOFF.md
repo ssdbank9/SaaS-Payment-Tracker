@@ -22,7 +22,7 @@ review items 9-12 fixed (conversion residue, refund settled twice, one-time refu
 Live: `/healthz` reported `"version":"41"` on 12 October 2026 (about 13 minutes after the push). Note: on one office network a Fortinet
 firewall intercepted wasooli.duckdns.org, so a failed live check can be that network, not the server; try another network before assuming an outage.
 
-### Open items after v46 (the to-do list; keep this current)
+### Open items after v47 (the to-do list; keep this current)
 
 Numbers are from the independent review of v38 (findings reproduced on disposable stores; scripts were kept outside the repo).
 Done so far: 1-12 and 22 (v39/v40, live), 13-17 (supplier-cost edge cases), 18 (phone numbers with a country code box, +92 by default) and

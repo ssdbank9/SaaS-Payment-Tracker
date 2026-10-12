@@ -64,6 +64,6 @@ async function reset(ctx,id){await api(ctx,'POST','/api/import',{docs:{},replace
   check('A field the owner does change is still saved');
 
   assert.deepEqual(D.p._errs.concat(P.p._errs),[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'46',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'47',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
