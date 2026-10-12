@@ -4,6 +4,8 @@ Version numbers here summarise the development history of the app. The version n
 
 ## v42 - 2026-10-12
 
+- Courtesy discount: every plan and one-time item has a Courtesy discount button. On a monthly or yearly plan of any product it takes an amount off one bill, off a chosen number of bills, or off every bill from a chosen one; on a one-time item it takes the amount off the item. Each one is listed on the plan with a note and can be removed (Yes/Cancel). It counts under Discounts / reductions. The existing "% off" and "Amount off every period" discounts are unchanged.
+- Payment schedule for a yearly package: besides monthly, every 3 or 6 months and yearly, a "Custom: every N months" choice allows any number from 1 to 24 (the yearly price is split by months, so Rs 24,000 every 5 months is Rs 10,000 per instalment and every 24 months is Rs 48,000).
 - Safer server import: a "replace" import that contains a record which cannot be imported is now refused as a whole (400, nothing changed) instead of deleting the owner's users and then reporting them as skipped.
 - Browser-only copy (the file opened without the server): if the browser refuses to store a change (storage full or blocked) the app now says "Nothing was saved" and undoes the change instead of showing it as recorded.
 - Mail: the SMTP password is never sent when the mail server does not offer encryption (STARTTLS); the test email and reminders fail with a plain message instead. Changing the mail host, port or user clears the saved password (the screen says so), so an old password is never sent to a new server.

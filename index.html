@@ -299,7 +299,7 @@ td.who .ct{display:block;font-family:var(--mono);font-size:11px;color:var(--mute
 td.who .row-pay{display:block;margin-top:8px;min-height:44px;max-width:100%;white-space:normal}
 td.who .row-start,td.who .row-bill{display:block;margin-top:6px;min-height:44px;max-width:100%;white-space:normal}
 .start-list{font-size:11px;line-height:1.45;margin-top:4px;color:var(--muted);white-space:normal}
-.chg-block[hidden],#a-payment-wrap[hidden],#a-start-wrap[hidden],.addsub-form [data-role="payment-wrap"][hidden]{display:none}
+.courtesy-form [hidden],.chg-block[hidden],#a-payment-wrap[hidden],#a-start-wrap[hidden],.addsub-form [data-role="payment-wrap"][hidden]{display:none}
 .row-money{display:none}
 .bill-reduction{display:block;font-size:11px;color:var(--ink-2);white-space:normal;margin-top:3px}
 @media(max-width:760px){.row-money{display:block;max-width:220px;white-space:normal;font-size:12px;color:var(--ink-2);margin-top:6px}.row-money b{color:var(--ink);font-weight:500}}
@@ -851,7 +851,7 @@ table.costs td.cat{color:var(--ink-2)}
         <label class="f" id="a-start-wrap">Package started on<input id="a-start" type="date" required></label>
         <label class="f"><span id="a-price-lbl">Monthly price (Rs)</span><input id="a-price" type="number" min="0" step="0.01" required placeholder="4200" inputmode="decimal"></label>
         <label class="f">Currency <span class="muted">(pays in)</span><select id="a-cur" required><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
-        <label class="f" id="a-payment-wrap" hidden>Payment schedule<select id="a-payment"><option value="12">Yearly</option><option value="1">Monthly</option><option value="3">Every 3 months</option><option value="6">Every 6 months</option></select></label>
+        <label class="f" id="a-payment-wrap" hidden>Payment schedule<select id="a-payment"><option value="1">Monthly</option><option value="3">Every 3 months</option><option value="6">Every 6 months</option><option value="12" selected>Yearly</option><optgroup label="Custom: every N months"><option value="2">Every 2 months</option><option value="4">Every 4 months</option><option value="5">Every 5 months</option><option value="7">Every 7 months</option><option value="8">Every 8 months</option><option value="9">Every 9 months</option><option value="10">Every 10 months</option><option value="11">Every 11 months</option><option value="13">Every 13 months</option><option value="14">Every 14 months</option><option value="15">Every 15 months</option><option value="16">Every 16 months</option><option value="17">Every 17 months</option><option value="18">Every 18 months</option><option value="19">Every 19 months</option><option value="20">Every 20 months</option><option value="21">Every 21 months</option><option value="22">Every 22 months</option><option value="23">Every 23 months</option><option value="24">Every 24 months</option></optgroup></select></label>
       </div>
       <div id="a-first"></div>
       <div id="a-account-cost"></div><label class="f" id="a-due-wrap" hidden>One-time amount due on (optional)<input id="a-due" type="date"></label>
@@ -1138,7 +1138,7 @@ const daysIn=(y,m0)=>new Date(y,m0+1,0).getDate();
    The choice is offered until the product has a tracking plan. C, C Max, G and every product created before this release are never asked. */
 function pkgHasTracking(pid){for(const id in state.users)for(const s of state.users[id].subscriptions||[])if(s.kind==='monthly'&&(s.packageId===pid||(s.tierHistory||[]).some(t=>t.packageId===pid)))return true;return false;}
 function needsFirstChoice(pid){const p=pkgById(pid);return !!(p&&p.fresh&&!pkgHasTracking(pid));}
-const firstSaleHTML=nm=>`<fieldset class="first-sale" data-role="first-sale" hidden><legend>First customer for this new product: how should it be tracked?</legend><label><input type="radio" name="${nm}" value="tracking"><span><b>Start a tracking plan</b> <span class="muted">recurring bills from the purchase day, which becomes this product's own billing day; later customers are prorated against it</span></span></label><label class="first-bill" data-role="first-bill" hidden><span>Billed</span><select data-role="first-every"><option value="1">Monthly</option><option value="3">Every 3 months</option><option value="6">Every 6 months</option><option value="12" selected>Yearly</option></select></label><label><input type="radio" name="${nm}" value="once"><span><b>One-time annual plan</b> <span class="muted">paid once for a year; renewal date kept for reference; never prorated</span></span></label></fieldset>`;
+const firstSaleHTML=nm=>`<fieldset class="first-sale" data-role="first-sale" hidden><legend>First customer for this new product: how should it be tracked?</legend><label><input type="radio" name="${nm}" value="tracking"><span><b>Start a tracking plan</b> <span class="muted">recurring bills from the purchase day, which becomes this product's own billing day; later customers are prorated against it</span></span></label><label class="first-bill" data-role="first-bill" hidden><span>Billed</span><select data-role="first-every">${payScheduleOptions(12)}</select></label><label><input type="radio" name="${nm}" value="once"><span><b>One-time annual plan</b> <span class="muted">paid once for a year; renewal date kept for reference; never prorated</span></span></label></fieldset>`;
 function firstChoice(root){const box=root&&root.querySelector('[data-role=first-sale]');if(!box||box.hidden)return '';const c=box.querySelector('input[type=radio]:checked');return c?c.value:'none';}
 /* the "choose a tracking plan or a one-time annual plan" message goes away as soon as a choice is made */
 /* "Billed" sits under "Start a tracking plan" for a yearly product (monthly, every 3 or 6 months, or yearly) and sets the form's payment schedule */
@@ -1259,13 +1259,14 @@ const isProductName=(text,pid)=>{const t=String(text||'').trim().toLowerCase();i
 function planLabel(s,date){const pid=pkgIdAt(s,date||todayISO());const pn=pkgName(pid);const extra=(s.name||'').trim();if(!pn)return extra||(s.kind==='one-time'?'Item':'Plan');return extra&&extra.toLowerCase()!=='standard'&&!isProductName(extra,pid)?pn+' · '+extra:pn;}
 const subCycle=s=>s.kind==='one-time'?'one-time':normCycle(s.cycle);
 /* v33: an annual package keeps its annual price. Payment intervals are independent; absent = the existing yearly bill. */
-const validPayMonths=n=>[1,3,6,12].includes(Number(n));
+/* v42: any whole number of months from 1 to 24 (before: 1, 3, 6 or 12) */
+const validPayMonths=n=>Number.isInteger(Number(n))&&Number(n)>=1&&Number(n)<=24;
 function normPaymentSchedule(list){const by={};for(const x of Array.isArray(list)?list:[])if(x&&isDateKey(x.from)&&validPayMonths(x.months))by[x.from]={from:x.from,months:Number(x.months)};return Object.values(by).sort((a,b)=>a.from.localeCompare(b.from));}
 function payMonthsAt(s,date){if(subCycle(s)!=='yearly')return 1;let m=validPayMonths(s.paymentEvery)?Number(s.paymentEvery):12;for(const x of s.paymentSchedule||[])if(x.from<=date)m=x.months;else break;return m;}
 const cycMonths=s=>payMonthsAt(s,s.start);
 const payFrequency=m=>m===12?'yearly':m===1?'monthly':'every '+m+' months';
 const payPer=m=>m===12?'/yr':m===1?'/mo':' / '+m+' months';
-function payScheduleOptions(m){return [1,3,6,12].map(n=>`<option value="${n}"${n===Number(m)?' selected':''}>${n===12?'Yearly':n===1?'Monthly':'Every '+n+' months'}</option>`).join('');}
+function payScheduleOptions(m){const o=n=>`<option value="${n}"${n===Number(m)?' selected':''}>${n===12?'Yearly':n===1?'Monthly':'Every '+n+' months'}</option>`;const common=[1,3,6,12];const rest=[];for(let n=2;n<=24;n++)if(!common.includes(n))rest.push(n);return common.map(o).join('')+`<optgroup label="Custom: every N months">${rest.map(o).join('')}</optgroup>`;}
 const anchor=()=>isDateKey(state.settings.anchor)?state.settings.anchor:DEFAULT_ANCHOR;
 /* v21: the billing day is its own setting (default: the anchor's day) so 29–31 survive a short anchor month; every cycle start is that day clamped to the month's last day.
    The anchor date keeps the year and the month yearly plans renew in. */
@@ -1331,6 +1332,8 @@ function normalizeUser(b,id){
     sub.payments.sort((a,b)=>a.date.localeCompare(b.date));
     /* v28: refunds given back on this plan [{id,date,amount,currency,rate,note}]; absent = none (nothing is written for plans without one) */
     if(Array.isArray(s.refunds)){const rf=[];for(const r of s.refunds){const d=normDate(r&&r.date);const amt=Number(r&&r.amount);if(!d||!(amt>0))continue;const entry={id:r.id||newId('r'),date:d,amount:amt,currency:r.currency?normCur(r.currency):cur,rate:normRate(r.rate),note:String(r.note||'')};if(kind==='monthly'&&isDateKey(r.billStart)&&Number(r.billReduction)>0){entry.billStart=r.billStart;entry.billReduction=Math.round(Number(r.billReduction)*100)/100;}if(kind==='one-time'&&r.closesSale===true)entry.closesSale=true;rf.push(entry);}if(rf.length)sub.refunds=rf.sort((a,b)=>a.date.localeCompare(b.date));}
+    /* v42: courtesy discounts; absent = none */
+    if(Array.isArray(s.courtesy)){const cl=[];for(const c of s.courtesy){const amt=Number(c&&c.amount);if(!(amt>0))continue;const e={id:String(c.id||newId('c')),amount:Math.round(amt*100)/100,note:String(c.note||'').slice(0,140),at:String(c.at||'').slice(0,10)};if(kind==='monthly'){if(!isDateKey(c.from))continue;e.from=c.from;e.to=isDateKey(c.to)?c.to:null;}cl.push(e);}if(cl.length)sub.courtesy=cl;}
     u.subscriptions.push(sub);
   }
   return u;
@@ -1359,7 +1362,11 @@ function refundedInPlanCur(s){let t=0;for(const r of s.refunds||[]){const v=toCu
 const refundKey=(s,r)=>{const pid=s.kind==='one-time'?s.packageId:pkgIdAt(s,r.date);return (pid&&pkgById(pid))?pid:(s.kind==='one-time'?'__one':'__none');};
 /* v35: only an explicitly linked bill refund reduces its bill. Cash-only legacy refunds keep their meaning. */
 function billRefundReduction(s,st){return (s.refunds||[]).reduce((n,r)=>n+(r.billStart===st&&r.billReduction>0?Number(r.billReduction):0),0);}
-function billCharge(s,st,listed){const ov=periodOverride(s,st);if(ov&&ov.fromRefund)return Math.max(0,ov.amount);/* v40: a "kept after refund" amount (settleRefunds) is worked out after the linked bill reduction, so the reduction is not taken off twice */return Math.max(0,(ov?ov.amount:listed)-billRefundReduction(s,st));}
+/* v42: courtesy discounts [{id,from,to,amount,note,at}] in the plan's currency: the amount comes off every bill whose period starts from `from`
+   to `to` (inclusive; to null = every later bill). On a one-time item (no from/to) the amount comes off the item. Any plan, any product. */
+function courtesyAt(s,st){let t=0;for(const c of (s&&s.courtesy)||[])if(c.from&&st>=c.from&&(!c.to||st<=c.to))t+=Number(c.amount)||0;return t;}
+const courtesyTotal=s=>((s&&s.courtesy)||[]).reduce((n,c)=>n+(Number(c.amount)||0),0);
+function billCharge(s,st,listed){const ov=periodOverride(s,st);if(ov&&ov.fromRefund)return Math.max(0,ov.amount);/* v40: a "kept after refund" amount (settleRefunds) is worked out after the linked bill reduction, so the reduction is not taken off twice */return Math.max(0,(ov?ov.amount:listed)-billRefundReduction(s,st)-courtesyAt(s,st));}
 function analyzeMonthly(s,today){
   const pc=paidInPlanCur(s);const paid=pc.t;const tol=s.currency==='USD'?0.005:0.5;const active=k=>!s.end||(s.start<=s.end&&pStart(s,k)<=s.end);
   const curIdx=periodIndexAt(s,today);
@@ -1404,10 +1411,10 @@ function analyzeOneTime(s,today){
   const pc=paidInPlanCur(s);const paid=pc.t;const refunded=refundedInPlanCur(s);const listed=Number(s.total)||0;
   /* v40: a refund marked "Sale cancelled" closes the item: nothing more is owed and the money kept is the item's total; otherwise a refund is a
      courtesy or prorated refund that lowers the sale (Rs 1,000 with Rs 400 paid and Rs 100 back: a Rs 900 sale, Rs 300 kept, Rs 600 still owed) */
-  const closed=(s.refunds||[]).some(r=>r.closesSale);const total=closed?Math.max(0,paid):Math.max(0,listed-refunded);const remaining=closed?0:Math.max(0,total-Math.max(0,paid));
+  const closed=(s.refunds||[]).some(r=>r.closesSale);const courtesy=courtesyTotal(s);const total=closed?Math.max(0,paid):Math.max(0,listed-refunded-courtesy);const remaining=closed?0:Math.max(0,total-Math.max(0,paid));
   let status;
   if(closed)status='closed';else if(remaining<=0)status='paid';else if(s.due&&s.due<today)status='overdue';else if(s.due&&s.due===today)status='due-today';else if(s.due&&dayDiff(today,s.due)<=7)status='due-soon';else status='open';
-  return {kind:'one-time',paid,unconv:pc.unconv,total,listed,refunded,remaining,nextDue:remaining>0?s.due||null:null,amountDue:remaining,status,cur:s.currency,overdue:status==='overdue'?1:0};
+  return {kind:'one-time',paid,unconv:pc.unconv,total,listed,refunded,courtesy,remaining,nextDue:remaining>0?s.due||null:null,amountDue:remaining,status,cur:s.currency,overdue:status==='overdue'?1:0};
 }
 /* amount of one cycle period of a plan (first period may be prorated or waived), and what is still owed per period from the first unpaid one up to a target period */
 function periodAmt(s,k){const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const full=periodFull(s,st,es).full;const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const waived=k===0&&s.waiveFirst===true&&es>st;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;const ov=periodOverride(s,st),pr=billCharge(s,st,waived?0:(prorated?prorateCalc(s,full,days,total).amt:full));return {k,st,en,es,months:payMonthsAt(s,st),full,days,total,custom:!!ov,prorated:prorated&&!waived,waived:waived&&pr===0,pr};}
@@ -2392,7 +2399,7 @@ function planCell(a){
 /* v32: reductions to bills are not receipts. Automatic joining proration is part of the bill's baseline. */
 function periodGross(s,p){const raw=installmentPrice(s,p.pkgOv?(pkgPeriodPrice(s,p.pkgId,p.es)??priceAt(s,p.es)):priceAt(s,p.es),p.st);return p.waived||p.prorated?prorateCalc({prorationBasis:s.prorationBasis},raw,p.days,p.total).computed:raw;}
 function billReductions(u,a,today){const sum=newSum();
-  for(const s of u.subscriptions||[]){if(s.kind!=='monthly')continue;for(const p of a.sa[s.id].periods){if(p.es>today&&p.covered<=0)continue;
+  for(const s of u.subscriptions||[]){if(s.kind!=='monthly'){const c=courtesyTotal(s);if(c>0)sumAdd(sum,c,s.currency,null);continue;}for(const p of a.sa[s.id].periods){if(p.es>today&&p.covered<=0)continue;
     const gross=periodGross(s,p);
     const ov=(s.periodOverrides||{})[p.st];if(ov&&ov.fromRefund)continue;
     sumAdd(sum,Math.max(0,gross-p.pr-billRefundReduction(s,p.st)),s.currency,null);
@@ -2554,7 +2561,7 @@ async function savePaymentDialog(e){e.preventDefault();const c=paymentContext();
   d.busy=false;if(ok){$('#paymentDialog').close();ui.paymentDraft=null;}else{$('#payment-error').textContent='The payment was not saved. Your entries are kept here; try again.';refreshPaymentPreview();}
 }
 let lastTbodyHTML='',tbodyDirty=true,tbodyObs=null;
-const RM_WHAT={'pay-remove':'this receipt','refund-remove':'this refund','price-remove':'this price','tier-remove':'this tier change'};
+const RM_WHAT={'courtesy-remove':'this courtesy discount','pay-remove':'this receipt','refund-remove':'this refund','price-remove':'this price','tier-remove':'this tier change'};
 function rmConfirmHTML(A,d){const attrs=['sub','pay','ref','from'].filter(k=>d[k]!==undefined).map(k=>`data-${k}="${esc(d[k])}"`).join(' ');return `<span class="small rm-confirm">Remove ${RM_WHAT[A]}? <button class="link sm danger" type="button" data-act="${A}-yes" ${attrs}>Yes, remove</button> <button class="link sm" type="button" data-act="rm-no">Cancel</button></span>`;}
 function renderTable(){
   /* v39: the typed values of every open inline form are kept across a redraw (before, only Edit user, Add plan and Edit plan were), so a refresh triggered by another device or by this page's own background save cannot wipe a half-typed bill, receipt, price, refund or tier form */
@@ -2715,7 +2722,7 @@ function acctLine(u,s){const ac=acctParts(u,s);return `<div class="sub-acct">${/
    the current plan ends the day before and a new plan starts at that cycle (receipts, refunds and old prices stay on the old plan), or, only when
    nothing is recorded yet, the plan is corrected from its start. */
 function planChangeBlock(s,sa,today){
-  const clean=!(s.payments||[]).length&&!(s.refunds||[]).length&&!tierEntries(s).length&&!Object.keys(s.periodOverrides||{}).length;
+  const clean=!(s.payments||[]).length&&!(s.refunds||[]).length&&!tierEntries(s).length&&!Object.keys(s.periodOverrides||{}).length&&!(s.courtesy||[]).length;
   const o=[];let n=0;for(let k=1;k<80&&n<6;k++){const st=pStart(s,k);if(st<=today||st<=s.start)continue;if(s.end&&st>s.end)break;o.push([st,fmtD(st,true)+' (start of a cycle)']);n++;}
   if(clean)o.push(['start','From the plan\'s start (correcting a mistake; nothing is recorded yet)']);
   const opts=o.length?o.map(x=>`<option value="${x[0]}">${esc(x[1])}</option>`).join(''):'<option value="" disabled selected>No later cycle before this plan ends</option>';
@@ -2735,7 +2742,7 @@ function syncPlanChange(f){
 }
 function applyPlanChange(u,s,c){
   if(c.eff==='start'){
-    if((s.payments||[]).length||(s.refunds||[]).length||tierEntries(s).length||Object.keys(s.periodOverrides||{}).length)return {err:'This plan already has receipts, refunds or changes, so pick a later cycle.'};
+    if((s.payments||[]).length||(s.refunds||[]).length||tierEntries(s).length||Object.keys(s.periodOverrides||{}).length||(s.courtesy||[]).length)return {err:'This plan already has receipts, refunds or changes, so pick a later cycle.'};
     s.currency=c.cur;s.cycle=c.cyc;s.packageId=c.pkg;s.prices=[{from:s.start,price:c.price}];
     if(c.cyc==='yearly'){s.prorationBasis='actual';if(!s.paymentEvery)s.paymentEvery=12;}else{delete s.paymentEvery;delete s.paymentSchedule;}
     return {msg:'Saved '+planLabel(s)+' with the new price from its start.'};
@@ -2751,6 +2758,26 @@ function applyPlanChange(u,s,c){
   if(s.accountCost&&Array.isArray(s.accountCost.entries)&&s.accountCost.entries.length){const last=s.accountCost.entries.at(-1);const ac=normAccountCost({frequency:s.accountCost.frequency,first:'prorated',firstAmount:null,overrides:{},entries:[Object.assign({},last,{from:c.eff})]});if(ac)np.accountCost=ac;}
   s.end=addDays(c.eff,-1);u.subscriptions.push(np);
   return {msg:'Saved. '+planLabel(s)+' ends on '+fmtD(s.end,true)+' and a new '+(c.cyc==='yearly'?'yearly':'monthly')+' plan in '+c.cur+' starts on '+fmtD(c.eff,true)+'.'};
+}
+function courtesyText(s,c){const amt=fmtAmt(c.amount,s.currency);let t;if(!c.from)t=amt+' off the item';else{const f=fmtD(c.from<s.start?s.start:c.from,true);t=c.to===c.from?amt+' off the '+f+' bill':c.to?amt+' off each bill from '+f+' to '+fmtD(c.to,true):amt+' off every bill from '+f;}return t+(c.note?' · '+c.note:'');}
+function courtesyLine(s){const l=s.courtesy||[];return l.length?`<p class="small muted courtesy-line" style="margin:6px 0 0">Courtesy discount: ${l.map(c=>esc(courtesyText(s,c))).join('; ')}</p>`:'';}
+/* v42: courtesy discount form, for any plan of any product: an amount off one bill, a number of bills or every bill from a chosen one; on a one-time item, an amount off the item */
+function courtesyForm(id,s,sa,today,open){
+  const mon=s.kind==='monthly';let opts='';
+  if(mon){const cur=Math.max(0,Number.isFinite(sa.curIdx)?sa.curIdx:0);const def=sa.nextSt||pStart(s,cur);for(let k=0;k<=cur+12;k++){const st=pStart(s,k);if(s.end&&st>s.end)break;opts+=`<option value="${st}"${st===def?' selected':''}>${esc(fmtD(st<s.start?s.start:st,true))} bill${k===cur?' (current)':''}</option>`;}if(!opts)return '';}
+  const list=(s.courtesy||[]).map(c=>`<span>${esc(courtesyText(s,c))} <button class="link sm danger" type="button" data-act="courtesy-remove" data-sub="${s.id}" data-from="${esc(c.id)}">remove</button></span>`).join('');
+  return `<form class="courtesy-form" data-id="${id}" data-sub="${s.id}" ${open?'':'hidden'} novalidate>
+    <h4>Courtesy discount</h4>
+    <div class="pay-row">
+      <label class="f">Amount off${mon?' each bill':''} (${s.currency})<input id="cd-amt-${s.id}" name="amount" type="number" min="0" step="0.01" inputmode="decimal" required></label>
+      ${mon?`<label class="f">Starting with<select id="cd-from-${s.id}" name="from">${opts}</select></label>
+      <label class="f">For<select id="cd-for-${s.id}" name="tenure"><option value="one">This bill only</option><option value="n">A number of bills</option><option value="all">Every bill from then on</option></select></label>
+      <label class="f" data-role="cd-n-wrap">Number of bills<input id="cd-n-${s.id}" name="count" type="number" min="1" max="120" step="1" value="3" inputmode="numeric"></label>`:''}
+      <label class="f">Note <span class="muted">(optional)</span><input id="cd-note-${s.id}" name="note" type="text" maxlength="140" placeholder="e.g. sorry for the outage"></label>
+      <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save courtesy discount</button><button class="link" type="button" data-act="toggle" data-key="courtesy:${s.id}">Cancel</button></span>
+    </div>
+    ${list?`<div class="tier-list">${list}</div>`:''}
+  </form>`;
 }
 function tierForm(id,s,sa,today,open){
   if(!(sa.periods||[]).length)return '';
@@ -2928,6 +2955,7 @@ function detailHTML(id,u,a,today){
           ${sa.nextDue?`<button class="btn sm" type="button" data-act="toggle" data-key="upto:${s.id}" title="Record payment for every period up to a chosen cycle or date">Paid up to…</button>`:''}
           ${(s.payments||[]).length?`<button class="btn sm" type="button" data-act="toggle" data-key="refund:${s.id}" title="Record money given back: it comes off revenue and off this plan's credit">Refund</button>`:''}
           <button class="btn sm" type="button" data-act="toggle" data-key="price:${s.id}">Change price</button>
+          <button class="btn sm" type="button" data-act="toggle" data-key="courtesy:${s.id}" title="Take an amount off one bill, several bills or every bill">Courtesy discount</button>
           ${canTier?`<button class="btn sm" type="button" data-act="toggle" data-key="tier:${s.id}" title="Move this plan to another tier with the same billing cycle (for example C ↔ C Max) from a chosen cycle">Change tier</button>`:''}
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
         </div>
@@ -2979,6 +3007,7 @@ function detailHTML(id,u,a,today){
           <div class="form-actions"><button class="btn primary sm" type="submit">Save plan</button><button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Cancel</button><span style="flex:1"></span><span class="del-wrap"><button class="link danger" type="button" data-act="sub-remove" data-sub="${s.id}">Remove plan and its payments</button></span></div>
         </form>
         ${canTier?tierForm(id,s,sa,today,open['tier:'+s.id]):''}
+        ${courtesyForm(id,s,sa,today,open['courtesy:'+s.id])}${courtesyLine(s)}
         ${payRows(s)}
         </div>
       </div>`;
@@ -2989,6 +3018,7 @@ function detailHTML(id,u,a,today){
           <div class="sub-line"><span class="pkg-badge" title="Package / product">${esc(pkgName(s.packageId)||'One-time')}</span><span class="name">${esc(s.name)}</span><span class="kind">${s.renews?'one-time annual':'one-time'} · ${s.currency}</span><span class="num">${esc(fmtAmt(sa.total,s.currency))}${sa.refunded?` <span class="muted" title="The item's amount less what was refunded">(${esc(fmtAmt(sa.listed,s.currency))} less ${esc(fmtAmt(sa.refunded,s.currency))} refunded)</span>`:''}</span><span class="pill" data-status="${sa.status}">${esc(statusLabel(sa))}</span>
           <span class="sub-acts">${sa.remaining>0?`<button class="btn sm primary" type="button" data-act="rec" data-sub="${s.id}" data-start="item" aria-expanded="${open['rec:'+s.id]==='item'?'true':'false'}">Record payment</button>`:''}
           ${(s.payments||[]).length?`<button class="btn sm" type="button" data-act="toggle" data-key="refund:${s.id}" title="Record money given back: it comes off revenue and off what this item has paid">Refund</button>`:''}
+          <button class="btn sm" type="button" data-act="toggle" data-key="courtesy:${s.id}" title="Take an amount off this item">Courtesy discount</button>
           <button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Edit</button></span></div>
         </div>
         <div class="sub-body">
@@ -3009,6 +3039,7 @@ function detailHTML(id,u,a,today){
           ${accountCostFields(s)}
           <div class="form-actions"><button class="btn primary sm" type="submit">Save item</button><button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Cancel</button><span style="flex:1"></span><span class="del-wrap"><button class="link danger" type="button" data-act="sub-remove" data-sub="${s.id}">Remove item and its payments</button></span></div>
         </form>
+        ${courtesyForm(id,s,sa,today,open['courtesy:'+s.id])}${courtesyLine(s)}
         ${payRows(s)}
         </div>
       </div>`;
@@ -3162,6 +3193,7 @@ function wireDetail(id,today){
     add.addEventListener('input',upd);kind.addEventListener('change',upd);upd();
   }
   det.querySelectorAll('.subedit-form select[name=packageId]').forEach(sel=>sel.addEventListener('change',()=>{if(sel.value==='__new'){sel.value='';newPackageFlow();return;}const pk=pkgById(sel.value),cy=sel.form&&sel.form.elements.namedItem('cycle');if(pk&&pk.cycle&&cy&&cy.value!==pk.cycle)cy.value=pk.cycle;}));
+  det.querySelectorAll('.courtesy-form').forEach(f=>{const t=f.elements.namedItem('tenure'),w=f.querySelector('[data-role=cd-n-wrap]');if(!t||!w)return;const sync=()=>{w.hidden=t.value!=='n';};t.addEventListener('change',sync);sync();});
   det.querySelectorAll('.subedit-form').forEach(f=>{if(!f.querySelector('[data-role=chg-block]'))return;f.addEventListener('change',()=>syncPlanChange(f));syncPlanChange(f);});
 }
 
@@ -3539,6 +3571,7 @@ function bind(){
     else if(A==='price-edit'){ui.priceEdit=ui.priceEdit||{};ui.priceEdit[sid]=act.dataset.from;ui.open[id]=Object.assign({},ui.open[id],{['price:'+sid]:true});renderTable();}
     else if(A==='days-reset'){const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;s.prorationDaysOverride=null;s.prorationRateOverride=null;s.prorationAmountOverride=null;setPeriodOverride(s,pStart(s,0),null);ui.open[id]=Object.assign({},ui.open[id],{['days:'+sid]:false});const ok=await persistUser(id,u);if(ok)toast('First period back to actual days.');}
     else if(A==='amt-cancel'||A==='amt-reset'){const f=act.closest('form.amt-form');if(!f)return;if(A==='amt-cancel')toggleOpen(id,'amt:'+f.dataset.sub+':'+f.dataset.start);else{act.disabled=true;await resetPeriodOverride(id,f.dataset.sub,f.dataset.start,'detail');}}
+    else if(A==='courtesy-remove-yes'){ui.rmConfirm=null;const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;s.courtesy=(s.courtesy||[]).filter(c=>c.id!==act.dataset.from);if(!s.courtesy.length)delete s.courtesy;const ok=await persistUser(id,u);if(ok)toast('Courtesy discount removed.');}
     else if(A==='tier-remove-yes'){ui.rmConfirm=null;const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const t=(s.tierHistory||[]).find(x=>x.from===act.dataset.from);s.tierHistory=(s.tierHistory||[]).filter(x=>x.from!==act.dataset.from);const ok=await persistUser(id,u);if(ok)toast(t?`Undone: ${displayName(u)} no longer moves to ${pkgName(t.packageId)||'that tier'} from ${fmtD(t.from,true)}.`:'Tier change removed.');}
     else if(A==='price-remove-yes'){ui.rmConfirm=null;const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;if((s.prices||[]).length<=1){toast('A plan needs at least one price. Edit it instead.');return;}s.prices=s.prices.filter(p=>p.from!==act.dataset.from);const ok=await persistUser(id,u);if(ok)toast('Price entry removed.');}
     else if(A==='pay-remove-yes'){ui.rmConfirm=null;const u=clone(state.users[id]);const s=u.subscriptions.find(x=>x.id===sid);if(!s)return;const p=s.payments.find(x=>x.id===act.dataset.pay);s.payments=s.payments.filter(x=>x.id!==act.dataset.pay);const ok=await persistUser(id,u);if(ok&&p)toast(`Removed the ${fmtAmt(p.amount,p.currency||s.currency)} payment dated ${p.date}.`);}
@@ -3599,6 +3632,11 @@ function bind(){
       if(!isDateKey(from)){toast('Pick the date the price starts.');return;}
       s.prices=(s.prices||[]).filter(p=>p.from!==from&&p.from!==replaceFrom);s.prices.push({from,price:Number(priceRaw)});if(ui.priceEdit)delete ui.priceEdit[s.id];closeKey('price:'+s.id);
       const ok=await persistUser(id,u);if(ok)toast(`${s.name}: ${fmtAmt(Number(priceRaw),s.currency)}/mo from ${fmtD(from,true)}.`);
+    }else if(form.classList.contains('courtesy-form')){
+      const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const amt=val('amount');if(!(validAmt(amt)&&Number(amt)>0)){toast('Enter the courtesy amount (above zero).');return;}
+      const c={id:newId('c'),amount:roundCur(Number(amt),s.currency),note:val('note').trim().slice(0,140),at:todayISO()};
+      if(s.kind==='monthly'){const from=val('from');if(!isDateKey(from)){toast('Choose the first bill.');return;}const t=val('tenure');c.from=from;if(t==='one')c.to=from;else if(t==='n'){const n=Number(val('count'));if(!(Number.isInteger(n)&&n>=1&&n<=120)){toast('Enter how many bills (1 to 120).');return;}const k=Math.max(0,periodIndexAt(s,from<s.start?s.start:from));c.to=pStart(s,k+n-1);}else c.to=null;}
+      s.courtesy=(s.courtesy||[]).concat([c]);const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistUser(id,u);if(ok){closeKey('courtesy:'+s.id);renderTable();toast('Courtesy discount saved: '+courtesyText(s,c)+'.');}else button.disabled=false;
     }else if(form.classList.contains('tier-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s||s.kind!=='monthly')return;const from=val('from'),pid=val('packageId'),priceRaw=val('price'),note=val('note').trim().slice(0,140);
       const p=pkgById(pid);if(!p||p.cycle!==subCycle(s)){toast('Choose a tier with the same billing cycle.');return;}
