@@ -2,6 +2,12 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v43 - 2026-10-12
+
+- Card statement import (Costs -> Import from screenshot, or paste the text): each charge has a new Customer account choice. When a charge is a customer's supplier cost (date within 10 days and amount within 25% of that account's calculated cost for a cycle) the account is suggested. Applying it replaces that cycle's calculated cost with the actual card amount, dated as charged, instead of adding a second cost, so it is never counted twice. The Costs list marks such a cycle with "Use calculated" to undo the match.
+- Duplicate warning: a charge with the same amount as a cost already recorded within 3 days (including a card amount already matched to a customer) is marked "Possible duplicate" and unticked before Apply; tick it again if it really is a second charge.
+- Note: reading pictures needs an AI key in Settings -> AI reading (not set on the live server yet); pasting the statement text works without one.
+
 ## v42 - 2026-10-12
 
 - Courtesy discount: every plan and one-time item has a Courtesy discount button. On a monthly or yearly plan of any product it takes an amount off one bill, off a chosen number of bills, or off every bill from a chosen one; on a one-time item it takes the amount off the item. Each one is listed on the plan with a note and can be removed (Yes/Cancel). It counts under Discounts / reductions. The existing "% off" and "Amount off every period" discounts are unchanged.
