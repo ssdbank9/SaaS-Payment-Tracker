@@ -2,6 +2,12 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v48 - 2026-10-12
+
+- New Payments button in the header: every payment received and refund given, for all customers, newest first. Search by customer, product or note, filter by product, payments or refunds only, and date range. Totals show paid in, refunds and net; with All products and the same range they equal the Summary tiles. Tap a line to open that customer.
+- Each plan now shows its history under a "Payments and refunds (N)" heading, directly under the bill boxes (it was at the bottom with no heading).
+- Export users CSV includes refunds as their own rows with a negative amount and a note starting "Refund". Importing that file reads them back as refunds.
+
 ## v47 - 2026-10-12
 
 - Every plan can renew on its own start date. Edit plan has a new "Renews on" choice: the shared billing day (the 24th) or its own start date. A plan that started Aug 30 then runs Aug 30 to Aug 29 each year (or the 30th to the 29th each month), with no pro rata first period.

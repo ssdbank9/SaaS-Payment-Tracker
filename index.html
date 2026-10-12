@@ -481,6 +481,12 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .legend .k-partial::before{background:var(--warn-bg);border-color:var(--warn)}
 .legend .k-unpaid::before{background:var(--crit-bg);border-color:var(--crit)}
 .legend .k-upcoming::before{background:var(--surface-2)}
+/* v48: payments and refunds list */
+.pays-h{margin:12px 0 0;font-size:12px;font-weight:600;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.05em}
+.pl-filters{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.pl-filters input[type=search]{flex:1 1 200px;min-width:0}.pl-filters select{max-width:100%}
+.pl-custom{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}.pl-custom[hidden]{display:none}
+.pl-tot{margin:6px 0 8px;font-size:13px}.pl-tot b{font-variant-numeric:tabular-nums}
+.pl-table tbody tr{cursor:pointer}.pl-table tbody tr:hover td,.pl-table tbody tr:focus-visible td{background:var(--surface-2)}.pl-table td.who{white-space:normal;min-width:110px}.pl-table td.plan{white-space:normal;color:var(--ink-2)}
 .pays{margin-top:10px;font-size:12px;width:100%;border-collapse:collapse;min-width:0}
 .pays td,.pays th{padding:4px 8px 4px 0;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;vertical-align:top}
 .pays th{font-weight:600;color:var(--accent-ink);font-size:11px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--accent-line)}
@@ -645,8 +651,9 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v47</span>
+      <span class="small muted num" id="app-ver" title="App version">v48</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
+      <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
       <button class="btn" type="button" id="btn-signout" data-act="logout" title="Sign out on this device" hidden>Sign out</button>
@@ -668,6 +675,21 @@ table.costs td.cat{color:var(--ink-2)}
   <section class="panel" id="analyticsPanel" hidden aria-label="Analytics">
     <div class="panel-head an-head"><div><h3>Analytics</h3><p class="small muted" id="an-sub"></p></div><div class="chart-legend"><select id="an-prod" aria-label="Product" style="min-height:30px;padding:3px 8px;max-width:160px"><option value="">All products</option></select><span class="seg" id="an-cur" aria-label="Currency"><button type="button" data-cur="PKR" aria-pressed="true">PKR</button><button type="button" data-cur="USD" aria-pressed="false">USD</button></span><button class="link" type="button" id="an-close">Close</button></div></div>
     <div id="an-body"></div>
+  </section>
+
+  <!-- v48: every payment and refund of every customer, newest first -->
+  <section class="panel" id="payPanel" hidden aria-label="Payments and refunds">
+    <div class="panel-head"><div><h3>Payments and refunds</h3><p class="small muted" id="pl-sub">Every payment received and refund given, newest first. Tap a line to open that customer.</p></div><button class="link" type="button" id="pl-close">Close</button></div>
+    <div class="pl-filters">
+      <input id="pl-q" type="search" placeholder="Search customer, product or note" aria-label="Search payments" autocomplete="off">
+      <select id="pl-prod" aria-label="Product"><option value="">All products</option></select>
+      <select id="pl-kind" aria-label="Show"><option value="">Payments and refunds</option><option value="pay">Payments only</option><option value="ref">Refunds only</option></select>
+      <select id="pl-range" aria-label="Range"><option value="all">All time</option><option value="month">This month</option><option value="30d">Last 30 days</option><option value="custom">Custom range…</option></select>
+      <span class="pl-custom" id="pl-custom" hidden><input type="date" id="pl-from" aria-label="From"><span class="muted">to</span><input type="date" id="pl-to" aria-label="To"></span>
+    </div>
+    <div class="pl-tot" id="pl-tot" role="status"></div>
+    <div class="table-wrap"><table class="pays pl-table"><thead><tr><th>Date</th><th>Customer</th><th>Plan</th><th>Amount</th><th>Note</th></tr></thead><tbody id="pl-body"></tbody></table></div>
+    <p class="small muted" id="pl-none" hidden>No payments or refunds match.</p>
   </section>
 
 
@@ -1927,7 +1949,7 @@ function applyBranding(){const name=appName();const tag=tagline();const custom=n
   const big=markPNG(512,14,letter),mask=markPNG(512,0,letter);const icons=[{src:svg,sizes:'any',type:'image/svg+xml',purpose:'any'}];if(big)icons.push({src:big,sizes:'512x512',type:'image/png',purpose:'any'});if(mask)icons.push({src:mask,sizes:'512x512',type:'image/png',purpose:'maskable'});if(png)icons.push({src:png,sizes:'180x180',type:'image/png'});
   const man={name:name,short_name:name.length>12?name.split(/\s+/)[0].slice(0,12):name,description:tag,start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f3f5f3',theme_color:BRAND_GREEN,icons:icons};
   if(lm)lm.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));}
-function render(){accountCostCache=null;applyBranding();renderSync();if(!state.settingsLoaded){renderTable();return;}renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if(!$('#analyticsPanel').hidden)renderAnalytics();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-cost-tax').value=costTax();fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);$('#s-dim').checked=dimOn();fillQueueSettings();}}
+function render(){accountCostCache=null;applyBranding();renderSync();if(!state.settingsLoaded){renderTable();return;}renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if(!$('#analyticsPanel').hidden)renderAnalytics();if(!$('#payPanel').hidden)renderPayments();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-cost-tax').value=costTax();fillCycleSettings();$('#s-remind-day').value=remindDay();$('#s-reply-day').value=replyDay();$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);$('#s-dim').checked=dimOn();fillQueueSettings();}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
   el.textContent=state.mode==='shared'?(state.backend==='api'?'Saved on your server, shared across your devices':'Shared with your team, saves live'):state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
@@ -2644,7 +2666,7 @@ function payRows(s){
   /* v28: refunds sit in the same history, newest first, marked Refund with a negative amount */
   const items=(s.payments||[]).map(p=>({r:false,x:p})).concat((s.refunds||[]).map(r=>({r:true,x:r}))).sort((a,b)=>b.x.date.localeCompare(a.x.date)||(a.r===b.r?0:a.r?-1:1));
   const rows=items.map(({r,x:p})=>{const pc=p.currency||s.currency;if(r)return `<tr class="refund-row"><td class="num">${esc(p.date)}</td><td class="num amt">${esc(fmtAmt(-p.amount,pc))}${rateNote(p.rate)}</td><td class="note"><span class="tag refund-tag">Refund</span>${esc(p.note||'')}</td><td><button class="link" type="button" data-act="refund-edit" data-sub="${s.id}" data-ref="${p.id}">Edit</button> <button class="link danger" type="button" data-act="refund-remove" data-sub="${s.id}" data-ref="${p.id}">Remove</button></td></tr>`;return `<tr><td class="num">${esc(p.date)}</td><td class="num">${esc(fmtAmt(p.amount,pc))}${rateNote(p.rate)}</td><td class="note">${esc(p.note||'')}</td><td><button class="link" type="button" data-act="pay-edit" data-sub="${s.id}" data-pay="${p.id}">Edit</button> <button class="link danger" type="button" data-act="pay-remove" data-sub="${s.id}" data-pay="${p.id}">Remove</button></td></tr>`;}).join('');
-  return rows?`<table class="pays"><thead><tr><th>Date</th><th>Amount</th><th>Note</th><th></th></tr></thead><tbody>${rows}</tbody></table>`:'<p class="small muted" style="margin-top:8px">No payments recorded yet.</p>';
+  return rows?`<h4 class="pays-h">Payments and refunds (${items.length})</h4><table class="pays"><thead><tr><th>Date</th><th>Amount</th><th>Note</th><th></th></tr></thead><tbody>${rows}</tbody></table>`:'<p class="small muted pays-h" style="margin-top:8px">Payments and refunds (0) · none recorded yet</p>';
 }
 function payForm(id,s,sa,today,defAmt,open,edit){
   const e=edit||null;
@@ -2998,6 +3020,7 @@ function detailHTML(id,u,a,today){
         <div class="sub-facts"><span>Package started <b>${esc(fmtD(s.start,true))}</b> <button class="link sm" type="button" data-act="package-start" data-sub="${s.id}">Change start / payments</button></span>${yearly?`<span>Pays <b>${esc(payFrequency(payMonthsAt(s,'9999-12-31')))}</b>${(s.paymentSchedule||[]).length?' · '+s.paymentSchedule.map(x=>esc(payFrequency(x.months)+' from '+fmtD(x.from,true))).join('; '):''}</span>`:''}${s.end?`<span>Ends <b>${esc(fmtD(s.end,true))}</b></span>`:''}<span>Paid through <b>${sa.kPaid?esc(fmtD(sa.paidThrough,true)):'nothing yet'}</b></span>${sa.nextDue?(sa.nextDue>today?`<span>Next due <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}${sa.nextCredit>0?` <span class="muted">(after ${esc(fmtAmt(sa.nextCredit,s.currency))} credit)</span>`:''}</span>`:sa.nextCredit>0?`<span>Remaining on the current period <b>${esc(fmtAmt(nextPr,s.currency))}</b></span>`:`<span>Unpaid since <b>${esc(fmtD(sa.nextDue,true))}</b> · ${esc(fmtAmt(nextPr,s.currency))}</span>`):''}${(s.refunds||[]).length?`<span>Paid in <b>${esc(fmtAmt(sa.paid+refundedInPlanCur(s),s.currency))}</b> · refunded <b class="refund">${esc(fmtAmt(-refundedInPlanCur(s),s.currency))}</b> · kept <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`:`<span>Total paid <b>${esc(fmtAmt(sa.paid,s.currency))}</b></span>`}${yearFacts}${dueByFact}${s.waiveFirst?'<span>First partial period <b>waived</b></span>':s.prorate===false?'<span>First period <b>not prorated</b></span>':''}${unconvNote}</div>
         ${histTxt?`<div class="hist">Price history: ${histTxt}</div>`:''}${tierHist}
         <div class="periods">${cells}</div>
+        ${payRows(s)}
         ${recOpen==='none'&&!rt?recNoneHTML(id,u,s,sa,today):''}
         ${payForm(id,s,sa,today,nextPr,payOpen,payEdit)}
         ${uptoForm(id,s,sa,today,open['upto:'+s.id])}
@@ -3043,7 +3066,6 @@ function detailHTML(id,u,a,today){
         </form>
         ${canTier?tierForm(id,s,sa,today,open['tier:'+s.id]):''}
         ${courtesyForm(id,s,sa,today,open['courtesy:'+s.id])}${courtesyLine(s)}
-        ${payRows(s)}
         </div>
       </div>`;
     }else{
@@ -3262,7 +3284,26 @@ function updCostConv(){const usd=$('#c-cur').value==='USD';$('#c-paid-wrap').hid
 
 /* ---------- events ---------- */
 function toast(msg,ms){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms||3400);}
-function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel','analyticsPanel'])$('#'+p).hidden=p!==id;syncSettingsBtn();syncAnalyticsBtn();}
+function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel','analyticsPanel','payPanel'])$('#'+p).hidden=p!==id;syncSettingsBtn();syncAnalyticsBtn();syncPayBtn();}
+function syncPayBtn(){const b=$('#btn-payments');if(b)b.setAttribute('aria-expanded',String(!$('#payPanel').hidden));}
+/* v48: every payment and refund, newest first, with search, product, kind and range filters. Totals use the same sums as the Summary tiles
+   (allPayments / allRefunds with sumAdd), so with All products, no search and the same range they equal Collected and Refunds there. */
+const payUI={q:'',prod:'',kind:'',range:'all',from:'',to:''};
+function payBounds(){const save=[ui.range,ui.rangeFrom,ui.rangeTo];ui.range=payUI.range;ui.rangeFrom=payUI.from;ui.rangeTo=payUI.to;try{return rangeBounds();}finally{[ui.range,ui.rangeFrom,ui.rangeTo]=save;}}
+function payLines(){const out=[];for(const id in state.users){const u=state.users[id];for(const s of u.subscriptions||[]){const label=acctParts(u,s).label;const plan=(t,pid)=>[pkgName(pid)||planLabel(s),label&&!isProductName(label,pid)?label:''].filter(Boolean).join(' · ');
+    for(const p of s.payments||[]){const pid=s.kind==='one-time'?(s.packageId||''):(pkgIdAt(s,p.date)||s.packageId||'');out.push({id,sid:s.id,u,refund:false,date:p.date,amount:Number(p.amount)||0,currency:p.currency||s.currency,rate:p.rate,note:p.note||'',pid,plan:plan('p',pid)});}
+    for(const r of s.refunds||[]){const k=refundKey(s,r),pid=k.startsWith('__')?'':k;out.push({id,sid:s.id,u,refund:true,date:r.date,amount:Number(r.amount)||0,currency:r.currency||s.currency,rate:r.rate,note:r.note||'',pid,plan:plan('r',pid||s.packageId)});}}}
+  return out.sort((a,b)=>b.date.localeCompare(a.date)||(a.refund===b.refund?0:a.refund?-1:1)||displayName(a.u).localeCompare(displayName(b.u)));}
+function renderPayments(){if($('#payPanel').hidden)return;const sel=$('#pl-prod');const keep=payUI.prod;sel.innerHTML='<option value="">All products</option>'+packages().map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');sel.value=pkgById(keep)?keep:'';payUI.prod=sel.value;
+  $('#pl-range').value=payUI.range;$('#pl-custom').hidden=payUI.range!=='custom';const rb=payBounds();const q=payUI.q.trim().toLowerCase();
+  const rows=payLines().filter(l=>inRange(l.date,rb)&&(!payUI.prod||l.pid===payUI.prod)&&(!payUI.kind||(payUI.kind==='ref')===l.refund)&&(!q||[displayName(l.u),l.u.email||'',l.plan,l.note].join(' ').toLowerCase().includes(q)));
+  const col=newSum(),ref=newSum();let np=0,nr=0;for(const l of rows){if(l.refund){sumAdd(ref,l.amount,l.currency,l.rate);nr++;}else{sumAdd(col,l.amount,l.currency,l.rate);np++;}}
+  const net=netSum(col,ref,newSum());
+  $('#pl-tot').innerHTML=`Paid in <b>${esc(ownText(col,'PKR'))}</b> (${np} payment${np===1?'':'s'}) · Refunds <b class="refund">${nr?'\u2212'+esc(ownText(ref,'PKR')):esc(fmtAmt(0,'PKR'))}</b> (${nr}) · Net <b>${esc(ownText(net,'PKR'))}</b> · ${esc(rb.label)}`;
+  $('#pl-body').innerHTML=rows.map(l=>`<tr class="${l.refund?'refund-row':''}" tabindex="0" data-user="${esc(l.id)}"><td class="num">${esc(l.date)}</td><td class="who">${esc(displayName(l.u))}</td><td class="plan">${esc(l.plan)}</td><td class="num amt">${esc(fmtAmt(l.refund?-l.amount:l.amount,l.currency))}${rateNote(l.rate)}</td><td class="note">${l.refund?'<span class="tag refund-tag">Refund</span>':''}${esc(l.note)}</td></tr>`).join('');
+  $('#pl-none').hidden=rows.length>0;}
+function openPayments(){showPanel('payPanel');renderPayments();$('#payPanel').scrollIntoView({behavior:'smooth',block:'start'});}
+function openCustomerFromPayments(id){if(!state.users[id])return;$('#payPanel').hidden=true;syncPayBtn();if(state.users[id].cancel&&ui.statusFilter!=='all'){ui.statusFilter='all';const sf=$('#statusFilter');if(sf)sf.value='all';}ui.search='';const se=$('#search');if(se)se.value='';ui.expanded=id;renderTable();const row=document.querySelector('tr.row[data-id="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');if(row)row.scrollIntoView({behavior:'smooth',block:'start'});}
 function syncAnalyticsBtn(){const b=$('#btn-analytics');if(b)b.setAttribute('aria-expanded',String(!$('#analyticsPanel').hidden));}
 function syncSettingsBtn(){const open=!$('#settingsPanel').hidden;const b=$('#btn-settings');b.innerHTML=open?'<span class="glyph" aria-hidden="true">‹</span>Home':'Settings';b.setAttribute('aria-expanded',String(open));b.title=open?'Back to the user list':'Open settings';}
 function closeSettings(){$('#settingsPanel').hidden=true;syncSettingsBtn();window.scrollTo({top:0,behavior:'smooth'});}
@@ -3477,6 +3518,16 @@ function bind(){
   /* v26: Analytics */
   $('#btn-analytics').addEventListener('click',()=>{if($('#analyticsPanel').hidden)openAnalytics();else{$('#analyticsPanel').hidden=true;syncAnalyticsBtn();window.scrollTo({top:0,behavior:'smooth'});}});
   $('#an-close').addEventListener('click',()=>{$('#analyticsPanel').hidden=true;syncAnalyticsBtn();window.scrollTo({top:0,behavior:'smooth'});});
+  /* v48: Payments panel */
+  $('#btn-payments').addEventListener('click',()=>{if($('#payPanel').hidden)openPayments();else{$('#payPanel').hidden=true;syncPayBtn();}});
+  $('#pl-close').addEventListener('click',()=>{$('#payPanel').hidden=true;syncPayBtn();window.scrollTo({top:0,behavior:'smooth'});});
+  $('#pl-q').addEventListener('input',e=>{payUI.q=e.target.value;renderPayments();});
+  $('#pl-prod').addEventListener('change',e=>{payUI.prod=e.target.value;renderPayments();});
+  $('#pl-kind').addEventListener('change',e=>{payUI.kind=e.target.value;renderPayments();});
+  $('#pl-range').addEventListener('change',e=>{payUI.range=e.target.value;if(payUI.range==='custom'){const t=todayISO();if(!isDateKey(payUI.from))payUI.from=t.slice(0,7)+'-01';if(!isDateKey(payUI.to))payUI.to=t;$('#pl-from').value=payUI.from;$('#pl-to').value=payUI.to;}renderPayments();});
+  $('#pl-from').addEventListener('change',e=>{payUI.from=e.target.value;renderPayments();});$('#pl-to').addEventListener('change',e=>{payUI.to=e.target.value;renderPayments();});
+  $('#pl-body').addEventListener('click',e=>{const tr=e.target.closest('tr[data-user]');if(tr)openCustomerFromPayments(tr.dataset.user);});
+  $('#pl-body').addEventListener('keydown',e=>{if(e.key!=='Enter')return;const tr=e.target.closest('tr[data-user]');if(tr)openCustomerFromPayments(tr.dataset.user);});
   $('#an-cur').addEventListener('click',e=>{const b=e.target.closest('button[data-cur]');if(!b)return;ui.chartCur=b.dataset.cur;savePrefs();renderChart();renderAnalytics();});
   $('#remindBannerBtn').addEventListener('click',()=>{ui.rrTab=$('#remindBanner').dataset.kind==='final'?'final':'queue';ui.qStage=null;openRemindRun();});
   $('#rr-tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;ui.rrTab=b.dataset.tab;renderRemindRun();});
@@ -4096,7 +4147,9 @@ function buildUsersCSV(){
     for(const s of u.subscriptions||[]){const lbl=/^standard$/i.test(s.name||'')&&s.packageId?'':s.name;const sb=s.kind==='monthly'?[pkgName(pkgIdAt(s,todayISO())),lbl,subCycle(s),s.currency,priceAt(s,todayISO()),s.start,s.end||'',s.dueBy||'',s.prorate===false?'no':'yes',s.discount?(s.discount.type==='percent'?s.discount.value+'%':s.discount.value):'']:[pkgName(s.packageId),lbl,'one-time',s.currency,s.total,'',s.due||'','','',''];
       const pays=(s.payments||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
       if(!pays.length)lines.push([...base,...sb,'','','','',''].map(csvCell).join(','));
-      for(const p of pays)lines.push([...base,...sb,p.date,p.amount,p.currency||s.currency,p.rate||'',p.note||''].map(csvCell).join(','));}}
+      for(const p of pays)lines.push([...base,...sb,p.date,p.amount,p.currency||s.currency,p.rate||'',p.note||''].map(csvCell).join(','));
+      /* v48: refunds as their own rows with a negative amount (the import reads them back as refunds) */
+      for(const r of (s.refunds||[]).slice().sort((a,b)=>a.date.localeCompare(b.date)))lines.push([...base,...sb,r.date,-r.amount,r.currency||s.currency,r.rate||'','Refund'+(r.note?': '+r.note:'')].map(csvCell).join(','));}}
   return lines.join('\n');
 }
 function buildCostsCSV(){const ids=Object.keys(costRecords()).sort((a,b)=>costRecords()[a].date.localeCompare(costRecords()[b].date));return [['date','description','category','currency','cost','tax','rate','product'].join(','),...ids.map(id=>{const c=costRecords()[id];return [c.date,c.description,c.category,c.currency,c.cost,c.tax||'',c.rate||'',costPkgName(c)].map(csvCell).join(',');})].join('\n');}
@@ -4168,6 +4221,7 @@ async function importUsersCSV(){
       else{{const nc=curTxt?normCur(curTxt):s.currency,ny=s.kind==='monthly'&&kindTxt?(cy==='yearly'?'yearly':'monthly'):s.cycle;if(nc!==s.currency||ny!==s.cycle){/* v45: as in Edit plan, recorded money is never reinterpreted in another currency or cycle */if(!(s.payments||[]).length&&!(s.refunds||[]).length&&price!=null){s.currency=nc;if(s.kind==='monthly')s.cycle=ny;}else held++;}}if(pkgId){if(s.kind==='monthly'&&pkgObj.cycle&&pkgObj.cycle!==subCycle(s))clash++;else s.packageId=pkgId;}if(s.kind==='monthly'&&dueByTxt)s.dueBy=dueByTxt;if(s.kind==='monthly'&&pro!=null)s.prorate=pro;{const dtx=get(r,'disc');if(dtx&&s.kind==='monthly'){const m=dtx.match(/^([\d.]+)\s*(%)?$/);if(m)s.discount=m[2]?{type:'percent',value:Number(m[1])}:{type:'fixed',value:Number(m[1])};}}if(price!=null){if(s.kind==='monthly'){if((s.prices||[]).length<=1)s.prices=[{from:s.start,price}];}else s.total=price;}}
     }
     if(s){const pd=parseDate(get(r,'pdate')),pa=parseAmount(get(r,'pamt'));
+      if(pd&&pa!=null&&pa<0){/* v48: a negative amount is a refund (the export writes refunds this way) */const note=get(r,'pnote').replace(/^Refund:?\s*/i,'');s.refunds=(s.refunds||[]).filter(x=>!(x.date===pd&&Math.abs(x.amount+pa)<0.005));s.refunds.push({id:newId('r'),date:pd,amount:-pa,currency:curFromText(get(r,'pcur'),s.currency),rate:normRate(get(r,'prate')),note});}
       if(pd&&pa!=null&&pa>0){s.payments=(s.payments||[]).filter(p=>p.date!==pd);s.payments.push({id:newId('p'),date:pd,amount:pa,currency:curFromText(get(r,'pcur'),s.currency),rate:normRate(get(r,'prate')),note:get(r,'pnote')});pays++;}
       for(const [i,k] of monthCols){const amt=parseAmount(r[i]);if(amt==null||amt<=0)continue;const day=Math.min(+u.joinDate.slice(8,10),daysIn(+k.slice(0,4),+k.slice(5,7)-1));const date=k+'-'+pad(day);s.payments=(s.payments||[]).filter(p=>p.date!==date);s.payments.push({id:newId('p'),date,amount:amt,currency:s.currency,rate:null,note:''});pays++;}}
   }

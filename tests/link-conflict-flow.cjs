@@ -57,6 +57,6 @@ const user=(name,token,tier)=>({name,joinDate:'2026-09-24',confirmToken:token,su
   check('When the subscriber\'s answer matches or only confirms the owner\'s change, nothing is flagged and nothing changes');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'47',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'48',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

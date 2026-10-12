@@ -24,7 +24,7 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
     {id:'s1',kind:'monthly',cycle:'monthly',name:'',packageId:'pkg_c',currency:'PKR',start:'2026-08-24',prorate:true,prices:[{from:'2026-08-24',price:4200}],payments:[pay('p1','2026-08-24',4200),pay('p2','2026-09-24',4200),pay('p3','2026-10-24',4200)]},
     {id:'s2',kind:'monthly',cycle:'monthly',name:'Second account',packageId:'pkg_cmax',currency:'PKR',start:'2026-09-05',anchor:'2026-01-05',prorate:true,prices:[{from:'2026-09-05',price:4000}],payments:[pay('q1','2026-09-05',4000),pay('q2','2026-10-05',4000),pay('q3','2026-11-05',4000)]}]}},replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});
-  assert.equal(await page.locator('#app-ver').textContent(),'v47');
+  assert.equal(await page.locator('#app-ver').textContent(),'v48');
 
   // 1. the link page document carries both products with their own renewal dates and amounts
   await until(async()=>{const d=await doc('confirm/'+tok);const c=d&&d.cycles&&d.cycles['2026-11-24'];return c&&c.plans&&c.plans.length===2;},'link page document with two products');
@@ -66,6 +66,6 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
   await anon.close();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.deepEqual(errors,[]);check('No sideways scroll and no unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'47',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'48',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

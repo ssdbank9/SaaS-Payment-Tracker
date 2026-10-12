@@ -26,7 +26,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
    'users/os2':{name:'Own Day Monthly',joinDate:'2026-10-10',confirmToken:tok,subscriptions:[{id:'s1',kind:'monthly',cycle:'monthly',name:'',packageId:'pkg_c',currency:'PKR',start:'2026-10-10',anchor:'2026-10-10',ownStart:true,prorate:true,prices:[{from:'2026-10-10',price:4200}],payments:[{id:'p1',date:'2026-10-10',amount:4200,currency:'PKR'}]}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v47');
+  assert.equal(await page.locator('#app-ver').textContent(),'v48');
 
   // 1. the annual plan on the shared calendar: Jul 24 year; switch Renews on to its own start date
   let d=await expand('os1');assert.match(await d.textContent(),/Jul 24, 2026/);
@@ -76,6 +76,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   await page.screenshot({path:path.join(out,'own-start-390.png')});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.deepEqual(errors,[]);check('No sideways scroll and no unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'47',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'48',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
