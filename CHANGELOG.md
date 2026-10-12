@@ -2,6 +2,12 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v44 - 2026-10-12
+
+- Removed the Customer account matching in the statement import (added in v43; not needed). Imported charges are added as ordinary costs again.
+- The duplicate warning stays and now also flags a charge equal to a customer's calculated supplier cost within 3 days, so a card charge for a cost the app already counts is unticked before Apply.
+- Screenshot reading uses the current Claude Haiku model (claude-haiku-5-5) by default; the earlier default may be retired. READ_MODEL in the env file still overrides it.
+
 ## v43 - 2026-10-12
 
 - Card statement import (Costs -> Import from screenshot, or paste the text): each charge has a new Customer account choice. When a charge is a customer's supplier cost (date within 10 days and amount within 25% of that account's calculated cost for a cycle) the account is suggested. Applying it replaces that cycle's calculated cost with the actual card amount, dated as charged, instead of adding a second cost, so it is never counted twice. The Costs list marks such a cycle with "Use calculated" to undo the match.

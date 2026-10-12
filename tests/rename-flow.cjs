@@ -51,6 +51,6 @@ const mon=extra=>Object.assign({id:'s1',kind:'monthly',cycle:'monthly',packageId
   check('A second rename works the same: the link now shows "Claude Max Pro" and both earlier names are remembered');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'43',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'44',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

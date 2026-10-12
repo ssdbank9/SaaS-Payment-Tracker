@@ -550,7 +550,7 @@ table.brk tr:last-child td{border-bottom:0}
 .review-bar .grow{flex:1}
 .review-bar .tot{font-size:13px;text-align:right}
 .review-bar .tot b{font-family:var(--mono);font-variant-numeric:tabular-nums}
-table.review{min-width:1080px}table.review tr[data-dup="1"] td{background:var(--warn-bg)}table.review .dup-flag{color:var(--warn);font-weight:600}table.review select.match{max-width:300px}
+table.review{min-width:820px}table.review tr[data-dup="1"] td{background:var(--warn-bg)}table.review .dup-flag{color:var(--warn);font-weight:600}
 table.review td{padding:4px 6px}
 table.review input,table.review select{min-height:30px;padding:4px 6px;font-size:13px}
 table.review input.amt{width:110px;text-align:right;font-family:var(--mono)}
@@ -645,7 +645,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v43</span>
+      <span class="small muted num" id="app-ver" title="App version">v44</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
@@ -976,9 +976,9 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
           <span class="tot" id="rv-total"></span>
         </div>
         <div class="table-wrap"><table class="review" aria-label="Transactions found">
-          <thead><tr><th><input type="checkbox" id="rv-all" aria-label="Select all" checked></th><th>Date</th><th>Description</th><th class="r">Amount</th><th>Currency</th><th>Role</th><th>Category</th><th>Product</th><th>Customer account</th><th>From</th></tr></thead>
+          <thead><tr><th><input type="checkbox" id="rv-all" aria-label="Select all" checked></th><th>Date</th><th>Description</th><th class="r">Amount</th><th>Currency</th><th>Role</th><th>Category</th><th>Product</th><th>From</th></tr></thead>
           <tbody id="rv-body"></tbody></table></div>
-        <p class="small muted" style="margin-top:6px"><b>Customer account</b>: a charge that is a customer's supplier cost replaces that account's calculated cost for the cycle (suggested when the date and amount are close), so it is not counted twice. Debits are pre-selected, credits are not. A row with the same amount as a cost already recorded within 3 days is marked <b>Possible duplicate</b> and unticked; tick it again if it really is a second charge. Mark a row <b>Tax of row above</b> to fold it into the previous cost's tax; a standalone <b>Tax</b> row is saved with cost 0.</p>
+        <p class="small muted" style="margin-top:6px">Debits are pre-selected, credits are not. A row with the same amount as a cost already recorded within 3 days is marked <b>Possible duplicate</b> and unticked; tick it again if it really is a second charge. Mark a row <b>Tax of row above</b> to fold it into the previous cost's tax; a standalone <b>Tax</b> row is saved with cost 0.</p>
         <div class="form-actions"><button class="btn primary" type="button" id="rv-save">Apply · add 0 selected</button><button class="link" type="button" id="rv-clear">Clear</button><span class="small muted" id="rv-msg"></span><span class="err" id="rv-err"></span></div>
       </div>
     </section>
@@ -1795,7 +1795,7 @@ function normAccountCost(v){
   const entries=v.entries.filter(e=>e&&isDateKey(e.from)&&validAmt(e.amount)).map(e=>({from:e.from,amount:Number(e.amount),currency:normCur(e.currency),rate:normRate(e.rate),paidIn:e.paidIn==='PKR'?'PKR':'USD',supplier:String(e.supplier||'').slice(0,200)})).sort((a,b)=>a.from.localeCompare(b.from));
   if(!entries.length)return null;const out={frequency:v.frequency==='yearly'?'yearly':'monthly',first:['full','custom','free'].includes(v.first)?v.first:'prorated',entries,overrides:{}};
   if(out.first==='custom'&&validAmt(v.firstAmount))out.firstAmount=Number(v.firstAmount);if(isDateKey(v.end))out.end=v.end;
-  for(const [st,c] of Object.entries(v.overrides||{}))if(isDateKey(st)&&c&&validAmt(c.cost)&&isDateKey(c.date))out.overrides[st]={date:c.date,cost:Number(c.cost),tax:Number(c.tax)||0,currency:normCur(c.currency),rate:normRate(c.rate),description:String(c.description||'').slice(0,500),category:String(c.category||'Product').slice(0,100),purchase:normPurchase(c.purchase),...(c.receipt?{receipt:String(c.receipt).slice(0,300)}:{}),...(c.fromStatement?{fromStatement:true}:{})};
+  for(const [st,c] of Object.entries(v.overrides||{}))if(isDateKey(st)&&c&&validAmt(c.cost)&&isDateKey(c.date))out.overrides[st]={date:c.date,cost:Number(c.cost),tax:Number(c.tax)||0,currency:normCur(c.currency),rate:normRate(c.rate),description:String(c.description||'').slice(0,500),category:String(c.category||'Product').slice(0,100),purchase:normPurchase(c.purchase)};
   return out;
 }
 function costRecords(){
@@ -3208,7 +3208,7 @@ function renderCosts(){
     const c=costRecords()[id];const mk=monthKey(c.date);if(c.category)cats.add(c.category);
     if(mk!==curMonth){flushMonth();curMonth=mk;monthSum=newSum();}
     sumAdd(monthSum,costTotal(c),c.currency,c.rate);sumAdd(all,costTotal(c),c.currency,c.rate);
-    const del=ui.costDel===id?`<span class="small">${c.source==='account-cycle'?'Waive this cycle cost?':'Delete?'} </span><button class="btn sm danger" type="button" data-act="cost-del-yes" data-cost="${id}">Yes</button> <button class="link" type="button" data-act="cost-del-no">No</button>`:`${c.fromStatement?`<button class="link" type="button" data-act="cost-unmatch" data-cost="${id}" title="Remove the card amount and go back to the calculated supplier cost">Use calculated</button> `:''}<button class="link" type="button" data-act="cost-edit" data-cost="${id}">Edit</button> <button class="link danger" type="button" data-act="cost-del" data-cost="${id}">${c.source==='account-cycle'?'Waive cycle':'Delete'}</button>`;
+    const del=ui.costDel===id?`<span class="small">${c.source==='account-cycle'?'Waive this cycle cost?':'Delete?'} </span><button class="btn sm danger" type="button" data-act="cost-del-yes" data-cost="${id}">Yes</button> <button class="link" type="button" data-act="cost-del-no">No</button>`:`<button class="link" type="button" data-act="cost-edit" data-cost="${id}">Edit</button> <button class="link danger" type="button" data-act="cost-del" data-cost="${id}">${c.source==='account-cycle'?'Waive cycle':'Delete'}</button>`;
     html+=`<tr><td class="num">${esc(c.date)}</td><td class="desc"${c.source==='screenshot'?' title="Imported from a screenshot"':''}>${esc(c.description)||'<span class="muted">—</span>'}${c.receipt?` <a class="link sm" href="/_blob/${esc(c.receipt)}" target="_blank" rel="noopener">view receipt</a>`:''}</td><td class="cat">${esc(c.category)||'<span class="muted">—</span>'}</td><td class="prod">${costPkgName(c)?esc(costPkgName(c)):'<span class="muted">Shared</span>'}</td><td class="r num">${esc(fmtAmt(c.cost,c.currency))}</td><td class="r num">${c.tax?esc(fmtAmt(c.tax,c.currency)):'<span class="muted">—</span>'}</td><td class="r num">${esc(fmtAmt(costTotal(c),c.currency))}</td><td class="r num small muted">${c.rate?'at '+c.rate.toLocaleString():''}</td><td>${del}</td></tr>`;
   }
   flushMonth();
@@ -3714,7 +3714,6 @@ function bind(){
     if(A==='cost-edit'){openCostForm(costRecords()[id]);$('#costPanel').scrollIntoView({behavior:'smooth',block:'nearest'});}
     else if(A==='cost-del'){ui.costDel=id;renderCosts();}
     else if(A==='cost-del-no'){ui.costDel=null;renderCosts();}
-    else if(A==='cost-unmatch'){/* v43: undo a statement match: the cycle goes back to its calculated supplier cost */const c=costRecords()[id];if(!c||c.source!=='account-cycle'||!state.users[c.userId])return;const u=clone(state.users[c.userId]);const sub=u.subscriptions.find(x=>x.id===c.subscriptionId);if(!sub||!sub.accountCost)return;delete sub.accountCost.overrides[c.cycleStart];const ok=await persistUser(c.userId,u);if(ok)toast('Back to the calculated cost for that cycle.');}
     else if(A==='cost-del-yes'){const c=costRecords()[id];ui.costDel=null;const ok=await removeCost(id);if(ok&&c)toast((c.source==='account-cycle'?'Waived this cycle cost: ':'Deleted ')+c.description+'.');}
   });
 
@@ -3953,26 +3952,10 @@ async function extractText(){
 }
 function reviewRows(){return shot.rows;}
 function rowCur(r){return r.cur||$('#rv-cur').value;}
-/* v43: a statement charge can be matched to a customer account's supplier cost for one cycle. It then replaces that cycle's calculated cost
-   (accountCost.overrides[cycleStart], the slot a corrected cycle cost already uses) instead of being added as a separate cost, so it is never
-   counted twice. Suggested when the charge is within 10 days of the cycle's cost date and within 25% of its calculated amount. */
-function cycleCostCandidates(r){
-  if(!isDateKey(r.date)||!(Number(r.amount)>0))return [];const cur=rowCur(r),amt=Number(r.amount),rate=defaultRate();const out=[];
-  for(const c of Object.values(costRecords())){if(c.source!=='account-cycle'||!state.users[c.userId]||!isDateKey(c.date))continue;const gap=Math.abs(dayDiff(c.date,r.date));if(gap>10)continue;
-    const u=state.users[c.userId],sub=(u.subscriptions||[]).find(x=>x.id===c.subscriptionId);if(!sub||!sub.accountCost)continue;
-    let calc=costTotal(c);if(c.currency!==cur)calc=rate?(cur==='PKR'?calc*rate:calc/rate):null;const diff=calc?Math.abs(calc-amt)/Math.max(calc,amt):1;
-    out.push({key:c.userId+'|'+c.subscriptionId+'|'+c.cycleStart,score:diff+gap/100,diff,label:`${displayName(u)} · ${pkgName(c.packageId)||sub.name||'Product'} · cycle ${fmtD(c.cycleStart,true)} (calculated ${fmtAmt(costTotal(c),c.currency)})${sub.accountCost.overrides[c.cycleStart]?' · already has an actual':''}`});}
-  return out.sort((a,b)=>a.score-b.score).slice(0,8);
-}
 /* v43: a row whose amount equals a cost already recorded within 3 days (same currency) is flagged and unticked once, so a statement imported
-   twice is not added twice. A cycle's calculated cost is not a duplicate (that is what a match replaces); a card amount already matched to it is. */
+   twice is not added twice. Every recorded cost counts, including a customer account's calculated supplier cost for a cycle (v44). */
 function possibleDup(r){if(!isDateKey(r.date))return null;const cur=rowCur(r),amt=Number(r.amount)||0;if(!(amt>0))return null;
-  for(const c of Object.values(costRecords())){if(c.source==='account-cycle'&&!c.fromStatement)continue;if(c.currency!==cur||!isDateKey(c.date))continue;if(Math.abs(costTotal(c)-amt)<0.01&&Math.abs(dayDiff(c.date,r.date))<=3)return c;}return null;}
-function matchOptions(r){
-  const cands=cycleCostCandidates(r);if(r.match===undefined){const best=cands[0];r.match=best&&best.diff<=0.25&&!r.credit?best.key:'';}
-  if(r.match&&!cands.some(c=>c.key===r.match))r.match='';
-  return `<option value=""${r.match?'':' selected'}>Not a customer's cost</option>${cands.map(c=>`<option value="${esc(c.key)}"${c.key===r.match?' selected':''}>${esc(c.label)}</option>`).join('')}`;
-}
+  for(const c of Object.values(costRecords())){if(c.currency!==cur||!isDateKey(c.date))continue;if(Math.abs(costTotal(c)-amt)<0.01&&Math.abs(dayDiff(c.date,r.date))<=3)return c;}return null;}
 function renderReview(){
   const rows=reviewRows();const body=$('#rv-body');
   rows.forEach(r=>{r.dupOf=r.role==='taxabove'?null:possibleDup(r);if(r.dupOf&&!r.dupSeen){r.sel=false;r.dupSeen=true;}});
@@ -3986,13 +3969,12 @@ function renderReview(){
     <td><select data-f="role"><option value="cost"${r.role==='cost'?' selected':''}>Cost</option><option value="tax"${r.role==='tax'?' selected':''}>Tax</option><option value="taxabove"${r.role==='taxabove'?' selected':''}${i===0?' disabled':''}>Tax of row above</option></select></td>
     <td><input class="cat" type="text" data-f="cat" value="${esc(r.cat)}" placeholder="${esc($('#rv-cat').value||'—')}" list="cat-list"></td>
     <td><select class="prod" data-f="pkg" aria-label="Product">${costPkgOptions(r.pkg,'(as above)')}</select></td>
-    <td><select class="match" data-f="match" aria-label="Customer account"${r.role==='taxabove'?' disabled':''}>${r.role==='taxabove'?'<option value="">(added to the row above)</option>':matchOptions(r)}</select></td>
     <td class="small muted">${r.img>=0?'image '+(r.img+1):'text'}${r.credit?' · credit':''}${r.dupOf?`<br><span class="dup-flag">Possible duplicate of ${esc(r.dupOf.description||'a cost')} (${esc(r.dupOf.date)}); unticked</span>`:''}</td>
   </tr>`).join('');
   const sel=rows.filter(r=>r.sel);const cur=$('#rv-cur').value;const S=newSum();let unconv=0;
   for(const r of sel){const c=rowCur(r);sumAdd(S,r.amount,c,null);if(c!==cur&&!defaultRate())unconv++;}
-  const total=cur==='USD'?S.usd:S.pkr;const nMatch=sel.filter(r=>r.match&&r.role!=='taxabove').length;
-  $('#rv-total').innerHTML=sel.length?`Will add <b>${esc(fmtAmt(total,cur))}</b>${nMatch?` <span class="small muted">(${nMatch} replace${nMatch===1?'s':''} a customer's calculated cost)</span>`:''}${S.missing?' <span class="muted">(some rows in the other currency, no rate)</span>':''}<br><span class="small muted">${esc(ownText(S,cur))} across ${sel.length} row${sel.length===1?'':'s'}</span>`:'';
+  const total=cur==='USD'?S.usd:S.pkr;
+  $('#rv-total').innerHTML=sel.length?`Will add <b>${esc(fmtAmt(total,cur))}</b>${S.missing?' <span class="muted">(some rows in the other currency, no rate)</span>':''}<br><span class="small muted">${esc(ownText(S,cur))} across ${sel.length} row${sel.length===1?'':'s'}</span>`:'';
   $('#rv-save').textContent=`Apply · add ${sel.length} selected`;$('#rv-save').disabled=!sel.length||shot.busy;
   $('#rv-all').checked=rows.length>0&&sel.length===rows.length;
 }
@@ -4005,25 +3987,20 @@ async function saveReview(){
   for(const r of sel){
     const amt=Number(r.amount)||0;if(amt<=0)continue;const cur=rowCur(r);
     if(r.role==='taxabove'&&entries.length){const prev=entries[entries.length-1];if(prev.currency===cur){prev.tax+=amt;continue;}}
-    entries.push({date:r.date,description:r.desc||'Imported transaction',category:r.cat.trim()||globalCat,packageId:pkgById(r.pkg)?r.pkg:globalPkg,currency:cur,cost:r.role==='tax'?0:amt,tax:r.role==='tax'?amt:0,rate:null,source:'screenshot',img:r.img,match:r.role==='tax'?'':(r.match||'')});
+    entries.push({date:r.date,description:r.desc||'Imported transaction',category:r.cat.trim()||globalCat,packageId:pkgById(r.pkg)?r.pkg:globalPkg,currency:cur,cost:r.role==='tax'?0:amt,tax:r.role==='tax'?amt:0,rate:null,source:'screenshot',img:r.img});
   }
   const uploads={};
   if(assets){for(const e of entries){if(e.img>=0&&uploads[e.img]===undefined){const im=shot.images[e.img];try{const res=await assets.upload(im.file);uploads[e.img]=res.id;}catch(ex){uploads[e.img]='';}}}}
-  let added=0,dups=0,failed=0,replaced=0;const matched={};
+  let added=0,dups=0,failed=0;
   for(const e of entries){
-    if(e.match){const uid=e.match.split('|')[0];(matched[uid]=matched[uid]||[]).push(e);continue;}
     const total=e.cost+e.tax;
     if(isDupCost(e.date,e.description,total,e.currency)){dups++;continue;}
     const ok=await persistCost(newId('c'),{date:e.date,description:e.description,category:e.category,packageId:e.packageId||'',currency:e.currency,cost:e.cost,tax:e.tax,rate:null,source:'screenshot',receipt:(e.img>=0&&uploads[e.img])||''});
     ok?added++:failed++;
   }
-  for(const [uid,list] of Object.entries(matched)){if(!state.users[uid]){failed+=list.length;continue;}const u=clone(state.users[uid]);let n=0;
-    for(const e of list){const [,sid,st]=e.match.split('|');const sub=(u.subscriptions||[]).find(x=>x.id===sid);if(!sub||!sub.accountCost||!isDateKey(st)){failed++;continue;}const pid=pkgIdAt(sub,st)||sub.packageId||'';
-      sub.accountCost.overrides=sub.accountCost.overrides||{};sub.accountCost.overrides[st]={date:e.date,cost:e.cost,tax:e.tax,currency:e.currency,rate:null,description:`${displayName(u)} · ${pkgName(pid)||sub.name||'Product'} · ${e.description}`,category:e.category||'Product',purchase:null,receipt:(e.img>=0&&uploads[e.img])||'',fromStatement:true};n++;}
-    if(n){const ok=await persistUser(uid,u);if(ok)replaced+=n;else failed+=n;}}
   shot.busy=false;
-  msg.textContent=`Added ${added} cost${added===1?'':'s'}${replaced?`, replaced ${replaced} calculated customer cost${replaced===1?'':'s'} with the card amount`:''}${dups?`, skipped ${dups} already recorded`:''}${failed?`, ${failed} failed`:''}.`;
-  toast(`Added ${added} cost${added===1?'':'s'}${replaced?` and matched ${replaced} to customer accounts`:''} from the import${dups?`; ${dups} duplicate${dups===1?'':'s'} skipped`:''}.`);
+  msg.textContent=`Added ${added} cost${added===1?'':'s'}${dups?`, skipped ${dups} already recorded`:''}${failed?`, ${failed} failed`:''}.`;
+  toast(`Added ${added} cost${added===1?'':'s'} from the import${dups?`; ${dups} duplicate${dups===1?'':'s'} skipped`:''}.`);
   const savedIds=new Set(sel.map(r=>r.id));shot.rows=shot.rows.filter(r=>!savedIds.has(r.id));
   if(!shot.rows.length){shot.images.forEach(i=>{try{URL.revokeObjectURL(i.url);}catch(e){}});shot.images=[];}
   renderThumbs();renderReview();if(!shot.rows.length)$('#review').hidden=false;

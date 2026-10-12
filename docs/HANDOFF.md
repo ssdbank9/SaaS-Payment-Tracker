@@ -22,7 +22,7 @@ review items 9-12 fixed (conversion residue, refund settled twice, one-time refu
 Live: `/healthz` reported `"version":"41"` on 12 October 2026 (about 13 minutes after the push). Note: on one office network a Fortinet
 firewall intercepted wasooli.duckdns.org, so a failed live check can be that network, not the server; try another network before assuming an outage.
 
-### Open items after v43 (the to-do list; keep this current)
+### Open items after v44 (the to-do list; keep this current)
 
 Numbers are from the independent review of v38 (findings reproduced on disposable stores; scripts were kept outside the repo).
 Done so far: 1-12 and 22 (v39/v40, live), 13-17 (supplier-cost edge cases), 18 (phone numbers with a country code box, +92 by default) and
@@ -32,7 +32,7 @@ descriptions that equal any earlier name follow the rename on the link page, mes
 cancelled customer with a later plan, Set package, two decimals, chart labels), and 27, 28 (CSV export neutralises = + - @ cells with a leading apostrophe and exports +92 phones as text; CSV import removes it and is all
 or nothing when a new product cannot be saved), and in v42 #24 (Edit plan currency/cycle change asks for a new price and start date; see AGENTS.md) and the hardening items 29-38 (import never deletes what it reports as skipped; browser-only saves report storage failure; SMTP password refused without STARTTLS and cleared when the host changes; update.sh installs requirements before switching code and retries a failed restart; backup.sh integrity check and atomic dated receipt archives; /healthz minimal for the public; rate limit on the choice page; cleared link tokens inactive; #36 left as is on purpose, see AGENTS.md). Still open, roughly in priority order:
 
-v42 is live (confirmed 2026-10-12 via /healthz). v43 adds statement-import matching to customer supplier costs and the duplicate warning.
+v42 and v43 are live (confirmed 2026-10-12 via /healthz). v44 removes the v43 customer-account matching (owner: not needed), keeps the duplicate warning (now also against calculated supplier costs) and moves screenshot reading to claude-haiku-5-5. The screenshot path is tested end to end with `tests/fake-reader-server.py`; a real statement picture has not been read yet because no API key is set.
 
 - Old numbers stored without a country code (e.g. 03001234567) are not rewritten; retyping them in Edit user fixes them.
 - Screenshot reading is not set up on the live server (the signed-in /healthz shows `reading: ""`): the owner adds an API key in

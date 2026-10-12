@@ -185,7 +185,7 @@ Every user gets a private token (22 random URL-safe characters, stored as `confi
 
 Since v23 you can use **Google Gemini** instead: in Settings → **AI reading** choose *Google Gemini*, paste a key from aistudio.google.com (kept on the server like the Anthropic one), press **Load models** (the newest Flash-Lite model is preselected) and Save; `server/gemini_read.py` then reads the pictures through `generateContent`.
 
-Paste an Anthropic API key in Settings → **AI reading** (kept on the server, masked on read; the **Test** button validates it), or set `ANTHROPIC_API_KEY=sk-ant-...` in `/etc/payments-tracker.env` and run `sudo systemctl restart payments-tracker` as the fallback. The server then forwards statement screenshots and pasted text to the Claude Messages API with `claude-haiku-4-5-20251001` (both *Quick* and *Default* in Settings use Haiku here) and the *Import from screenshot* panel turns on. Without a key the panel explains that reading is off and still parses pasted text line by line. Your key never reaches the browser.
+Paste an Anthropic API key in Settings → **AI reading** (kept on the server, masked on read; the **Test** button validates it), or set `ANTHROPIC_API_KEY=sk-ant-...` in `/etc/payments-tracker.env` and run `sudo systemctl restart payments-tracker` as the fallback. The server then forwards statement screenshots and pasted text to the Claude Messages API with `claude-haiku-5-5` (v44; `READ_MODEL` in the env file overrides it) (both *Quick* and *Default* in Settings use Haiku here) and the *Import from screenshot* panel turns on. Without a key the panel explains that reading is off and still parses pasted text line by line. Your key never reaches the browser.
 
 ### Operations
 

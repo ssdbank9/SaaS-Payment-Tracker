@@ -60,6 +60,6 @@ const USERS={
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   check('No sideways scroll at 390px');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'43',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'44',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

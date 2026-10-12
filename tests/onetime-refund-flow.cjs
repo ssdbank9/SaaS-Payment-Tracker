@@ -51,6 +51,6 @@ const item=()=>({id:'s3',kind:'one-time',name:'Setup',packageId:'pkg_c',currency
   check('Monthly plans keep their three refund choices; the one-time reasons are not offered there');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'43',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'44',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
