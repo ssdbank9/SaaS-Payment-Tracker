@@ -19,8 +19,8 @@ CSV safety, server hardening). Own-cycle plans are not yet in the stage 1-3 roun
 review items 9-12 fixed (conversion residue, refund settled twice, one-time refund reason, USD-to-PKR expense edit). See `CHANGELOG.md`.
 
 **Update 12 October 2026, v41** (commit 35616db): items 13-23, 25-28 and 39 fixed; see `CHANGELOG.md`. Full local suite 27 suites, 292 checks.
-Live check note: from the development PC the site was unreachable because that network's Fortinet firewall intercepted wasooli.duckdns.org;
-the live version must be checked from a phone or another network (`/healthz` shows `"version":"41"`).
+Live: `/healthz` reported `"version":"41"` on 12 October 2026 (about 13 minutes after the push). Note: on one office network a Fortinet
+firewall intercepted wasooli.duckdns.org, so a failed live check can be that network, not the server; try another network before assuming an outage.
 
 ### Open items after v41 (the to-do list; keep this current)
 
