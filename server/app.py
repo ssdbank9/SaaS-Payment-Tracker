@@ -11,7 +11,7 @@ import os
 import re
 import secrets
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from flask import Flask, Response, abort, jsonify, redirect, render_template, request, send_from_directory, session, url_for
@@ -27,7 +27,7 @@ import notify  # noqa: E402
 
 APP_NAME = "Wasooli"
 TAGLINE = "Know who's paid."
-VERSION = "41"
+VERSION = "42"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
@@ -200,12 +200,15 @@ def logout():
 
 @app.get("/healthz")
 def healthz():
+    # v42: anyone can reach this; a signed-in admin also sees the details, nobody sees an error message
     try:
         v = db.version()
-    except Exception as e:  # pragma: no cover
-        return jsonify({"ok": False, "app": "wasooli", "error": str(e)}), 500
-    return jsonify({"ok": True, "app": "wasooli", "version": VERSION, "docs_version": v, "claude": claude_read.enabled(),
-                    "reading": reading_provider() if reading_enabled() else "", "linkBase": LINK_BASE})
+    except Exception:  # pragma: no cover
+        return jsonify({"ok": False, "app": "wasooli"}), 500
+    out = {"ok": True, "app": "wasooli", "version": VERSION}
+    if auth.is_logged_in():
+        out.update({"docs_version": v, "claude": claude_read.enabled(), "reading": reading_provider() if reading_enabled() else "", "linkBase": LINK_BASE})
+    return jsonify(out)
 
 
 # ---------- security (v25): the private sign-in address, sign out, sign out everywhere ----------
@@ -339,6 +342,9 @@ def api_import():
     base = body.get("base")
     if base is not None and (not isinstance(base, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in base.items())):
         return jsonify({"error": "base must be {path: updated_at}"}), 400
+    if bad and replace:
+        # v42: a replace deletes every stored record that is not in the file, so a record that cannot be imported must stop the whole import
+        return jsonify({"error": "invalid_docs", "message": "Nothing was imported: some records in the file are not valid.", "skipped": bad}), 400
     versions = {}
     try:
         n, removed = db.import_docs({p: v for p, v in docs.items() if p not in bad}, replace, base, versions)
@@ -598,15 +604,23 @@ def api_mail_settings_put():
         return jsonify({"error": "bad_port"}), 400
     out["port"] = port if 1 <= port <= 65535 else 587
     pw = body.get("password")
+    cleared = False
     if body.get("clearPassword"):
         out["password"] = ""
     elif isinstance(pw, str) and pw:
         out["password"] = pw[:500]
+    elif cur.get("password") and (out["host"] != cur.get("host", "") or out["user"] != cur.get("user", "") or out["port"] != int(cur.get("port") or 587)):
+        # v42: the stored password belongs to the old server and account; it is never sent to a new one
+        out["password"] = ""
+        cleared = True
     else:
         out["password"] = cur.get("password", "")
     db.set_meta("mail", out)
     db.audit("admin", "mail.settings", out["host"], auth.client_ip())
-    return jsonify(notify.public_mail_settings(out))
+    res = notify.public_mail_settings(out)
+    if cleared:
+        res["passwordCleared"] = True
+    return jsonify(res)
 
 
 @app.post("/api/mail-test")
@@ -641,7 +655,8 @@ def _confirm_context(token):
     if uid:
         # the link must still be the user's current one; a replaced token shows "not active"
         u = db.get_doc("users/" + uid)
-        if not u or not isinstance(u["data"], dict) or (u["data"].get("confirmToken") and u["data"].get("confirmToken") != token):
+        # v42: a user with no token (it was cleared) has no active link either
+        if not u or not isinstance(u["data"], dict) or u["data"].get("confirmToken") != token:
             return None
     return ctx
 
@@ -706,6 +721,10 @@ def confirm(token):
         choice = db.norm_choice(request.form.get("choice") or request.form.get("answer") or "")
         if choice not in db.CHOICES:
             abort(400)
+        # v42: at most 12 answers per link and 40 per address in 10 minutes (a subscriber changes their mind a few times, not hundreds)
+        since = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+        if db.count_confirmations(since, token=token) >= 12 or db.count_confirmations(since, ip=auth.client_ip()) >= 40:
+            abort(429)
         plan_id = (request.form.get("planId") or "").strip()[:80]
         plan = next((p for p in plans if p["planId"] == plan_id), None) if plan_id else None
         if plan_id and not plan:
@@ -750,6 +769,13 @@ def not_found(_e):
     if request.path.startswith("/c/"):
         return render_template("confirm.html", app_name=APP_NAME, tagline=TAGLINE, missing=True), 404
     return neutral(404)  # v25: no hint of anything else living here
+
+
+@app.errorhandler(429)
+def too_many(_e):
+    if request.path.startswith("/c/"):
+        return Response("Too many answers just now. Please wait a few minutes and try again.", 429, mimetype="text/plain")
+    return jsonify({"error": "too_many_requests"}), 429
 
 
 @app.errorhandler(413)

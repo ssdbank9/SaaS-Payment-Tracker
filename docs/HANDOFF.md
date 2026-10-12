@@ -22,7 +22,7 @@ review items 9-12 fixed (conversion residue, refund settled twice, one-time refu
 Live: `/healthz` reported `"version":"41"` on 12 October 2026 (about 13 minutes after the push). Note: on one office network a Fortinet
 firewall intercepted wasooli.duckdns.org, so a failed live check can be that network, not the server; try another network before assuming an outage.
 
-### Open items after v41 (the to-do list; keep this current)
+### Open items after v42 (the to-do list; keep this current)
 
 Numbers are from the independent review of v38 (findings reproduced on disposable stores; scripts were kept outside the repo).
 Done so far: 1-12 and 22 (v39/v40, live), 13-17 (supplier-cost edge cases), 18 (phone numbers with a country code box, +92 by default) and
@@ -30,19 +30,9 @@ Done so far: 1-12 and 22 (v39/v40, live), 13-17 (supplier-cost edge cases), 18 (
 and the rename rule (a renamed product remembers old names in `aliases`; `isProductName` makes plan/item labels and automatic expense
 descriptions that equal any earlier name follow the rename on the link page, messages, cards and Costs), and the small fixes 20, 21, 23, 25, 26, 39 (Queue Except list on phones and its cycle, Yes/Cancel before removing a receipt/refund/price/tier,
 cancelled customer with a later plan, Set package, two decimals, chart labels), and 27, 28 (CSV export neutralises = + - @ cells with a leading apostrophe and exports +92 phones as text; CSV import removes it and is all
-or nothing when a new product cannot be saved), ready locally for v41. Still open, roughly in priority order:
+or nothing when a new product cannot be saved), and in v42 the hardening items 29-38 (import never deletes what it reports as skipped; browser-only saves report storage failure; SMTP password refused without STARTTLS and cleared when the host changes; update.sh installs requirements before switching code and retries a failed restart; backup.sh integrity check and atomic dated receipt archives; /healthz minimal for the public; rate limit on the choice page; cleared link tokens inactive; #36 left as is on purpose, see AGENTS.md). Still open, roughly in priority order:
 
 - 24 Edit plan changes currency or cycle without converting stored prices; a yearly package is accepted on a monthly plan.
-- 29 Server /api/import deletes a user it reports as skipped (null doc with replace users/).
-- 30 Browser-only (file://) copy shows "recorded" when localStorage writing failed.
-- 31 notify.py sends the SMTP password unencrypted if STARTTLS is stripped (refuse instead).
-- 32 Changing the mail host keeps the stored SMTP password and mail-test sends it to the new host.
-- 33 deploy/update.sh: a failed pip install leaves the VM on old code with no retry or restart.
-- 34 deploy/backup.sh: receipts archive is one file overwritten nightly (no history, not atomic); no SQLite integrity check.
-- 35 /healthz is public and reveals app name, AI provider, docs_version and linkBase.
-- 36 notify.py skips users who answered from stage 1; the app only from stage 2 (align if wanted).
-- 37 The subscriber choice page accepts unlimited submissions (no rate limit).
-- 38 A cleared confirmToken still lets old confirm/<token> links work.
 - Old numbers stored without a country code (e.g. 03001234567) are not rewritten; retyping them in Edit user fixes them.
 
 Follow-ups from the v39/v40 features:

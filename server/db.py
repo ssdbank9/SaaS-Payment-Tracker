@@ -304,6 +304,16 @@ def record_confirmation(token, user_id, cycle_start, answer, note, ip, user_agen
     return at
 
 
+def count_confirmations(since_iso, token=None, ip=None):
+    """v42: how many answers were recorded since a moment, for one link or one address (rate limit of the public choice page)."""
+    col, val = ("token", token) if token is not None else ("ip", ip)
+    con = connect()
+    try:
+        return con.execute("SELECT COUNT(*) FROM confirmations WHERE %s = ? AND at >= ?" % col, (val, since_iso)).fetchone()[0]
+    finally:
+        con.close()
+
+
 def _row(r):
     d = dict(r)
     d["answer"] = norm_choice(d.get("answer"))

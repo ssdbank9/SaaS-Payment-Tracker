@@ -51,6 +51,6 @@ const mon=(extra)=>Object.assign({id:'s1',kind:'monthly',cycle:'monthly',package
   check('Trying again once saving works imports the customer and creates the product');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'41',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'42',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

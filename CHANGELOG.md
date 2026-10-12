@@ -2,6 +2,18 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v42 - 2026-10-12
+
+- Safer server import: a "replace" import that contains a record which cannot be imported is now refused as a whole (400, nothing changed) instead of deleting the owner's users and then reporting them as skipped.
+- Browser-only copy (the file opened without the server): if the browser refuses to store a change (storage full or blocked) the app now says "Nothing was saved" and undoes the change instead of showing it as recorded.
+- Mail: the SMTP password is never sent when the mail server does not offer encryption (STARTTLS); the test email and reminders fail with a plain message instead. Changing the mail host, port or user clears the saved password (the screen says so), so an old password is never sent to a new server.
+- Updates: deploy/update.sh installs new requirements before switching the code, and if that fails it stays on the old working version and retries on the next run; a failed service restart is retried on the next run (a `.restart-pending` marker).
+- Backups: deploy/backup.sh checks every database backup with an integrity check and keeps the older ones if it fails; receipts are archived to a temporary file and moved into place, with a dated copy per night (14 kept) plus assets-latest.tar.gz.
+- /healthz shows only ok, app name and version to the public; a signed-in admin still sees the details, and an error never shows its text.
+- The subscriber choice page accepts at most 12 answers per link and 40 per address in 10 minutes (then "Too many answers just now").
+- A choice link whose person no longer has that link (the link was cleared) is shown as not active.
+- Not changed on purpose (#36): the reminder emails skip someone who already answered at stage 1, while the Queue skips from stage 2; both are intended.
+
 ## v41 - 2026-10-12
 
 - Phone numbers: a country code box (+92 unless changed) sits beside the number in Add user and Edit user, with a preview of what will be saved. "0300 1234567" becomes +92 300 1234567; a number typed with its own + or 00 code keeps it. Quick add and the CSV import use +92. Existing numbers are not rewritten.

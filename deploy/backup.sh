@@ -1,26 +1,50 @@
 #!/usr/bin/env bash
-# Nightly SQLite backup into $DATA_DIR/backups, keeping the newest 30.
-# Uses SQLite's online backup API through the venv's Python, so it is safe
-# while the service is running. Run by payments-tracker-backup.timer.
+# Nightly backup into $DATA_DIR/backups:
+#   - an online SQLite backup (safe while the service runs), checked with PRAGMA integrity_check before it is
+#     kept; the newest $KEEP (30) are retained;
+#   - the uploaded receipts as a dated archive assets-YYYYMMDD.tar.gz (the newest $KEEP_ASSETS, 14, are retained)
+#     plus assets-latest.tar.gz (a copy of the newest, the name the recovery guide uses).
+# Every file is written to a temporary name and moved into place, so a failed or interrupted run never leaves a
+# broken or half-written backup, and it never deletes an older good one. Run by payments-tracker-backup.timer.
+# v42: integrity check, atomic receipt archives, dated receipt copies (before: one assets-latest.tar.gz overwritten in place each night).
 set -euo pipefail
 DATA_DIR=${DATA_DIR:-/var/lib/payments-tracker}
 APP_DIR=${APP_DIR:-/opt/payments-tracker}
 KEEP=${KEEP:-30}
+KEEP_ASSETS=${KEEP_ASSETS:-14}
 PY="$APP_DIR/venv/bin/python"
 [ -x "$PY" ] || PY=python3
-mkdir -p "$DATA_DIR/backups"
+B="$DATA_DIR/backups"
+mkdir -p "$B"
 stamp=$(date +%Y%m%d-%H%M%S)
-out="$DATA_DIR/backups/tracker-$stamp.sqlite3"
-"$PY" - "$DATA_DIR/tracker.sqlite3" "$out" <<'PYEOF'
+out="$B/tracker-$stamp.sqlite3"
+if ! "$PY" - "$DATA_DIR/tracker.sqlite3" "$out" <<'PYEOF'
 import sqlite3, sys
 src = sqlite3.connect(sys.argv[1]); dst = sqlite3.connect(sys.argv[2])
-with dst: src.backup(dst)
+with dst:
+    src.backup(dst)
+res = dst.execute("PRAGMA integrity_check").fetchone()[0]
 dst.close(); src.close()
+if res != "ok":
+    print("integrity_check failed: " + str(res)); sys.exit(2)
 PYEOF
-gzip -f "$out"
-# receipts change rarely; keep one rolling copy next to the database backups
-if [ -d "$DATA_DIR/assets" ]; then
-  tar -czf "$DATA_DIR/backups/assets-latest.tar.gz" -C "$DATA_DIR" assets
+then
+  rm -f "$out"
+  echo "backup: FAILED (the database copy could not be made or is not intact); older backups were kept" >&2
+  exit 1
 fi
-ls -1t "$DATA_DIR"/backups/tracker-*.sqlite3.gz 2>/dev/null | tail -n +"$((KEEP + 1))" | xargs -r rm -f
-echo "backup: wrote $out.gz ($(ls -1 "$DATA_DIR"/backups/tracker-*.sqlite3.gz | wc -l) kept)"
+gzip -f "$out"
+if [ -d "$DATA_DIR/assets" ]; then
+  day=$(date +%Y%m%d)
+  tmp=$(mktemp "$B/.assets.XXXXXX")
+  if tar -czf "$tmp" -C "$DATA_DIR" assets; then
+    mv -f "$tmp" "$B/assets-$day.tar.gz"
+    cp -f "$B/assets-$day.tar.gz" "$B/.assets-latest.tmp" && mv -f "$B/.assets-latest.tmp" "$B/assets-latest.tar.gz"
+  else
+    rm -f "$tmp"
+    echo "backup: the receipts archive failed; the previous receipt copies were kept" >&2
+  fi
+fi
+ls -1t "$B"/tracker-*.sqlite3.gz 2>/dev/null | tail -n +"$((KEEP + 1))" | xargs -r rm -f
+ls -1t "$B"/assets-2*.tar.gz 2>/dev/null | tail -n +"$((KEEP_ASSETS + 1))" | xargs -r rm -f
+echo "backup: wrote $out.gz ($(ls -1 "$B"/tracker-*.sqlite3.gz | wc -l) database backups, $(ls -1 "$B"/assets-2*.tar.gz 2>/dev/null | wc -l) receipt archives kept)"

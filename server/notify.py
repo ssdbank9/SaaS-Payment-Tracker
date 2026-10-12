@@ -87,6 +87,9 @@ def send_mail(m, to, subject, body):
             if ctx is not None and s.has_extn("starttls"):
                 s.starttls(context=ctx)
                 s.ehlo()
+            elif ctx is not None and m.get("password"):
+                # v42: if encryption is not offered (or was stripped on the way) the password must not be sent
+                raise smtplib.SMTPException("The mail server did not offer encryption (STARTTLS), so the password was not sent. Check the host and port.")
             if m.get("password") and (ctx is None or s.has_extn("auth")):
                 try:
                     s.login(m["user"], m["password"])
