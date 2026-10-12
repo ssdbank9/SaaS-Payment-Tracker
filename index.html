@@ -299,7 +299,7 @@ td.who .ct{display:block;font-family:var(--mono);font-size:11px;color:var(--mute
 td.who .row-pay{display:block;margin-top:8px;min-height:44px;max-width:100%;white-space:normal}
 td.who .row-start,td.who .row-bill{display:block;margin-top:6px;min-height:44px;max-width:100%;white-space:normal}
 .start-list{font-size:11px;line-height:1.45;margin-top:4px;color:var(--muted);white-space:normal}
-#a-payment-wrap[hidden],#a-start-wrap[hidden],.addsub-form [data-role="payment-wrap"][hidden]{display:none}
+.chg-block[hidden],#a-payment-wrap[hidden],#a-start-wrap[hidden],.addsub-form [data-role="payment-wrap"][hidden]{display:none}
 .row-money{display:none}
 .bill-reduction{display:block;font-size:11px;color:var(--ink-2);white-space:normal;margin-top:3px}
 @media(max-width:760px){.row-money{display:block;max-width:220px;white-space:normal;font-size:12px;color:var(--ink-2);margin-top:6px}.row-money b{color:var(--ink);font-weight:500}}
@@ -2711,6 +2711,47 @@ function uptoForm(id,s,sa,today,open){
 /* the account strip at the top of a plan box: "Account · email", "Account 2 · email", "ChatGPT · email" */
 function acctLine(u,s){const ac=acctParts(u,s);return `<div class="sub-acct">${/^account\b/i.test(ac.label)?'':'<span class="acct-cap">Account</span>'}${ac.label?`<span class="acct-lbl">${esc(ac.label)}</span>`:''}${ac.email?`<span class="acct-em">${esc(ac.email)}</span>`:`<span class="acct-lbl">${esc(displayName(u))}</span>`}</div>`;}
 /* Change tier: target package of the same cycle, the cycle it starts from (default: next), an editable price prefilled from the package, a note; existing entries can be removed */
+/* v42 (#24): changing a plan's currency or billing cycle never reinterprets its stored prices. The owner gives the new price and when it starts:
+   the current plan ends the day before and a new plan starts at that cycle (receipts, refunds and old prices stay on the old plan), or, only when
+   nothing is recorded yet, the plan is corrected from its start. */
+function planChangeBlock(s,sa,today){
+  const clean=!(s.payments||[]).length&&!(s.refunds||[]).length&&!tierEntries(s).length&&!Object.keys(s.periodOverrides||{}).length;
+  const o=[];let n=0;for(let k=1;k<80&&n<6;k++){const st=pStart(s,k);if(st<=today||st<=s.start)continue;if(s.end&&st>s.end)break;o.push([st,fmtD(st,true)+' (start of a cycle)']);n++;}
+  if(clean)o.push(['start','From the plan\'s start (correcting a mistake; nothing is recorded yet)']);
+  const opts=o.length?o.map(x=>`<option value="${x[0]}">${esc(x[1])}</option>`).join(''):'<option value="" disabled selected>No later cycle before this plan ends</option>';
+  return `<div class="pay-row chg-block" data-role="chg-block" hidden>
+            <label class="f">New price per <span data-role="chg-per">month</span> (<span data-role="chg-cur">${s.currency}</span>)<input id="se-chgprice-${s.id}" name="chgPrice" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <label class="f">Takes effect from<select id="se-chgfrom-${s.id}" name="chgFrom">${opts}</select></label>
+            <p class="small muted" data-role="chg-hint" style="flex-basis:100%;margin:0"></p>
+          </div>`;
+}
+function syncPlanChange(f){
+  const blk=f.querySelector('[data-role=chg-block]');if(!blk)return;const cur=f.elements.namedItem('currency'),cyc=f.elements.namedItem('cycle'),from=f.elements.namedItem('chgFrom');
+  const changed=cur.value!==f.dataset.cur||cyc.value!==f.dataset.cyc;blk.hidden=!changed;if(!changed)return;
+  blk.querySelector('[data-role=chg-per]').textContent=cyc.value==='yearly'?'year':'month';blk.querySelector('[data-role=chg-cur]').textContent=cur.value;
+  const hint=blk.querySelector('[data-role=chg-hint]');
+  hint.textContent=from.value==='start'?'The plan is corrected from its start with this price. Nothing is recorded on it yet, so nothing is lost.'
+    :from.value?'The current plan ends the day before '+fmtD(from.value,true)+' and keeps its receipts, refunds and old prices. A new '+(cyc.value==='yearly'?'yearly':'monthly')+' plan in '+cur.value+' starts on that date at this price. A fixed discount is not carried over.':'';
+}
+function applyPlanChange(u,s,c){
+  if(c.eff==='start'){
+    if((s.payments||[]).length||(s.refunds||[]).length||tierEntries(s).length||Object.keys(s.periodOverrides||{}).length)return {err:'This plan already has receipts, refunds or changes, so pick a later cycle.'};
+    s.currency=c.cur;s.cycle=c.cyc;s.prices=[{from:s.start,price:c.price}];
+    if(c.cyc==='yearly'){s.prorationBasis='actual';if(!s.paymentEvery)s.paymentEvery=12;}else{delete s.paymentEvery;delete s.paymentSchedule;}
+    return {msg:'Saved '+planLabel(s)+' with the new price from its start.'};
+  }
+  if(!isDateKey(c.eff))return {err:'Choose when the new currency or cycle starts.'};
+  if(c.eff<=s.start)return {err:'The change must start after the plan started.'};
+  if(s.end&&s.end<c.eff)return {err:'This plan ends before that date.'};
+  const prevEnd=s.end||null;
+  const np={id:newId('s'),kind:'monthly',cycle:c.cyc,name:s.name||'',packageId:pkgIdAt(s,c.eff)||s.packageId||null,currency:c.cur,start:c.eff,end:prevEnd,prorate:s.prorate!==false,dueBy:null,prices:[{from:c.eff,price:c.price}],payments:[]};
+  if(isDateKey(s.anchor))np.anchor=s.anchor;
+  if(c.cyc==='yearly'){np.prorationBasis='actual';np.paymentEvery=12;}else if(s.prorationBasis&&subCycle(s)!=='yearly')np.prorationBasis=s.prorationBasis;
+  if(s.discount&&s.discount.type==='percent')np.discount=clone(s.discount);
+  if(s.accountCost&&Array.isArray(s.accountCost.entries)&&s.accountCost.entries.length){const last=s.accountCost.entries.at(-1);const ac=normAccountCost({frequency:s.accountCost.frequency,first:'prorated',firstAmount:null,overrides:{},entries:[Object.assign({},last,{from:c.eff})]});if(ac)np.accountCost=ac;}
+  s.end=addDays(c.eff,-1);u.subscriptions.push(np);
+  return {msg:'Saved. '+planLabel(s)+' ends on '+fmtD(s.end,true)+' and a new '+(c.cyc==='yearly'?'yearly':'monthly')+' plan in '+c.cur+' starts on '+fmtD(c.eff,true)+'.'};
+}
 function tierForm(id,s,sa,today,open){
   if(!(sa.periods||[]).length)return '';
   const cyc=subCycle(s);const opts=packages().filter(p=>p.cycle===cyc);if(!opts.length)return '';
@@ -2917,7 +2958,7 @@ function detailHTML(id,u,a,today){
           </div>
           <p class="small muted" style="margin-top:6px">${pe?'Editing the price entry that started on '+esc(fmtD(pe,true))+'.':'Periods that start before this date keep their old price. Use the period start date (shown in the boxes above) to change a whole period.'}</p>
         </form>
-        <form class="subedit-form" data-id="${id}" data-sub="${s.id}" ${open['edit:'+s.id]?'':'hidden'} novalidate>
+        <form class="subedit-form" data-id="${id}" data-sub="${s.id}" data-cur="${s.currency}" data-cyc="${subCycle(s)}" ${open['edit:'+s.id]?'':'hidden'} novalidate>
           <div class="pay-row">
             <label class="f">Package / product<select id="se-pkg-${s.id}" name="packageId">${pkgOptions(s.packageId||'','Not set')}</select></label>
             <label class="f">Billing cycle${cycleSelect('se-cycle-'+s.id,'cycle',subCycle(s),false)}</label>
@@ -2932,6 +2973,7 @@ function detailHTML(id,u,a,today){
             <label class="f">Discount value<input id="se-discv-${s.id}" name="discValue" type="number" min="0" step="0.01" value="${s.discount?s.discount.value:''}" placeholder="e.g. 10"></label>
             <label class="f">Proration basis<select id="se-basis-${s.id}" name="basis"><option value=""${rawBasis(s.prorationBasis)?'':' selected'}>Default (Settings)</option><option value="actual"${s.prorationBasis==='actual'?' selected':''}>Actual days in cycle</option><option value="fixed30"${s.prorationBasis==='fixed30'?' selected':''}>Fixed 30-day month</option></select></label>
           </div>
+          ${planChangeBlock(s,sa,today)}
           <p class="small muted" style="margin-top:6px">${isDateKey(s.anchor)?`Periods follow this product's own cycle (from ${esc(fmtD(s.anchor,true))}, renewing on the ${esc(ordinal(+s.anchor.slice(8,10)))} each ${subCycle(s)==='yearly'?'year':'month'})`:`Periods follow the shared billing cycle (${esc(ordinal(cycleDay()))} to ${cycleDay()===1?'end of month':esc(ordinal(cycleDay()-1))}, set in Settings)`}; the start date picks the first period. With proration on, that first period is charged by days (on the basis chosen here, or the Settings default); with the waiver on, the days before the next cycle are free and billing starts at that cycle. A discount applies to every period of this plan and shows in the header, dues, reminders and totals. Changing the currency changes what the price and existing payments are read as; it does not convert them. "Remaining due by" turns an unpaid part of the current period into an open balance until that date instead of overdue.</p>
           ${accountCostFields(s)}
           <div class="form-actions"><button class="btn primary sm" type="submit">Save plan</button><button class="link" type="button" data-act="toggle" data-key="edit:${s.id}">Cancel</button><span style="flex:1"></span><span class="del-wrap"><button class="link danger" type="button" data-act="sub-remove" data-sub="${s.id}">Remove plan and its payments</button></span></div>
@@ -3120,6 +3162,7 @@ function wireDetail(id,today){
     add.addEventListener('input',upd);kind.addEventListener('change',upd);upd();
   }
   det.querySelectorAll('.subedit-form select[name=packageId]').forEach(sel=>sel.addEventListener('change',()=>{if(sel.value==='__new'){sel.value='';newPackageFlow();}}));
+  det.querySelectorAll('.subedit-form').forEach(f=>{if(!f.querySelector('[data-role=chg-block]'))return;f.addEventListener('change',()=>syncPlanChange(f));syncPlanChange(f);});
 }
 
 /* ---------- costs ---------- */
@@ -3567,11 +3610,11 @@ function bind(){
       const d=tierDesc(s,s.tierHistory.find(t=>t.from===from),todayISO());
       const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: ${d.dir==='up'?'account upgraded to':'moved to'} ${d.name} at ${fmtAmt(Number(priceRaw),s.currency)}${perOf(s)} from ${fmtD(from,true)}.`);
     }else if(form.classList.contains('subedit-form')){
-      const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const name=s.kind==='monthly'?val('name').trim():(val('name').trim()||s.name);const cur=normCur(val('currency'));
-      if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}s.packageId=pkg;s.cycle=val('cycle')==='yearly'?'yearly':'monthly';s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;const dt=val('discType'),dv=Number(val('discValue'));if(dt&&!(dv>0)){toast('Enter the discount value (above zero), or set Discount to None.');return;}if(dt==='percent'&&dv>100){toast('A percent discount cannot exceed 100.');return;}s.discount=dt&&dv>0?{type:dt,value:dv}:null;s.prorationBasis=rawBasis(val('basis'));if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start&&!(u.cancel&&u.cancel.lastDay===end)){toast('The end date must not be before the start date.');return;}
-        Object.assign(s,{name,start,end:end||null,currency:cur});}
+      const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const name=s.kind==='monthly'?val('name').trim():(val('name').trim()||s.name);const cur=normCur(val('currency'));let chgInfo=null;
+      if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}const newCyc=val('cycle')==='yearly'?'yearly':'monthly';if(cur!==s.currency||newCyc!==subCycle(s)){const np=val('chgPrice');if(!validAmt(np)){toast('Enter the new price per '+(newCyc==='yearly'?'year':'month')+' in '+cur+' (the old price is not converted).');return;}chgInfo={eff:val('chgFrom'),price:Number(np),cyc:newCyc,cur};}s.packageId=pkg;if(!chgInfo)s.cycle=newCyc;s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;const dt=val('discType'),dv=Number(val('discValue'));if(dt&&!(dv>0)){toast('Enter the discount value (above zero), or set Discount to None.');return;}if(dt==='percent'&&dv>100){toast('A percent discount cannot exceed 100.');return;}s.discount=dt&&dv>0?{type:dt,value:dv}:null;s.prorationBasis=rawBasis(val('basis'));if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start&&!(u.cancel&&u.cancel.lastDay===end)){toast('The end date must not be before the start date.');return;}
+        Object.assign(s,{name,start,end:end||null},chgInfo?{}:{currency:cur});}
       else{const total=val('total'),due=val('due');if(!validAmt(total)){toast('Enter the total amount.');return;}const pk=val('packageId');Object.assign(s,{name,total:Number(total),due:isDateKey(due)?due:null,currency:cur,packageId:pkgById(pk)?pk:null});}
-      let costs=[];try{updateAccountStart(s,val('start'),u);const c=accountCostDraft(form,s,id);if(c)costs.push(c);}catch(e){toast(e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('edit:'+s.id);renderTable();toast('Saved '+planLabel(s)+'.');}else button.disabled=false;
+      let costs=[],chgMsg='';try{updateAccountStart(s,val('start'),u);if(chgInfo){const r=applyPlanChange(u,s,chgInfo);if(r.err){toast(r.err);return;}chgMsg=r.msg;}const c=accountCostDraft(form,s,id);if(c)costs.push(c);}catch(e){toast(e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('edit:'+s.id);renderTable();toast(chgMsg||('Saved '+planLabel(s)+'.'));}else button.disabled=false;
     }else if(form.classList.contains('addsub-form')){
       setErr('addsub-err','');const cy=normCycle(val('kind'));const kind=cy==='one-time'?'one-time':'monthly';const pkg=val('packageId');const name=val('name').trim()||(kind==='monthly'?'':(pkgName(pkg)||'Item'));const priceRaw=val('price'),date=val('date'),cur=normCur(val('currency')),dueBy=val('dueBy');
       if(!pkgById(pkg)){setErr('addsub-err','Choose a package or product.');return;}
