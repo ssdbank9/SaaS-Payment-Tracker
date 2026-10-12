@@ -2736,7 +2736,7 @@ function syncPlanChange(f){
 function applyPlanChange(u,s,c){
   if(c.eff==='start'){
     if((s.payments||[]).length||(s.refunds||[]).length||tierEntries(s).length||Object.keys(s.periodOverrides||{}).length)return {err:'This plan already has receipts, refunds or changes, so pick a later cycle.'};
-    s.currency=c.cur;s.cycle=c.cyc;s.prices=[{from:s.start,price:c.price}];
+    s.currency=c.cur;s.cycle=c.cyc;s.packageId=c.pkg;s.prices=[{from:s.start,price:c.price}];
     if(c.cyc==='yearly'){s.prorationBasis='actual';if(!s.paymentEvery)s.paymentEvery=12;}else{delete s.paymentEvery;delete s.paymentSchedule;}
     return {msg:'Saved '+planLabel(s)+' with the new price from its start.'};
   }
@@ -2744,7 +2744,7 @@ function applyPlanChange(u,s,c){
   if(c.eff<=s.start)return {err:'The change must start after the plan started.'};
   if(s.end&&s.end<c.eff)return {err:'This plan ends before that date.'};
   const prevEnd=s.end||null;
-  const np={id:newId('s'),kind:'monthly',cycle:c.cyc,name:s.name||'',packageId:pkgIdAt(s,c.eff)||s.packageId||null,currency:c.cur,start:c.eff,end:prevEnd,prorate:s.prorate!==false,dueBy:null,prices:[{from:c.eff,price:c.price}],payments:[]};
+  const np={id:newId('s'),kind:'monthly',cycle:c.cyc,name:s.name||'',packageId:(c.pkg!==s.packageId?c.pkg:(pkgIdAt(s,c.eff)||s.packageId))||null,currency:c.cur,start:c.eff,end:prevEnd,prorate:s.prorate!==false,dueBy:null,prices:[{from:c.eff,price:c.price}],payments:[]};
   if(isDateKey(s.anchor))np.anchor=s.anchor;
   if(c.cyc==='yearly'){np.prorationBasis='actual';np.paymentEvery=12;}else if(s.prorationBasis&&subCycle(s)!=='yearly')np.prorationBasis=s.prorationBasis;
   if(s.discount&&s.discount.type==='percent')np.discount=clone(s.discount);
@@ -3161,7 +3161,7 @@ function wireDetail(id,today){
     pkgSel.addEventListener('change',()=>{if(pkgSel.value==='__new'){pkgSel.value='';newPackageFlow();return;}const p=pkgById(pkgSel.value),pr=add.querySelector('[name=price]');if(p)kind.value=p.cycle;syncFirstSale(add,pkgSel.value);if(p&&p.price!=null&&(pr.value===''||pr.value===(pkgSel.dataset.prefilled||''))){pr.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency)add.querySelector('[name=currency]').value=p.currency;}upd();});
     add.addEventListener('input',upd);kind.addEventListener('change',upd);upd();
   }
-  det.querySelectorAll('.subedit-form select[name=packageId]').forEach(sel=>sel.addEventListener('change',()=>{if(sel.value==='__new'){sel.value='';newPackageFlow();}}));
+  det.querySelectorAll('.subedit-form select[name=packageId]').forEach(sel=>sel.addEventListener('change',()=>{if(sel.value==='__new'){sel.value='';newPackageFlow();return;}const pk=pkgById(sel.value),cy=sel.form&&sel.form.elements.namedItem('cycle');if(pk&&pk.cycle&&cy&&cy.value!==pk.cycle)cy.value=pk.cycle;}));
   det.querySelectorAll('.subedit-form').forEach(f=>{if(!f.querySelector('[data-role=chg-block]'))return;f.addEventListener('change',()=>syncPlanChange(f));syncPlanChange(f);});
 }
 
@@ -3611,13 +3611,14 @@ function bind(){
       const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: ${d.dir==='up'?'account upgraded to':'moved to'} ${d.name} at ${fmtAmt(Number(priceRaw),s.currency)}${perOf(s)} from ${fmtD(from,true)}.`);
     }else if(form.classList.contains('subedit-form')){
       const s=u.subscriptions.find(x=>x.id===form.dataset.sub);if(!s)return;const name=s.kind==='monthly'?val('name').trim():(val('name').trim()||s.name);const cur=normCur(val('currency'));let chgInfo=null;
-      if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}const newCyc=val('cycle')==='yearly'?'yearly':'monthly';if(cur!==s.currency||newCyc!==subCycle(s)){const np=val('chgPrice');if(!validAmt(np)){toast('Enter the new price per '+(newCyc==='yearly'?'year':'month')+' in '+cur+' (the old price is not converted).');return;}chgInfo={eff:val('chgFrom'),price:Number(np),cyc:newCyc,cur};}s.packageId=pkg;if(!chgInfo)s.cycle=newCyc;s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;const dt=val('discType'),dv=Number(val('discValue'));if(dt&&!(dv>0)){toast('Enter the discount value (above zero), or set Discount to None.');return;}if(dt==='percent'&&dv>100){toast('A percent discount cannot exceed 100.');return;}s.discount=dt&&dv>0?{type:dt,value:dv}:null;s.prorationBasis=rawBasis(val('basis'));if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start&&!(u.cancel&&u.cancel.lastDay===end)){toast('The end date must not be before the start date.');return;}
+      if(s.kind==='monthly'){const start=val('start'),end=val('end'),pkg=val('packageId'),dueBy=val('dueBy');if(!pkgById(pkg)){toast('Choose a package for this plan.');return;}const newCyc=val('cycle')==='yearly'?'yearly':'monthly';{const pk=pkgById(pkg);if(pk&&pk.cycle&&pk.cycle!==newCyc&&(pkg!==s.packageId||newCyc!==subCycle(s))){toast(pk.name+' is a '+pk.cycle+' package, so Billing cycle must be '+(pk.cycle==='yearly'?'Yearly':'Monthly')+'. Pick a '+newCyc+' package or change the cycle.');return;}}if(cur!==s.currency||newCyc!==subCycle(s)){const np=val('chgPrice');if(!validAmt(np)){toast('Enter the new price per '+(newCyc==='yearly'?'year':'month')+' in '+cur+' (the old price is not converted).');return;}chgInfo={eff:val('chgFrom'),price:Number(np),cyc:newCyc,cur,pkg};}if(!chgInfo){s.packageId=pkg;s.cycle=newCyc;}s.dueBy=isDateKey(dueBy)?dueBy:null;s.prorate=!!(form.querySelector('[name=prorate]')||{}).checked;s.waiveFirst=!!(form.querySelector('[name=waiveFirst]')||{}).checked;const dt=val('discType'),dv=Number(val('discValue'));if(dt&&!(dv>0)){toast('Enter the discount value (above zero), or set Discount to None.');return;}if(dt==='percent'&&dv>100){toast('A percent discount cannot exceed 100.');return;}s.discount=dt&&dv>0?{type:dt,value:dv}:null;s.prorationBasis=rawBasis(val('basis'));if(!isDateKey(start)){toast('Pick a start date.');return;}if(end&&end<start&&!(u.cancel&&u.cancel.lastDay===end)){toast('The end date must not be before the start date.');return;}
         Object.assign(s,{name,start,end:end||null},chgInfo?{}:{currency:cur});}
       else{const total=val('total'),due=val('due');if(!validAmt(total)){toast('Enter the total amount.');return;}const pk=val('packageId');Object.assign(s,{name,total:Number(total),due:isDateKey(due)?due:null,currency:cur,packageId:pkgById(pk)?pk:null});}
       let costs=[],chgMsg='';try{updateAccountStart(s,val('start'),u);if(chgInfo){const r=applyPlanChange(u,s,chgInfo);if(r.err){toast(r.err);return;}chgMsg=r.msg;}const c=accountCostDraft(form,s,id);if(c)costs.push(c);}catch(e){toast(e.message);return;}const button=form.querySelector('button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,u,costs);if(ok){closeKey('edit:'+s.id);renderTable();toast(chgMsg||('Saved '+planLabel(s)+'.'));}else button.disabled=false;
     }else if(form.classList.contains('addsub-form')){
       setErr('addsub-err','');const cy=normCycle(val('kind'));const kind=cy==='one-time'?'one-time':'monthly';const pkg=val('packageId');const name=val('name').trim()||(kind==='monthly'?'':(pkgName(pkg)||'Item'));const priceRaw=val('price'),date=val('date'),cur=normCur(val('currency')),dueBy=val('dueBy');
       if(!pkgById(pkg)){setErr('addsub-err','Choose a package or product.');return;}
+      {const pk=pkgById(pkg);if(cy!=='one-time'&&pk.cycle&&pk.cycle!==cy){setErr('addsub-err',pk.name+' is a '+pk.cycle+' package, so Billing cycle must be '+(pk.cycle==='yearly'?'Yearly':'Monthly')+'. Pick a '+cy+' package or change the cycle.');return;}}
       if(!validAmt(priceRaw)){setErr('addsub-err',kind==='monthly'?'Enter the monthly price.':'Enter the total amount.');return;}
       const first=firstChoice(form);if(first==='none'){setErr('addsub-err','This is the first customer for a new product: choose a tracking plan or a one-time annual plan.');return;}
       if(first==='once'){if(!isDateKey(date)){setErr('addsub-err','Pick the purchase date.');return;}u.subscriptions.push(oneTimeAnnual({name:val('name').trim()||pkgName(pkg),pkg,cur,start:date,total:Number(priceRaw)}));}

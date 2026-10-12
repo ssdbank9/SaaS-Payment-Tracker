@@ -53,12 +53,25 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
   check('corrected from the start: same plan, new currency and only the new price');
 
   // C: billing cycle monthly -> yearly
-  f=await form('pc3');await f.locator('[name=cycle]').selectOption('yearly');
+  f=await form('pc3');await f.locator('[name=packageId]').selectOption('pkg_g');
   assert.match(await f.locator('[data-role=chg-per]').textContent(),/year/);check('the price label follows the new cycle (per year)');
   await f.locator('[name=chgPrice]').fill('45000');await f.locator('button[type=submit]').click();
   await until(async()=>(await doc('users/pc3')).subscriptions.length===2,'cycle split saved');
-  u=await doc('users/pc3');assert.equal(u.subscriptions[0].cycle,'monthly');assert.equal(u.subscriptions[0].prices[0].price,4200);assert.equal(u.subscriptions[1].cycle,'yearly');assert.equal(u.subscriptions[1].prices[0].price,45000);assert.equal(u.subscriptions[1].paymentEvery,12);
-  check('cycle change: old monthly plan untouched, new yearly plan at the new price');
+  u=await doc('users/pc3');assert.equal(u.subscriptions[0].cycle,'monthly');assert.equal(u.subscriptions[0].prices[0].price,4200);assert.equal(u.subscriptions[0].packageId,'pkg_c');assert.equal(u.subscriptions[1].packageId,'pkg_g');assert.equal(u.subscriptions[1].cycle,'yearly');assert.equal(u.subscriptions[1].prices[0].price,45000);assert.equal(u.subscriptions[1].paymentEvery,12);
+  check('cycle change by moving to the yearly package G: old monthly plan keeps package C and its price, new yearly plan is on G at the new price');
+
+  // E: a plan's cycle must match its package's cycle (C is monthly, G is yearly)
+  f=await form('pc2');await f.locator('[name=cycle]').selectOption('yearly');await f.locator('[name=chgPrice]').fill('1000');await f.locator('[name=chgFrom]').selectOption('start');
+  await f.locator('button[type=submit]').click();await page.waitForSelector('.toast');
+  assert.match(await page.locator('.toast').last().textContent(),/C is a monthly package, so Billing cycle must be Monthly/);
+  u=await doc('users/pc2');assert.equal(u.subscriptions[0].cycle,'monthly');check('yearly cycle on the monthly package C is refused and nothing is saved');
+  await f.locator('[name=cycle]').selectOption('monthly');await f.locator('[name=packageId]').selectOption('pkg_g');
+  assert.equal(await f.locator('[name=cycle]').inputValue(),'yearly');check('choosing the yearly package G in Edit plan sets Billing cycle to Yearly by itself');
+  await f.locator('[name=packageId]').selectOption('pkg_c');
+  const d2=await expand('pc2');await d2.locator('[data-key=addsub]').first().click();const add=d2.locator('form.addsub-form');await add.locator('[name=packageId]').selectOption('pkg_g');
+  await add.locator('[name=kind]').selectOption('monthly');await add.locator('[name=price]').fill('100');await add.locator('[name=date]').fill('2026-10-20');await add.locator('button[type=submit]').click();
+  await page.waitForFunction(()=>/yearly package/.test((document.querySelector('[data-role=addsub-err],#addsub-err,.addsub-form .err')||{}).textContent||''),null,{timeout:5000});
+  u=await doc('users/pc2');assert.equal(u.subscriptions.length,1);check('Add plan: a monthly cycle on the yearly package G is refused and nothing is added');
 
   // D: ordinary edit still saves without a price
   f=await form('pc1');await f.locator('[name=name]').first().fill('Label only');await f.locator('button[type=submit]').click();
