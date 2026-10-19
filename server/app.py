@@ -27,7 +27,7 @@ import notify  # noqa: E402
 
 APP_NAME = "Wasooli"
 TAGLINE = "Know who's paid."
-VERSION = "48"
+VERSION = "49"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
@@ -50,7 +50,7 @@ DOMAIN = _host_env("DOMAIN")            # the admin address (where the owner sig
 LINK_DOMAIN = _host_env("LINK_DOMAIN")  # v25: optional separate address for the subscribers' /c/<token> pages
 OLD_DOMAIN = _host_env("OLD_DOMAIN")    # v25: a previous admin address, kept as a redirect to DOMAIN
 LINK_BASE = ("https://" + LINK_DOMAIN) if LINK_DOMAIN else ""
-LINK_HOST_OK = re.compile(r"^/(c/[A-Za-z0-9_-]+/?|assets/[^/]+|healthz|manifest\.webmanifest)$")
+LINK_HOST_OK = re.compile(r"^/(c/[A-Za-z0-9_-]+/?|assets/[^/]+|healthz|manifest\.webmanifest|favicon\.ico)$")
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"))
 _secret = os.environ.get("SECRET_KEY", "")
@@ -266,6 +266,13 @@ def brand_asset(name):
 @app.get("/manifest.webmanifest")
 def manifest():
     return send_from_directory(BRAND_DIR, "manifest.webmanifest", mimetype="application/manifest+json", max_age=3600)
+
+
+# v49: browsers ask for /favicon.ico on every page. Without this it was a 404 in the console on every
+# visit (for the owner too, and it made the browser tests fail for a reason that had nothing to do with the app)
+@app.get("/favicon.ico")
+def favicon():
+    return send_from_directory(BRAND_DIR, "favicon-32.png", mimetype="image/png", max_age=86400)
 
 
 # ---------- document store ----------

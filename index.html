@@ -424,7 +424,8 @@ label.f.chk input{width:15px;height:15px;margin:0}
 /* v24: period tiles wrap two per row below 700px so every period is visible without sideways scrolling */
 @media (max-width:700px){.periods{grid-template-columns:repeat(2,minmax(0,1fr))}.cell.editing{grid-column:1/-1}}
 .amt-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;align-items:end;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line-strong);text-align:left}
-.amt-form .form-actions,.amt-form .d,.amt-form .amt-plan,.amt-form .amt-pkg{grid-column:1/-1}
+.amt-form .form-actions,.amt-form .d,.amt-form .amt-plan,.amt-form .amt-pkg,.amt-form .err{grid-column:1/-1}
+.amt-form .err{display:block;white-space:normal}
 .amt-form .amt-pkg select{max-width:100%}
 .cell .tag.pkgov{border-style:dashed}
 /* v29: one-tap Record payment: the period box's own button, the question with a big Yes, and the compact "different amount" form */
@@ -651,7 +652,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v48</span>
+      <span class="small muted num" id="app-ver" title="App version">v49</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
@@ -1200,7 +1201,7 @@ const TOKEN_RE=/^[A-Za-z0-9_-]{16,64}$/;
 const newId=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 
 const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,cycleDay:null,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,publicBaseUrl:'',queueTemplates:{},payHow:'',waApp:'regular'},mode:'connecting',backend:'local',loaded:false,costsLoaded:false,settingsLoaded:false};
-const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'queue',cancelPre:{},qStage:null,qOpen:{}};
+const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'queue',cancelPre:{},qStage:null,qOpen:{},amtErr:{}};
 let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,seedActive=false,migrateChecked=false;
 
 /* ---------- money: two currencies, per-entry rate ---------- */
@@ -1797,11 +1798,13 @@ function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const
 function saveLocal(){try{localStorage.setItem('pt-data',JSON.stringify({users:state.users,costs:state.costs,settings:state.settings}));return true;}catch(e){toast('This browser could not save your change (storage is full or blocked). Nothing was saved.');return false;}}
 function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;if(isDateKey(p.rangeFrom))ui.rangeFrom=p.rangeFrom;if(isDateKey(p.rangeTo))ui.rangeTo=p.rangeTo;if(typeof p.prodFilter==='string')ui.prodFilter=p.prodFilter;}catch(e){}}
 function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur,rangeFrom:ui.rangeFrom||'',rangeTo:ui.rangeTo||'',prodFilter:ui.prodFilter||''}));}catch(e){}}
-function dbErr(e){const c=e&&e.code;if(c==='stale_app')return 'Wasooli was updated. Reload this page, then try again.';if(c==='conflict')return 'This was changed on another device. The latest details are loaded; check them and tap Save again.';if(c==='quota_exceeded')return 'Storage is full: delete some entries before adding more.';if(c==='invalid_argument')return 'You do not have permission to change shared data.';if(c==='resource_exhausted')return 'Too many changes at once; wait a moment and try again.';return 'Could not save ('+(c||'unknown')+'). Try again.';}
+function dbErr(e){const c=e&&e.code;if(c==='stale_app')return 'Wasooli was updated. Reload this page, then try again.';if(c==='conflict')return 'This was changed on another device. The latest details are loaded; check them and tap Save again.';if(c==='quota_exceeded')return 'Storage is full: delete some entries before adding more.';if(c==='invalid_argument')return 'You do not have permission to change shared data.';if(c==='resource_exhausted')return 'Too many changes at once; wait a moment and try again.';if(c==='network')return 'Could not reach the server. Check the connection and try again.';if(c==='local_storage')return 'This browser could not store the change (storage is full or blocked). Nothing was saved.';return 'Could not save ('+(c||'unknown')+'). Try again.';}
 /* v29: the saved user goes into state and is drawn at once on every backend. Before, on the server the page only wrote the document and
    waited for the next poll of /api/version to fetch the list again, so a recorded payment showed as paid only when that round trip had
    finished (4 s, 30 s in a background tab, or never if the poll failed), which made Save look as if it had done nothing. */
-async function persistUser(id,u,quiet,isToken){if(!isToken&&tokenSave[id])await tokenSave[id].catch(()=>{});/* v39: wait for a link-token save of this user, and never drop a token this page already holds */const body=cleanUser(Object.assign({},u,{id}));{const cur=state.users[id];if(!body.confirmToken&&cur&&cur.confirmToken)body.confirmToken=cur.confirmToken;}if(db){try{await db.collection('users').doc(id).set(body);}catch(e){if(!quiet)toast(dbErr(e));return false;}state.users[id]=normalizeUser(clone(body),id);render();}else{const prev=state.users[id];state.users[id]=normalizeUser(body,id);if(!saveLocal()){if(prev)state.users[id]=prev;else delete state.users[id];render();return false;}render();}return true;}
+/* v49: the last save failure, so a form that keeps its entries can say what went wrong */
+let lastSaveError=null;
+async function persistUser(id,u,quiet,isToken){lastSaveError=null;if(!isToken&&tokenSave[id])await tokenSave[id].catch(()=>{});/* v39: wait for a link-token save of this user, and never drop a token this page already holds */const body=cleanUser(Object.assign({},u,{id}));{const cur=state.users[id];if(!body.confirmToken&&cur&&cur.confirmToken)body.confirmToken=cur.confirmToken;}if(db){try{await db.collection('users').doc(id).set(body);}catch(e){lastSaveError=e;if(!quiet)toast(dbErr(e));return false;}state.users[id]=normalizeUser(clone(body),id);render();}else{const prev=state.users[id];state.users[id]=normalizeUser(body,id);if(!saveLocal()){lastSaveError={code:'local_storage'};if(prev)state.users[id]=prev;else delete state.users[id];render();return false;}render();}return true;}
 /* v37: supplier expenses remain separate from customer bills and cash. */
 /* v38: supplier quote currency, payment currency and dated global cost policy. */
 const validTax=v=>v!==''&&v!=null&&isFinite(Number(v))&&Number(v)>=0&&Number(v)<=100;
@@ -2864,7 +2867,7 @@ function amtPkgOptions(s,p){const es=p.es||p.st;const base=pkgIdAt(s,es);const s
   const opts=[`<option value="" data-listed="${listedWith(s,p.k,'')}"${sel?'':' selected'}>${esc(pkgName(base)||'Plan price')} · plan's package (${esc(fmtAmt(listedWith(s,p.k,''),cur))})</option>`];
   for(const x of packages()){if(x.id===base||x.cycle!==subCycle(s))continue;const ok=pkgPeriodPrice(s,x.id,es)!=null;const l=listedWith(s,p.k,x.id);opts.push(`<option value="${esc(x.id)}" data-listed="${l}"${sel===x.id?' selected':''}>${esc(x.name)}${ok?` (${esc(fmtAmt(l,cur))})`:' (no price set · type the amount)'}</option>`);}
   return {html:opts.join(''),n:opts.length,base:listedWith(s,p.k,''),sel};}
-function amtFormHTML(id,s,p,ctx,label){const cur=s.currency;const ov=periodOverride(s,p.st);/* v45: reductions billCharge takes off again; computed = the bill after them */const red=roundCur(billRefundReduction(s,p.st)+courtesyAt(s,p.st),cur);const computed=Math.max(0,roundCur(p.listed-red,cur));const credit=p.state!=='paid'&&p.state!=='waived'&&p.covered>0?p.covered:0;const po=amtPkgOptions(s,p);const any=!!(ov||po.sel);const ent=(s.periodOverrides||{})[p.st]||{};
+function amtFormHTML(id,s,p,ctx,label){const cur=s.currency;const ov=periodOverride(s,p.st);/* v45: reductions billCharge takes off again; computed = the bill after them */const red=roundCur(billRefundReduction(s,p.st)+courtesyAt(s,p.st),cur);const computed=Math.max(0,roundCur(p.listed-red,cur));const credit=p.state!=='paid'&&p.state!=='waived'&&p.covered>0?p.covered:0;const po=amtPkgOptions(s,p);const any=!!(ov||po.sel);const ent=(s.periodOverrides||{})[p.st]||{};/* v49: a save that failed keeps its message here, so a redraw does not wipe it */const errMsg=(ui.amtErr||{})[amtErrKey(ctx,id,s.id,p.st)]||'';
   return `<form class="amt-form" data-id="${esc(id)}" data-sub="${esc(s.id)}" data-start="${p.st}" data-ctx="${ctx}" data-listed="${computed}" data-red="${red}" data-base="${po.base}" data-credit="${credit}" data-cur="${cur}" novalidate>
     ${label?`<span class="amt-plan">${esc(label)}</span>`:''}
     ${po.n>1?`<label class="f amt-pkg">Package for this period<select name="pkg" aria-label="Package for ${esc(fmtD(p.st))} – ${esc(fmtD(p.en))}">${po.html}</select></label>`:''}
@@ -2872,6 +2875,7 @@ function amtFormHTML(id,s,p,ctx,label){const cur=s.currency;const ov=periodOverr
     <label class="f">Discount <span class="muted">(10% or 500 off)</span><input name="disc" type="text" inputmode="decimal" placeholder="e.g. 10%" autocomplete="off" aria-label="Discount"></label>
     <label class="f">Note <span class="muted">(optional)</span><input name="note" type="text" maxlength="140" placeholder="e.g. Eid discount, correction" value="${esc(ent.note||'')}" aria-label="Note"></label>
     <span class="amt-warn" data-role="amt-warn" role="status" hidden></span>
+    <span class="err" data-role="amt-err" role="alert"${errMsg?'':' hidden'}>${esc(errMsg||'')}</span>
     <span class="form-actions" style="margin:0"><button class="btn primary sm" type="submit">Save</button>${any?`<button class="link sm" type="button" data-act="amt-reset" title="Clears the amount and the package set for this period">Reset to computed (${esc(fmtAmt(po.base,cur))})</button>`:''}<button class="link sm" type="button" data-act="amt-cancel">Cancel</button></span>
     <span class="d"><b>This changes what is owed for the period; it does not record a payment</b> (use Record payment for that). Computed <span data-role="computed">${esc(fmtAmt(computed,cur))}</span>${po.n>1?' for the chosen package (its price drives the amount unless you type another)':''}${ov?` · currently set to ${esc(fmtAmt(p.pr,cur))}`:''}${credit?` · ${esc(fmtAmt(credit,cur))} credit already applies, so the message says <b data-role="net">${esc(fmtAmt(Math.max(0,p.pr-credit),cur))}</b>`:''}. Recorded payments stay as they are.</span></form>`;}
 /* v24: before Save, what the typed amount would do to this plan: a period that stops being covered (and by how much), an Overdue
@@ -2889,9 +2893,22 @@ function amtPreview(form){const warn=form.querySelector('[data-role=amt-warn]');
   let txt='This '+joined;if(moved)txt+=`; paid-through moves from <b>${esc(fmtD(before.paidThrough))}</b> to <b>${esc(fmtD(after.paidThrough))}</b>`;
   warn.innerHTML=`<span>${txt}.</span><button class="link sm" type="button" data-act="amt-restore" title="Put the computed amount back in the box (nothing is saved until you press Save)">Reset to computed (${esc(fmtAmt(Number(form.dataset.listed),cur))})</button>`;warn.hidden=false;}
 function closeAmtForm(id,sid,st,ctx){if(ctx==='queue')delete ui.qOpen[id];else if(ui.open[id])ui.open[id]['amt:'+sid+':'+st]=false;}
+/* v49: a bill form that could not be saved is put back open with the reason, and the reason survives a redraw */
+const amtErrKey=(ctx,id,sid,st)=>ctx+'|'+id+'|'+sid+'|'+st;
+function openAmtForm(id,sid,st,ctx){if(ctx==='queue')ui.qOpen[id]=true;else ui.open[id]=Object.assign({},ui.open[id],{['amt:'+sid+':'+st]:true});}
+/* v49: what the owner typed in a bill form, so a failed save can put it back exactly */
+function amtTyped(form){const o={};for(const el of form.elements){if(!el.name||!el.tagName)continue;o[el.name]=el.value;}return o;}
+function amtRestore(form,typed){if(!form||!typed)return;for(const el of form.elements){if(!el.name||!el.tagName||typed[el.name]===undefined)continue;el.value=typed[el.name];}
+  const d=form.querySelector('[name=disc]');if(d)d.dispatchEvent(new Event('input',{bubbles:true}));}
 /* persist and show the change at once (the server poll would repeat the same render a moment later) */
 async function commitUser(id,u){return persistUser(id,u);} /* v29: persistUser now renders at once itself */
-async function resetPeriodOverride(id,sid,st,ctx){if(!state.users[id])return;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return;setPeriodOverride(s,st,null,'',null);if(pStart(s,0)===st)s.prorationAmountOverride=null;closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok)toast(`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`);}
+async function resetPeriodOverride(id,sid,st,ctx){if(!state.users[id])return;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return;const key=amtErrKey(ctx,id,sid,st);delete ui.amtErr[key];setPeriodOverride(s,st,null,'',null);if(pStart(s,0)===st)s.prorationAmountOverride=null;closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok){toast(`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`);return;}
+/* v49: the reset was not stored: say so and put the form back, as a failed save does */
+  ui.amtErr[key]='Not saved. '+dbErr(lastSaveError)+' The period still has the amount it had; try again.';
+  openAmtForm(id,sid,st,ctx);render();
+  const live=ctx==='queue'?document.querySelector('#rr-body form.amt-form[data-id="'+id+'"][data-sub="'+sid+'"][data-start="'+st+'"]'):document.querySelector('#tbody form.amt-form[data-id="'+id+'"][data-sub="'+sid+'"][data-start="'+st+'"]');
+  if(live){const e=live.querySelector('[data-role=amt-err]');if(e){e.textContent=ui.amtErr[key];e.hidden=false;}}
+  toast(ui.amtErr[key]);}
 async function saveAmtForm(form){const id=form.dataset.id,sid=form.dataset.sub,st=form.dataset.start,ctx=form.dataset.ctx;if(!state.users[id]||!isDateKey(st))return;const u=clone(state.users[id]);const s=(u.subscriptions||[]).find(x=>x.id===sid);if(!s)return;
   const amtEl=form.querySelector('[name=amount]'),noteEl=form.querySelector('[name=note]');const raw=String(amtEl.value||'').trim();if(!validAmt(raw)){toast('Enter the amount for this period (0 or more).');amtEl.focus();return;}
   const amount=Math.round(Number(raw)*100)/100;const note=String(noteEl.value||'').trim().slice(0,140);const listed=Number(form.dataset.listed);
@@ -2899,7 +2916,22 @@ async function saveAmtForm(form){const id=form.dataset.id,sid=form.dataset.sub,s
   const pkgEl=form.querySelector('[name=pkg]');const pkg=pkgEl?pkgEl.value:(periodPkg(s,st)||'');const same=Math.abs(amount-listed)<0.005;const back=!pkg&&same&&!note;const setAmt=!back&&!(pkg&&same);
   if(back)setPeriodOverride(s,st,null,'',null);else setPeriodOverride(s,st,setAmt?Math.round((amount+(Number(form.dataset.red)||0))*100)/100:null,note,pkg||null);/* v45: billCharge takes courtesy and linked refund reductions off the stored amount, so they are added back (saving unchanged took them off twice) */if(setAmt&&pStart(s,0)===st)s.prorationAmountOverride=null;
   const pn=pkg?pkgName(pkg):'';
-  closeAmtForm(id,sid,st,ctx);const ok=await commitUser(id,u);if(ok)toast(back?`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`:`${displayName(u)}: ${fmtD(st)} period ${pn?'billed as '+pn+' at ':'set to '}${fmtAmt(amount,s.currency)}${note?' · '+note:''}${amount<listed?` (${fmtAmt(listed-amount,s.currency)} off)`:amount>listed?` (${fmtAmt(amount-listed,s.currency)} more)`:''}.`);}
+  /* v49: the form is closed only once the change is really stored. Before, it was closed first, so a failed save (a conflict, a dropped
+     connection) closed the form and lost the discount with no message at all. On failure the form comes back with what was typed and says why. */
+  const key=amtErrKey(ctx,id,sid,st);delete ui.amtErr[key];
+  const typed=amtTyped(form);
+  const btn=form.querySelector('button[type=submit]');if(btn)btn.disabled=true;
+  closeAmtForm(id,sid,st,ctx);
+  const ok=await commitUser(id,u);
+  if(btn)btn.disabled=false;
+  if(ok){toast(back?`${displayName(u)}: ${fmtD(st)} period back to the computed amount.`:`${displayName(u)}: ${fmtD(st)} period ${pn?'billed as '+pn+' at ':'set to '}${fmtAmt(amount,s.currency)}${note?' · '+note:''}${amount<listed?` (${fmtAmt(listed-amount,s.currency)} off)`:amount>listed?` (${fmtAmt(amount-listed,s.currency)} more)`:''}.`);return;}
+  /* the change was not stored: say so, and put the form back with what was typed so it can be saved again */
+  ui.amtErr[key]='Not saved. '+dbErr(lastSaveError)+' Your entry is kept here; try again.';
+  openAmtForm(id,sid,st,ctx);
+  render();
+  const live=ctx==='queue'?document.querySelector('#rr-body form.amt-form[data-id="'+id+'"][data-sub="'+sid+'"][data-start="'+st+'"]'):document.querySelector('#tbody form.amt-form[data-id="'+id+'"][data-sub="'+sid+'"][data-start="'+st+'"]');
+  if(live){amtRestore(live,typed);const e=live.querySelector('[data-role=amt-err]');if(e){e.textContent=ui.amtErr[key];e.hidden=false;}}
+  toast(ui.amtErr[key]);}
 /* v27: past cancellations that were resumed: the gap in which nothing was billed */
 function cancelHistHTML(u){const h=u.cancelHistory||[];if(!h.length)return '';return `<p class="cancel-hist">${h.map(x=>{const gap=x.resumedOn&&dayDiff(x.lastDay,x.resumedOn)>1;return `Cancelled · last day <b>${esc(fmtD(x.lastDay,true))}</b>${x.resumedOn?` · resumed <b>${esc(fmtD(x.resumedOn,true))}</b>`:''}${gap?` · not billed ${esc(fmtD(addDays(x.lastDay,1)))} – ${esc(fmtD(addDays(x.resumedOn,-1)))}`:''}${x.reason?` · ${esc(x.reason)}`:''}`;}).join('<br>')}</p>`;}
 const refundEditOf=s=>{const rid=(ui.refundEdit||{})[s.id];return rid?(s.refunds||[]).find(x=>x.id===rid)||null:null;};
@@ -4255,7 +4287,7 @@ const API={version:-1,timer:null,listeners:[],rev:{},wc:{},busy:0};
    it was being fetched; background saves to other collections (link documents after a load) no longer delay the users or costs refresh */
 const colOf=p=>String(p).split('/')[0];
 function apiWrote(p){const c=colOf(p);API.wc[c]=(API.wc[c]||0)+1;}
-async function apiFetch(path,opts){{const m=String((opts&&opts.method)||'GET').toUpperCase();if(API.stale&&m!=='GET'&&m!=='HEAD')throw {code:'stale_app'};}const o=Object.assign({credentials:'same-origin'},opts||{});o.headers=Object.assign({'X-Requested-With':'wasool'},o.headers||{});const r=await fetch(path,o);if(r.status===401){location.href=(secUI.info&&secUI.info.signInUrl)||'/';throw {code:'unauthorized'};}return r;}
+async function apiFetch(path,opts){{const m=String((opts&&opts.method)||'GET').toUpperCase();if(API.stale&&m!=='GET'&&m!=='HEAD')throw {code:'stale_app'};}const o=Object.assign({credentials:'same-origin'},opts||{});o.headers=Object.assign({'X-Requested-With':'wasool'},o.headers||{});let r;try{r=await fetch(path,o);}catch(e){/* v49: a dropped connection is named, so the page can say "could not reach the server" instead of "unknown" */throw {code:'network',message:String((e&&e.message)||e)};}if(r.status===401){location.href=(secUI.info&&secUI.info.signInUrl)||'/';throw {code:'unauthorized'};}return r;}
 async function apiJSON(path,opts){const r=await apiFetch(path,opts);let j=null;try{j=await r.json();}catch(e){}if(!r.ok)throw Object.assign({code:(j&&j.error)||('http_'+r.status),status:r.status},j||{});return j;}
 const apiBody=(method,body)=>({method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
 /* v39: a save of a user or cost carries the updated_at this page last saw; if another device saved that record since, the server answers 409
@@ -4272,7 +4304,12 @@ function apiSchedule(){clearTimeout(API.timer);API.timer=setTimeout(apiPoll,docu
 function apiTouch(){clearTimeout(API.timer);API.timer=setTimeout(apiPoll,80);}
 function makeApiDb(){
   const snapOf=(docs,prefix)=>({docs:docs.map(d=>({id:d.path.split('/').pop(),data:()=>d.data})),empty:!docs.length,metadata:{fromCache:false},_k:JSON.stringify(docs.map(d=>[d.path,d.updated_at])),_revs:Object.fromEntries(docs.map(d=>[d.path,d.updated_at])),_revMatch:p=>p.startsWith(prefix),_col:colOf(prefix)});
-  const getDoc=async path=>{const r=await apiFetch('/api/docs/'+path);if(r.status===404)return {exists:false,data:()=>null,_k:'null',_revs:{},_revMatch:p=>p===path,_col:colOf(path)};const j=await r.json();if(!r.ok)throw {code:j.error||'error'};return {exists:true,data:()=>j.data,_k:j.updated_at,_revs:{[path]:j.updated_at},_revMatch:p=>p===path,_col:colOf(path)};};
+  const getDoc=async path=>{/* v49: a document that may not be there is looked up through the list, which answers 200 either way. Asking for it
+     directly answered 404, and the browser logged that as a console error on every first load of a new store (the seed and settings probes). */
+    const j=await apiJSON('/api/docs?prefix='+encodeURIComponent(path));
+    const d=(j.docs||[]).find(x=>x.path===path);
+    if(!d)return {exists:false,data:()=>null,_k:'null',_revs:{},_revMatch:p=>p===path,_col:colOf(path)};
+    return {exists:true,data:()=>d.data,_k:d.updated_at,_revs:{[path]:d.updated_at},_revMatch:p=>p===path,_col:colOf(path)};};
   const docRef=path=>({get:()=>getDoc(path),set:body=>apiPut(path,body),update:async body=>{const j=await apiJSON('/api/docs/'+path,apiBody('PATCH',body));apiWrote(path);delete API.rev[path];apiTouch();return j;},delete:async()=>{const j=await apiJSON('/api/docs/'+path,{method:'DELETE'});apiWrote(path);delete API.rev[path];apiTouch();return j;},acquire:async()=>({acquired:true}),onSnapshot:(cb,err)=>{apiListen(()=>getDoc(path),cb,err);}});
   const coll=name=>({doc:id=>docRef(name+'/'+id),limit:()=>coll(name),get:async()=>snapOf((await apiJSON('/api/docs?prefix='+encodeURIComponent(name+'/'))).docs,name+'/'),onSnapshot:(cb,err)=>{apiListen(async()=>snapOf((await apiJSON('/api/docs?prefix='+encodeURIComponent(name+'/'))).docs,name+'/'),cb,err);}});
   return {collection:coll,doc:docRef};

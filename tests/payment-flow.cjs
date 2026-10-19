@@ -3,7 +3,8 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');const stubWebFonts=require('./webfonts.cjs');
+
 const base = process.env.WASOOLI_TEST_URL || 'http://127.0.0.1:8098';
 assert.equal(new URL(base).hostname, '127.0.0.1', 'Only a disposable local server may be tested');
 assert.equal(new URL(base).protocol, 'http:');
@@ -15,7 +16,7 @@ const sample = () => ({name:'Payment QA example',email:'payment-qa@example.test'
 let browser;
 (async () => {
   browser = await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_EXECUTABLE?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE}:{}),args:['--disable-gpu']});
-  const context = await browser.newContext({viewport:{width:1400,height:1000},colorScheme:'light'});
+  const context = await browser.newContext({viewport:{width:1400,height:1000},colorScheme:'light'});await stubWebFonts(context);
   await context.addInitScript(() => localStorage.setItem('pt-today','2026-10-26'));
   const page = await context.newPage();
   const errors = [];
@@ -27,7 +28,7 @@ let browser;
   await page.locator('[name=passcode]').fill('test1234');
   await page.locator('button[type=submit]').click();
   await page.waitForSelector('#tbody tr.row');
-  assert.equal((await (await context.request.get(base+'/healthz')).json()).version,'48');
+  assert.equal((await (await context.request.get(base+'/healthz')).json()).version,'49');
   const get = async id => (await (await context.request.get(base+'/api/docs/users/'+id)).json()).data;
   const put = async (id,user) => assert.equal((await context.request.put(base+'/api/docs/users/'+id,{headers,data:user})).status(),200);
   const reset = async user => {if(await page.locator('#paymentDialog').evaluate(d=>d.open))await page.locator('#payment-cancel').click();await put('qa-payment',user||sample());await page.reload({waitUntil:'domcontentloaded'});await page.locator('tr.row[data-id="qa-payment"]').waitFor();};
@@ -77,7 +78,19 @@ let browser;
   const chargeForm=page.locator('.amt-form[data-start="2026-10-24"]');
   await chargeForm.locator('[name=disc]').fill('500');
   assert.equal(await chargeForm.locator('[name=amount]').inputValue(),'3700');
-  await chargeForm.locator('button[type=submit]').click();await chargeForm.waitFor({state:'hidden'});
+  // v49: the form closes only when the change is really stored. If it stays open it carries the reason, and the owner presses Save again;
+  // the test does the same, so a dropped connection or a conflict from another device does not read as an app failure
+  const chargeErr=page.locator('.amt-form[data-start="2026-10-24"] [data-role=amt-err]');
+  let why='';
+  for(let attempt=1;attempt<=3;attempt++){
+    await chargeForm.locator('button[type=submit]').click();
+    await Promise.race([chargeForm.waitFor({state:'hidden'}),chargeErr.waitFor({state:'visible'})]).catch(()=>{});
+    if(!(await chargeErr.count())||!(await chargeErr.isVisible()))break;
+    why=await chargeErr.innerText();
+    if(attempt===3)break;
+  }
+  assert.equal(why,'','The discount was not saved and the form says: '+why);
+  await chargeForm.waitFor({state:'hidden'});
   await page.waitForFunction(()=>document.querySelector('tr.row[data-id="qa-payment"] [data-role="total-paid"]')?.textContent.includes('Discounts / reductions Rs 500'));
   assert.equal((await get('qa-payment')).subscriptions[0].periodOverrides['2026-10-24'].amount,3700);
   assert.deepEqual((await get('qa-payment')).subscriptions[0].payments,sample().subscriptions[0].payments);
@@ -184,7 +197,7 @@ let browser;
     await page.locator('#add-close').click();check('Layout '+width+'px '+theme+' main, receipt and joining bill');
   }
   assert.deepEqual(errors,[],'Console and page errors must be empty');
-  const summary={version:'48',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};
+  const summary={version:'49',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};
   fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary));
   await browser.close();browser=null;
 })().catch(async e=>{console.error(e);if(browser)await browser.close();process.exitCode=1;});

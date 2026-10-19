@@ -1,14 +1,15 @@
 // v39: two devices, one record. Synthetic local records only; never use the owner's database.
 // Start a disposable server (see AGENTS.md), then: node tests/conflict-flow.cjs
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');const stubWebFonts=require('./webfonts.cjs');
+
 const base=process.env.WASOOLI_TEST_URL||'http://127.0.0.1:8098',H={'X-Requested-With':'wasool','Content-Type':'application/json'},checks=[];
 assert.equal(new URL(base).hostname,'127.0.0.1');assert.equal(new URL(base).protocol,'http:');
 const out=path.resolve(process.env.WASOOLI_TEST_OUTPUT||'data/conflict-qa');fs.mkdirSync(out,{recursive:true});
 const check=n=>{checks.push(n);console.log('PASS '+n);},sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const userDoc=()=>({name:'Conflict QA',email:'conflict-qa@example.test',phone:'923001234567',joinDate:'2026-09-24',notes:'original',subscriptions:[{id:'s1',kind:'monthly',cycle:'monthly',packageId:'pkg_c',currency:'PKR',start:'2026-09-24',prorate:true,prices:[{from:'2026-09-24',price:4200}],payments:[{id:'p0',date:'2026-09-24',amount:4200,currency:'PKR',rate:null,note:'Sep'}],accountCost:{frequency:'monthly',entries:[{from:'2026-09-24',amount:10,currency:'USD',rate:280,paidIn:'USD',supplier:'SupA'}],first:'prorated',firstAmount:null,overrides:{}}}]});
 let browser;
-async function open(opt){const ctx=await browser.newContext(Object.assign({viewport:{width:1400,height:900}},opt||{}));await ctx.addInitScript(()=>localStorage.setItem('pt-today','2026-10-10'));const p=await ctx.newPage();p._errs=[];p.on('pageerror',e=>p._errs.push(e.stack));p.on('console',m=>{if(m.type()==='error'&&!/40[0-9]|50[0-9]/.test(m.text()))p._errs.push(m.text());});
+async function open(opt){const ctx=await browser.newContext(Object.assign({viewport:{width:1400,height:900}},opt||{}));await stubWebFonts(ctx);await ctx.addInitScript(()=>localStorage.setItem('pt-today','2026-10-10'));const p=await ctx.newPage();p._errs=[];p.on('pageerror',e=>p._errs.push(e.stack));p.on('console',m=>{if(m.type()==='error'&&!/40[0-9]|50[0-9]/.test(m.text()))p._errs.push(m.text());});
  await p.goto(base+'/login',{waitUntil:'domcontentloaded'});await p.locator('[name=passcode]').fill('test1234');await p.locator('button[type=submit]').click();await p.waitForSelector('#app-ver',{timeout:30000});await p.waitForTimeout(2500);return {ctx,p};}
 const api=async(ctx,method,pth,data,extra)=>{const r=await ctx.request.fetch(base+pth,{method,headers:Object.assign({},H,extra||{}),data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};
 const getUser=async(ctx,id)=>(await api(ctx,'GET','/api/docs/users/'+id)).j;
@@ -64,6 +65,6 @@ async function reset(ctx,id){await api(ctx,'POST','/api/import',{docs:{},replace
   check('A field the owner does change is still saved');
 
   assert.deepEqual(D.p._errs.concat(P.p._errs),[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'48',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'49',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

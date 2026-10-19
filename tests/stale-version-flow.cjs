@@ -1,7 +1,8 @@
 // v39: a page loaded before an update must stop saving and ask for a reload. Synthetic local records only.
 // Start a disposable server (see AGENTS.md), then: node tests/stale-version-flow.cjs
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');const stubWebFonts=require('./webfonts.cjs');
+
 const base=process.env.WASOOLI_TEST_URL||'http://127.0.0.1:8098',H={'X-Requested-With':'wasool','Content-Type':'application/json'},checks=[];
 assert.equal(new URL(base).hostname,'127.0.0.1');assert.equal(new URL(base).protocol,'http:');
 const out=path.resolve(process.env.WASOOLI_TEST_OUTPUT||'data/stale-version-qa');fs.mkdirSync(out,{recursive:true});
@@ -9,7 +10,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);},sleep=ms=>new Promise(r=
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
-  const ctx=await browser.newContext({viewport:{width:1400,height:900},colorScheme:'light'});await ctx.addInitScript(()=>localStorage.setItem('pt-today','2026-10-10'));
+  const ctx=await browser.newContext({viewport:{width:1400,height:900},colorScheme:'light'});await stubWebFonts(ctx);await ctx.addInitScript(()=>localStorage.setItem('pt-today','2026-10-10'));
   const page=await ctx.newPage();const errors=[],writes=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   page.on('request',r=>{if(['PUT','POST','PATCH','DELETE'].includes(r.method())&&r.url().includes('/api/'))writes.push(r.method()+' '+r.url().replace(base,''));});
   const api=async(method,pth,data)=>{const r=await ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};

@@ -1,7 +1,8 @@
 // v41: a subscriber's link answer never replaces or silently ignores a tier change the owner set by hand; the owner decides.
 // Synthetic local records only. Start a disposable server (see AGENTS.md), then: node tests/link-conflict-flow.cjs
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');const stubWebFonts=require('./webfonts.cjs');
+
 const base=process.env.WASOOLI_TEST_URL||'http://127.0.0.1:8098',H={'X-Requested-With':'wasool','Content-Type':'application/json'},checks=[];
 assert.equal(new URL(base).hostname,'127.0.0.1');assert.equal(new URL(base).protocol,'http:');
 const out=path.resolve(process.env.WASOOLI_TEST_OUTPUT||'data/link-conflict-qa');fs.mkdirSync(out,{recursive:true});
@@ -11,7 +12,7 @@ const user=(name,token,tier)=>({name,joinDate:'2026-09-24',confirmToken:token,su
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
-  const ctx=await browser.newContext({viewport:{width:1400,height:900}});await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-20');});
+  const ctx=await browser.newContext({viewport:{width:1400,height:900}});await stubWebFonts(ctx);await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-20');});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   const api=async(method,pth,data)=>{const r=await ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};
@@ -21,7 +22,7 @@ const user=(name,token,tier)=>({name,joinDate:'2026-09-24',confirmToken:token,su
   await api('POST','/api/import',{docs:{'users/lcA':user('Chose Other Tier',tok('A'),{pkg:'pkg_cpro',price:5000}),'users/lcB':user('Move Back',tok('B'),{pkg:'pkg_cmax',price:6000}),'users/lcC':user('Same Choice',tok('C'),{pkg:'pkg_cmax',price:6000})},replace:['users/','costs/']});
   await page.reload();await page.waitForSelector('tr.row[data-id="lcA"]');await page.waitForTimeout(5000);
   const doc=async p=>(await api('GET','/api/docs/'+p)).j.data;
-  const answer=async(token,wanted)=>{const pub=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const pp=await pub.newPage();await pp.goto(base+'/c/'+token);
+  const answer=async(token,wanted)=>{const pub=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await stubWebFonts(pub);const pp=await pub.newPage();await pp.goto(base+'/c/'+token);
     const btns=await pp.locator('button[name=choice],button[value]').evaluateAll(b=>b.map(x=>({v:x.value||'',t:x.textContent.trim()})));
     const b=btns.find(x=>wanted.test(x.t));assert.ok(b,'button offered: '+JSON.stringify(btns));await pp.locator('button[value="'+b.v+'"]').first().click();await pp.waitForLoadState();await pub.close();return b;};
 
@@ -57,6 +58,6 @@ const user=(name,token,tier)=>({name,joinDate:'2026-09-24',confirmToken:token,su
   check('When the subscriber\'s answer matches or only confirms the owner\'s change, nothing is flagged and nothing changes');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'48',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'49',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

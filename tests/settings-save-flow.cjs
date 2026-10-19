@@ -1,12 +1,13 @@
 // Synthetic local store only: focused settings saves, persistence and failure recovery.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');const stubWebFonts=require('./webfonts.cjs');
+
 const base=process.env.WASOOLI_TEST_URL||'http://127.0.0.1:8099';assert.equal(new URL(base).hostname,'127.0.0.1');
 const out=process.env.WASOOLI_TEST_OUTPUT||'data/settings-qa';fs.mkdirSync(out,{recursive:true});
 const errors=[],checks=[];let browser,expectedFailure=false;
 (async()=>{
  browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE});
- const ctx=await browser.newContext({viewport:{width:1400,height:1000},colorScheme:'light'});const page=await ctx.newPage();
+ const ctx=await browser.newContext({viewport:{width:1400,height:1000},colorScheme:'light'});await stubWebFonts(ctx);const page=await ctx.newPage();
  await ctx.addInitScript(()=>localStorage.setItem('pt-today','2026-10-20'));
  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!(expectedFailure&&m.text().includes('503')))errors.push(m.text());});
  await page.goto(base+'/login');await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.locator('#tbody tr.row').first().waitFor();

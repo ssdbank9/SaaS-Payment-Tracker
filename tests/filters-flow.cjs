@@ -1,7 +1,8 @@
 // v40: Summary and Analytics filter by product (revenue, costs, profit) and by a custom date range. Synthetic local records only.
 // Start a disposable server (see AGENTS.md), then: node tests/filters-flow.cjs
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');const stubWebFonts=require('./webfonts.cjs');
+
 const base=process.env.WASOOLI_TEST_URL||'http://127.0.0.1:8098',H={'X-Requested-With':'wasool','Content-Type':'application/json'},checks=[];
 assert.equal(new URL(base).hostname,'127.0.0.1');assert.equal(new URL(base).protocol,'http:');
 const out=path.resolve(process.env.WASOOLI_TEST_OUTPUT||'data/filters-qa');fs.mkdirSync(out,{recursive:true});
@@ -11,7 +12,7 @@ const cost=(date,pkg,amount)=>({date,description:'QA '+pkg+' '+date,category:'Pr
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
-  const ctx=await browser.newContext({viewport:{width:1400,height:900}});await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-28');});
+  const ctx=await browser.newContext({viewport:{width:1400,height:900}});await stubWebFonts(ctx);await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-28');});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   const api=async(method,pth,data)=>ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});
@@ -57,6 +58,6 @@ const cost=(date,pkg,amount)=>({date,description:'QA '+pkg+' '+date,category:'Pr
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:path.join(out,'filters-390.png')});
   check('Product filter and custom dates fit a 390px phone without sideways scroll');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'48',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'49',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

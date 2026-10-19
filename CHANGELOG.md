@@ -2,6 +2,15 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v49 - 2026-10-19
+
+- A change to a period's bill (a discount, a custom amount, a different product) is no longer lost when the save does not go through. Before, the form was closed first, so a save the server refused, a dropped connection or a record changed on another device closed the form and dropped the discount with no message. Now the form stays open with what was typed, says what went wrong, and can be saved again.
+- A save that cannot reach the server now says so ("Could not reach the server") instead of "unknown".
+- The site no longer asks for /favicon.ico and gets a 404 on every page. The icon that was already in the app is served there now.
+- The app no longer logs a console error on the first load of a new store, when it checks whether the seed and settings records are there.
+- The browser tests no longer depend on Google Fonts. The font request is answered with an empty stylesheet, so a slow or blocked font host cannot shift the page under a click or fail a run for a reason that has nothing to do with the app.
+- New test: a refused save and a dropped connection keep the bill form open with the reason and the typed discount, and saving again stores it.
+
 ## v48 - 2026-10-12
 
 - New Payments button in the header: every payment received and refund given, for all customers, newest first. Search by customer, product or note, filter by product, payments or refunds only, and date range. Totals show paid in, refunds and net; with All products and the same range they equal the Summary tiles. Tap a line to open that customer.

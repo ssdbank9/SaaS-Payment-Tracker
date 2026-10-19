@@ -1,12 +1,13 @@
 // v42 #30: in browser-only mode (index.html opened as a file) a change is never reported as saved when the browser refused to store it.
 // No server needed: opens index.html directly. Synthetic sample data only. Run: node tests/browser-save-failure-flow.cjs
 const assert=require('node:assert/strict'),path=require('node:path'),{pathToFileURL}=require('node:url');
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');const stubWebFonts=require('./webfonts.cjs');
+
 const checks=[];const check=n=>{checks.push(n);console.log('PASS '+n);};
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
-  const ctx=await browser.newContext({viewport:{width:390,height:844}});
+  const ctx=await browser.newContext({viewport:{width:390,height:844}});await stubWebFonts(ctx);
   await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-20');});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));
   await page.goto(pathToFileURL(path.resolve(__dirname,'..','index.html')).href,{waitUntil:'domcontentloaded'});

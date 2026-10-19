@@ -2,7 +2,8 @@
 // and refunds in the users CSV (exported as negative rows, read back as refunds). Synthetic records on a disposable server only:
 //   WASOOLI_TEST_URL=http://127.0.0.1:<port> node tests/payments-view-flow.cjs
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');const stubWebFonts=require('./webfonts.cjs');
+
 const base=process.env.WASOOLI_TEST_URL||'http://127.0.0.1:8098',H={'X-Requested-With':'wasool','Content-Type':'application/json'},checks=[];
 assert.equal(new URL(base).hostname,'127.0.0.1');assert.equal(new URL(base).protocol,'http:');
 const out=path.resolve(process.env.WASOOLI_TEST_OUTPUT||'data/payments-view-qa');fs.mkdirSync(out,{recursive:true});
@@ -11,7 +12,7 @@ const pay=(id,date,amount,note)=>({id,date,amount,currency:'PKR',note:note||''})
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
-  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,acceptDownloads:true});await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-20');});
+  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,acceptDownloads:true});await stubWebFonts(ctx);await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-20');});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   const api=async(method,pth,data)=>{const r=await ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};
@@ -25,7 +26,7 @@ const pay=(id,date,amount,note)=>({id,date,amount,currency:'PKR',note:note||''})
    'users/pb':{name:'Cancelled Payer',joinDate:'2026-08-24',cancel:{lastDay:'2026-09-23',reason:'x',note:'',at:'2026-09-20'},subscriptions:[{id:'s1',kind:'monthly',cycle:'monthly',name:'',packageId:'pkg_c',currency:'PKR',start:'2026-08-24',end:'2026-09-23',prorate:true,prices:[{from:'2026-08-24',price:2000}],payments:[pay('q1','2026-08-24',2000,'')]}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v48');
+  assert.equal(await page.locator('#app-ver').textContent(),'v49');
 
   // 1. the Payments view: every payment and refund, newest first, totals equal to the Summary tiles for the same range
   await page.locator('#btn-payments').click();await page.locator('#payPanel').waitFor({state:'visible'});
@@ -73,6 +74,6 @@ const pay=(id,date,amount,note)=>({id,date,amount,currency:'PKR',note:note||''})
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no sideways scroll at ${w} ${scheme}`);await page.locator('#pl-close').click();}
   check('the Payments view fits at 390px and 1400px in light and dark with no sideways scroll');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'48',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'49',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -4,7 +4,8 @@
 // (only the new plan resumes), resume keeps instalments, Add user / CSV package-cycle rule, a redraw keeps the courtesy "Number of bills" field,
 // statement import (identical charges, tax of row above, a credit, typing focus, a failed save stays, a re-ticked duplicate is saved).
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');const stubWebFonts=require('./webfonts.cjs');
+
 const base=process.env.WASOOLI_TEST_URL||'http://127.0.0.1:8098',H={'X-Requested-With':'wasool','Content-Type':'application/json'},checks=[];
 assert.equal(new URL(base).hostname,'127.0.0.1');assert.equal(new URL(base).protocol,'http:');
 const out=path.resolve(process.env.WASOOLI_TEST_OUTPUT||'data/review-v45-qa');fs.mkdirSync(out,{recursive:true});
@@ -14,7 +15,7 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
-  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-20');});
+  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await stubWebFonts(ctx);await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-20');});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error'&&!/status of 500/.test(m.text()))errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   const api=async(method,pth,data)=>{const r=await ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};
@@ -30,7 +31,7 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
    'users/v4':{name:'Resume Instalment Person',joinDate:'2026-07-24',cancel:{lastDay:'2026-09-23',reason:'x',note:'',at:'2026-09-20'},subscriptions:[{id:'s1',kind:'monthly',cycle:'yearly',packageId:'pkg_g',currency:'PKR',start:'2026-07-24',end:'2026-09-23',prorate:true,prorationBasis:'actual',paymentEvery:1,prices:[{from:'2026-07-24',price:24000}],payments:[]}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v48');await page.locator('#statusFilter').selectOption('all');
+  assert.equal(await page.locator('#app-ver').textContent(),'v49');await page.locator('#statusFilter').selectOption('all');
 
   // 1. Set bill with a courtesy discount: saving the agreed amount unchanged keeps Rs 3,700 (before: the Rs 500 came off twice, Rs 3,200)
   await page.locator('tr.row[data-id=v1] .row-bill').click();await page.locator('#billDialog[open]').waitFor();await page.locator('#bill-period').selectOption('2026-10-24');
@@ -125,6 +126,6 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
   await page.screenshot({path:path.join(out,'review-v45-390.png')});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.deepEqual(errors,[]);check('No sideways scroll and no unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'48',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'49',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
