@@ -45,6 +45,13 @@ Write user-facing text in plain, factual words; no emojis.
 - On the VM, `payments-tracker-update.timer` runs `deploy/update.sh` every 5 minutes: fetch, hard-reset to
   `origin/main`, reinstall requirements if `server/requirements.txt` changed, refresh the systemd units, append
   defaults for new env keys (`ensure_env`), restart `payments-tracker`. Pushing is the whole release.
+- For that to work, `/opt/payments-tracker` must be a git checkout of the **SaaS-Payment-Tracker** repo
+  (`https://github.com/ssdbank9/SaaS-Payment-Tracker.git`) with `main` tracking `origin/main`, and the timer
+  must be enabled (`systemctl is-enabled payments-tracker-update.timer`). If the app directory has no `.git`,
+  `update.sh` cannot fetch and the push never reaches the server: check
+  `git -C /opt/payments-tracker remote -v`, and restore it with `git init`, `git remote add origin <repo>`,
+  `git fetch origin main`, `git checkout -f -B main origin/main` (the venv and the data directory are ignored
+  by git and survive). The timer then pulls on its next 5-minute run.
 - The live version is the badge in the header (`vNN`, next to the sync status) and `"version"` in
   `https://wasooli.duckdns.org/healthz`. Wait for it to change after a push before telling the owner it is live.
 - `deploy/setup.sh` is idempotent and keeps every existing value in `/etc/payments-tracker.env`
