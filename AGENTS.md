@@ -2,7 +2,8 @@
 
 This is the canonical working guide for any coding assistant on this repository: OpenAI Codex, Cursor, Gemini CLI,
 GitHub Copilot agents, Jules, Aider, Claude Code, or a person. `CLAUDE.md`, `GEMINI.md` and
-`.github/copilot-instructions.md` only point here. Read this file, then `docs/HANDOFF.md` (state, decisions, runbook).
+`.github/copilot-instructions.md` only point here. Read this file, then the newest `docs/HANDOVER-*.md` (current snapshot, open items,
+continuation prompt), then `docs/HANDOFF.md` (decisions, runbook). Check `git log` and `/healthz` before trusting any document.
 
 ## The one rule
 
@@ -226,6 +227,10 @@ Browser check with Playwright (Node): `npm i -D playwright && npx playwright ins
 First setup on an empty store can request missing `settings/main` and `meta/seed` before seeding. Complete that setup before the
 browser acceptance pass. Google Fonts needs network access for a console-clean check. Since v32 GET `/api/read-image` returns
 200 with `enabled: false` when no AI key is configured; POST still returns 501 until screenshot reading is set up.
+
+`bash tests/tools/run-suites.sh <suite names|all>` runs the browser suites one at a time, each on a fresh disposable local server
+(`tests/tools/local-server.py`, warmed by `tests/tools/warm.cjs`; `statement-import-flow` uses `tests/fake-reader-server.py`), then the
+server and deploy checks for `all`. Set `PLAYWRIGHT_MODULE` / `PLAYWRIGHT_EXECUTABLE` first if needed.
 
 `node tests/payment-flow.cjs` exercises synthetic records on a disposable local server at `http://127.0.0.1:8098` with the
 test passcode above. Set `PLAYWRIGHT_MODULE` / `PLAYWRIGHT_EXECUTABLE` if Playwright or the browser is installed elsewhere.

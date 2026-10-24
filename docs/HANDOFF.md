@@ -7,6 +7,8 @@ built is `docs/setup-runbook.html` (open it in a browser; it prints).
 
 The detailed owner and next-LLM guide is [`WASOOLI-FINAL-HANDOFF.md`](../WASOOLI-FINAL-HANDOFF.md).
 
+**Newest handover: [`docs/HANDOVER-2026-10-24.md`](HANDOVER-2026-10-24.md) (v49).** Read it before this file. It has the current snapshot, the urgent findings (the subscriber link address `pay-up.duckdns.org` no longer resolves; the app now runs on a new VM at `145.241.115.28`, not `141.145.157.7` as section 2 below says), the local test runner (`tests/tools/run-suites.sh`), the open items and a copyable continuation prompt.
+
 **Update 11 October 2026, v39.** Fixes from the independent review of v38; the changes are summarised in `CHANGELOG.md` (v39) and the
 working rules in `AGENTS.md`. Fixed: multi-device lost updates (stale saves refused with 409, retrying refresh, Edit user writes only
 changed fields), out-of-date tabs blocked with a reload banner, settings repair/save merging, mid-cycle start due date, USD cents, locked receipt
@@ -22,7 +24,7 @@ review items 9-12 fixed (conversion residue, refund settled twice, one-time refu
 Live: `/healthz` reported `"version":"41"` on 12 October 2026 (about 13 minutes after the push). Note: on one office network a Fortinet
 firewall intercepted wasooli.duckdns.org, so a failed live check can be that network, not the server; try another network before assuming an outage.
 
-### Open items after v48 (the to-do list; keep this current)
+### Open items after v49 (the to-do list; keep this current; the newest list is in HANDOVER-2026-10-24.md section 5)
 
 Numbers are from the independent review of v38 (findings reproduced on disposable stores; scripts were kept outside the repo).
 Done so far: 1-12 and 22 (v39/v40, live), 13-17 (supplier-cost edge cases), 18 (phone numbers with a country code box, +92 by default) and
@@ -72,7 +74,7 @@ change/release workflow, with a verified 2026-10-04 snapshot and a copyable cont
   Slack; future work happens in Claude Code at claude.ai/code connected to the GitHub repo.
 - **Repo:** `ssdbank9/SaaS-Payment-Tracker` on GitHub, branch `main`. Pushing to `main` is the release.
 
-## 2. Current state (2026-10-10, v38)
+## 2. Current state (2026-10-10, v38; superseded: see HANDOVER-2026-10-24.md, the VM IP, SSH key and versions below are out of date)
 
 ### Final review handoff to Claude
 
