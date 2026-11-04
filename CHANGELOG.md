@@ -2,6 +2,12 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v51 - 2026-11-04
+
+- Products have a start date. Settings → Products has "Cycle starts on" for monthly products and "Year starts on" for yearly ones. New plans of a monthly product renew on that day every month; new plans of a yearly product renew on that date every year (for example 24 Jul). Leave it blank to use the shared billing cycle. Existing plans are not changed. It replaces v50's "Renews on day"; a product that already had a day keeps the same calendar.
+- Each product row has a "copy" button. It adds a copy right under it, named "<name> - 2" (or the next free number), with the same billing, price, start date and cost, so you can keep two of the same product with different start dates. Rename it before saving if you like.
+- Two products still cannot have exactly the same name, because reports, CSV import and messages find products by name. The message now names the product and suggests adding " - 1" and " - 2". When a product takes a name another product used before, that old name stops pointing to the other product.
+
 ## v50 - 2026-11-04
 
 - Wholesalers. Settings has a new Wholesalers section: a name and a WhatsApp number for each partner who sends you customers and pays for them.
