@@ -13,7 +13,7 @@ A single-file web app for tracking subscriber payments for a small SaaS. It keep
 
 The owner's app and database run on the Wasooli server. Open your bookmarked sign-in address to use the same records on your phone and computer. The header's version badge shows which update is running.
 
-The [Claude artifact](https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA) remains a demo and is republished separately; it may be behind the server.
+The [Claude artifact](https://claude.ai/artifact/2dXpWjMuV9wwWFFsDUnCWP) remains a demo and is republished separately; it may be behind the server.
 
 Opening `index.html` directly in a browser also runs the app, but with per-device local storage and without screenshot reading.
 

@@ -197,7 +197,7 @@ Write user-facing text in plain, factual words; no emojis.
 - Every code change bumps three things together: the badge (`id="app-ver"` in `index.html`, text `vNN`),
   `VERSION = "NN"` in `server/app.py`, and a `## vNN - date` entry at the top of `CHANGELOG.md` in plain words.
   Docs-only changes do not bump.
-- The repo `index.html` and the claude.ai artifact (`https://claude.ai/artifact/TirjtbYSsbjrMweoV3P4PA`) are kept
+- The repo `index.html` and the claude.ai artifact (`https://claude.ai/artifact/2dXpWjMuV9wwWFFsDUnCWP`) are kept
   identical. Only Claude can republish the artifact; other tools leave it alone and note that it is behind.
 - Style: keep the single-file, no-dependency approach; CSS tokens on `:root` with dark overrides in both dark blocks;
   new UI reuses `.panel`, `.tile`, `.brk`, `.seg`, `.chart-box`, `.pay-row`; comments say which version added what.
