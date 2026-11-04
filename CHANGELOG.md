@@ -2,6 +2,10 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v52 - 2026-11-05
+
+- A copied product now behaves like the one it was copied from. Before, a copy of an existing product with no start date (for example G) was treated as a brand-new product: Add user asked "once or tracking" and its plans started their own cycle. Now the copy stays on the shared billing cycle unless you give it a start date.
+
 ## v51 - 2026-11-04
 
 - Products have a start date. Settings → Products has "Cycle starts on" for monthly products and "Year starts on" for yearly ones. New plans of a monthly product renew on that day every month; new plans of a yearly product renew on that date every year (for example 24 Jul). Leave it blank to use the shared billing cycle. Existing plans are not changed. It replaces v50's "Renews on day"; a product that already had a day keeps the same calendar.

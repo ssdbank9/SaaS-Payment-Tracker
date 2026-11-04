@@ -72,6 +72,6 @@ const mon=(start,extra)=>Object.assign({id:'s1',kind:'monthly',cycle:'monthly',p
   check('#17 Removing a plan with the box unticked keeps its expense (the owner chooses)');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'51',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'52',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
