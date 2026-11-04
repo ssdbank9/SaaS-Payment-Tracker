@@ -32,9 +32,9 @@ let browser;
   await reset();assert.deepEqual(await get(),fixture());await pay('qa-start-g');assert.equal(await page.locator('#payment-amount').inputValue(),'25000');await page.locator('#payment-cancel').click();
   assert.deepEqual(await get(),fixture());check('Opening the new release preserves legacy annual charges and all records');
 
-  let releaseSettings;const settingsReady=new Promise(resolve=>releaseSettings=resolve);const delaySettings=async route=>{await settingsReady;await route.continue();};await page.route('**/api/docs/settings/main',delaySettings);
+  let releaseSettings;const settingsReady=new Promise(resolve=>releaseSettings=resolve);const delaySettings=async route=>{await settingsReady;await route.continue();};/* since v49 the page reads one document as /api/docs?prefix=<path> */const settingsUrl=u=>u.pathname==='/api/docs'&&u.searchParams.get('prefix')==='settings/main';await page.route(settingsUrl,delaySettings);
   await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>!!document.querySelector('tr.row[data-id="qa-start"]')&&!document.querySelector('#loading').hidden);
-  assert.equal(await page.locator('#tableWrap').isHidden(),true);await page.locator('#btn-add').click();assert.equal(await page.locator('#addPanel').isHidden(),true);releaseSettings();await row().waitFor();await page.unroute('**/api/docs/settings/main',delaySettings);
+  assert.equal(await page.locator('#tableWrap').isHidden(),true);await page.locator('#btn-add').click();assert.equal(await page.locator('#addPanel').isHidden(),true);releaseSettings();await row().waitFor();await page.unroute(settingsUrl,delaySettings);
   await pay('qa-start-c');assert.equal(await page.locator('#payment-amount').inputValue(),'3320');await page.locator('#payment-cancel').click();check('Delayed billing settings cannot expose or record a provisional bill');
 
   await start();await page.locator('#start-date').fill('2026-10-10');assert.match(await page.locator('#start-bill').innerText(),/Rs 1,960/);assert.match(await page.locator('#start-bill').innerText(),/Then Rs 4,300\/mo from Oct 24/);
