@@ -277,6 +277,10 @@ def run(today=None, dry_run=False):
         email = str(u.get("email") or "").strip()
         if u.get("cancel") or not email:
             continue
+        if u.get("wholesalerId"):
+            # v50: a wholesaler's customer is asked through the wholesaler, never emailed directly
+            log.info("skip %s: sold through a wholesaler", name)
+            continue
         got = answered.get(uid)
         if got:
             ctx0 = by_user.get(uid)

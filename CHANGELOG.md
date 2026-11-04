@@ -2,6 +2,20 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v50 - 2026-11-04
+
+- Wholesalers. Settings has a new Wholesalers section: a name and a WhatsApp number for each partner who sends you customers and pays for them.
+- Add user, Quick add and Edit user have a "Sold through" choice: direct or one of the wholesalers. Choosing a wholesaler unticks "Prorate first period", so the first month is charged in full.
+- A wholesaler's customer with no WhatsApp number of their own is messaged through the wholesaler: Remind and the Queue open WhatsApp to the wholesaler's number. Reminder emails are not sent to a wholesaler's customers.
+- The customer list shows "via <wholesaler>" under each such customer, has a "Sold by" filter, and search finds customers by wholesaler name.
+- Summary has a By wholesaler table: customers, money collected after refunds, the costs of their accounts and losses charged to them, net, and what is still owed. Direct customers are one row, so the rows add up to the tiles.
+- Products can renew on a fixed day of the month. Settings → Products has "Renews on day" for monthly products. New plans of such a product run from that day to the day before it the next month (for example the 15th to the 14th). Existing plans are not changed.
+- Each monthly product can carry your cost: amount per month, currency, whether you pay in PKR (converted at the default rate, plus the PKR tax, 5.2%) and what happens when a customer joins mid-month. New plans of the product start with that cost; you can still change it per customer.
+- A first part-month cost can now be prorated on a 30-day month: cost × days used ÷ 30. A customer joining Nov 25 on a plan that renews on the 15th costs 20/30 of the month.
+- Quick add can set one wholesaler, product, price, currency and start date for every row ("Apply to all rows"), so a wholesaler's list of emails can be pasted and added at once.
+- Losses. Add cost has a Type: running cost or loss (paid for, no revenue), with the number of seats lost and, optionally, the wholesaler it concerns. A loss counts as a cost, so it lowers Net. Costs shows it with a "Loss" label, and the Costs tile and the Costs total say how much of the cost was losses.
+- New test: wholesaler-flow.
+
 ## v49 - 2026-10-19
 
 - A change to a period's bill (a discount, a custom amount, a different product) is no longer lost when the save does not go through. Before, the form was closed first, so a save the server refused, a dropped connection or a record changed on another device closed the form and dropped the discount with no message. Now the form stays open with what was typed, says what went wrong, and can be saved again.
