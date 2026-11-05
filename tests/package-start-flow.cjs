@@ -18,7 +18,7 @@ let browser;
   const page=await context.newPage(),errors=[],expectedFailureErrors=[];let failing=false;
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'){if(failing&&m.text().includes('503'))expectedFailureErrors.push(m.text());else errors.push(m.text());}});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.locator('#tbody tr.row').first().waitFor();
-  assert.equal((await(await context.request.get(base+'/healthz')).json()).version,'55');
+  assert.equal((await(await context.request.get(base+'/healthz')).json()).version,'57');
   const get=async()=> (await(await context.request.get(base+'/api/docs/users/qa-start')).json()).data;
   const put=async(user)=>assert.equal((await context.request.put(base+'/api/docs/users/qa-start',{headers,data:user})).status(),200);
   const row=()=>page.locator('tr.row[data-id="qa-start"]');
@@ -41,7 +41,7 @@ let browser;
   await start();await page.locator('#start-date').fill('2026-10-10');assert.match(await page.locator('#start-bill').innerText(),/Rs 1,960/);assert.match(await page.locator('#start-bill').innerText(),/Then Rs 4,300\/mo from Oct 24/);
   assert.match(await page.locator('#start-preview').innerText(),/Total paid stays Rs 33,400/);await saveStart();let user=await get();
   assert.equal(user.joinDate,'2026-09-01');assert.equal(user.subscriptions[0].start,'2026-10-10');assert.deepEqual(user.subscriptions[0].prices,monthly().prices);assert.deepEqual(user.subscriptions[0].payments,monthly().payments);assert.deepEqual(user.subscriptions[1].payments,annual().payments);
-  assert.equal(user.subscriptions[1].start,'2026-08-30');assert.match(await row().locator('.start-list').innerText(),/Oct 10, 2026/);
+  assert.equal(user.subscriptions[1].start,'2026-08-30');{if(await row().getAttribute('aria-expanded')!=='true')await row().locator('.nm').click();assert.match(await page.locator('tr.detail[data-id="qa-start"]').innerText(),/Package started Oct 10, 2026/);}/* v56: the start shows in the details */;
   await pay('qa-start-c');assert.equal(await page.locator('#payment-amount').inputValue(),'2160');await page.locator('#payment-date').fill('2026-11-08');assert.equal(await page.locator('#payment-amount').inputValue(),'2160');await page.locator('#payment-cancel').click();check('Each account start changes independently; price history and cash dates remain separate');
 
   await reset();await start('qa-start-g');await page.locator('#start-prorate').check();assert.match(await page.locator('#start-bill').innerText(),/First bill: Rs 44,932/);assert.match(await page.locator('#start-bill').innerText(),/328 \/ 365 days/);assert.match(await page.locator('#start-bill').innerText(),/Then Rs 50,000\/yr from Jul 24, 2027/);
@@ -92,5 +92,5 @@ let browser;
     await start('qa-start-g');await page.locator('#start-prorate').check();await page.locator('#start-payment').selectOption('3');await page.locator('#start-apply').selectOption('start');await page.locator('#start-save').scrollIntoViewIfNeeded();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);const form=await page.locator('#startDialog').boundingBox();assert(form.x>=0&&form.x+form.width<=width);assert.equal(await page.locator('#startDialog').evaluate(d=>d.scrollWidth<=d.clientWidth),true);await page.screenshot({path:path.join(out,'start-'+width+'-'+theme+'.png')});await page.locator('#start-cancel').click();
     check('Layout '+width+'px '+theme+' dashboard and package start/schedule form');
   }
-  assert.deepEqual(errors,[]);const summary={version:'55',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary));await browser.close();browser=null;
+  assert.deepEqual(errors,[]);const summary={version:'57',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary));await browser.close();browser=null;
 })().catch(async e=>{console.error(e);if(browser)await browser.close();process.exitCode=1;});

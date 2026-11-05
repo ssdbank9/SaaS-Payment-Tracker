@@ -23,11 +23,12 @@ import auth  # noqa: E402
 import claude_read  # noqa: E402
 import db  # noqa: E402
 import gemini_read  # noqa: E402
+import linkhost  # noqa: E402
 import notify  # noqa: E402
 
 APP_NAME = "Wasooli"
 TAGLINE = "Know who's paid."
-VERSION = "55"
+VERSION = "57"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
@@ -50,9 +51,9 @@ DOMAIN = _host_env("DOMAIN")            # the admin address (where the owner sig
 LINK_DOMAIN = _host_env("LINK_DOMAIN")  # v25: optional separate address for the subscribers' /c/<token> pages
 OLD_DOMAIN = _host_env("OLD_DOMAIN")    # v25: a previous admin address, kept as a redirect to DOMAIN
 LINK_BASE = ("https://" + LINK_DOMAIN) if LINK_DOMAIN else ""
-# v53: where the customers' links point. Without LINK_DOMAIN they use this server's own address (DOMAIN), so a stale
-# "Public base URL" in Settings (a deleted second name, say) can no longer send customers to an address that does not exist.
-LINKS_TO = LINK_BASE or (("https://" + DOMAIN) if DOMAIN else "")
+# v57: this server's own address. Customer links use LINK_DOMAIN, else the Settings Public base URL when its name can be
+# found (linkhost.links_base; a deleted name falls back), else this address. v53 had made the Settings box always ignored.
+SELF_BASE = ("https://" + DOMAIN) if DOMAIN else ""
 LINK_HOST_OK = re.compile(r"^/(c/[A-Za-z0-9_-]+/?|assets/[^/]+|healthz|manifest\.webmanifest|favicon\.ico)$")
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"))
@@ -101,7 +102,7 @@ def index_html():
         with open(INDEX_PATH, encoding="utf-8") as f:
             html = f.read()
         marker = '<meta charset="utf-8">'
-        cfg = {"app": APP_NAME, "version": VERSION, "linkBase": LINKS_TO, "sessionDays": auth.SESSION_DAYS}
+        cfg = {"app": APP_NAME, "version": VERSION, "linkBase": LINK_BASE, "selfBase": SELF_BASE, "sessionDays": auth.SESSION_DAYS}
         inject = marker + '\n<script>window.__PT_SERVER__=%s;</script>' % json.dumps(cfg)
         html = html.replace(marker, inject, 1) if marker in html else inject + html
         _index_cache.update(mtime=st.st_mtime, html=html)
@@ -210,7 +211,7 @@ def healthz():
         return jsonify({"ok": False, "app": "wasooli"}), 500
     out = {"ok": True, "app": "wasooli", "version": VERSION}
     if auth.is_logged_in():
-        out.update({"docs_version": v, "claude": claude_read.enabled(), "reading": reading_provider() if reading_enabled() else "", "linkBase": LINKS_TO})
+        out.update({"docs_version": v, "claude": claude_read.enabled(), "reading": reading_provider() if reading_enabled() else "", "linkBase": LINK_BASE})
     return jsonify(out)
 
 
@@ -227,7 +228,7 @@ def sign_in_url():
 
 def security_payload():
     return {"signInUrl": sign_in_url(), "hasAdminPath": bool(auth.admin_path()), "sessionDays": auth.SESSION_DAYS,
-            "linkBase": LINKS_TO, "linkDomain": LINK_DOMAIN, "domain": DOMAIN, "oldDomain": OLD_DOMAIN,
+            "linkBase": LINK_BASE, "selfBase": SELF_BASE, "linkDomain": LINK_DOMAIN, "domain": DOMAIN, "oldDomain": OLD_DOMAIN,
             "secretVersion": auth.secret_version(), "lockout": {"failures": auth.MAX_FAILURES, "minutes": auth.LOCK_MINUTES}}
 
 
@@ -279,6 +280,16 @@ def favicon():
 
 
 # ---------- document store ----------
+
+@app.get("/api/link-check")
+@auth.login_required
+def api_link_check():
+    # v57: can this server find the name in a Public base URL? The page uses the URL for links only when it can.
+    url = linkhost.clean_url(request.args.get("url", ""))
+    host = linkhost.host_of(url)
+    found = bool(host) and linkhost.host_found(host)
+    return jsonify({"ok": found, "host": host, "links": linkhost.links_base(url)})
+
 
 @app.get("/api/version")
 @auth.login_required

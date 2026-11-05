@@ -21,7 +21,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   const until=async(fn,what)=>{for(let i=0;i<60;i++){if(await fn())return;await page.waitForTimeout(250);}throw new Error('timed out waiting for '+what);};
   for(const d of ((await api('GET','/api/docs?prefix=users/')).j.docs||[]))await api('DELETE','/api/docs/'+d.path);
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2000);
-  assert.equal(await page.locator('#app-ver').textContent(),'v55');
+  assert.equal(await page.locator('#app-ver').textContent(),'v57');
   const payOpen=()=>page.locator('#paymentDialog').evaluate(d=>d.open);
   const openAdd=async()=>{if(await page.locator('#addPanel').isHidden())await page.locator('#btn-add').click();await page.locator('#addPanel').waitFor({state:'visible'});};
 
@@ -59,14 +59,16 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
 
   // 5. Save and add another keeps the plan fields and clears the customer
   await openAdd();await page.locator('#a-name').fill('Batch One');await page.locator('#a-phone').fill('3001234567');await page.locator('#a-start').fill('2026-10-15');await page.locator('#a-price').fill('3900');
-  await page.locator('#addForm input[name=a-paid][value=no]').check();await page.locator('#a-again').click();
-  await until(async()=>!!(await byName('Batch One')),'first of batch');
+  await page.locator('#a-join').fill('2026-10-01');await page.locator('#addForm input[name=a-paid][value=no]').check();await page.locator('#a-again').click();
+  await until(async()=>!!(await byName('Batch One')),'first of batch');assert.equal((await byName('Batch One')).joinDate,'2026-10-01');
+  /* v56: after Save and add another, Joined on follows the start again */
+  assert.equal(await page.locator('#a-join').inputValue(),'2026-10-15');await page.locator('#a-start').fill('2026-10-20');assert.equal(await page.locator('#a-join').inputValue(),'2026-10-20');await page.locator('#a-start').fill('2026-10-15');assert.equal(await page.locator('#a-join').inputValue(),'2026-10-15');
   assert.equal(await page.locator('#addPanel').isVisible(),true);assert.equal(await page.locator('#a-name').inputValue(),'');assert.equal(await page.locator('#a-phone').inputValue(),'');
   assert.equal(await page.locator('#a-start').inputValue(),'2026-10-15');assert.equal(await page.locator('#a-price').inputValue(),'3900');assert.equal(await page.locator('#addForm input[name=a-paid]:checked').count(),0);
   await page.locator('#a-name').fill('Batch Two');await page.locator('#addForm input[name=a-paid][value=no]').check();await page.locator('#a-again').click();
   await until(async()=>!!(await byName('Batch Two')),'second of batch');
   const b1=await byName('Batch One'),b2=await byName('Batch Two');assert.equal(b2.subscriptions[0].start,'2026-10-15');assert.equal(b2.subscriptions[0].prices[0].price,3900);assert.equal(b1.phone,'923001234567');assert.ok(!b2.phone);assert.notEqual(b1.subscriptions[0].id,b2.subscriptions[0].id);
-  check('Save and add another saves the customer, keeps the form open with the same start (Oct 15) and price (Rs 3,900), clears the name, phone and the paid answer; the next customer gets the same plan');
+  check('Save and add another saves the customer (its own Joined on Oct 1 kept), resets Joined on to follow the start for the next one, keeps the form open with the same start (Oct 15) and price (Rs 3,900), clears the name, phone and the paid answer; the next customer gets the same plan');
 
   // 6. layout at 390 and 1400, light and dark
   for(const [w,h,scheme] of [[390,844,'light'],[390,844,'dark'],[1400,900,'light'],[1400,900,'dark']]){await page.setViewportSize({width:w,height:h});await page.emulateMedia({colorScheme:scheme});await openAdd();await page.waitForTimeout(200);
@@ -75,6 +77,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   await page.locator('#add-close').click();
   check('the Add form fits at 390px and 1400px in light and dark with no sideways scroll; Save is reachable');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'55',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'57',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

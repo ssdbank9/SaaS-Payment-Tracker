@@ -172,17 +172,24 @@ finally:
 check("v46 a customer who answered for one of two products still gets the stage 2 email", "twoA@example.test" in mails, mails)
 check("v46 a customer who answered for both products gets no stage 2 email", "twoB@example.test" not in mails, mails)
 
-# v53: without LINK_DOMAIN the customers' links use the server's own address (DOMAIN); LINK_DOMAIN still wins when set
+# v57: customer links use LINK_DOMAIN, else the Settings Public base URL when its name can be found, else DOMAIN
 _saved = {k: os.environ.get(k) for k in ("DOMAIN", "LINK_DOMAIN")}
 try:
     os.environ["DOMAIN"], os.environ["LINK_DOMAIN"] = "admin.example.test", ""
-    check("v53 email links use DOMAIN when no LINK_DOMAIN is set", notify.link_base() == "https://admin.example.test", notify.link_base())
+    check("v57 with no setting, email links use DOMAIN", notify.link_base({}) == "https://admin.example.test", notify.link_base({}))
+    check("v57 a Settings URL whose name is found is used", notify.link_base({"publicBaseUrl": "https://localhost/"}) == "https://localhost", notify.link_base({"publicBaseUrl": "https://localhost/"}))
+    check("v57 a Settings URL whose name cannot be found falls back to DOMAIN", notify.link_base({"publicBaseUrl": "https://pay-up.invalid"}) == "https://admin.example.test", notify.link_base({"publicBaseUrl": "https://pay-up.invalid"}))
+    check("v57 a stored link in the confirm doc does not override the base", notify.link_for({"link": "https://pay-up.invalid/c/abc"}, "abc", "https://admin.example.test") == "https://admin.example.test/c/abc")
     os.environ["LINK_DOMAIN"] = "links.example.test"
-    check("v53 LINK_DOMAIN still wins for email links", notify.link_base() == "https://links.example.test", notify.link_base())
+    check("v57 LINK_DOMAIN still wins over the Settings URL", notify.link_base({"publicBaseUrl": "https://localhost"}) == "https://links.example.test", notify.link_base({"publicBaseUrl": "https://localhost"}))
 finally:
     for k, v in _saved.items():
         if v is None: os.environ.pop(k, None)
         else: os.environ[k] = v
-check("v53 a local run with no DOMAIN keeps links on the page's own address", A.LINKS_TO == "", A.LINKS_TO)
+r1 = admin.get("/api/link-check?url=" + "https%3A%2F%2Fnowhere.invalid", headers=H).get_json()
+r2 = admin.get("/api/link-check?url=" + "http%3A%2F%2Flocalhost%3A8098", headers=H).get_json()
+check("v57 /api/link-check says a missing name is not found and a real one is", r1["ok"] is False and r1["host"] == "nowhere.invalid" and r2["ok"] is True and r2["links"] == "http://localhost:8098", (r1, r2))
+check("v57 /api/link-check needs the sign-in", anon.get("/api/link-check?url=https%3A%2F%2Flocalhost", headers=H).status_code in (401, 403))
+check("v57 a local run with no DOMAIN has no own address (the page uses the address bar)", A.SELF_BASE == "" and A.LINK_BASE == "", (A.SELF_BASE, A.LINK_BASE))
 
 print("ALL %d CHECKS PASSED" % passed)

@@ -2,6 +2,15 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v57 - 2026-11-05
+
+- Settings → Public base URL works again on the server. Type the address you want customer links to use and save; the server checks that the name exists. If it does, every link (Queue messages, Copy link, reminder emails) uses it. If it cannot be found, for example a deleted DuckDNS name such as pay-up.duckdns.org, Settings says so in red and the links keep using wasooli.duckdns.org, so customers never get a link that does not open. Leave the box empty to use wasooli.duckdns.org. LINK_DOMAIN on the server, when set, still decides the address.
+
+## v56 - 2026-11-05
+
+- After Save and add another, Joined on follows Package started on again for the next customer. Before, if you had typed a different Joined on for one customer, it stayed fixed for the rest of the batch.
+- Tidy-up with no visible change: removed a hidden list of plan start dates from each row (the start shows in the customer's details) and an unused handler in the Cancel plan box.
+
 ## v55 - 2026-11-05
 
 - Add a customer shows every field at once, in three groups: Customer (name, email, WhatsApp, Telegram, wholesaler, payment method / notes), Plan (product, start, joined, price, currency, billing, payment schedule, label, supplier cost, proration choices) and Payment. Nothing is hidden behind More options any more.

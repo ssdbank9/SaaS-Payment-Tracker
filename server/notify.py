@@ -27,6 +27,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import db  # noqa: E402
+import linkhost  # noqa: E402
 
 log = logging.getLogger("notify")
 TZ = ZoneInfo(os.environ.get("APP_TZ", "Asia/Karachi"))
@@ -207,18 +208,15 @@ def templates(settings):
     return {k: (str(t.get(k) or "").strip() or DEFAULT_TEMPLATES[k]) for k in DEFAULT_TEMPLATES}
 
 
-def link_base():
-    """v25: with LINK_DOMAIN set, every link points at the subscribers' address, never at the admin one."""
-    # v53: without LINK_DOMAIN the links use the server's own address (DOMAIN), as the page does
-    d = re.sub(r"^https?://", "", (os.environ.get("LINK_DOMAIN", "").strip() or os.environ.get("DOMAIN", "").strip()).lower()).split("/")[0]
-    return ("https://" + d) if re.match(r"^[a-z0-9.-]+$", d) else ""
+def link_base(settings=None):
+    """v57: LINK_DOMAIN, else the Settings Public base URL when its name can be found, else this server's DOMAIN (as the page does)."""
+    return linkhost.links_base((settings or {}).get("publicBaseUrl"))
 
 
 def link_for(ctx, tok, base):
-    lb = link_base()
-    if lb and tok:
-        return lb + "/c/" + tok
-    return str(ctx.get("link") or "") or ((base + "/c/" + tok) if base and tok else "")
+    if base and tok:
+        return base + "/c/" + tok
+    return str(ctx.get("link") or "")
 
 
 def fields_for(card, ctx, settings, base):
@@ -256,7 +254,7 @@ def run(today=None, dry_run=False):
     if not stage:
         log.info("%s: no queue stage today (next cycle %s); nothing to send", today, cycle)
         return 0
-    base = link_base() or str(settings.get("publicBaseUrl") or "").rstrip("/")  # v25: LINK_DOMAIN wins; else the setting (the page also writes each link into the confirm doc)
+    base = link_base(settings)  # v57: same rule as the page; a stored link in the confirm doc is used only when there is no base
     tpls = templates(settings)
     key = str(stage)
     by_user = {}
