@@ -33,7 +33,8 @@ const mon=(start,extra)=>Object.assign({id:'s1',kind:'monthly',cycle:'monthly',p
   const expand=async id=>{if(!(await det(id).count()))await page.locator('tr.row[data-id="'+id+'"]').click();await det(id).waitFor();return det(id);};
 
   /* #13 start moved earlier */
-  await page.locator('tr.row[data-id="c2"] .row-start').click();await page.locator('#startDialog[open]').waitFor();await page.locator('#start-date').fill('2026-07-10');await page.locator('#start-date').dispatchEvent('change');await page.waitForTimeout(300);await page.locator('#start-save').click();await page.locator('#startDialog').waitFor({state:'hidden',timeout:10000});await page.waitForTimeout(800);
+  const viaDetail=async(r,sel)=>{if(await r.getAttribute('aria-expanded')!=='true')await r.locator('.nm').click();const d=page.locator(`tr.detail[data-id="${await r.getAttribute('data-id')}"]`);await d.waitFor();await d.locator(sel).first().click();};/* v54: Package start and Set bill live in the customer's details */
+  await viaDetail(page.locator('tr.row[data-id="c2"]'),'.row-start');await page.locator('#startDialog[open]').waitFor();await page.locator('#start-date').fill('2026-07-10');await page.locator('#start-date').dispatchEvent('change');await page.waitForTimeout(300);await page.locator('#start-save').click();await page.locator('#startDialog').waitFor({state:'hidden',timeout:10000});await page.waitForTimeout(800);
   let s=(await get('users/c2')).data.subscriptions[0];assert.equal(s.start,'2026-07-10');assert.equal(s.accountCost.entries[0].from,'2026-07-10');
   let rows=await costRows('ac_c2_');assert.ok(rows.some(r=>r.id.endsWith('2026-06-24')),'cost for the first partial cycle from 10 Jul');assert.ok(rows.some(r=>r.id.endsWith('2026-07-24')),'cost for the Jul 24 cycle');
   check('#13 Moving the start from 10 Sep to 10 Jul moves the supplier cost with it: cost rows now begin 10 Jul');
@@ -72,6 +73,6 @@ const mon=(start,extra)=>Object.assign({id:'s1',kind:'monthly',cycle:'monthly',p
   check('#17 Removing a plan with the box unticked keeps its expense (the owner chooses)');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'53',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'54',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

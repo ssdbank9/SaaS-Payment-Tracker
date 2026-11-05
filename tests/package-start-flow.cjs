@@ -18,12 +18,13 @@ let browser;
   const page=await context.newPage(),errors=[],expectedFailureErrors=[];let failing=false;
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'){if(failing&&m.text().includes('503'))expectedFailureErrors.push(m.text());else errors.push(m.text());}});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.locator('#tbody tr.row').first().waitFor();
-  assert.equal((await(await context.request.get(base+'/healthz')).json()).version,'53');
+  assert.equal((await(await context.request.get(base+'/healthz')).json()).version,'54');
   const get=async()=> (await(await context.request.get(base+'/api/docs/users/qa-start')).json()).data;
   const put=async(user)=>assert.equal((await context.request.put(base+'/api/docs/users/qa-start',{headers,data:user})).status(),200);
   const row=()=>page.locator('tr.row[data-id="qa-start"]');
   const reset=async(user)=>{for(const [dialog,cancel] of [['#startDialog','#start-cancel'],['#paymentDialog','#payment-cancel']])if(await page.locator(dialog).evaluate(d=>d.open))await page.locator(cancel).click();await put(user||fixture());await page.reload({waitUntil:'domcontentloaded'});await row().waitFor();};
-  const start=async(sid)=>{await row().locator('.row-start').click();await page.locator('#startDialog[open]').waitFor();await page.locator('#start-account').selectOption(sid||'qa-start-c');};
+  const viaDetail=async(r,sel)=>{if(await r.getAttribute('aria-expanded')!=='true')await r.locator('.nm').click();const d=page.locator(`tr.detail[data-id="${await r.getAttribute('data-id')}"]`);await d.waitFor();await d.locator(sel).first().click();};/* v54: Package start and Set bill live in the customer's details */
+  const start=async(sid)=>{await viaDetail(row(),'.row-start');await page.locator('#startDialog[open]').waitFor();await page.locator('#start-account').selectOption(sid||'qa-start-c');};
   const saveStart=async()=>{await page.locator('#start-save').click();await page.locator('#startDialog').waitFor({state:'hidden'});};
   const pay=async(sid)=>{await row().locator('.row-pay').click();await page.locator('#paymentDialog[open]').waitFor();if(await page.locator('#payment-account').isDisabled())assert.equal(await page.locator('#payment-account').inputValue(),sid);else await page.locator('#payment-account').selectOption(sid);};
   const savePay=async()=>{await page.locator('#payment-save').click();await page.locator('#paymentDialog').waitFor({state:'hidden'});};
@@ -87,9 +88,9 @@ let browser;
 
   for(const width of [390,1400])for(const theme of ['light','dark']){
     await reset();await page.setViewportSize({width,height:width===390?844:1000});await page.emulateMedia({colorScheme:theme});await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);await page.waitForFunction(()=>document.fonts.status==='loaded');await row().scrollIntoViewIfNeeded();
-    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);const button=await row().locator('.row-start').boundingBox();assert(button.x>=0&&button.x+button.width<=width);await page.screenshot({path:path.join(out,'dashboard-'+width+'-'+theme+'.png')});
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);const button=await row().locator('.row-pay').boundingBox();assert(button.x>=0&&button.x+button.width<=width);await page.screenshot({path:path.join(out,'dashboard-'+width+'-'+theme+'.png')});
     await start('qa-start-g');await page.locator('#start-prorate').check();await page.locator('#start-payment').selectOption('3');await page.locator('#start-apply').selectOption('start');await page.locator('#start-save').scrollIntoViewIfNeeded();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);const form=await page.locator('#startDialog').boundingBox();assert(form.x>=0&&form.x+form.width<=width);assert.equal(await page.locator('#startDialog').evaluate(d=>d.scrollWidth<=d.clientWidth),true);await page.screenshot({path:path.join(out,'start-'+width+'-'+theme+'.png')});await page.locator('#start-cancel').click();
     check('Layout '+width+'px '+theme+' dashboard and package start/schedule form');
   }
-  assert.deepEqual(errors,[]);const summary={version:'53',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary));await browser.close();browser=null;
+  assert.deepEqual(errors,[]);const summary={version:'54',checks:checks.length,passed:checks,consoleErrors:errors,expectedFailureErrors,output:out};fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary));await browser.close();browser=null;
 })().catch(async e=>{console.error(e);if(browser)await browser.close();process.exitCode=1;});

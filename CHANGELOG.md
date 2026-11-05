@@ -2,6 +2,14 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v54 - 2026-11-05
+
+- Who has paid is clear at a glance. Above the customer list there are three counters: Owe money (with the total), Due soon and Paid up. Tap one to list only those customers; tap it again, or Show everyone, to see the whole list.
+- On a phone each customer is one short line: name, a coloured status (red overdue, amber due soon, green paid up), what they owe, their products, and two buttons. The list no longer scrolls sideways.
+- Record payment opens the payment box with the amount and month already filled in, as before. Package start and Set bill moved into the customer's details (each plan already has them there).
+- Cancel plan, next to Record payment: tick one plan or several and choose the last day they use it. The box says what stops and what is still owed before you save. Ticking every running plan cancels the customer, as Cancel subscription does; ticking some ends only those and the others carry on (to undo, clear the plan's End date in Edit plan). Bills up to the last day stay due.
+- On a phone the summary folds into one line (owed and collected); tap it to open the tiles and the chart. The phone remembers whether you left it open. A computer shows the summary as before.
+
 ## v53 - 2026-11-05
 
 - Customer links (Queue messages, Copy link and the reminder emails) now always use the server's own address, wasooli.duckdns.org, unless a separate link address is set on the server. Before, an old "Public base URL" in Settings could still point them at pay-up.duckdns.org, which no longer exists, so the links would not open. Links you sent before this change may still carry the old address; send them again from the Queue.

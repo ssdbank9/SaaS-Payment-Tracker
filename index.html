@@ -301,6 +301,51 @@ td.who .row-start,td.who .row-bill{display:block;margin-top:6px;min-height:44px;
 .start-list{font-size:11px;line-height:1.45;margin-top:4px;color:var(--muted);white-space:normal}
 .courtesy-form [hidden],.chg-block[hidden],#a-payment-wrap[hidden],#a-start-wrap[hidden],.addsub-form [data-role="payment-wrap"][hidden]{display:none}
 .row-money{display:none}
+/* v54: who owes / due soon / paid up; one compact line per customer on a phone; Cancel plan; the folded summary */
+.pay-strip{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.pay-strip[hidden]{display:none}
+.ps-btn{display:inline-flex;align-items:baseline;gap:6px;min-height:40px;padding:6px 12px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+.ps-btn b{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.ps-btn .ps-s{font-size:12px;font-family:var(--mono);color:var(--ink-2)}
+.ps-btn[data-pf="owes"] b{color:var(--crit)}.ps-btn[data-pf="soon"] b{color:var(--warn)}.ps-btn[data-pf="paid"] b{color:var(--good)}
+.ps-btn[data-pf="owes"][aria-pressed="true"]{background:var(--crit-bg);border-color:var(--crit)}
+.ps-btn[data-pf="soon"][aria-pressed="true"]{background:var(--warn-bg);border-color:var(--warn)}
+.ps-btn[data-pf="paid"][aria-pressed="true"]{background:var(--good-bg);border-color:var(--good)}
+.ps-btn:focus-visible,.sum-fold:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.m-st,.m-acct,.start-list{display:none}
+td.who .row-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+td.who .row-acts .row-pay{display:inline-flex;margin:0;min-height:34px;max-width:100%;white-space:normal}
+td.who .row-cancel{min-height:34px;color:var(--crit);border-color:var(--line-strong)}
+.cp-plans{border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:0 0 12px;min-width:0}
+.cp-plans legend{font-size:12px;font-weight:600;color:var(--ink-2);padding:0 4px}
+.cp-plans .cp-plan{align-items:flex-start;min-height:40px;padding:4px 0;overflow-wrap:anywhere}
+.cp-plans .cp-plan input{margin-top:3px}
+.sum-fold{display:none}
+@media (max-width:760px){
+  .sum-fold{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;min-height:44px;margin:0 0 10px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;text-align:left;cursor:pointer}
+  .sum-fold b{font-weight:600;font-variant-numeric:tabular-nums}.sum-fold b.owe{color:var(--crit)}
+  .sum-fold .chev{color:var(--muted);transition:transform .15s}.sum-fold[aria-expanded="true"] .chev{transform:rotate(90deg)}
+  #summaryBlock.sum-closed{display:none}
+  .pay-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+  .ps-btn{flex-direction:column;align-items:center;gap:0;padding:8px 6px;text-align:center}
+  .ps-btn .ps-s{font-size:11px;overflow-wrap:anywhere}
+  .pay-strip .ps-all{grid-column:span 3;justify-self:start}
+  #table{min-width:0}#table thead{display:none}
+  #table tr.row{display:flex;align-items:center}
+  #table tr.row>td{display:none}
+  #table tr.row>td.who,#table tr.row>td:last-child{display:block}
+  #table tr.row>td.who{flex:1 1 auto;min-width:0;max-width:none;white-space:normal;padding:10px 8px 10px 12px}
+  #table tr.row>td:last-child{flex:none;padding-right:10px}
+  #table tr.row{flex-wrap:wrap}#table tr.row[data-nopkg="1"]>td.plan{display:block;order:3;flex:1 0 100%;max-width:none;white-space:normal;padding:0 12px 10px}#table tr.row[data-nopkg="1"]>td.plan .acct{display:none}
+  #table tr.detail{display:block}#table tr.detail>td{display:block}
+  td.who .ct,.row-money{display:none!important}
+  td.who .em{font-size:11px}
+  .m-st{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-top:5px}
+  .m-st .pill{white-space:normal;line-height:1.25}
+  .m-owe{font-size:13px;font-weight:600;color:var(--crit);font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .m-acct{display:block;margin-top:4px}.m-acct .acct{display:flex;flex-wrap:wrap;gap:4px;font-size:12px;color:var(--ink-2)}
+  td.who .row-acts .btn{min-height:40px;padding:6px 14px}
+}
 .bill-reduction{display:block;font-size:11px;color:var(--ink-2);white-space:normal;margin-top:3px}
 @media(max-width:760px){.row-money{display:block;max-width:220px;white-space:normal;font-size:12px;color:var(--ink-2);margin-top:6px}.row-money b{color:var(--ink);font-weight:500}}
 td.plan{max-width:250px;overflow:hidden;text-overflow:ellipsis}
@@ -656,7 +701,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v53</span>
+      <span class="small muted num" id="app-ver" title="App version">v54</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
@@ -698,6 +743,9 @@ table.costs td.cat{color:var(--ink-2)}
   </section>
 
 
+  <!-- v54: on a phone the summary folds to one line (owed, collected); tap to open. A computer always shows it. -->
+  <button class="sum-fold" id="sumFold" type="button" aria-expanded="false" aria-controls="summaryBlock"><span id="sumFoldText">Summary</span><span class="chev" aria-hidden="true">›</span></button>
+  <div class="summary-block sum-closed" id="summaryBlock">
   <div class="sum-head">
     <h2>Summary</h2>
     <span class="cycle-note" id="cycle-note"></span>
@@ -720,6 +768,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="chart-head"><h2>Collected vs costs by month</h2><div class="chart-legend"><span><i style="background:var(--accent)"></i>Collected</span><span><i style="background:var(--series-2)"></i>Costs</span><span class="seg" id="chart-cur"><button type="button" data-cur="PKR" aria-pressed="true">PKR</button><button type="button" data-cur="USD" aria-pressed="false">USD</button></span></div></div>
     <div class="chart-box" id="chart"></div>
     <p class="small muted" id="chart-note" style="margin-top:4px"></p>
+  </div>
   </div>
 
   <section class="panel" id="settingsPanel" hidden aria-label="Settings">
@@ -840,6 +889,8 @@ table.costs td.cat{color:var(--ink-2)}
     </form>
   </section>
 
+  <!-- v54: who owes, who is due soon, who is paid up; each button filters the list -->
+  <div class="pay-strip" id="payStrip" role="group" aria-label="Show customers by payment" hidden></div>
   <div class="toolbar">
     <input class="search" id="search" type="search" placeholder="Search name, email, plan or notes" aria-label="Search users">
     <button class="btn" type="button" id="btn-filter" aria-pressed="false">Hasn't paid</button>
@@ -1110,6 +1161,20 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
   </form>
 </dialog>
 
+<!-- v54: cancel one plan or several, with the last day they use it -->
+<dialog class="panel payment-dialog" id="cancelPlanDialog" aria-labelledby="cp-title">
+  <div class="panel-head"><div><h3 id="cp-title">Cancel plan</h3><p class="small muted" id="cp-who"></p></div><button class="link" id="cp-close" type="button">Close</button></div>
+  <form id="cancelPlanForm" novalidate>
+    <fieldset class="cp-plans"><legend>Which plans stop</legend><div id="cp-list"></div></fieldset>
+    <div class="form-grid">
+      <label class="f">Last day they use it (included)<input id="cp-last" type="date"></label>
+      <label class="f">Reason (optional)<input id="cp-reason" type="text" maxlength="140"></label>
+    </div>
+    <p class="payment-preview" id="cp-preview" aria-live="polite"></p><span class="err" id="cp-error" role="alert"></span>
+    <div class="form-actions"><button class="btn danger" id="cp-save" type="submit">Cancel the ticked plans</button><button class="link" id="cp-cancel" type="button">Keep them</button></div>
+  </form>
+</dialog>
+
 <dialog class="panel payment-dialog" id="refundDialog" aria-labelledby="refund-title">
   <div class="panel-head"><div><h3 id="refund-title">Return money</h3><p class="small muted" id="refund-who"></p></div><button class="link" id="refund-close" type="button">Close</button></div>
   <form id="refundForm" novalidate>
@@ -1228,7 +1293,7 @@ const TOKEN_RE=/^[A-Za-z0-9_-]{16,64}$/;
 const newId=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 
 const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,cycleDay:null,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,publicBaseUrl:'',queueTemplates:{},payHow:'',waApp:'regular'},mode:'connecting',backend:'local',loaded:false,costsLoaded:false,settingsLoaded:false};
-const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'queue',cancelPre:{},qStage:null,qOpen:{},amtErr:{}};
+const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,payFilter:'',pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'queue',cancelPre:{},qStage:null,qOpen:{},amtErr:{}};
 let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,seedActive=false,migrateChecked=false;
 
 /* ---------- money: two currencies, per-entry rate ---------- */
@@ -1395,6 +1460,8 @@ function normalizeUser(b,id){
     if(Array.isArray(s.refunds)){const rf=[];for(const r of s.refunds){const d=normDate(r&&r.date);const amt=Number(r&&r.amount);if(!d||!(amt>0))continue;const entry={id:r.id||newId('r'),date:d,amount:amt,currency:r.currency?normCur(r.currency):cur,rate:normRate(r.rate),note:String(r.note||'')};if(kind==='monthly'&&isDateKey(r.billStart)&&Number(r.billReduction)>0){entry.billStart=r.billStart;entry.billReduction=Math.round(Number(r.billReduction)*100)/100;}if(kind==='one-time'&&r.closesSale===true)entry.closesSale=true;rf.push(entry);}if(rf.length)sub.refunds=rf.sort((a,b)=>a.date.localeCompare(b.date));}
     /* v42: courtesy discounts; absent = none */
     if(Array.isArray(s.courtesy)){const cl=[];for(const c of s.courtesy){const amt=Number(c&&c.amount);if(!(amt>0))continue;const e={id:String(c.id||newId('c')),amount:Math.round(amt*100)/100,note:String(c.note||'').slice(0,140),at:String(c.at||'').slice(0,10)};if(kind==='monthly'){if(!isDateKey(c.from))continue;e.from=c.from;e.to=isDateKey(c.to)?c.to:null;}cl.push(e);}if(cl.length)sub.courtesy=cl;}
+    /* v54: why a plan was ended with Cancel plan; absent = none */
+    if(kind==='monthly'&&sub.end&&s.endReason)sub.endReason=String(s.endReason).slice(0,140);
     u.subscriptions.push(sub);
   }
   return u;
@@ -2218,7 +2285,7 @@ function renderTiles(){
   if(pf){lossS=newSum();for(const id in costRecords()){const c=costRecords()[id];if(c.kind==='loss'&&costPkgId(c)===pf&&inRange(c.date,rb))sumAdd(lossS,costTotal(c),c.currency,c.rate);}}
   setTile('t-cost',cost,'PKR');$('#t-cost-sub').textContent=`${ncost} cost entr${ncost===1?'y':'ies'} · ${rb.label}${pfx}${lossS.n?' · incl. losses '+ownText(lossS,'PKR'):''}`;
   setTile('t-net',net,'PKR');$('#tile-net').dataset.alert=net.n&&(net.missing?net.pkr+net.usd<0:net.pkr<0)?'1':'0';$('#tile-net').dataset.good=net.n&&!net.missing&&net.pkr>0?'1':'0';
-  setTile('t-out',out,'PKR');$('#t-out-sub').textContent=withBal?`owed by ${withBal} user${withBal===1?'':'s'}`+(cancN?` · incl. ${ownText(cancOwe,'PKR')} from ${cancN} cancelled`:''):(ids.length?'nothing outstanding':' ');$('#tile-out').dataset.alert=withBal?'1':'0';
+  setTile('t-out',out,'PKR');{const owed=$('#t-out').textContent,coll=$('#t-col').textContent;$('#sumFoldText').innerHTML=`Summary · <b class="${withBal?'owe':''}">${esc(owed)}</b> owed · <b>${esc(coll)}</b> collected · ${esc(rb.label)}${esc(pfx)}`;}/* v54 */$('#t-out-sub').textContent=withBal?`owed by ${withBal} user${withBal===1?'':'s'}`+(cancN?` · incl. ${ownText(cancOwe,'PKR')} from ${cancN} cancelled`:''):(ids.length?'nothing outstanding':' ');$('#tile-out').dataset.alert=withBal?'1':'0';
   $('#t-unpaid').textContent=unpaid;$('#t-unpaid-sub').textContent=`of ${activeN} active user${activeN===1?'':'s'}`+(cancN?` · ${cancN} cancelled still owe${cancN===1?'s':''}`:'')+(unpaid?` · ${overdueUsers} overdue · tap to list`:(soon?` · ${soon} due soon`:''));$('#tile-unpaid').dataset.alert=unpaid?'1':'0';
   $('#range').value=ui.range;$('#range-custom').hidden=ui.range!=='custom';if(ui.range==='custom'){$('#range-from').value=ui.rangeFrom||'';$('#range-to').value=ui.rangeTo||'';}
   const nc=nextCycleStart(today);const dn=dayDiff(today,nc);$('#cycle-note').innerHTML=`Next cycle starts <b>${esc(fmtD(nc,true))}</b> · ${dn===0?'today':dn===1?'tomorrow':'in '+dn+' days'} · billing runs ${ordinal(cycleDay())} to ${cycleDay()===1?'end of month':ordinal(cycleDay()-1)}`;
@@ -2449,14 +2516,17 @@ function renderAnalytics(){
 }
 function openAnalytics(){showPanel('analyticsPanel');renderAnalytics();$('#analyticsPanel').scrollIntoView({behavior:'smooth',block:'start'});}
 
-function visibleRows(today){
+/* v54: the strip's three groups: owes (overdue or due today, as the Not paid tile), due soon, paid up */
+const payCat=a=>a.unpaid?'owes':a.status==='due-soon'?'soon':(a.status==='current'||a.status==='paid')?'paid':'';
+function visibleRows(today,skipPay){
   const q=ui.search.trim().toLowerCase();
   const rows=Object.keys(state.users).map(id=>({id,u:state.users[id],a:analyze(state.users[id],today)}))
     .filter(r=>!q||[r.u.name,r.u.email,r.u.notes,(wsOf(r.u)||{}).name,...(r.u.subscriptions||[]).map(s=>planLabel(s))].some(x=>(x||'').toLowerCase().includes(q)))
     .filter(r=>!ui.filterUnpaid||r.a.unpaid)
     .filter(r=>ui.pkgFilter==='all'||(ui.pkgFilter==='none'?r.a.pkgIds.has(''):r.a.pkgIds.has(ui.pkgFilter)))
     .filter(r=>ui.statusFilter==='all'||(ui.statusFilter==='cancelled'?!!r.u.cancel:!r.u.cancel))
-    .filter(r=>!ui.wsFilter||(ui.wsFilter==='direct'?!r.u.wholesalerId:r.u.wholesalerId===ui.wsFilter));/* v50 */
+    .filter(r=>!ui.wsFilter||(ui.wsFilter==='direct'?!r.u.wholesalerId:r.u.wholesalerId===ui.wsFilter))/* v50 */
+    .filter(r=>skipPay||!ui.payFilter||payCat(r.a)===ui.payFilter);
   const byName=(x,y)=>displayName(x.u).localeCompare(displayName(y.u));
   const cmp={
     status:(x,y)=>(RANK[x.a.status]-RANK[y.a.status])||(y.a.overdue-x.a.overdue)||byName(x,y),
@@ -2483,6 +2553,12 @@ function accountSummary(){const today=todayISO();const all=[],holders={};let one
 function renderAcctBar(){const bar=$('#acctBar');const ids=Object.keys(state.users);const loading=state.mode==='connecting'||(state.mode==='shared'&&!state.loaded);bar.hidden=loading||!ids.length;if(bar.hidden)return;
   const S=accountSummary();const fv=k=>k==='__none'?'none':k;
   bar.innerHTML=`<span class="lbl">Active accounts</span><span class="acct-n">${S.n}</span>${S.rows.map(r=>`<button type="button" class="acct-chip" data-pkg="${esc(fv(r.k))}" aria-pressed="${ui.pkgFilter===fv(r.k)}" title="${esc(`${r.n} ${acctName(r.k)} account${r.n===1?'':'s'} held by ${r.users} user${r.users===1?'':'s'}`+(ui.pkgFilter===fv(r.k)?' · tap to show all packages':' · tap to list them'))}"><span>${esc(acctName(r.k))}</span><b>${r.n}</b></button>`).join('')}<span class="note">held by ${S.users} active user${S.users===1?'':'s'}${S.one?` · ${S.one} one-time item${S.one===1?'':'s'} not counted`:''}</span>`;}
+/* v54: the strip above the list. Counts follow the search and the other filters, not the strip's own choice */
+function renderPayStrip(today,show){const el=$('#payStrip');el.hidden=!show;if(!show)return;const base=visibleRows(today,true);let owe=newSum();const n={owes:0,soon:0,paid:0};
+  for(const r of base){const k=payCat(r.a);if(k)n[k]++;if(k==='owes')owe=sumMerge(owe,r.a.balance);}
+  const b=(k,lbl,sub)=>`<button type="button" class="ps-btn" data-pf="${k}" aria-pressed="${ui.payFilter===k}"><b>${n[k]}</b><span class="ps-l">${lbl}</span>${sub?`<span class="ps-s">${esc(sub)}</span>`:''}</button>`;
+  const html=b('owes','Owe money',n.owes&&owe.n?sumParts(owe,'PKR').p:'')+b('soon','Due soon','')+b('paid','Paid up','')+(ui.payFilter?'<button type="button" class="link ps-all" data-pf="">Show everyone</button>':'');
+  if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}}
 function planCell(a){
   const top=acctHTML(a);
   if(!a.planParts.length)return top||'<span class="muted">—</span>';
@@ -2572,6 +2648,34 @@ function refreshBillPreview(){const c=moneyDialogContext('bill');if(!c)return;co
   const following=after.periods.find(x=>x.st===nextAfter.st);if(following&&following.covered>0)text+='\n'+fmtAmt(following.covered,s.currency)+' of real recorded money already covers the next bill; only '+fmtAmt(Math.max(0,following.pr-following.covered),s.currency)+' remains.';
   if(!cash)text+='\nNo receipt will be added, changed or deleted. Choosing pending cannot undo money already recorded.';else text+='\n'+(settlement==='edit'?'Only the selected receipt will be corrected.':'A new receipt will be added. Do not record it again if it is already in the history.')+' Receipt date records cash only; it does not change this bill’s dates.';$('#bill-preview').textContent=text;
 }
+/* v54: Cancel plan. Running plans are monthly or yearly plans with no end, or an end today or later. Ticking every running plan is the
+   customer's cancellation (applyCancel: status Cancelled, Resume brings them back); ticking some ends only those (s.end = last day,
+   as a Discontinue answer for some products does) and the rest carry on. Bills up to the last day stay due; settleRefunds re-runs. */
+function cpOpenPlans(u){const t=todayISO();return (u.subscriptions||[]).filter(s=>s.kind==='monthly'&&(!s.end||s.end>=t));}
+/* a short name for a plan in the box: its account label, its product, its billing ("Account 2 · C · monthly") */
+function cpName(u,s){const a=acctParts(u,s),l=a.label||'',pl=planLabel(s);return [...new Set([l,pl].filter(Boolean))].join(' · ')+' · '+subCycle(s)+(a.email?' · '+a.email:'')+(s.end?' · already ends '+fmtD(s.end,true):'');}
+function cpTicked(){return [...document.querySelectorAll('#cp-list input[type=checkbox]:checked')].map(i=>i.value);}
+function cpDefaultLast(){const d=ui.cancelPlanDraft,u=d&&state.users[d.id];if(!u||d.lastTouched)return;const open=cpOpenPlans(u),ids=cpTicked(),subs=ids.length?open.filter(s=>ids.includes(s.id)):open;const cs=nextCycleStart(todayISO());let ld=addDays(cs,-1);for(const s of subs){const e=discEnd(s,cs);if(e>ld)ld=e;}$('#cp-last').value=ld;}
+function openCancelPlanDialog(id){if(!state.settingsLoaded)return;const u=state.users[id];if(!u||u.cancel)return;const open=cpOpenPlans(u);if(!open.length){toast('This customer has no running plans to cancel.');return;}
+  ui.cancelPlanDraft={id,busy:false,lastTouched:false};$('#cp-who').textContent=displayName(u);$('#cp-error').textContent='';$('#cp-reason').value='';
+  $('#cp-list').innerHTML=open.map(s=>`<label class="f chk cp-plan"><input type="checkbox" value="${esc(s.id)}"${open.length===1?' checked':''}><span>${esc(cpName(u,s))}</span></label>`).join('');
+  cpDefaultLast();refreshCancelPlanPreview();$('#cancelPlanDialog').showModal();}
+function cancelPlanChange(){const d=ui.cancelPlanDraft,u0=d&&state.users[d.id];if(!u0)return {error:'This customer is no longer in the list.'};if(u0.cancel)return {error:'This customer is already cancelled.'};
+  const ids=cpTicked();if(!ids.length)return {error:'Tick at least one plan.',soft:true};const last=$('#cp-last').value;if(!isDateKey(last))return {error:'Choose the last day they use it.',soft:true};
+  const u=clone(u0),t=todayISO(),open=cpOpenPlans(u),reason=$('#cp-reason').value.trim();const chosen=open.filter(s=>ids.includes(s.id));if(!chosen.length)return {error:'Those plans have changed. Close this box and try again.'};
+  const all=open.every(s=>ids.includes(s.id));
+  if(all)applyCancel(u,last,reason,'');else for(const s of chosen){s.end=last;if(reason)s.endReason=reason;else delete s.endReason;settleRefunds(u,s,t);}
+  return {u,u0,chosen,last,all};}
+function refreshCancelPlanPreview(){const d=ui.cancelPlanDraft;if(!d)return;const c=cancelPlanChange(),el=$('#cp-preview');$('#cp-save').disabled=!!d.busy;
+  if(c.error){el.textContent=c.soft?c.error:'';if(!c.soft)$('#cp-error').textContent=c.error;return;}
+  const t=todayISO(),after=analyze(c.u,t),names=c.chosen.map(s=>acctParts(c.u0,s).label||planLabel(s));
+  el.textContent=`${names.join(' and ')} ${names.length>1?'stop':'stops'} after ${fmtD(c.last,true)}. No bills after that day.`+(c.last<t?' That day has already passed, so bills after it are removed.':'')+
+    (after.balance.n?` Still owed after this: ${ownText(after.balance,after.mainCur)} (bills up to the last day stay due).`:' Nothing will be owed.')+
+    (c.all?' Every running plan stops, so the customer moves to Cancelled; Resume subscription in their details brings them back.':' The other plans carry on. To undo, clear the plan\'s End date in Edit plan.');}
+async function saveCancelPlan(e){e.preventDefault();const d=ui.cancelPlanDraft;if(!d||d.busy)return;$('#cp-error').textContent='';const c=cancelPlanChange();if(c.error){$('#cp-error').textContent=c.error;return;}
+  d.busy=true;refreshCancelPlanPreview();const ok=await persistUser(d.id,c.u);d.busy=false;
+  if(ok){closeMoneyDialog('cancelPlan');toast(c.all?`${displayName(c.u)} cancelled · last day ${fmtD(c.last,true)}.`:`${displayName(c.u)}: ${c.chosen.map(s=>acctParts(c.u0,s).label||planLabel(s)).join(', ')} ${c.chosen.length>1?'end':'ends'} ${fmtD(c.last,true)}; the other plans carry on.`);}
+  else{$('#cp-error').textContent='Nothing was saved. Your choices are kept; try again.';refreshCancelPlanPreview();}}
 function closeMoneyDialog(kind){if(ui[kind+'Draft']?.busy)return;$('#'+kind+'Dialog').close();ui[kind+'Draft']=null;}
 async function saveBillDialog(e){e.preventDefault();const c=moneyDialogContext('bill');if(!c||c.d.busy)return;const change=billDraftUser(c);if(change.error){$('#bill-error').textContent=change.error;return;}const ss=change.ss;for(const p of ss.payments||[])if(p.id==='__bill_preview')p.id=newId('p');c.d.busy=true;refreshBillPreview();const ok=await persistUser(c.d.id,change.sim);c.d.busy=false;if(ok){closeMoneyDialog('bill');toast('Bill saved for '+exactBillLabel(ss,change.p)+'.');}else{$('#bill-error').textContent='Nothing was saved. Your entries are kept; try again.';refreshBillPreview();}}
 function syncRefundPurposes(s){const one=s.kind==='one-time';$('#refund-purpose').querySelectorAll('option').forEach(o=>{const forOne=o.hasAttribute('data-one');o.hidden=one?!forOne:forOne;if(forOne)o.disabled=!one;});}
@@ -2664,6 +2768,7 @@ function renderTable(){
   if(ui.startDraft&&$('#startDialog').open)refreshStartPreview();
   if(ui.billDraft&&$('#billDialog').open)refreshBillPreview();
   if(ui.refundDraft&&$('#refundDialog').open)refreshRefundPreview();
+  if(ui.cancelPlanDraft&&$('#cancelPlanDialog').open)refreshCancelPlanPreview();
   renderAcctBar();
   const today=todayISO();const ids=Object.keys(state.users);
   const loading=state.mode==='connecting'||!state.settingsLoaded||(state.mode==='shared'&&!state.loaded);
@@ -2672,16 +2777,17 @@ function renderTable(){
   document.querySelectorAll('#table thead th[data-sort]').forEach(th=>{th.querySelector('.arrow').textContent=th.dataset.sort===ui.sort?(ui.dir===1?'▾':'▴'):'';});
   $('#th-due').firstChild.textContent='Due '+fmtD(nextCycleStart(today))+' ';
   const rows=ids.length?visibleRows(today):[];
+  renderPayStrip(today,!loading&&ids.length>0);
   renderRemindAll(rows,today);
   if(!ids.length)return;
-  const nores=$('#nores');nores.hidden=rows.length>0;nores.textContent=ui.filterUnpaid?(ui.search?'No unpaid users match that search.':'Nobody is overdue or due today.'):(ui.statusFilter==='cancelled'?'No cancelled users.':ui.statusFilter==='active'&&!ui.search?'No active users. Switch Status to All to see cancelled ones.':'No users match that search.');
+  const nores=$('#nores');nores.hidden=rows.length>0;nores.textContent=ui.payFilter?{owes:'Nobody owes money right now.',soon:'Nobody is due soon.',paid:'Nobody is paid up yet.'}[ui.payFilter]+' Tap Show everyone to see the whole list.':ui.filterUnpaid?(ui.search?'No unpaid users match that search.':'Nobody is overdue or due today.'):(ui.statusFilter==='cancelled'?'No cancelled users.':ui.statusFilter==='active'&&!ui.search?'No active users. Switch Status to All to see cancelled ones.':'No users match that search.');
   let html='';
   for(const r of rows){
     const {u,a,id}=r;const exp=ui.expanded===id;const late=a.status==='overdue';const reductions=billReductions(u,a,today);
     const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):(a.planParts.length&&!u.cancel?'nothing yet':'—');
     const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?`<span class="muted">paid to ${esc(fmtD(addDays(nextCycleStart(nextCycleStart(today)),-1)))}</span>`:'<span class="muted">—</span>');
-    html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}" data-settled="${dimOn()&&a.settled?1:0}">
-      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${wsOf(u)?`<span class="ws-tag">via ${esc(wsOf(u).name)}</span>`:''}${contactLine(u)}${u.subscriptions.length?`<button class="btn primary sm row-pay" type="button" data-act="row-pay" data-user="${esc(id)}">Record month payment</button>`:''}${u.subscriptions.some(s=>s.kind==='monthly')?`<button class="btn sm row-start" type="button" data-act="row-start" data-user="${esc(id)}">Package start / payments</button><button class="btn sm row-bill" type="button" data-act="row-bill" data-user="${esc(id)}">Set bill / proration</button><span class="start-list">${u.subscriptions.filter(s=>s.kind==='monthly').map(s=>`${esc(planLabel(s))}: ${esc(fmtD(s.start,true))}${subCycle(s)==='yearly'?' · pays '+esc(payFrequency(payMonthsAt(s,'9999-12-31'))):''}`).join('<br>')}</span>`:''}<span class="row-money">Total paid <b data-role="row-paid">${esc(ownText(a.totals,a.mainCur))}</b><br>Discounts / reductions <b>${esc(ownText(reductions,a.mainCur))}</b><br>${esc(statusLabel(a))}</span></td>
+    html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}" data-settled="${dimOn()&&a.settled?1:0}"${a.planParts.some(p=>p.noPkg)?' data-nopkg="1"':''}>
+      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${wsOf(u)?`<span class="ws-tag">via ${esc(wsOf(u).name)}</span>`:''}${contactLine(u)}<span class="m-st"><span class="pill" data-status="${a.status}">${statusLabel(a)}</span>${a.balance.n?`<b class="m-owe">Owes ${esc(ownText(a.balance,a.mainCur))}</b>`:''}</span>${acctHTML(a)?`<span class="m-acct">${acctHTML(a)}</span>`:''}<span class="row-acts">${u.subscriptions.length?`<button class="btn ${a.unpaid||a.status==='due-soon'?'primary ':''}sm row-pay" type="button" data-act="row-pay" data-user="${esc(id)}">Record payment</button>`:''}${!u.cancel&&cpOpenPlans(u).length?`<button class="btn sm row-cancel" type="button" data-act="row-cancel" data-user="${esc(id)}">Cancel plan</button>`:''}</span>${u.subscriptions.some(s=>s.kind==='monthly')?`<span class="start-list">${u.subscriptions.filter(s=>s.kind==='monthly').map(s=>`${esc(planLabel(s))}: ${esc(fmtD(s.start,true))}${subCycle(s)==='yearly'?' · pays '+esc(payFrequency(payMonthsAt(s,'9999-12-31'))):''}`).join('<br>')}</span>`:''}<span class="row-money">Total paid <b data-role="row-paid">${esc(ownText(a.totals,a.mainCur))}</b><br>Discounts / reductions <b>${esc(ownText(reductions,a.mainCur))}</b><br>${esc(statusLabel(a))}</span></td>
       <td class="plan">${planCell(a)}</td>
       <td title="${esc(u.joinDate)}">${esc(fmtD(u.joinDate))}</td>
       <td class="${late?'late':''}">${ptTxt}</td>
@@ -3185,7 +3291,7 @@ function detailHTML(id,u,a,today){
   }
   return `<div class="detail-head">
       <div class="meta"><span>Joined <b>${esc(fmtD(u.joinDate,true))}</b></span>${u.cancel?`<span>Last day <b>${esc(fmtD(u.cancel.lastDay,true))}</b></span>`:''}${u.email&&u.name?`<span>Email <b class="num">${esc(u.email)}</b></span>`:''}<span>WhatsApp <b>${u.phone?esc(fmtPhone(u.phone)):'not set'}</b></span>${u.telegram?`<span>Telegram <b>${esc(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram)}</b></span>`:''}<span>Method / notes <b>${u.notes?esc(u.notes):'—'}</b></span><span>Total paid <b>${esc(ownText(a.totals,a.mainCur))}</b></span></div>
-      <div class="detail-acts">${u.cancel?'':`<span class="grp">${remindControl(u,a,today,'Remind on WhatsApp')+emailControl(u,a,today,'Email')+telegramControl(u,'Telegram')}</span>`}<span class="grp"><button class="btn sm" type="button" data-act="toggle" data-key="edit">Edit user</button>${u.cancel?`<button class="btn sm primary" type="button" data-act="toggle" data-key="react" aria-expanded="${open.react?'true':'false'}">Resume subscription</button><button class="btn sm" type="button" data-act="toggle" data-key="cancel">Edit cancellation</button>`:`<button class="btn sm danger" type="button" data-act="toggle" data-key="cancel" aria-expanded="${open.cancel?'true':'false'}">Cancel subscription</button>`}</span></div>
+      <div class="detail-acts">${u.cancel?'':`<span class="grp">${remindControl(u,a,today,'Remind on WhatsApp')+emailControl(u,a,today,'Email')+telegramControl(u,'Telegram')}</span>`}<span class="grp">${u.subscriptions.some(s=>s.kind==='monthly')?`<button class="btn sm row-start" type="button" data-act="row-start" data-user="${esc(id)}">Package start / payments</button><button class="btn sm row-bill" type="button" data-act="row-bill" data-user="${esc(id)}">Set bill / proration</button>`:''}<button class="btn sm" type="button" data-act="toggle" data-key="edit">Edit user</button>${u.cancel?`<button class="btn sm primary" type="button" data-act="toggle" data-key="react" aria-expanded="${open.react?'true':'false'}">Resume subscription</button><button class="btn sm" type="button" data-act="toggle" data-key="cancel">Edit cancellation</button>`:`<button class="btn sm danger" type="button" data-act="toggle" data-key="cancel" aria-expanded="${open.cancel?'true':'false'}">Cancel subscription</button>`}</span></div>
     </div>
     ${discNote(id,u)}${cancelHistHTML(u)}${u.cancel?`<p class="cancel-note"><b>Cancelled</b> · last day ${esc(fmtD(u.cancel.lastDay,true))}${u.cancel.reason?` · ${esc(u.cancel.reason)}`:''}${u.cancel.note?` · ${esc(u.cancel.note)}`:''} · ${a.balance.n?'still owes '+esc(ownText(a.balance,a.mainCur))+' for periods before the last day':'settled, nothing owed'}. No further periods or reminders.</p>`:''}
     <form class="block cancel-form" data-id="${id}" ${open.cancel?'':'hidden'} novalidate>
@@ -3603,6 +3709,13 @@ function bind(){
   $('#bill-settlement').addEventListener('change',()=>{if($('#bill-settlement').value==='edit')$('#bill-receipt').dispatchEvent(new Event('change'));else if($('#bill-settlement').value==='new'){$('#bill-cash-label').textContent='Actual amount received ('+moneyDialogContext('bill').s.currency+')';$('#bill-cash-label').textContent='Actual amount received ('+moneyDialogContext('bill').s.currency+')';const c=moneyDialogContext('bill'),change=billDraftUser(c,false);const p=!change.error&&(analyzeMonthly(change.ss,todayISO()).periods.find(p=>p.st===change.p.st)||{pr:change.amount,covered:0});$('#bill-cash').value=p?Math.max(0,p.pr-p.covered):'';$('#bill-date').value=todayISO();}refreshBillPreview();});
   ['mode','amount','from','to','cash','date'].forEach(name=>$('#bill-'+name).addEventListener('input',refreshBillPreview));
   $('#refundForm').addEventListener('submit',saveRefundDialog);
+  /* v54: Cancel plan box */
+  $('#cancelPlanForm').addEventListener('submit',saveCancelPlan);
+  ['#cp-close','#cp-cancel'].forEach(sel=>$(sel).addEventListener('click',()=>closeMoneyDialog('cancelPlan')));
+  $('#cancelPlanDialog').addEventListener('cancel',e=>{if(ui.cancelPlanDraft?.busy)e.preventDefault();else ui.cancelPlanDraft=null;});
+  $('#cp-list').addEventListener('change',()=>{$('#cp-error').textContent='';cpDefaultLast();refreshCancelPlanPreview();});
+  $('#cp-last').addEventListener('input',()=>{if(ui.cancelPlanDraft)ui.cancelPlanDraft.lastTouched=true;$('#cp-error').textContent='';refreshCancelPlanPreview();});
+  $('#cp-reason').addEventListener('input',()=>{});
   $('#refund-account').addEventListener('change',()=>{ui.refundDraft.sid=$('#refund-account').value;fillRefundAccount();});
   ['purpose','period','date','amount','currency','rate','note','last'].forEach(name=>$('#refund-'+name).addEventListener('input',()=>{if(name==='last')$('#refund-month').value='';refreshRefundPreview();}));
   $('#refund-month').addEventListener('input',()=>{const m=$('#refund-month').value;if(/^\d{4}-\d{2}$/.test(m)){$('#refund-last').value=addDays(cycleAt(monthOffset(m+'-01')),-1);refreshRefundPreview();}});
@@ -3697,6 +3810,11 @@ function bind(){
   $('#sort').addEventListener('change',e=>{ui.sort=e.target.value;ui.dir=1;savePrefs();renderTable();});
   const toggleFilter=()=>{ui.filterUnpaid=!ui.filterUnpaid;renderTable();};
   $('#btn-filter').addEventListener('click',toggleFilter);
+  /* v54: the strip filters the list; tapping the chosen group again shows everyone */
+  $('#payStrip').addEventListener('click',e=>{const b=e.target.closest('[data-pf]');if(!b)return;const k=b.dataset.pf;ui.payFilter=ui.payFilter===k?'':k;ui.expanded=null;renderTable();});
+  {const sb=$('#summaryBlock'),sf=$('#sumFold');const setFold=open=>{sb.classList.toggle('sum-closed',!open);sf.setAttribute('aria-expanded',String(open));};
+   let open=false;try{open=localStorage.getItem('pt-sum-open')==='1';}catch(e){}setFold(open);
+   sf.addEventListener('click',()=>{const o=sb.classList.contains('sum-closed');setFold(o);try{localStorage.setItem('pt-sum-open',o?'1':'0');}catch(e){}});}
   $('#tile-unpaid').addEventListener('click',()=>{if(Object.values(state.users).some(u=>u.cancel&&analyze(u,todayISO()).unpaid))ui.statusFilter='all';if(!ui.filterUnpaid)toggleFilter();$('#tableWrap').scrollIntoView({behavior:'smooth',block:'start'});});
   document.querySelector('#table thead').addEventListener('click',e=>{const th=e.target.closest('th[data-sort]');if(!th)return;if(ui.sort===th.dataset.sort)ui.dir=-ui.dir;else{ui.sort=th.dataset.sort;ui.dir=1;}savePrefs();renderTable();});
 
@@ -3750,6 +3868,7 @@ function bind(){
     const quickBill=e.target.closest('[data-act="row-bill"]');if(quickBill){openBillDialog(quickBill.dataset.user);return;}
     const quickStart=e.target.closest('[data-act="row-start"]');if(quickStart){openStartDialog(quickStart.dataset.user);return;}
     const quickPay=e.target.closest('[data-act="row-pay"]');if(quickPay){openPaymentDialog(quickPay.dataset.user);return;}
+    const quickCancel=e.target.closest('[data-act="row-cancel"]');if(quickCancel){openCancelPlanDialog(quickCancel.dataset.user);return;}
     const row=e.target.closest('tr.row');
     if(row){if(e.target.closest('button,select,input'))return;ui.expanded=ui.expanded===row.dataset.id?null:row.dataset.id;renderTable();return;}
     const det=e.target.closest('tr.detail');if(!det)return;const id=det.dataset.id;

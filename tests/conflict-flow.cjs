@@ -43,7 +43,7 @@ async function reset(ctx,id){await api(ctx,'POST','/api/import',{docs:{},replace
   let srv=(await getUser(D.ctx,id)).data;assert.equal(srv.subscriptions[0].payments.length,2);assert.equal(srv.notes,'original');
   assert.match(toast,/changed on another device/);
   check('Phone with an outdated copy: save refused, the desktop payment survives, the owner is told why');
-  blocked=false;await P.p.waitForFunction(()=>/8,400/.test(document.querySelector('tr.row[data-id="conflict-qa"]').innerText),null,{timeout:20000});
+  blocked=false;await P.p.waitForFunction(()=>/8,400/.test(document.querySelector('tr.row[data-id="conflict-qa"]').textContent),null,{timeout:20000});
   assert.equal(await editForm(P.p,id).locator('[name=notes]').inputValue(),'edited on phone');
   check('After the conflict the phone reloads the newer record and keeps what was typed');
   await editForm(P.p,id).locator('button[type=submit]').click();await P.p.waitForTimeout(1500);srv=(await getUser(D.ctx,id)).data;assert.equal(srv.notes,'edited on phone');assert.equal(srv.subscriptions[0].payments.length,2);
@@ -65,6 +65,6 @@ async function reset(ctx,id){await api(ctx,'POST','/api/import',{docs:{},replace
   check('A field the owner does change is still saved');
 
   assert.deepEqual(D.p._errs.concat(P.p._errs),[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'53',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'54',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
