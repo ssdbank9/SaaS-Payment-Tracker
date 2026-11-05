@@ -2,6 +2,10 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v53 - 2026-11-05
+
+- Customer links (Queue messages, Copy link and the reminder emails) now always use the server's own address, wasooli.duckdns.org, unless a separate link address is set on the server. Before, an old "Public base URL" in Settings could still point them at pay-up.duckdns.org, which no longer exists, so the links would not open. Links you sent before this change may still carry the old address; send them again from the Queue.
+
 ## v52 - 2026-11-05
 
 - A copied product now behaves like the one it was copied from. Before, a copy of an existing product with no start date (for example G) was treated as a brand-new product: Add user asked "once or tracking" and its plans started their own cycle. Now the copy stays on the shared billing cycle unless you give it a start date.

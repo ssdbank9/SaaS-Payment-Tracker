@@ -209,7 +209,8 @@ def templates(settings):
 
 def link_base():
     """v25: with LINK_DOMAIN set, every link points at the subscribers' address, never at the admin one."""
-    d = re.sub(r"^https?://", "", os.environ.get("LINK_DOMAIN", "").strip().lower()).split("/")[0]
+    # v53: without LINK_DOMAIN the links use the server's own address (DOMAIN), as the page does
+    d = re.sub(r"^https?://", "", (os.environ.get("LINK_DOMAIN", "").strip() or os.environ.get("DOMAIN", "").strip()).lower()).split("/")[0]
     return ("https://" + d) if re.match(r"^[a-z0-9.-]+$", d) else ""
 
 

@@ -172,4 +172,17 @@ finally:
 check("v46 a customer who answered for one of two products still gets the stage 2 email", "twoA@example.test" in mails, mails)
 check("v46 a customer who answered for both products gets no stage 2 email", "twoB@example.test" not in mails, mails)
 
+# v53: without LINK_DOMAIN the customers' links use the server's own address (DOMAIN); LINK_DOMAIN still wins when set
+_saved = {k: os.environ.get(k) for k in ("DOMAIN", "LINK_DOMAIN")}
+try:
+    os.environ["DOMAIN"], os.environ["LINK_DOMAIN"] = "admin.example.test", ""
+    check("v53 email links use DOMAIN when no LINK_DOMAIN is set", notify.link_base() == "https://admin.example.test", notify.link_base())
+    os.environ["LINK_DOMAIN"] = "links.example.test"
+    check("v53 LINK_DOMAIN still wins for email links", notify.link_base() == "https://links.example.test", notify.link_base())
+finally:
+    for k, v in _saved.items():
+        if v is None: os.environ.pop(k, None)
+        else: os.environ[k] = v
+check("v53 a local run with no DOMAIN keeps links on the page's own address", A.LINKS_TO == "", A.LINKS_TO)
+
 print("ALL %d CHECKS PASSED" % passed)
