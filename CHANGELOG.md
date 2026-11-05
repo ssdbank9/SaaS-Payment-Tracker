@@ -2,6 +2,15 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v58 - 2026-11-05
+
+- New Search button in the header. It opens Search customers, where you can fill in any of these and see the customers that match all of them:
+  - Anything: name, email, WhatsApp number written any way (0300 111, +92 300-1112222), Telegram, notes, payment notes, cancellation reason.
+  - Product, wholesaler, status (owes money, due soon, paid up, starts later, not cancelled, cancelled) and the currency they pay in.
+  - Joined between, plan started between, cancelled or plan ended between, and paid between (which also shows how much each paid in that time).
+  - Owes at least an amount, and price between two amounts (in rupees; dollars are converted at the rate).
+- The results show each customer's status, what they owe and their products, with totals at the top. Tap one to open them in the list. Save results as CSV writes the list to a file.
+
 ## v57 - 2026-11-05
 
 - Settings → Public base URL works again on the server. Type the address you want customer links to use and save; the server checks that the name exists. If it does, every link (Queue messages, Copy link, reminder emails) uses it. If it cannot be found, for example a deleted DuckDNS name such as pay-up.duckdns.org, Settings says so in red and the links keep using wasooli.duckdns.org, so customers never get a link that does not open. Leave the box empty to use wasooli.duckdns.org. LINK_DOMAIN on the server, when set, still decides the address.

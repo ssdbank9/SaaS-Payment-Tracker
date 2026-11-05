@@ -26,7 +26,7 @@ const pay=(id,date,amount,note)=>({id,date,amount,currency:'PKR',note:note||''})
    'users/pb':{name:'Cancelled Payer',joinDate:'2026-08-24',cancel:{lastDay:'2026-09-23',reason:'x',note:'',at:'2026-09-20'},subscriptions:[{id:'s1',kind:'monthly',cycle:'monthly',name:'',packageId:'pkg_c',currency:'PKR',start:'2026-08-24',end:'2026-09-23',prorate:true,prices:[{from:'2026-08-24',price:2000}],payments:[pay('q1','2026-08-24',2000,'')]}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v57');
+  assert.equal(await page.locator('#app-ver').textContent(),'v58');
 
   // 1. the Payments view: every payment and refund, newest first, totals equal to the Summary tiles for the same range
   await page.locator('#btn-payments').click();await page.locator('#payPanel').waitFor({state:'visible'});
@@ -74,6 +74,6 @@ const pay=(id,date,amount,note)=>({id,date,amount,currency:'PKR',note:note||''})
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no sideways scroll at ${w} ${scheme}`);await page.locator('#pl-close').click();}
   check('the Payments view fits at 390px and 1400px in light and dark with no sideways scroll');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'57',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'58',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
