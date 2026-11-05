@@ -19,7 +19,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   await page.reload();await page.waitForSelector('tr.row[data-id="eren"]');await page.waitForTimeout(1500);
   const users=async()=>(await api('GET','/api/docs?prefix=users/')).j.docs.map(d=>({id:d.path.split('/')[1],...d.data}));
   const addUser=async(name,cc,phone,tg)=>{if(await page.locator('#addPanel').isHidden())await page.locator('#btn-add').click();await page.locator('#a-pkg').selectOption('pkg_c');await page.locator('#a-name').fill(name);await page.locator('#a-price').fill('4200');
-    await page.locator('#a-cc').fill(cc);await page.locator('#a-phone').fill(phone);if(tg){if(!await page.locator('#a-more').evaluate(x=>x.open))await page.locator('#a-more summary').click();await page.locator('#a-tg').fill(tg);}
+    await page.locator('#a-cc').fill(cc);await page.locator('#a-phone').fill(phone);if(tg){/* v55: every Add field is visible */await page.locator('#a-tg').fill(tg);}
     const hint=(await page.locator('#addForm [data-role=phone-hint]').innerText()).trim();
     await page.locator('#addForm button[type=submit]').click();await page.locator('#paymentDialog[open]').waitFor({timeout:15000});await page.locator('#payment-cancel').click();await page.waitForTimeout(600);return hint;};
 
@@ -48,6 +48,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   check('An old number saved without a code is fixed by retyping it in Edit user: 0300 1234567 becomes 923001234567');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'54',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'55',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

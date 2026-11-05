@@ -2,6 +2,13 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v55 - 2026-11-05
+
+- Add a customer shows every field at once, in three groups: Customer (name, email, WhatsApp, Telegram, wholesaler, payment method / notes), Plan (product, start, joined, price, currency, billing, payment schedule, label, supplier cost, proration choices) and Payment. Nothing is hidden behind More options any more.
+- Joined on now follows Package started on until you change it, so one date is enough for most customers.
+- Have they paid? is asked in the form. Yes records the first bill shown (dated today) together with the customer; Not yet records nothing; A different amount, or no answer, opens the payment box after saving, as before.
+- Save and add another saves the customer and keeps the form open with the same product, dates, price and cost, ready for the next one.
+
 ## v54 - 2026-11-05
 
 - Who has paid is clear at a glance. Above the customer list there are three counters: Owe money (with the total), Due soon and Paid up. Tap one to list only those customers; tap it again, or Show everyone, to see the whole list.

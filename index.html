@@ -301,6 +301,14 @@ td.who .row-start,td.who .row-bill{display:block;margin-top:6px;min-height:44px;
 .start-list{font-size:11px;line-height:1.45;margin-top:4px;color:var(--muted);white-space:normal}
 .courtesy-form [hidden],.chg-block[hidden],#a-payment-wrap[hidden],#a-start-wrap[hidden],.addsub-form [data-role="payment-wrap"][hidden]{display:none}
 .row-money{display:none}
+/* v55: the Add form's three groups */
+.add-grp{border:1px solid var(--line);border-radius:6px;padding:10px 12px 12px;margin:0 0 12px;min-width:0}
+.add-grp>legend{font-size:12px;font-weight:600;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.06em;padding:0 6px}
+.add-checks{display:grid;gap:6px;margin-top:10px}.add-checks label.f.chk{display:block;align-self:auto;min-height:0;line-height:1.45;padding:4px 0}.add-checks label.f.chk input{width:16px;height:16px;min-height:0;padding:0;margin:0 8px 0 0;vertical-align:-3px}
+.add-paid{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}.add-paid-q{font-weight:600;font-size:13px;flex-basis:100%}
+.add-paid label.f.chk{min-height:40px;align-self:auto;font-size:14px}.add-paid input{width:18px;height:18px;min-height:0;padding:0;margin:0 6px 0 0}
+#a-paid-hint{margin-top:4px}
+@media (max-width:760px){.add-paid label.f.chk{flex-basis:100%}#addForm .form-actions .btn{flex:1 1 100%;min-height:44px}}
 /* v54: who owes / due soon / paid up; one compact line per customer on a phone; Cancel plan; the folded summary */
 .pay-strip{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
 .pay-strip[hidden]{display:none}
@@ -701,7 +709,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v54</span>
+      <span class="small muted num" id="app-ver" title="App version">v55</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
@@ -934,37 +942,50 @@ table.costs td.cat{color:var(--ink-2)}
   </section>
 
   <section class="panel" id="addPanel" hidden aria-label="Add user">
-    <div class="panel-head"><h3>Add a user</h3><button class="link" type="button" id="add-close">Close</button></div>
+    <div class="panel-head"><h3>Add a customer</h3><button class="link" type="button" id="add-close">Close</button></div>
+    <!-- v55: every field stays on the form, grouped as Customer / Plan / Payment; "Have they paid?" is answered here -->
     <form id="addForm" novalidate>
+      <fieldset class="add-grp"><legend>Customer</legend>
       <div class="form-grid">
         <label class="f">Name<input id="a-name" type="text" autocomplete="off" placeholder="Name or email is required" autocapitalize="words"></label>
         <label class="f">Email<input id="a-email" type="email" placeholder="name@company.com" autocomplete="off" inputmode="email"></label>
-        <label class="f" id="a-ws-wrap" hidden>Sold through<select id="a-ws"></select><span class="small muted" id="a-ws-hint"></span></label>
         <label class="f">WhatsApp number<span class="phone-in"><input id="a-cc" class="cc" type="text" value="+92" inputmode="tel" maxlength="5" aria-label="Country code"><input id="a-phone" type="tel" placeholder="300 1234567" autocomplete="off" inputmode="tel"></span><span class="small muted phone-hint" data-role="phone-hint"></span></label>
-        <label class="f">Joined on<input id="a-join" type="date" required></label>
+        <label class="f">Telegram <span class="muted">(handle or phone, optional)</span><input id="a-tg" type="text" placeholder="@handle or +92…" autocomplete="off"></label>
+        <label class="f" id="a-ws-wrap" hidden>Sold through<select id="a-ws"></select><span class="small muted" id="a-ws-hint"></span></label>
+        <label class="f">Payment method / notes<input id="a-notes" type="text" placeholder="e.g. NayaPay Noor, USDT (Binance)"></label>
+      </div>
+      </fieldset>
+      <fieldset class="add-grp" id="a-more"><legend>Plan</legend>
+      <div class="form-grid">
         <label class="f">Package / product<select id="a-pkg" required></select></label>
         <label class="f" id="a-start-wrap">Package started on<input id="a-start" type="date" required></label>
+        <label class="f">Joined on <span class="muted">(same as the start unless you change it)</span><input id="a-join" type="date" required></label>
         <label class="f"><span id="a-price-lbl">Monthly price (Rs)</span><input id="a-price" type="number" min="0" step="0.01" required placeholder="4200" inputmode="decimal"></label>
         <label class="f">Currency <span class="muted">(pays in)</span><select id="a-cur" required><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option></select></label>
+        <label class="f">Billing<span id="a-cycle-wrap"></span></label>
         <label class="f" id="a-payment-wrap" hidden>Payment schedule<select id="a-payment"><option value="1">Monthly</option><option value="3">Every 3 months</option><option value="6">Every 6 months</option><option value="12" selected>Yearly</option><optgroup label="Custom: every N months"><option value="2">Every 2 months</option><option value="4">Every 4 months</option><option value="5">Every 5 months</option><option value="7">Every 7 months</option><option value="8">Every 8 months</option><option value="9">Every 9 months</option><option value="10">Every 10 months</option><option value="11">Every 11 months</option><option value="13">Every 13 months</option><option value="14">Every 14 months</option><option value="15">Every 15 months</option><option value="16">Every 16 months</option><option value="17">Every 17 months</option><option value="18">Every 18 months</option><option value="19">Every 19 months</option><option value="20">Every 20 months</option><option value="21">Every 21 months</option><option value="22">Every 22 months</option><option value="23">Every 23 months</option><option value="24">Every 24 months</option></optgroup></select></label>
+        <label class="f">Plan label <span class="muted">(optional)</span><input id="a-plan" type="text" placeholder="only if it differs from the package"></label>
       </div>
       <div id="a-first"></div>
       <div id="a-account-cost"></div><label class="f" id="a-due-wrap" hidden>One-time amount due on (optional)<input id="a-due" type="date"></label>
-      <details class="more" id="a-more">
-        <summary>More options: billing cycle, renewal date, plan label, notes, proration</summary>
-        <div class="form-grid" style="margin-top:8px">
-          <label class="f">Billing<span id="a-cycle-wrap"></span></label>
-          <label class="f">Plan label <span class="muted">(optional)</span><input id="a-plan" type="text" placeholder="only if it differs from the package"></label>
-          <label class="f">Payment method / notes<input id="a-notes" type="text" placeholder="e.g. NayaPay Noor, USDT (Binance)"></label>
-          <label class="f">Telegram <span class="muted">(handle or phone, optional)</span><input id="a-tg" type="text" placeholder="@handle or +92…" autocomplete="off"></label>
-          <label class="f chk" id="a-prorate-wrap"><input id="a-prorate" type="checkbox" checked>Prorate first period <span class="muted">(charge the join period by days)</span></label>
-          <label class="f chk"><input id="a-waive" type="checkbox">Waive first partial period <span class="muted">(stub days free, billing starts next cycle)</span></label>
-          <label class="f chk"><input id="a-own" name="ownStart" type="checkbox">Renews on its own start date <span class="muted">(e.g. started Aug 30: renews every Aug 30, or the 30th each month; unticked = the shared billing day)</span></label>
-        </div>
-      </details>
+      <div class="add-checks">
+        <label class="f chk" id="a-prorate-wrap"><input id="a-prorate" type="checkbox" checked>Prorate first period <span class="muted">(charge the join period by days)</span></label>
+        <label class="f chk"><input id="a-waive" type="checkbox">Waive first partial period <span class="muted">(stub days free, billing starts next cycle)</span></label>
+        <label class="f chk"><input id="a-own" name="ownStart" type="checkbox">Renews on its own start date <span class="muted">(e.g. started Aug 30: renews every Aug 30, or the 30th each month; unticked = the shared billing day)</span></label>
+      </div>
+      </fieldset>
+      <fieldset class="add-grp"><legend>Payment</legend>
       <p class="cover" id="a-bill-preview" aria-live="polite"></p>
+      <div class="add-paid" role="radiogroup" aria-label="Have they paid?"><span class="add-paid-q">Have they paid?</span>
+        <label class="f chk"><input type="radio" name="a-paid" value="yes"><span id="a-paid-yes">Yes, the first bill</span></label>
+        <label class="f chk"><input type="radio" name="a-paid" value="other"><span>A different amount <span class="muted">(opens the payment box)</span></span></label>
+        <label class="f chk"><input type="radio" name="a-paid" value="no"><span>Not yet</span></label>
+      </div>
+      <p class="small muted" id="a-paid-hint">If you leave this unanswered, the payment box opens after saving.</p>
+      </fieldset>
       <div class="form-actions">
-        <button class="btn primary" type="submit">Add user</button>
+        <button class="btn primary" type="submit">Save customer</button>
+        <button class="btn" type="button" id="a-again">Save and add another</button>
         <span class="small muted" id="a-conv">The first billing period starts on the join date. One-time items and more plans can be added from the user's row.</span>
         <span class="err" id="a-err"></span>
       </div>
@@ -3665,14 +3686,21 @@ function applyPkgCost(form,pid){const box=form&&form.querySelector('.account-cos
   if(box.refreshCostFields)box.refreshCostFields();}
 /* v50: a wholesaler's customer is charged the full first month (the wholesaler's terms), so choosing one unticks Prorate first period */
 function syncAddWs(){const w=wsById($('#a-ws').value);$('#a-prorate').checked=!w;$('#a-ws-hint').textContent=w?`Billed to ${w.name}${w.phone?' · messages go to '+fmtPhone(w.phone)+' when the customer has no number':''}. First month charged in full.`:'';updAddConv();}
+/* v55: "Have they paid?" in the Add form. addFirstPay(sub) is what Yes records: the payment box's default (the first unpaid bill,
+   paymentTarget at kPaid, one receipt per covered period, dated today); a one-time item records its whole amount. */
+function addFirstPay(sub,joinDate){const u=normalizeUser({name:'_',joinDate:joinDate||sub.start,subscriptions:[sub]},'__add');const ss=u.subscriptions[0],a=analyze(u,todayISO()),sa=a.sa[ss.id];if(!sa)return null;
+  const t=paymentTarget(ss,sa,ss.kind==='monthly'?sa.kPaid:null);if(!t||!(t.owed>0))return null;
+  return {owed:t.owed,cur:ss.currency,list:ss.kind==='monthly'&&t.parts.length?recPayments(ss,t,todayISO()):[{date:todayISO(),amount:t.owed,currency:ss.currency,rate:null,note:''}]};}
+function addPaidLabel(sub){let f=null;try{f=addFirstPay(Object.assign({id:'__s'},sub),$('#a-join').value);}catch(e){}$('#a-paid-yes').textContent=f?'Yes, '+fmtAmt(f.owed,f.cur)+' (the first bill)':'Yes, the first bill';}
 function updAddConv(){const cur=$('#a-cur').value;const cyEl=$('#a-cycle');const once=firstChoice($('#a-first'))==='once';const cy=once?'one-time':(cyEl?cyEl.value:'monthly');$('#a-price-lbl').textContent=`${once?'Amount for the year':cy==='one-time'?'Total amount':cy==='yearly'?'Yearly price':'Monthly price'} (${cur==='USD'?'$':'Rs'})`;const n=Number($('#a-price').value)||0;const c=conv(n,cur,null);$('#a-conv').textContent=n?`${fmtAmt(n,cur)}${CYCLES[cy].per}`+(c.ok?` ≈ ${fmtAmt(cur==='USD'?c.pkr:c.usd,other(cur))}`:' (set an exchange rate in Settings to see the other currency)'):'Enter the price to preview the first bill.';
   /* v32: only the joining period is prorated. The receipt date never changes a charge. */
   $('#a-start-wrap').hidden=false;$('#a-due-wrap').hidden=cy!=='one-time'||once;$('#a-payment-wrap').hidden=cy!=='yearly'||!!firstChoice($('#a-first'));const preview=$('#a-bill-preview'),start=$('#a-start').value;
   if(!isDateKey(start)||!validAmt($('#a-price').value)){preview.textContent='Choose the package start date and price to see the first bill.';return;}
+  if(once||cy==='one-time')$('#a-paid-yes').textContent=n>0?'Yes, '+fmtAmt(n,cur)+(once?' (the year)':' (the total)'):'Yes, the first bill';
   if(once){const rn=addMonths(start,12);preview.textContent=`One-time annual plan: ${fmtAmt(n,cur)} paid once for ${fmtD(start,true)} – ${fmtD(addDays(rn,-1),true)}, due on the purchase day. Renews ${fmtD(rn,true)} (for reference). Not prorated.`;return;}
-  if(cy==='one-time'){preview.textContent=`Item total: ${fmtAmt(n,cur)}. Record the money received after adding the user.`;return;}
+  if(cy==='one-time'){preview.textContent=`Item total: ${fmtAmt(n,cur)}.`;return;}
   const anc=$('#a-own')&&$('#a-own').checked?start:ownAnchorFor($('#a-pkg').value,firstChoice($('#a-first')),start);const s={kind:'monthly',cycle:cy,currency:cur,packageId:$('#a-pkg').value,start,...(anc?{anchor:anc}:{}),prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,prorationBasis:cy==='yearly'?'actual':'',paymentEvery:cy==='yearly'?Number($('#a-payment').value):undefined,prices:[{from:start,price:n}],payments:[]};
-  preview.textContent=firstBillText(s);
+  preview.textContent=firstBillText(s);addPaidLabel(s);
 }
 function toggleOpen(id,key){ui.open[id]=ui.open[id]||{};ui.open[id][key]=!ui.open[id][key];if(!ui.open[id][key]){if(key==='cancel')delete ui.cancelPre[id];const sid=key.split(':')[1];if(sid&&ui.priceEdit)delete ui.priceEdit[sid];if(sid&&ui.payEdit)delete ui.payEdit[sid];if(sid&&ui.refundEdit)delete ui.refundEdit[sid];}renderTable();}
 const validPhone=raw=>{const d=digits(raw);return d===''||(d.length>=7&&d.length<=15);};
@@ -3698,8 +3726,8 @@ function bind(){
   $('#qa-save').addEventListener('click',quickSave);
   $('#add-close').addEventListener('click',()=>{$('#addPanel').hidden=true;});
   $('#a-cur').addEventListener('change',updAddConv);$('#a-price').addEventListener('input',updAddConv);
-  $('#a-join').addEventListener('input',()=>{if(!$('#a-start').dataset.manual)$('#a-start').value=$('#a-join').value;updAddConv();});
-  $('#a-start').addEventListener('input',()=>{$('#a-start').dataset.manual='1';updAddConv();});
+  $('#a-join').addEventListener('input',()=>{$('#a-join').dataset.manual='1';if(!$('#a-start').dataset.manual)$('#a-start').value=$('#a-join').value;updAddConv();});
+  $('#a-start').addEventListener('input',()=>{$('#a-start').dataset.manual='1';if(!$('#a-join').dataset.manual&&isDateKey($('#a-start').value))$('#a-join').value=$('#a-start').value;/* v55 */updAddConv();});
   ['#a-prorate','#a-waive','#a-payment'].forEach(sel=>$(sel).addEventListener('input',updAddConv));
   $('#billForm').addEventListener('submit',saveBillDialog);
   ['bill','refund'].forEach(kind=>{['close','cancel'].forEach(action=>$('#'+kind+'-'+action).addEventListener('click',()=>closeMoneyDialog(kind)));$('#'+kind+'Dialog').addEventListener('cancel',e=>{if(ui[kind+'Draft']?.busy)e.preventDefault();else ui[kind+'Draft']=null;});});
@@ -3844,8 +3872,10 @@ function bind(){
   $('#pkgList').addEventListener('click',e=>{const b=e.target.closest('[data-act="pkg-copy"]');if(!b)return;ui.pkgEdit=ui.pkgEdit||clone(packages());const i=ui.pkgEdit.findIndex(x=>x.id===b.dataset.id);if(i<0)return;const src=ui.pkgEdit[i],base=String(src.name||'Product').replace(/\s*-\s*\d+$/,'').trim()||'Product',taken=new Set(ui.pkgEdit.map(x=>String(x.name||'').trim().toLowerCase()));let k=2;while(taken.has((base+' - '+k).toLowerCase()))k++;const cp={...clone(src),id:newId('pkg'),name:base+' - '+k};/* v52: the copy keeps the source's fresh flag, so a copy of C or G stays on the shared cycle */delete cp.aliases;ui.pkgEdit.splice(i+1,0,cp);$('#pkg-err').textContent='';renderPkgEditor();const inp=document.querySelector('#pkgList .pkg-row[data-id="'+cp.id+'"] input[data-f=name]');if(inp){inp.focus();inp.select();}});
   $('#pkgList').addEventListener('click',e=>{const b=e.target.closest('[data-act="pkg-remove"]');if(!b)return;const id=b.dataset.id;const n=pkgUsage(id);const err=$('#pkg-err');if(n){err.textContent=`${pkgName(id)||'This package'} is used by ${n} plan${n===1?'':'s'}; move them to another package first.`;return;}err.textContent='';ui.pkgEdit=(ui.pkgEdit||clone(packages())).filter(x=>x.id!==id);renderPkgEditor();});
 
+  /* v55: Save and add another submits the same form and keeps the product, dates, price and costs for the next customer */
+  $('#a-again').addEventListener('click',()=>{$('#addForm').dataset.again='1';$('#addForm').requestSubmit();});
   $('#addForm').addEventListener('submit',async e=>{
-    e.preventDefault();const err=$('#a-err');err.textContent='';
+    e.preventDefault();const err=$('#a-err');err.textContent='';if(e.submitter&&e.submitter.type==='submit')delete $('#addForm').dataset.again;
     const name=$('#a-name').value.trim(),email=$('#a-email').value.trim(),join=$('#a-join').value,plan=$('#a-plan').value.trim(),pkg=$('#a-pkg').value,cy=normCycle($('#a-cycle')?$('#a-cycle').value:'monthly'),cur=$('#a-cur').value,priceRaw=$('#a-price').value,phone=$('#a-phone').value,notes=$('#a-notes').value.trim();
     if(!name&&!email){err.textContent='Enter a name or an email.';return;}
     if(email&&!EMAIL_RE.test(email)){err.textContent='That email does not look valid.';return;}
@@ -3859,7 +3889,13 @@ function bind(){
     {const pk=pkgById(pkg);if(first!=='once'&&cy!=='one-time'&&pk.cycle&&pk.cycle!==cy){err.textContent=pk.name+' is a '+pk.cycle+' package, so Billing cycle must be '+(pk.cycle==='yearly'?'Yearly':'Monthly')+'.';return;}}/* v45: same rule as Add plan and Edit plan */
     const id=$('#addForm').dataset.pendingUserId||($('#addForm').dataset.pendingUserId=newId('u'));
     const user={name,email,phone:phoneFrom(phone,$('#a-cc').value),telegram:tgFrom($('#a-tg').value,$('#a-cc').value),joinDate:join,notes,...(wsById($('#a-ws').value)?{wholesalerId:$('#a-ws').value}:{}),subscriptions:[first==='once'?oneTimeAnnual({name:plan||pkgName(pkg),pkg,cur,start,total:Number(priceRaw)}):cy==='one-time'?{id:newId('s'),kind:'one-time',name:plan||pkgName(pkg),packageId:pkg,currency:cur,start,total:Number(priceRaw),due:isDateKey($('#a-due').value)?$('#a-due').value:null,payments:[]}:{id:newId('s'),kind:'monthly',cycle:cy,name:plan,packageId:pkg,currency:cur,start,...(ownAnchorFor(pkg,first,start)?{anchor:ownAnchorFor(pkg,first,start)}:{}),end:null,prorate:$('#a-prorate').checked,waiveFirst:$('#a-waive').checked,...(cy==='yearly'?{prorationBasis:'actual',paymentEvery:Number($('#a-payment').value)}:{}),dueBy:null,prices:[{from:start,price:Number(priceRaw)}],payments:[]}]};const sub=user.subscriptions[0];if(sub.kind==='monthly'&&$('#a-own')&&$('#a-own').checked)setRenewOn(sub,'own');sub.id=$('#addForm').dataset.pendingSubId||($('#addForm').dataset.pendingSubId=sub.id);let costs=[];try{const c=accountCostDraft($('#addForm'),sub,id);if(c)costs.push(c);}catch(e){err.textContent=e.message;return;}const button=$('#addForm button[type=submit]');button.disabled=true;const ok=await persistAccountBundle(id,user,costs);button.disabled=false;
-    if(ok){delete $('#addForm').dataset.pendingUserId;delete $('#addForm').dataset.pendingSubId;$('#a-account-cost').innerHTML='';$('#addForm').reset();$('#a-ws-hint').textContent='';delete $('#a-start').dataset.manual;$('#addPanel').hidden=true;ui.expanded=null;renderTable();toast('Added '+(name||email)+'. Record the first payment when the money is received.');openPaymentDialog(id);}
+    if(ok){const again=$('#addForm').dataset.again==='1',paid=(document.querySelector('#addForm input[name=a-paid]:checked')||{}).value||'';delete $('#addForm').dataset.again;delete $('#addForm').dataset.pendingUserId;delete $('#addForm').dataset.pendingSubId;
+      if(again){for(const k of ['#a-name','#a-email','#a-phone','#a-tg','#a-notes','#a-plan']){$(k).value='';$(k).dispatchEvent(new Event('input',{bubbles:true}));}document.querySelectorAll('#addForm input[name=a-paid]').forEach(r=>r.checked=false);$('#a-err').textContent='';updAddConv();$('#a-name').focus();}
+      else{$('#a-account-cost').innerHTML='';$('#addForm').reset();$('#a-ws-hint').textContent='';delete $('#a-start').dataset.manual;delete $('#a-join').dataset.manual;$('#addPanel').hidden=true;}
+      ui.expanded=null;renderTable();const who=name||email;
+      if(paid==='yes'){const su=state.users[id],ss=su&&su.subscriptions[0];const f=ss&&addFirstPay(clone(ss),join);const done=f&&await recordPayment(id,ss.id,f.list);if(done)toast(`Added ${who} and recorded ${fmtAmt(f.owed,f.cur)}.`);else{toast(`Added ${who}. The payment was not recorded; check it in the payment box.`);openPaymentDialog(id);}}
+      else if(paid==='no')toast(`Added ${who}. Record the payment when the money arrives.`);
+      else{toast('Added '+who+'. Record the first payment when the money is received.');openPaymentDialog(id);}}
   });
 
   const tbody=$('#tbody');

@@ -54,7 +54,7 @@ const mon=(start,extra)=>Object.assign({id:'s1',kind:'monthly',cycle:'monthly',p
   rows=await costRows('ac_c5_');assert.equal(rows.length,0);
   d=await expand('c5');await d.locator('[data-key=edit]').first().click();const ef=d.locator('.edit-form');await ef.waitFor({state:'visible'});
   const optHidden=await ef.locator('[name="s1:accountCostMode"] option[value=cycle]').evaluate(o=>o.hidden||o.disabled);
-  await page.locator('#btn-add').click();if(!await page.locator('#a-more').evaluate(x=>x.open))await page.locator('#a-more summary').click();await page.locator('#a-cycle').selectOption('one-time');await page.locator('#a-name').fill('x');await page.waitForTimeout(300);
+  await page.locator('#btn-add').click();/* v55: every Add field is visible */await page.locator('#a-cycle').selectOption('one-time');await page.locator('#a-name').fill('x');await page.waitForTimeout(300);
   const addHidden=await page.locator('#a-account-cost [name$="accountCostMode"] option[value=cycle]').evaluate(o=>o.hidden||o.disabled);
   await page.locator('#btn-add').click();
   assert.equal(addHidden,true);
@@ -73,6 +73,6 @@ const mon=(start,extra)=>Object.assign({id:'s1',kind:'monthly',cycle:'monthly',p
   check('#17 Removing a plan with the box unticked keeps its expense (the owner chooses)');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'54',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'55',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
