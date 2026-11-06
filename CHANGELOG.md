@@ -2,6 +2,10 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v61 - 2026-11-06
+
+- Edit plan and Edit customer: the Supplier cost box has a new choice, "No supplier cost: remove it", for a plan that already has a cost every cycle. Saving removes that cost from the plan, so its computed "cycle cost" rows in Costs stop appearing. Expenses you entered yourself in Costs are not touched. Before, a supplier cost could only be waived one cycle at a time.
+
 ## v60 - 2026-11-06
 
 - Public base URL check: a name lookup now gives up after 3 seconds, so a slow or stuck name server can no longer hold up saving Settings or the daily reminder emails (the address then counts as not found and is checked again a minute later). The check for providers that answer every unknown name now tries three made-up names under different endings. Server only; nothing changes on screen.
