@@ -180,6 +180,20 @@ try:
     check("v57 a Settings URL whose name is found is used", notify.link_base({"publicBaseUrl": "https://localhost/"}) == "https://localhost", notify.link_base({"publicBaseUrl": "https://localhost/"}))
     check("v57 a Settings URL whose name cannot be found falls back to DOMAIN", notify.link_base({"publicBaseUrl": "https://pay-up.invalid"}) == "https://admin.example.test", notify.link_base({"publicBaseUrl": "https://pay-up.invalid"}))
     check("v57 a stored link in the confirm doc does not override the base", notify.link_for({"link": "https://pay-up.invalid/c/abc"}, "abc", "https://admin.example.test") == "https://admin.example.test/c/abc")
+    import linkhost as LH
+    real_gai = socket.getaddrinfo
+    def hijacked(host, *a, **k):  # a resolver that answers every unknown name with one address
+        if host in ("localhost",): return real_gai(host, *a, **k)
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("218.93.250.18", 443))]
+    socket.getaddrinfo = hijacked
+    LH._cache.clear(); LH._hijack.update(ips=frozenset(), at=0.0)
+    try:
+        check("v59 a hijacking resolver is detected from a random probe", LH.hijack_ips() == frozenset({"218.93.250.18"}), LH.hijack_ips())
+        check("v59 a name the hijacking resolver answers with its catch-all address is not found", LH.host_found("pay-up.example.org") is False)
+        check("v59 localhost is still found behind a hijacking resolver", LH.host_found("localhost") is True)
+        check("v59 .invalid / .test / .example are never found", not any(LH.host_found(h) for h in ("a.invalid", "b.test", "c.example", "invalid")))
+    finally:
+        socket.getaddrinfo = real_gai; LH._cache.clear(); LH._hijack.update(ips=frozenset(), at=0.0)
     os.environ["LINK_DOMAIN"] = "links.example.test"
     check("v57 LINK_DOMAIN still wins over the Settings URL", notify.link_base({"publicBaseUrl": "https://localhost"}) == "https://links.example.test", notify.link_base({"publicBaseUrl": "https://localhost"}))
 finally:

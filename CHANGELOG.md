@@ -2,6 +2,10 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v59 - 2026-11-06
+
+- Settings, Public base URL: some internet providers answer every misspelt or deleted web address with their own "page not found" site, which made such an address look real. The check now notices that and treats the address as not found, so customer links fall back to the server's own address as intended. Addresses ending in .invalid, .test or .example are never used.
+
 ## v58 - 2026-11-05
 
 - New Search button in the header. It opens Search customers, where you can fill in any of these and see the customers that match all of them:
