@@ -192,6 +192,21 @@ try:
         check("v59 a name the hijacking resolver answers with its catch-all address is not found", LH.host_found("pay-up.example.org") is False)
         check("v59 localhost is still found behind a hijacking resolver", LH.host_found("localhost") is True)
         check("v59 .invalid / .test / .example are never found", not any(LH.host_found(h) for h in ("a.invalid", "b.test", "c.example", "invalid")))
+        probed = []
+        def hijacked2(host, *a, **k):  # answers reserved and real endings with different addresses
+            probed.append(host)
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.1.1.1" if host.endswith(".invalid") else "10.2.2.2", 443))]
+        socket.getaddrinfo = hijacked2; LH._cache.clear(); LH._hijack.update(ips=frozenset(), at=0.0)
+        check("v60 the probe uses three random names under different endings and keeps every catch-all address", LH.hijack_ips() == frozenset({"10.1.1.1", "10.2.2.2"}) and len(probed) == 3 and len({p.rsplit(".", 1)[1] for p in probed}) == 3, (LH.hijack_ips(), probed))
+        check("v60 a name answered with the real-ending catch-all address is not found", LH.host_found("pay-up.example.org") is False)
+        def hung(host, *a, **k):
+            import time as _t; _t.sleep(LH.LOOKUP_SECONDS + 2); return real_gai("localhost", *a, **k)
+        socket.getaddrinfo = hung; LH._cache.clear(); LH._hijack.update(ips=frozenset(), at=_d.datetime.now().timestamp())
+        t0 = _d.datetime.now(); r = LH.host_found("slow.example.org"); dt = (_d.datetime.now() - t0).total_seconds()
+        check("v60 a lookup that hangs gives up after LOOKUP_SECONDS and counts as not found", r is False and dt < LH.LOOKUP_SECONDS + 1.5, (r, dt))
+        socket.getaddrinfo = hijacked; LH._cache.clear(); LH._hijack.update(ips=frozenset(), at=0.0)
+        for i in range(LH.CACHE_MAX + 5): LH.host_found("h%d.example.org" % i)
+        check("v60 the host cache stays bounded", len(LH._cache) <= LH.CACHE_MAX, len(LH._cache))
     finally:
         socket.getaddrinfo = real_gai; LH._cache.clear(); LH._hijack.update(ips=frozenset(), at=0.0)
     os.environ["LINK_DOMAIN"] = "links.example.test"

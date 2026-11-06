@@ -21,7 +21,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   const until=async(fn,what)=>{for(let i=0;i<60;i++){if(await fn())return;await page.waitForTimeout(250);}throw new Error('timed out waiting for '+what);};
   for(const d of ((await api('GET','/api/docs?prefix=users/')).j.docs||[]))await api('DELETE','/api/docs/'+d.path);
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2000);
-  assert.equal(await page.locator('#app-ver').textContent(),'v59');
+  assert.equal(await page.locator('#app-ver').textContent(),'v60');
   const payOpen=()=>page.locator('#paymentDialog').evaluate(d=>d.open);
   const openAdd=async()=>{if(await page.locator('#addPanel').isHidden())await page.locator('#btn-add').click();await page.locator('#addPanel').waitFor({state:'visible'});};
 
@@ -77,6 +77,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   await page.locator('#add-close').click();
   check('the Add form fits at 390px and 1400px in light and dark with no sideways scroll; Save is reachable');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'59',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'60',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

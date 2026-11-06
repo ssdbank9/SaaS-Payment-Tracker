@@ -2,6 +2,10 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v60 - 2026-11-06
+
+- Public base URL check: a name lookup now gives up after 3 seconds, so a slow or stuck name server can no longer hold up saving Settings or the daily reminder emails (the address then counts as not found and is checked again a minute later). The check for providers that answer every unknown name now tries three made-up names under different endings. Server only; nothing changes on screen.
+
 ## v59 - 2026-11-06
 
 - Settings, Public base URL: some internet providers answer every misspelt or deleted web address with their own "page not found" site, which made such an address look real. The check now notices that and treats the address as not found, so customer links fall back to the server's own address as intended. Addresses ending in .invalid, .test or .example are never used.
