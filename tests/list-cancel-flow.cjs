@@ -26,7 +26,7 @@ const plan=(id,payments)=>({id,kind:'monthly',cycle:'monthly',name:'',packageId:
    'users/lm':{name:'Two Plans',joinDate:'2026-09-24',subscriptions:[plan('s1',[pay('m1','2026-09-24',8400)]),plan('s2',[pay('m2','2026-09-24',8400)])]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v63');
+  assert.equal(await page.locator('#app-ver').textContent(),'v64');
   const row=nm=>page.locator('#tbody tr.row').filter({hasText:nm});
 
   // 1. the strip: who owes, who is paid up; a tap filters, a second tap shows everyone

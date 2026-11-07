@@ -21,7 +21,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   const until=async(fn,what)=>{for(let i=0;i<60;i++){if(await fn())return;await page.waitForTimeout(250);}throw new Error('timed out waiting for '+what);};
   for(const d of ((await api('GET','/api/docs?prefix=users/')).j.docs||[]))await api('DELETE','/api/docs/'+d.path);
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2000);
-  assert.equal(await page.locator('#app-ver').textContent(),'v63');
+  assert.equal(await page.locator('#app-ver').textContent(),'v64');
   const payOpen=()=>page.locator('#paymentDialog').evaluate(d=>d.open);
   const openAdd=async()=>{if(await page.locator('#addPanel').isHidden())await page.locator('#btn-add').click();await page.locator('#addPanel').waitFor({state:'visible'});};
 

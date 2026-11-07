@@ -35,7 +35,7 @@ const plan=(id,start,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',na
    'costs/lump1':{date:'2026-10-20',description:'Oct lump',category:'Product',packageId:'pkg_c',currency:'USD',cost:64,tax:0,rate:0,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v63');
+  assert.equal(await page.locator('#app-ver').textContent(),'v64');
 
   // 1. Settings → Products: seat cost on the yearly product, the own-start tick, the off-cycle count and the apply button
   await page.locator('#btn-settings').click();await page.locator('#pkgList').waitFor();

@@ -2,6 +2,14 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v64 - 2026-11-07
+
+- Customers can pay in euros (EUR) or pounds (GBP) as well as PKR and USD: Add customer, Edit plan, Add plan, the payment and refund boxes, Quick add lines ("12 EUR", "£10"), CSV import/export and Search all take them. Amounts show as €12 and £10.
+- Settings has two new default rates, PKR per 1 EUR and PKR per 1 GBP, next to the USD rate. The header badge shows them once a customer pays in that currency. A receipt or refund in another currency than its plan locks the matching rate the way USD receipts already did; the rate label says which currency it is PKR per.
+- Summary tiles, By product, Analytics and the Payments view convert EUR and GBP through PKR with those rates; the PKR/USD toggles are unchanged. Without a rate the tile shows the amounts per currency instead of a total, as before.
+- Costs (your supplier expenses) stay in USD or PKR.
+- Add customer: "A different amount" now says the payment box opens after Save (it never opened on picking the option).
+
 ## v63 - 2026-11-07
 
 - Settings → Products: the billing cycle now lives on each product. A product has its own cycle date, or "Customers renew on their own start date" (one account per customer, such as Cursor Pro): every new plan of that product is set up that way without ticking anything. Blank keeps the shared Settings cycle. A product with a cycle date says how many running plans are still on another cycle.

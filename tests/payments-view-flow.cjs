@@ -26,7 +26,7 @@ const pay=(id,date,amount,note)=>({id,date,amount,currency:'PKR',note:note||''})
    'users/pb':{name:'Cancelled Payer',joinDate:'2026-08-24',cancel:{lastDay:'2026-09-23',reason:'x',note:'',at:'2026-09-20'},subscriptions:[{id:'s1',kind:'monthly',cycle:'monthly',name:'',packageId:'pkg_c',currency:'PKR',start:'2026-08-24',end:'2026-09-23',prorate:true,prices:[{from:'2026-08-24',price:2000}],payments:[pay('q1','2026-08-24',2000,'')]}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v63');
+  assert.equal(await page.locator('#app-ver').textContent(),'v64');
 
   // 1. the Payments view: every payment and refund, newest first, totals equal to the Summary tiles for the same range
   await page.locator('#btn-payments').click();await page.locator('#payPanel').waitFor({state:'visible'});
