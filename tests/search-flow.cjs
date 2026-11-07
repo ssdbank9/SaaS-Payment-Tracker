@@ -24,7 +24,7 @@ const plan=(id,cur,price,start,payments,extra)=>Object.assign({id,kind:'monthly'
    'users/sc':{name:'Cara Khan',joinDate:'2026-08-24',cancel:{lastDay:'2026-09-23',reason:'moved away',note:'',at:'2026-09-20',ended:['s1']},subscriptions:[plan('s1','PKR',3000,'2026-08-24',[{id:'c1',date:'2026-08-24',amount:3000,currency:'PKR',note:''}],{end:'2026-09-23'})]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2000);
-  assert.equal(await page.locator('#app-ver').textContent(),'v61');
+  assert.equal(await page.locator('#app-ver').textContent(),'v62');
   const names=async()=>(await page.locator('#sr-body tr td.who b').allTextContents()).sort();
   const clear=async()=>{await page.locator('#sr-clear').click();};
   const set=async(id,v)=>{const el=page.locator('#'+id);if(await el.evaluate(e=>e.tagName)==='SELECT')await el.selectOption(v);else await el.fill(v);};
@@ -77,6 +77,6 @@ const plan=(id,cur,price,start,payments,extra)=>Object.assign({id,kind:'monthly'
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no sideways scroll at ${w} ${scheme}`);}
   check('Search fits at 390px and 1400px in light and dark with no sideways scroll');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'61',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'62',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

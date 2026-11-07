@@ -22,7 +22,7 @@ const viaLocalhost=base.replace('127.0.0.1','localhost');
   for(const d of ((await api('GET','/api/docs?prefix=users/')).j.docs||[]))await api('DELETE','/api/docs/'+d.path);
   await api('POST','/api/import',{docs:{'users/lk':{name:'Link Person',joinDate:'2026-09-24',subscriptions:[{id:'s1',kind:'monthly',cycle:'monthly',name:'',packageId:'pkg_c',currency:'PKR',start:'2026-09-24',prorate:true,prices:[{from:'2026-09-24',price:4200}],payments:[]}]}},replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2000);
-  assert.equal(await page.locator('#app-ver').textContent(),'v61');
+  assert.equal(await page.locator('#app-ver').textContent(),'v62');
   const state=()=>page.locator('#s-base-url-state').textContent();
   const openSettings=async()=>{await page.locator('#btn-settings').click();await page.locator('#settingsPanel').waitFor({state:'visible'});};
   const closeSettings=async()=>{await page.locator('#settings-close,[data-act=settings-close]').first().click().catch(()=>page.locator('#btn-settings').click());};
@@ -56,6 +56,6 @@ const viaLocalhost=base.replace('127.0.0.1','localhost');
   await page.screenshot({path:path.join(out,'settings-390.png')});await closeSettings();assert.ok((await copied()).startsWith(base+'/c/'));
   check('clearing the box goes back to the server address');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'61',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'62',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -23,7 +23,7 @@ const plan=(id,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',name:'',
    'costs/own1':{date:'2026-10-02',description:'Remove Person · own expense',category:'Product',packageId:'pkg_c',currency:'PKR',cost:500,tax:0,rate:0,receipt:'',source:'manual',userId:'rm',subscriptionId:'s1'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2000);
-  assert.equal(await page.locator('#app-ver').textContent(),'v61');
+  assert.equal(await page.locator('#app-ver').textContent(),'v62');
   const doc=async()=>(await api('GET','/api/docs/users/rm')).j.data;
   const cycleRows=async()=>page.locator('#costBody [data-act=cost-edit][data-cost^="ac_rm_"]').evaluateAll(els=>els.map(e=>e.dataset.cost));
   const det=()=>page.locator('tr.detail[data-id=rm]');
@@ -55,6 +55,6 @@ const plan=(id,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',name:'',
   f=await planForm('s2');assert.equal(await f.locator('[name=accountCostMode] option[value=remove]').count(),0);assert.equal(await f.locator('[name=accountCostMode]').inputValue(),'none');
   check('after a reload the removed cost stays removed and Edit plan no longer offers the remove choice');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'61',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'62',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

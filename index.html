@@ -717,7 +717,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v61</span>
+      <span class="small muted num" id="app-ver" title="App version">v62</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
@@ -2989,7 +2989,10 @@ function acctLine(u,s){const ac=acctParts(u,s);return `<div class="sub-acct">${/
    nothing is recorded yet, the plan is corrected from its start. */
 function planChangeBlock(s,sa,today){
   const clean=!(s.payments||[]).length&&!(s.refunds||[]).length&&!tierEntries(s).length&&!Object.keys(s.periodOverrides||{}).length&&!(s.courtesy||[]).length;
-  const o=[];let n=0;for(let k=1;k<80&&n<6;k++){const st=pStart(s,k);if(st<=today||st<=s.start)continue;if(s.end&&st>s.end)break;o.push([st,fmtD(st,true)+' (start of a cycle)']);n++;}
+  /* v62: the change may also start on a bill that is due but has no cash on it yet (the owner agreed a new price, in another currency, for the bill
+     the customer owes); bills already paid or partly paid keep the old currency, so only cycle starts from the first such bill are offered */
+    const openSt=sa&&sa.kind==='monthly'?((sa.periods||[]).find(p=>p.st>s.start&&p.st<=today&&!(p.covered>0)&&p.state!=='paid'&&p.state!=='waived')||{}).st||null:null;
+  const o=[];let n=0;for(let k=1;k<80&&n<6;k++){const st=pStart(s,k);if(st<=s.start||(st<=today&&!(openSt&&st>=openSt)))continue;if(s.end&&st>s.end)break;o.push([st,fmtD(st,true)+(st<=today?' (bill not paid yet)':' (start of a cycle)')]);n++;}
   if(clean)o.push(['start','From the plan\'s start (correcting a mistake; nothing is recorded yet)']);
   const opts=o.length?o.map(x=>`<option value="${x[0]}">${esc(x[1])}</option>`).join(''):'<option value="" disabled selected>No later cycle before this plan ends</option>';
   return `<div class="pay-row chg-block" data-role="chg-block" hidden>
@@ -3004,7 +3007,7 @@ function syncPlanChange(f){
   blk.querySelector('[data-role=chg-per]').textContent=cyc.value==='yearly'?'year':'month';blk.querySelector('[data-role=chg-cur]').textContent=cur.value;
   const hint=blk.querySelector('[data-role=chg-hint]');
   hint.textContent=from.value==='start'?'The plan is corrected from its start with this price. Nothing is recorded on it yet, so nothing is lost.'
-    :from.value?'The current plan ends the day before '+fmtD(from.value,true)+' and keeps its receipts, refunds and old prices. A new '+(cyc.value==='yearly'?'yearly':'monthly')+' plan in '+cur.value+' starts on that date at this price. Money already paid for bills after that date moves to the new plan. A fixed discount is not carried over.':'';
+    :from.value?'The current plan ends the day before '+fmtD(from.value,true)+' and keeps its receipts, refunds and old prices. A new '+(cyc.value==='yearly'?'yearly':'monthly')+' plan in '+cur.value+' starts on that date at this price.'+(from.value<=todayISO()?' The bill from that date is billed on the new plan at this price.':'')+' Money already paid for bills after that date moves to the new plan. A fixed discount is not carried over.':'';
 }
 function applyPlanChange(u,s,c){
   if(c.eff==='start'){

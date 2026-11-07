@@ -2,6 +2,10 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v62 - 2026-11-07
+
+- Edit plan: when you change Pays in or Billing cycle, "Takes effect from" now also offers a bill that is already due but has no payment on it yet (for example this month's unpaid bill), marked "bill not paid yet". Choose it to bill that period in the new currency at the agreed price; bills already paid keep their old currency and price. Before, only future cycles were offered, so an agreed PKR price could not be applied to the bill the customer currently owes.
+
 ## v61 - 2026-11-06
 
 - Edit plan and Edit customer: the Supplier cost box has a new choice, "No supplier cost: remove it", for a plan that already has a cost every cycle. Saving removes that cost from the plan, so its computed "cycle cost" rows in Costs stop appearing. Expenses you entered yourself in Costs are not touched. Before, a supplier cost could only be waived one cycle at a time.

@@ -24,6 +24,7 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
    'users/pc1':{name:'Paid Currency Person',joinDate:'2026-09-24',subscriptions:[mon('s1','2026-09-24',{payments:[pay('p1','2026-09-24',4200)]})]},
    'users/pc2':{name:'Fresh Mistake Person',joinDate:'2026-10-10',subscriptions:[mon('s1','2026-10-10')]},
    'users/pc3':{name:'Cycle Change Person',joinDate:'2026-08-24',subscriptions:[mon('s1','2026-08-24',{payments:[pay('p1','2026-08-24',4200),pay('p2','2026-09-24',4200)]})]},
+   'users/pc4':{name:'Owes Now Person',joinDate:'2026-08-24',subscriptions:[mon('s1','2026-08-24',{payments:[pay('p1','2026-08-24',4200)]})]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   const form=async(uid)=>{const d=await expand(uid);await d.locator('[data-key="edit:s1"]').first().click();const f=d.locator('form.subedit-form[data-sub=s1]');await f.waitFor({state:'visible'});return f;};
@@ -74,6 +75,21 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
   await page.waitForFunction(()=>/yearly package/.test((document.querySelector('[data-role=addsub-err],#addsub-err,.addsub-form .err')||{}).textContent||''),null,{timeout:5000});
   u=await doc('users/pc2');assert.equal(u.subscriptions.length,1);check('Add plan: a monthly cycle on the yearly package G is refused and nothing is added');
 
+  // E (v62): a bill already due with no cash on it is offered as the start of the change
+  f=await form('pc4');await f.locator('[name=currency]').selectOption('USD');
+  const optsE=await f.locator('[name=chgFrom] option').evaluateAll(o=>o.map(x=>[x.value,x.textContent]));
+  assert.equal(optsE[0][0],'2026-09-24',JSON.stringify(optsE));assert.match(optsE[0][1],/bill not paid yet/);assert.ok(!optsE.some(x=>x[0]==='2026-08-24'),JSON.stringify(optsE));
+  assert.ok(optsE.some(x=>x[0]==='2026-10-24'&&/start of a cycle/.test(x[1])),JSON.stringify(optsE));
+  check('an unpaid bill already due (Sep 24) is offered as "bill not paid yet"; the paid Aug bill is not; later cycles stay');
+  await f.locator('[name=chgFrom]').selectOption('2026-09-24');await f.locator('[name=chgPrice]').fill('15');await f.locator('button[type=submit]').click();
+  await until(async()=>(await doc('users/pc4')).subscriptions.length===2,'split on the unpaid bill saved');
+  u=await doc('users/pc4');const [o4,n4]=u.subscriptions;
+  assert.equal(o4.end,'2026-09-23');assert.equal(o4.payments.length,1);assert.equal(o4.refunds,undefined);assert.equal(n4.start,'2026-09-24');assert.equal(n4.currency,'USD');assert.deepEqual(n4.prices,[{from:'2026-09-24',price:15}]);assert.deepEqual(n4.payments,[]);
+  check('the old PKR plan ends Sep 23 with its receipt; the new USD plan bills Sep 24 at the new price with nothing moved');
+  {const d2=await expand('pc2');f=d2.locator('form.subedit-form[data-sub=s1]');if(await f.isHidden()){await d2.locator('[data-key="edit:s1"]').first().click();await f.waitFor({state:'visible'});}}await f.locator('[name=currency]').selectOption('PKR');
+  const optsF=await f.locator('[name=chgFrom] option').evaluateAll(o=>o.map(x=>x.value));assert.ok(optsF.length&&optsF.every(v=>v==='start'||v>'2026-10-20'),JSON.stringify(optsF));
+  await f.locator('[name=currency]').selectOption('USD');check('a plan with nothing owed still offers only future cycles (and "from the start" when nothing is recorded)');
+
   // D: ordinary edit still saves without a price
   f=await form('pc1');await f.locator('[name=name]').first().fill('Label only');await f.locator('button[type=submit]').click();
   await until(async()=>(await doc('users/pc1')).subscriptions.some(s=>s.name==='Label only'),'plain edit saved');
@@ -81,6 +97,6 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
 
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.deepEqual(errors,[]);check('No sideways scroll and no unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'61',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'62',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
