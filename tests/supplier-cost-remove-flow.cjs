@@ -55,6 +55,6 @@ const plan=(id,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',name:'',
   f=await planForm('s2');assert.equal(await f.locator('[name=accountCostMode] option[value=remove]').count(),0);assert.equal(await f.locator('[name=accountCostMode]').inputValue(),'none');
   check('after a reload the removed cost stays removed and Edit plan no longer offers the remove choice');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'63',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'64',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

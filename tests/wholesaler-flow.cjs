@@ -139,6 +139,6 @@ const num=t=>Number(String(t).replace(/[^0-9.\-]/g,''));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#settings-close').click();
   await page.setViewportSize({width:1400,height:1000});await page.emulateMedia({colorScheme:'dark'});await page.locator('#btn-settings').click();await page.locator('#wsList').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'wholesaler-settings-1400-dark.png')});
   assert.deepEqual(errors,[]);check('No sideways scroll at 390px and no console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'63',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'64',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

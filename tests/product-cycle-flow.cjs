@@ -90,6 +90,6 @@ const plan=(id,start,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',na
   await page.locator('#btn-add').click();await page.locator('#addForm').waitFor({state:'visible'});await page.locator('#a-pkg').selectOption('pkg_own');assert.equal(await page.locator('#a-own').isChecked(),true);await page.locator('#a-pkg').selectOption('pkg_c');assert.equal(await page.locator('#a-own').isChecked(),false);
   check('a PKR supplier cost on a USD-seat product gets a note; Add plan previews on the product calendar (Oct 20 – Nov 14), pre-ticks own start for the own-start product and fills the yearly product\'s $8/month paid in PKR; Add user pre-ticks own start too');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'63',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'64',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -77,6 +77,6 @@ const plan=(id,cur,price,start,payments,extra)=>Object.assign({id,kind:'monthly'
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no sideways scroll at ${w} ${scheme}`);}
   check('Search fits at 390px and 1400px in light and dark with no sideways scroll');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'63',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'64',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

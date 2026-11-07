@@ -77,6 +77,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   await page.locator('#add-close').click();
   check('the Add form fits at 390px and 1400px in light and dark with no sideways scroll; Save is reachable');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'63',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'64',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

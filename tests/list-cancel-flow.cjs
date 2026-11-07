@@ -82,6 +82,6 @@ const plan=(id,payments)=>({id,kind:'monthly',cycle:'monthly',name:'',packageId:
     await row('Paid Person').locator('[data-act=row-cancel]').click();await until(async()=>page.locator('#cancelPlanDialog').evaluate(d=>d.open),'cancel box');await page.screenshot({path:path.join(out,`cancel-${w}-${scheme}.png`)});await page.locator('#cp-cancel').click();}
   check('the list and the Cancel plan box fit at 390px and 1400px in light and dark with no sideways scroll');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'63',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'64',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
