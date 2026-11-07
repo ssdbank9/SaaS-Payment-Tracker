@@ -2,6 +2,16 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v63 - 2026-11-07
+
+- Settings → Products: the billing cycle now lives on each product. A product has its own cycle date, or "Customers renew on their own start date" (one account per customer, such as Cursor Pro): every new plan of that product is set up that way without ticking anything. Blank keeps the shared Settings cycle. A product with a cycle date says how many running plans are still on another cycle.
+- Edit plan → Renews on: a plan can be moved onto its product's cycle ("This product's cycle"). Nothing moves by itself.
+- Seat costs on yearly products too ("Your cost per month" or "per year"), and a new "Apply to the N running plans…" button on a product that pushes its seat cost to every running plan from a chosen cycle start (each plan from its own next cycle), with a warning when an expense you entered yourself already covers that product in that cycle (that would count the cost twice).
+- Each plan shows a read-only "Your cost" line (its supplier cost, or that it is not set and what the product's seat cost is).
+- The supplier-cost form previews on the plan's own calendar, and says when the cost currency differs from the product's seat cost or from the other plans of that product.
+- Editing a computed cycle cost in Costs keeps its cycle date (amount, currency and tax can still change).
+- Wording: "Pays in" is now "Customer pays in"; the new-price box reads "Customer pays per month/year".
+
 ## v62 - 2026-11-07
 
 - Edit plan: when you change Pays in or Billing cycle, "Takes effect from" now also offers a bill that is already due but has no payment on it yet (for example this month's unpaid bill), marked "bill not paid yet". Choose it to bill that period in the new currency at the agreed price; bills already paid keep their old currency and price. Before, only future cycles were offered, so an agreed PKR price could not be applied to the bill the customer currently owes.

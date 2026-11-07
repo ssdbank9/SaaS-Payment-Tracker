@@ -19,7 +19,7 @@ const num=t=>Number(String(t).replace(/[^0-9.\-]/g,''));
   const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await stubWebFonts(ctx);await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-11-25');});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v62');
+  assert.equal(await page.locator('#app-ver').textContent(),'v63');
   const api=async(method,pth,data)=>{const r=await ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};
   const doc=async p=>((await api('GET','/api/docs/'+p)).j||{}).data;
   const users=async()=>((await api('GET','/api/docs?prefix=users/')).j.docs||[]).map(x=>({id:(x.path||'').split('/')[1],...(x.data||x)}));
@@ -52,7 +52,7 @@ const num=t=>Number(String(t).replace(/[^0-9.\-]/g,''));
   // v52: a copy of a product that is not new (seeded C) is not new either: it stays on the shared cycle
   const src0=page.locator('#pkgList .pkg-row').first(),srcId=await src0.getAttribute('data-id'),srcName=await src0.locator('[data-f=name]').inputValue();await src0.locator('[data-act=pkg-copy]').click();
   await page.locator('#pkg-add').click();const yr=page.locator('#pkgList .pkg-row').last();await yr.locator('[data-f=name]').fill('Year 24 Jul');await yr.locator('[data-f=cycle]').selectOption('yearly');
-  await yr.locator('[data-f=price]').fill('100');await yr.locator('[data-f=currency]').selectOption('USD');await yr.locator('[data-f=cycleStart]').fill('2026-07-24');assert.equal(await yr.locator('[data-f=costAmount]').count(),0);
+  await yr.locator('[data-f=price]').fill('100');await yr.locator('[data-f=currency]').selectOption('USD');await yr.locator('[data-f=cycleStart]').fill('2026-07-24');assert.equal(await yr.locator('[data-f=costAmount]').count(),1);/* v63: yearly products carry a seat cost too */assert.equal(await yr.locator('[data-f=costPer]').count(),1);
   await page.locator('[data-save-setting=packages]').click();
   await until(async()=>((await doc('settings/main')).packages||[]).some(p=>p.name==='Year 24 Jul'),'copy and yearly saved');
   const PK=(await doc('settings/main')).packages,P2=PK.find(p=>p.name==='Max 15th - 2'),PY=PK.find(p=>p.name==='Year 24 Jul');
@@ -139,6 +139,6 @@ const num=t=>Number(String(t).replace(/[^0-9.\-]/g,''));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#settings-close').click();
   await page.setViewportSize({width:1400,height:1000});await page.emulateMedia({colorScheme:'dark'});await page.locator('#btn-settings').click();await page.locator('#wsList').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'wholesaler-settings-1400-dark.png')});
   assert.deepEqual(errors,[]);check('No sideways scroll at 390px and no console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'62',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'63',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
