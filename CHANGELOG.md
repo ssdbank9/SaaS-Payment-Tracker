@@ -2,6 +2,10 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v66 - 2026-11-08
+
+- Summary: the Collected and Costs tiles are now buttons. Tapping one opens "Collected by month" or "Costs by month": one line per month in the Summary's range with its total (and refunds for that month), and tapping a month shows every entry behind it: payments and refunds with customer, plan and note (tap one to open the customer), or cost entries with description and product, including the calculated account cycle costs and losses. A switch at the top goes between Collected and Costs; the product and range pickers there are the Summary's own, so the month totals always add up to the tiles.
+
 ## v65 - 2026-11-08
 
 - Fixes from an outside review of v64. The old data repairs from the first releases (named customers' contact details and receipts, and a rule that made every plan prorate its first period) are removed from the app. They would have run again on the next data-format change and switched every plan you set to a full first month back to prorated. No data changes now; every store already has those repairs.
