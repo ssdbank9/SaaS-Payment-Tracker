@@ -26,7 +26,7 @@ const plan=(id,payments)=>({id,kind:'monthly',cycle:'monthly',name:'',packageId:
    'users/lm':{name:'Two Plans',joinDate:'2026-09-24',subscriptions:[plan('s1',[pay('m1','2026-09-24',8400)]),plan('s2',[pay('m2','2026-09-24',8400)])]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v68');
+  assert.equal(await page.locator('#app-ver').textContent(),'v69');
   const row=nm=>page.locator('#tbody tr.row').filter({hasText:nm});
 
   // 1. the strip: who owes, who is paid up; a tap filters, a second tap shows everyone
@@ -82,6 +82,6 @@ const plan=(id,payments)=>({id,kind:'monthly',cycle:'monthly',name:'',packageId:
     await row('Paid Person').locator('[data-act=row-cancel]').click();await until(async()=>page.locator('#cancelPlanDialog').evaluate(d=>d.open),'cancel box');await page.screenshot({path:path.join(out,`cancel-${w}-${scheme}.png`)});await page.locator('#cp-cancel').click();}
   check('the list and the Cancel plan box fit at 390px and 1400px in light and dark with no sideways scroll');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'68',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'69',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -26,6 +26,7 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR',rate:null,note:''});
   const openQ=async()=>{if(await page.locator('#remindRun').isHidden())await page.locator('#btn-reminders').click();};
   const until=async(fn,what)=>{for(let i=0;i<80;i++){if(await fn())return;await page.waitForTimeout(250);}throw new Error('timed out waiting for '+what);};
   // known records: product C on the legacy 24th calendar (its cycle start was filled in by the v68 settings repair), product F15 on the 15th
+  await until(async()=>((await doc('meta/schema'))||{}).version>=12,'the page\'s settings repair (schema 12) before writing settings');
   const st=await doc('settings/main');const cName=st.packages.find(p=>p.id==='pkg_c').name;
   assert.equal(st.packages.find(p=>p.id==='pkg_c').cycleStart,'2026-07-24');assert.equal(st.remindLead,4);assert.equal(st.replyLead,1);
   await api('PATCH','/api/docs/settings/main',{packages:[...st.packages,{id:'pkg_f15',name:'Fifteenth',cycle:'monthly',price:3000,currency:'PKR',description:'',cycleStart:'2026-10-15'}],publicBaseUrl:'https://links.example.test'});
@@ -36,7 +37,7 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR',rate:null,note:''});
    'users/pc':{name:'Bo Both',phone:'923003333333',email:'pc@example.test',joinDate:'2026-10-15',confirmToken:'BoBothTokenxxxxxxxxxxx',subscriptions:[plan('s1','pkg_c','2026-10-24','2026-07-24',4200,[pay('r1','2026-10-24',4200)]),plan('s2','pkg_f15','2026-10-15','2026-10-15',3000,[pay('r2','2026-10-15',3000)])]},
   },replace:[]});
   await setToday('2026-11-12');
-  assert.equal(await page.locator('#app-ver').textContent(),'v68');
+  assert.equal(await page.locator('#app-ver').textContent(),'v69');
 
   // 1. Settings: no shared billing day; the two leads
   await page.locator('#btn-settings').click();await page.locator('#s-remind-lead').waitFor();
@@ -105,6 +106,6 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR',rate:null,note:''});
     await page.screenshot({path:path.join(out,`cycles-${w}-${scheme}.png`),fullPage:false});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no sideways scroll at ${w} ${scheme}`);}
   check('the Queue fits at 390px and 1400px in light and dark');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'68',checks},null,2));console.log('product-cycles-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'69',checks},null,2));console.log('product-cycles-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

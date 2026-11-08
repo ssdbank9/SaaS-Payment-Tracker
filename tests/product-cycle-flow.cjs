@@ -35,7 +35,7 @@ const plan=(id,start,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',na
    'costs/lump1':{date:'2026-10-20',description:'Oct lump',category:'Product',packageId:'pkg_c',currency:'USD',cost:64,tax:0,rate:0,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v68');
+  assert.equal(await page.locator('#app-ver').textContent(),'v69');
 
   // 1. Settings → Products: seat cost on the yearly product, the own-start tick, the off-cycle count and the apply button
   await page.locator('#btn-settings').click();await page.locator('#pkgList').waitFor();
@@ -90,6 +90,6 @@ const plan=(id,start,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',na
   await page.locator('#btn-add').click();await page.locator('#addForm').waitFor({state:'visible'});await page.locator('#a-pkg').selectOption('pkg_own');assert.equal(await page.locator('#a-own').isChecked(),true);await page.locator('#a-pkg').selectOption('pkg_c');assert.equal(await page.locator('#a-own').isChecked(),false);
   check('a PKR supplier cost on a USD-seat product gets a note; Add plan previews on the product calendar (Oct 20 – Nov 14), pre-ticks own start for the own-start product and fills the yearly product\'s $8/month paid in PKR; Add user pre-ticks own start too');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'68',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'69',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

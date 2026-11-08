@@ -2,6 +2,10 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v69 - 2026-11-09
+
+- A product saved without a "Cycle starts on" date: the Settings row now says what that means (its first customer's start day becomes its billing day, or the day it already renews on), the Summary pill names that real day instead of the retired shared date, and the Add form shows no first-bill preview until the first-customer choice is made.
+
 ## v68 - 2026-11-08
 
 - Every product now has its own billing cycle; the shared billing cycle is gone. Settings no longer has "Billing cycle starts on day" or "Yearly plans renew in": each product's "Cycle starts on" date is the calendar its plans bill on (existing products without one were given the old shared date, so nothing already billed moves). "Reminder day" and "Reply-by day" became "Remind" and "Reply by", counted in days before a cycle starts (4 and 1 by default, the same timing as the old 20th and 23rd for the 24th).

@@ -32,7 +32,7 @@ const plan=(start,price,extra)=>({id:'s1',kind:'monthly',cycle:'monthly',name:''
    'users/d1':{name:'Direct Dan',phone:'923001234567',joinDate:'2026-10-15',subscriptions:[plan('2026-10-15',63)]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v68');
+  assert.equal(await page.locator('#app-ver').textContent(),'v69');
   const openQueue=async()=>{if(await page.locator('#remindRun').isHidden())await page.locator('#btn-reminders').click();await page.locator('#rr-body #ws-sec').waitFor();};
   const row=k=>page.locator(`#ws-sec .ws-q[data-kind=${k}]`);
 
@@ -101,6 +101,6 @@ const plan=(start,price,extra)=>({id:'s1',kind:'monthly',cycle:'monthly',name:''
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no sideways scroll at ${w} ${scheme}`);}
   check('the statements fit at 390px and 1400px in light and dark with no sideways scroll');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'68',checks},null,2));console.log('wholesaler-statement-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'69',checks},null,2));console.log('wholesaler-statement-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
