@@ -2,6 +2,11 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v67 - 2026-11-08
+
+- Queue: a new "Wholesalers" section with one message per wholesaler instead of one per customer. "Due now" lists the wholesaler's accounts with money due today or earlier (from each product's cycle day until paid) with customer, plan, amount and since when, plus the total; "Renews soon" lists the accounts that renew within the next days (Settings, Wholesalers: "Remind a wholesaler", default 3 days; 0 turns it off). WhatsApp opens the wholesaler's number with the statement prefilled, Copy copies it, and the Sent tick is saved per wholesaler and cycle. A wholesaler's customers no longer appear one by one in the Queue lists.
+- Supplier cost forms: "New cost applies from" is shown only in Edit plan when the plan already has a supplier cost. A new cost always starts on the plan's start date.
+
 ## v66 - 2026-11-08
 
 - Summary: the Collected and Costs tiles are now buttons. Tapping one opens "Collected by month" or "Costs by month": one line per month in the Summary's range with its total (and refunds for that month), and tapping a month shows every entry behind it: payments and refunds with customer, plan and note (tap one to open the customer), or cost entries with description and product, including the calculated account cycle costs and losses. A switch at the top goes between Collected and Costs; the product and range pickers there are the Summary's own, so the month totals always add up to the tiles.

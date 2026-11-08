@@ -19,7 +19,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   const api=async(method,pth,data)=>{const r=await ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};
   const doc=async p=>((await api('GET','/api/docs/'+p)).j||{}).data;
   const until=async(fn,what)=>{for(let i=0;i<80;i++){if(await fn())return;await page.waitForTimeout(250);}throw new Error('timed out waiting for '+what);};
-  assert.equal(await page.locator('#app-ver').textContent(),'v66');
+  assert.equal(await page.locator('#app-ver').textContent(),'v67');
   const cur=await doc('meta/schema');assert.ok(cur&&Number(cur.version)>=11,'a seeded store is at the current schema');
 
   // an old store: schema 4, a wholesaler customer on a full first month, a plan with a lower-case code and a receipt without a currency,
@@ -53,6 +53,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
 
   await page.screenshot({path:path.join(out,'migration-guard-390.png'),fullPage:true});
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'66',checks},null,2));console.log('migration-guard-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'67',checks},null,2));console.log('migration-guard-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -24,7 +24,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   const payOpen=()=>page.locator('#paymentDialog').evaluate(d=>d.open);
   await api('PATCH','/api/docs/settings/main',{rate:280});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v66');
+  assert.equal(await page.locator('#app-ver').textContent(),'v67');
 
   // 1. Settings: the two new rates save through the Exchange rate group
   await page.locator('#btn-settings').click();await page.locator('#s-rate-eur').waitFor({state:'visible'});
