@@ -1,17 +1,18 @@
 """Wasooli daily notifier: emails today's queue stage to subscribers who still need it.
 
 Run once a day (payments-tracker-notify.timer, 09:00 Asia/Karachi). Reads the same
-SQLite store the admin page writes: settings/main (anchor, reminder and reply-by days,
-the three stage templates), users/<id> (email, per-cycle ticks), confirm/<token> (the
-per-cycle amounts the admin page renders for the subscriber's link page) and the
-answers recorded on the link pages.  SMTP settings live in the ``meta`` table
+SQLite store the admin page writes: settings/main (the reminder leads and the three stage
+templates), users/<id> (email, per-cycle ticks), confirm/<token> (one card per cycle date
+the admin page renders for the subscriber's link page; v68: every product has its own
+cycle, so a customer can have several) and the answers recorded on the link pages.  SMTP settings live in the ``meta`` table
 (PUT /api/mail-settings from the admin page); without them it logs "mail not
 configured" and exits 0.
 
-Stages, from the date alone (same rule as the admin page's Queue):
-  1  reminder        from the reminder day (20th) to the day before the reply-by day
-  2  repeat          on/after the reply-by day (23rd), to anyone without an answer
-  3  final note      on the cycle start (24th): the account continues, tier and amount due
+Stages, per cycle date, from the date alone (same rule as the admin page's Queue, v68):
+  1  reminder        from remindLead days before the cycle start (default 4) to the day before the reply-by day
+  2  repeat          from replyLead days before the cycle start (default 1), to anyone without an answer
+  3  final note      on the cycle start: the account continues, tier and amount due
+A document that still has only the old remindDay/replyDay gets the same lead measured against its legacy cycle day.
 """
 import json
 import logging
@@ -33,6 +34,7 @@ log = logging.getLogger("notify")
 TZ = ZoneInfo(os.environ.get("APP_TZ", "Asia/Karachi"))
 DEFAULT_ANCHOR = "2026-07-24"
 DEFAULT_REMIND_DAY, DEFAULT_REPLY_DAY = 20, 23
+DEFAULT_REMIND_LEAD, DEFAULT_REPLY_LEAD = 4, 1
 DEFAULT_APP_NAME = "Wasooli"
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -170,7 +172,7 @@ def reminder_window(today, anchor, remind_day, reply_day, cycle_day=None):
 
 
 def stage_today(today, anchor, remind_day, reply_day, cycle_day=None):
-    """(stage, cycle_start): stage 3 on a cycle start day, else 2 from the reply-by day, 1 from the reminder day, 0 otherwise."""
+    """(stage, cycle_start) on the legacy shared calendar: stage 3 on a cycle start day, else 2 from the reply-by day, 1 from the reminder day, 0 otherwise."""
     if cycle_at(anchor, cycle_idx_after(today, anchor, cycle_day) - 1, cycle_day) == today:
         return 3, today
     w = reminder_window(today, anchor, remind_day, reply_day, cycle_day)
@@ -179,6 +181,33 @@ def stage_today(today, anchor, remind_day, reply_day, cycle_day=None):
     if today >= w["start"]:
         return 1, w["nc"]
     return 0, w["nc"]
+
+
+def lead_from(settings, key, day_key, default):
+    """v68: remindLead / replyLead in days before a cycle start; an older document's day-of-month setting is converted against its legacy cycle day."""
+    v = settings.get(key)
+    if v not in (None, ""):
+        try:
+            return max(0, min(27, int(round(float(v)))))
+        except (TypeError, ValueError):
+            return default
+    anchor = settings.get("anchor") if re.match(r"^\d{4}-\d{2}-\d{2}$", str(settings.get("anchor") or "")) else DEFAULT_ANCHOR
+    cd = clamp_day(settings.get("cycleDay"), int(anchor[8:10]))
+    d = clamp_day(settings.get(day_key), 0)
+    return ((cd - d) % 31) if d else default
+
+
+def stage_for(today, cs, remind_lead, reply_lead):
+    """v68: the stage of one cycle date: 3 on the day, 2 from its reply-by day, 1 from its reminder day, 0 before or after."""
+    if cs == today:
+        return 3
+    if today > cs:
+        return 0
+    if today >= add_days(cs, -reply_lead):
+        return 2
+    if today >= add_days(cs, -remind_lead):
+        return 1
+    return 0
 
 
 def fmt_d(s, full=False):
@@ -246,17 +275,11 @@ def run(today=None, dry_run=False):
         return 0
     sdoc = db.get_doc("settings/main")
     settings = (sdoc or {}).get("data") or {}
-    anchor = settings.get("anchor") if re.match(r"^\d{4}-\d{2}-\d{2}$", str(settings.get("anchor") or "")) else DEFAULT_ANCHOR
-    remind_day, reply_day = clamp_day(settings.get("remindDay"), DEFAULT_REMIND_DAY), clamp_day(settings.get("replyDay"), DEFAULT_REPLY_DAY)
-    cycle_day = clamp_day(settings.get("cycleDay"), int(anchor[8:10]))  # v21: billing day editable in Settings
+    remind_lead = lead_from(settings, "remindLead", "remindDay", DEFAULT_REMIND_LEAD)
+    reply_lead = lead_from(settings, "replyLead", "replyDay", DEFAULT_REPLY_LEAD)
     today = today or os.environ.get("WASOOL_TODAY") or iso(datetime.now(TZ).date())
-    stage, cycle = stage_today(today, anchor, remind_day, reply_day, cycle_day)
-    if not stage:
-        log.info("%s: no queue stage today (next cycle %s); nothing to send", today, cycle)
-        return 0
     base = link_base(settings)  # v57: same rule as the page; a stored link in the confirm doc is used only when there is no base
     tpls = templates(settings)
-    key = str(stage)
     by_user = {}
     for d in db.list_docs("confirm/"):
         data = d["data"]
@@ -264,11 +287,19 @@ def run(today=None, dry_run=False):
             data = dict(data, token=d["path"].split("/", 1)[1])
             by_user[data["userId"]] = data
     # v46: answers per product; a customer counts as answered when every product on the card has an answer (an answer without a plan covers all)
-    answered = {}
-    for a in db.confirmations_for_cycle(cycle):
-        if a.get("user_id"):
-            answered.setdefault(a["user_id"], set()).add(str(a.get("plan_id") or ""))
+    answered_by_cycle = {}
+
+    def answered(cycle):
+        if cycle not in answered_by_cycle:
+            got = {}
+            for a in db.confirmations_for_cycle(cycle):
+                if a.get("user_id"):
+                    got.setdefault(a["user_id"], set()).add(str(a.get("plan_id") or ""))
+            answered_by_cycle[cycle] = got
+        return answered_by_cycle[cycle]
+
     sent = skipped = 0
+    stages_seen = set()
     for d in db.list_docs("users/"):
         uid = d["path"].split("/", 1)[1]
         u = d["data"] if isinstance(d["data"], dict) else {}
@@ -280,61 +311,73 @@ def run(today=None, dry_run=False):
             # v50: a wholesaler's customer is asked through the wholesaler, never emailed directly
             log.info("skip %s: sold through a wholesaler", name)
             continue
-        got = answered.get(uid)
-        if got:
-            ctx0 = by_user.get(uid)
-            card0 = _card(ctx0, cycle) if ctx0 else None
-            ids = [str(p.get("planId") or "") for p in ((card0 or {}).get("plans") or []) if isinstance(p, dict)]
-            if "" in got or len(ids) <= 1 or all(i in got for i in ids):
-                log.info("skip %s: already answered for %s", name, cycle)
-                continue
-        rem = (u.get("reminders") or {}).get(cycle) or {}
-        if rem.get("skipped"):
-            log.info("skip %s: on the Except list for %s", name, cycle)
-            continue
-        if any(int(s.get("stage") or 0) == stage for s in rem.get("sent") or [] if isinstance(s, dict)):
-            continue
         ctx = by_user.get(uid)
-        card = _card(ctx, cycle) if ctx else None
-        if not card:
-            log.info("skip %s: no amounts for cycle %s yet (open the admin page once to refresh the link pages)", name, cycle)
+        if not ctx:
+            log.info("skip %s: no link page card yet (open the admin page once to refresh the link pages)", name)
             skipped += 1
             continue
-        if not card.get("due"):
-            continue
-        f = fields_for(card, ctx, settings, base)
-        subject, body = render(SUBJECTS[key], f), render(tpls[key], f)
-        if dry_run:
-            log.info("would send stage %d to %s <%s>:\n%s", stage, name, email, body)
-            continue
-        try:
-            send_mail(m, email, subject, body)
-        except Exception as e:  # noqa: BLE001 - keep going for the other users
-            log.error("stage %d to %s <%s> failed: %s", stage, name, email, e)
-            continue
-        at = db.now_iso()
-        # v45: write the Sent tick only onto the version just read (set_doc_if); if the owner saved this user in between, read again
-        for _try in range(5):
-            fresh = db.get_doc(d["path"])
-            if not fresh:
-                break
-            u2 = fresh["data"]
-            rm = u2.setdefault("reminders", {})
-            r = rm.setdefault(cycle, {})
-            r.setdefault("sent", []).append({"stage": stage, "cycleStart": cycle, "channel": "email", "at": at, "by": "notify"})
-            if stage == 1 and not r.get("reminded"):
-                r["reminded"] = today
-            if stage == 2 and not r.get("final"):
-                r["final"] = today
-            try:
-                db.set_doc_if(d["path"], u2, fresh["updated_at"])
-                break
-            except db.Conflict:
+        cycles = ctx.get("cycles") if isinstance(ctx.get("cycles"), dict) else {}
+        if not cycles and ctx.get("cycleStart") and isinstance(ctx.get("plans"), list):
+            cycles = {str(ctx["cycleStart"]): ctx}  # pre-v20-style doc
+        # v68: every cycle date on the customer's card, each with its own stage
+        for cycle in sorted(cycles):
+            card = cycles[cycle]
+            if not isinstance(card, dict) or not re.match(r"^\d{4}-\d{2}-\d{2}$", cycle):
                 continue
-        db.audit("notify", "mail.sent", "stage %d %s %s" % (stage, cycle, email))
-        sent += 1
-        log.info("stage %d sent to %s <%s>", stage, name, email)
-    log.info("%s: stage %d for cycle %s done: %d sent%s", today, stage, cycle, sent, (", %d without amounts" % skipped) if skipped else "")
+            stage = stage_for(today, cycle, remind_lead, reply_lead)
+            if not stage or not card.get("due"):
+                continue
+            stages_seen.add((stage, cycle))
+            got = answered(cycle).get(uid)
+            if got:
+                ids = [str(p.get("planId") or "") for p in (card.get("plans") or []) if isinstance(p, dict)]
+                if "" in got or len(ids) <= 1 or all(i in got for i in ids):
+                    log.info("skip %s: already answered for %s", name, cycle)
+                    continue
+            rem = (u.get("reminders") or {}).get(cycle) or {}
+            if rem.get("skipped"):
+                log.info("skip %s: on the Except list for %s", name, cycle)
+                continue
+            if any(int(s.get("stage") or 0) == stage for s in rem.get("sent") or [] if isinstance(s, dict)):
+                continue
+            key = str(stage)
+            f = fields_for(card, ctx, settings, base)
+            subject, body = render(SUBJECTS[key], f), render(tpls[key], f)
+            if dry_run:
+                log.info("would send stage %d for %s to %s <%s>:\n%s", stage, cycle, name, email, body)
+                continue
+            try:
+                send_mail(m, email, subject, body)
+            except Exception as e:  # noqa: BLE001 - keep going for the other users
+                log.error("stage %d to %s <%s> failed: %s", stage, name, email, e)
+                continue
+            at = db.now_iso()
+            # v45: write the Sent tick only onto the version just read (set_doc_if); if the owner saved this user in between, read again
+            for _try in range(5):
+                fresh = db.get_doc(d["path"])
+                if not fresh:
+                    break
+                u2 = fresh["data"]
+                rm = u2.setdefault("reminders", {})
+                r = rm.setdefault(cycle, {})
+                r.setdefault("sent", []).append({"stage": stage, "cycleStart": cycle, "channel": "email", "at": at, "by": "notify"})
+                if stage == 1 and not r.get("reminded"):
+                    r["reminded"] = today
+                if stage == 2 and not r.get("final"):
+                    r["final"] = today
+                try:
+                    db.set_doc_if(d["path"], u2, fresh["updated_at"])
+                    u = u2
+                    break
+                except db.Conflict:
+                    continue
+            db.audit("notify", "mail.sent", "stage %d %s %s" % (stage, cycle, email))
+            sent += 1
+            log.info("stage %d for %s sent to %s <%s>", stage, cycle, name, email)
+    if not stages_seen:
+        log.info("%s: no cycle date in a reminder window today; nothing to send", today)
+        return 0
+    log.info("%s: %s done: %d sent%s", today, ", ".join("stage %d for %s" % sc for sc in sorted(stages_seen, key=lambda x: x[1])), sent, (", %d without a card" % skipped) if skipped else "")
     return 0
 
 

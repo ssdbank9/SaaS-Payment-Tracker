@@ -19,14 +19,14 @@ const COST={pkrCostTax:7,costPaymentBase:{rate:280,taxPercent:5.2},costPaymentHi
   const marker=async()=>{const r=await api('GET','/api/docs/meta/schema');return r.status===200?r.j.data.version:null;};
   const login=async()=>{await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);};
   const reload=async()=>{await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);};
-  const waitMarker=async()=>{for(let i=0;i<40;i++){if(await marker()===11)return;await sleep(500);}throw new Error('schema marker was not rewritten to 11');};
+  const waitMarker=async()=>{for(let i=0;i<40;i++){if(await marker()===12)return;await sleep(500);}throw new Error('schema marker was not rewritten to 12');};
 
   await login();
   await api('POST','/api/import',{docs:{},replace:['users/','costs/']});
   const user={name:'Repair QA',email:'repair-qa@example.test',phone:'923001234567',joinDate:'2026-09-24',subscriptions:[{id:'s1',kind:'monthly',cycle:'monthly',packageId:'pkg_c',currency:'PKR',start:'2026-09-24',prices:[{from:'2026-09-24',price:4200}],payments:[]}]};
   assert.equal((await api('PUT','/api/docs/users/repair-qa',user)).status,200);
   const put=async extra=>{const s=await settings();Object.assign(s,COST,extra||{});assert.equal((await api('PUT','/api/docs/settings/main',s)).status,200);return s;};
-  assert.equal((await api('PUT','/api/docs/meta/schema',{version:11})).status,200);
+  assert.equal((await api('PUT','/api/docs/meta/schema',{version:12})).status,200);
   let want=await put({prorationBasis:'actual'});
 
   /* 1. current marker: nothing is rewritten */
@@ -53,6 +53,6 @@ const COST={pkrCostTax:7,costPaymentBase:{rate:280,taxPercent:5.2},costPaymentHi
   check('Adding a package through the CSV import saves settings without dropping ownerName or the cost fields');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'67',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'68',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

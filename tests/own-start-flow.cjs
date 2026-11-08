@@ -27,12 +27,12 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
    'users/os2':{name:'Own Day Monthly',joinDate:'2026-10-10',confirmToken:tok,subscriptions:[{id:'s1',kind:'monthly',cycle:'monthly',name:'',packageId:'pkg_c',currency:'PKR',start:'2026-10-10',anchor:'2026-10-10',ownStart:true,prorate:true,prices:[{from:'2026-10-10',price:4200}],payments:[{id:'p1',date:'2026-10-10',amount:4200,currency:'PKR'}]}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v67');
+  assert.equal(await page.locator('#app-ver').textContent(),'v68');
 
   // 1. the annual plan on the shared calendar: Jul 24 year; switch Renews on to its own start date
   let d=await expand('os1');assert.match(await d.textContent(),/Jul 24, 2026/);
   const editPlan=async(uid)=>{const dd=await expand(uid);await dd.locator('[data-key="edit:s1"]').first().click();const f=dd.locator('form.subedit-form[data-sub=s1]');await f.waitFor({state:'visible'});return f;};
-  let f=await editPlan('os1');assert.equal(await f.locator('[name=renewOn]').inputValue(),'shared');
+  let f=await editPlan('os1');assert.equal(await f.locator('[name=renewOn]').inputValue(),'legacy');/* v68: no shared billing day; the plan's current (legacy) cycle */
   await f.locator('[name=renewOn]').selectOption('own');await f.locator('button[type=submit]').click();
   await until(async()=>(await doc('users/os1')).subscriptions[0].ownStart===true,'own start saved');
   let s=(await doc('users/os1')).subscriptions[0];assert.equal(s.anchor,'2026-08-30');assert.equal(s.payments.length,1);assert.equal(s.payments[0].amount,25000);
@@ -46,14 +46,14 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   s=(await doc('users/os1')).subscriptions[0];assert.equal(s.anchor,'2026-09-01');assert.equal(s.ownStart,true);
   check('changing the start date of an own-start plan moves its renewal date to the new start');
 
-  // 3. switching back to the shared billing day restores the Jul 24 year
-  f=await editPlan('os1');await f.locator('[name=renewOn]').selectOption('shared');await f.locator('button[type=submit]').click();
-  await until(async()=>!(await doc('users/os1')).subscriptions[0].anchor,'back to shared');
+  // 3. switching to the product's cycle restores the Jul 24 year (v68: the product carries the calendar)
+  f=await editPlan('os1');await f.locator('[name=renewOn]').selectOption('product');await f.locator('button[type=submit]').click();
+  await until(async()=>(await doc('users/os1')).subscriptions[0].anchor==='2026-07-24','back to the product cycle');
   s=(await doc('users/os1')).subscriptions[0];assert.equal(s.ownStart,undefined);
-  d=await expand('os1');await until(async()=>/Jul 24, 2026 –/.test(await d.textContent()),'shared year shown');
-  check('switching back to the shared billing day removes the own date and the plan follows Jul 24 again');
+  d=await expand('os1');await until(async()=>/Jul 24, 2026 –/.test(await d.textContent()),'product year shown');
+  check('switching to the product\'s cycle removes the own date and the plan follows the product\'s Jul 24 year again');
 
-  // 4. Add user: ticked = renews on its own day with no proration; unticked (default) = shared day
+  // 4. Add user: ticked = renews on its own day with no proration; unticked (default) = the product's cycle
   await page.locator('#btn-add').click();await page.locator('#a-pkg').selectOption('pkg_c');
   await page.locator('#a-name').fill('Own Day New');await page.locator('#a-join').fill('2026-10-10');await page.locator('#a-start').fill('2026-10-10');await page.locator('#a-price').fill('4200');
   await page.evaluate(()=>{document.querySelector('#a-more').open=true;});assert.equal(await page.locator('#a-own').isChecked(),false);await page.locator('#a-own').check();
@@ -65,18 +65,18 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   await page.locator('#btn-add').click();await page.locator('#a-pkg').selectOption('pkg_c');
   await page.locator('#a-name').fill('Shared Day New');await page.locator('#a-join').fill('2026-10-10');await page.locator('#a-start').fill('2026-10-10');await page.locator('#a-price').fill('4200');
   await page.locator('#addForm button[type=submit]').click();await until(async()=>!!(await findU('Shared Day New')),'second user added');
-  nu=await findU('Shared Day New');assert.equal(nu.subscriptions[0].anchor,undefined);
+  nu=await findU('Shared Day New');assert.equal(nu.subscriptions[0].anchor,'2026-09-24');assert.equal(nu.subscriptions[0].ownStart,undefined);/* v68: a new plan sits on its product's cycle (the 24th) */
   await page.locator('#paymentDialog').evaluate(dl=>dl.open&&dl.close()).catch(()=>{});
-  check('Add user: with Renews on its own start date ticked the plan bills Oct 10 - Nov 9 in full; left unticked (the default) it stays on the shared day');
+  check('Add user: with Renews on its own start date ticked the plan bills Oct 10 - Nov 9 in full; left unticked (the default) it follows the product\'s cycle, the 24th');
 
   // 5. the link card carries an own-start plan's own due date
-  await until(async()=>{const c=await doc('confirm/'+tok);return c&&c.cycles&&c.cycles['2026-10-24']&&c.cycles['2026-10-24'].plans.length===1;},'link card');
-  const pl=(await doc('confirm/'+tok)).cycles['2026-10-24'].plans[0];assert.equal(pl.dueISO,'2026-11-10');assert.equal(pl.amountText,'Rs 4,200');
+  await until(async()=>{const c=await doc('confirm/'+tok);return c&&c.cycles&&c.cycles['2026-11-10']&&c.cycles['2026-11-10'].plans.length===1;},'link card');/* v68: the card is keyed by the plan's own renewal date */
+  const pl=(await doc('confirm/'+tok)).cycles['2026-11-10'].plans[0];assert.equal(pl.dueISO,'2026-11-10');assert.equal(pl.amountText,'Rs 4,200');
   check('the customer\'s link card shows the own-start plan due on Nov 10 (its own renewal day) for Rs 4,200');
 
   await page.screenshot({path:path.join(out,'own-start-390.png')});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.deepEqual(errors,[]);check('No sideways scroll and no unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'67',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'68',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

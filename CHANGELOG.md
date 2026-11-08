@@ -2,6 +2,14 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v68 - 2026-11-08
+
+- Every product now has its own billing cycle; the shared billing cycle is gone. Settings no longer has "Billing cycle starts on day" or "Yearly plans renew in": each product's "Cycle starts on" date is the calendar its plans bill on (existing products without one were given the old shared date, so nothing already billed moves). "Reminder day" and "Reply-by day" became "Remind" and "Reply by", counted in days before a cycle starts (4 and 1 by default, the same timing as the old 20th and 23rd for the 24th).
+- Queue: one section per cycle date that is in its reminder window, each with its own stage, Except list and messages, so customers on the 15th are reminded four days before the 15th and customers on the 24th four days before the 24th. A customer with plans on two cycles gets one message in the cycle that comes first, covering every bill of the next month with its own date, and is not asked again for the second date; a customer who is overdue still gets the coming cycle's message. The "Due on their own renewal date" section is now simply "Overdue". The Reminder run and Final notice tabs pick a cycle date; the link page carries a card per date and opens on the nearest one with money due; the daily reminder emails follow the same per-date rule.
+- Customer list: a "By supplier" button (shown when you have wholesalers, on by default) puts direct customers first and then each wholesaler's customers together under a heading with their count, what they owe and the wholesaler's WhatsApp number. Turn it off to get one plain list again; the chosen sort order holds inside each group.
+- Wholesaler statements: a due line no longer says since when it is overdue; the closing line comes from the new Settings → Wholesalers box "Closing line of the statement" (blank = the general pay line).
+- Summary: "Next cycle starts …" became "Next cycles: Nov 15 (…) · Nov 24 (…)", one date per product. Cancel plan, the cancellation form's "No bills from billing month" and the refund dialog use each plan's own cycle. Edit plan no longer offers "Shared billing day". A reminder date with one date no longer reads "Nov 24 and 2026".
+
 ## v67 - 2026-11-08
 
 - Queue: a new "Wholesalers" section with one message per wholesaler instead of one per customer. "Due now" lists the wholesaler's accounts with money due today or earlier (from each product's cycle day until paid) with customer, plan, amount and since when, plus the total; "Renews soon" lists the accounts that renew within the next days (Settings, Wholesalers: "Remind a wholesaler", default 3 days; 0 turns it off). WhatsApp opens the wholesaler's number with the statement prefilled, Copy copies it, and the Sent tick is saved per wholesaler and cycle. A wholesaler's customers no longer appear one by one in the Queue lists.
