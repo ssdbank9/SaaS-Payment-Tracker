@@ -2,11 +2,17 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v65 - 2026-11-08
+
+- Fixes from an outside review of v64. The old data repairs from the first releases (named customers' contact details and receipts, and a rule that made every plan prorate its first period) are removed from the app. They would have run again on the next data-format change and switched every plan you set to a full first month back to prorated. No data changes now; every store already has those repairs.
+- Payments view: the totals line (Paid in, Refunds, Net) now shows the same converted PKR total as the Summary tiles, with the amounts per currency in brackets when there are several. Before, it only listed the amounts per currency.
+- Guide: a plan's tier history keeps `via:'link'` only for switches chosen on the link page; the app never stores another value.
+
 ## v64 - 2026-11-07
 
 - Customers can pay in euros (EUR) or pounds (GBP) as well as PKR and USD: Add customer, Edit plan, Add plan, the payment and refund boxes, Quick add lines ("12 EUR", "£10"), CSV import/export and Search all take them. Amounts show as €12 and £10.
 - Settings has two new default rates, PKR per 1 EUR and PKR per 1 GBP, next to the USD rate. The header badge shows them once a customer pays in that currency. A receipt or refund in another currency than its plan locks the matching rate the way USD receipts already did; the rate label says which currency it is PKR per.
-- Summary tiles, By product, Analytics and the Payments view convert EUR and GBP through PKR with those rates; the PKR/USD toggles are unchanged. Without a rate the tile shows the amounts per currency instead of a total, as before.
+- Summary tiles, By product and Analytics convert EUR and GBP through PKR with those rates; the PKR/USD toggles are unchanged. (The Payments view's totals line kept listing each currency separately until v65.) Without a rate the tile shows the amounts per currency instead of a total, as before.
 - Costs (your supplier expenses) stay in USD or PKR.
 - Add customer: "A different amount" now says the payment box opens after Save (it never opened on picking the option).
 

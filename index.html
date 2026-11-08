@@ -717,7 +717,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v64</span>
+      <span class="small muted num" id="app-ver" title="App version">v65</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
@@ -1879,57 +1879,12 @@ function isUntouchedSeedUqba(b){if(!b||String(b.name||'').trim().toLowerCase()!=
 function migrateUserV2(raw){
   const u=clone(raw);let changed=false;
   for(const s of u.subscriptions||[]){const cur=normCur(s.currency);if(s.currency!==cur){s.currency=cur;changed=true;}
-    for(const p of s.payments||[]){if(!p.currency||!isCur(p.currency)){p.currency=cur;changed=true;}if(p.rate===undefined){p.rate=null;changed=true;}}}
-  if((u.email||'').toLowerCase()==='erenkumcuoglu@gmail.com'){
-    const s=(u.subscriptions||[]).find(x=>x.kind!=='one-time');
-    if(s&&!(s.currency==='USD'&&priceAt(s,'2026-07-24')===14&&(s.payments||[]).every(p=>p.currency==='USD'&&p.amount===14))){s.currency='USD';s.prices=[{from:s.start||'2026-07-24',price:14}];for(const p of s.payments||[]){p.amount=14;p.currency='USD';p.rate=null;}changed=true;}
-    if(!/binance/i.test(u.notes||'')){u.notes=u.notes?u.notes+' · USDT (Binance)':'USDT (Binance)';changed=true;}
-  }
-  if((u.email||'').toLowerCase()==='faizaneilahi9774@gmail.com'){for(const s of u.subscriptions||[]){if(s.kind!=='one-time'&&s.currency!=='USD'){s.currency='USD';for(const p of s.payments||[])p.currency='USD';changed=true;}}}
-  /* v3/v4: packages, cycles, Haroon's ChatGPT as a yearly G plan */
-  for(const s of u.subscriptions||[]){
-    if(s.kind!=='one-time'){if(!s.cycle){s.cycle='monthly';changed=true;}if(!s.packageId&&(!s.name||/^standard$/i.test(s.name))){s.packageId='pkg_c';s.name='';changed=true;}}
-  }
-  if((u.email||'').toLowerCase()==='haroon.mansha@gmail.com'){
-    const g=(u.subscriptions||[]).find(x=>x.kind==='one-time'&&/chatgpt/i.test(x.name||''));
-    if(g){const total=Number(g.total)||50000;Object.assign(g,{kind:'monthly',cycle:'yearly',packageId:'pkg_g',name:'ChatGPT',start:'2026-08-30',end:null,dueBy:g.due||'2027-02-28',prices:[{from:'2026-08-30',price:total}]});delete g.total;delete g.due;changed=true;}
-  }
-  /* v5: shared billing cycle; every recurring plan prorates its first period, except Haroon's yearly G plan (full Rs 50,000 applies) */
-  for(const s of u.subscriptions||[]){
-    if(s.kind==='one-time')continue;
-    const isHaroonG=(u.email||'').toLowerCase()==='haroon.mansha@gmail.com'&&s.cycle==='yearly'&&(s.packageId==='pkg_g'||/chatgpt/i.test(s.name||''));
-    const want=!isHaroonG;if(s.prorate!==want){s.prorate=want;changed=true;}
-  }
-  /* v7: contact details and dates from Aly (Sep 22, 2026); matched by email, never creates users */
-  const em=(u.email||'').toLowerCase();
-  if(em==='haroon.mansha@gmail.com'){
-    if(!digits(u.phone)){u.phone='923009652718';changed=true;}
-    if(u.joinDate!=='2026-08-30'){u.joinDate='2026-08-30';changed=true;}
-    const c1=(u.subscriptions||[]).find(x=>x.kind!=='one-time'&&x.cycle!=='yearly'&&x.packageId==='pkg_c'&&!/account 2/i.test(x.name||''));
-    if(c1&&c1.start!=='2026-08-30'){c1.start='2026-08-30';c1.prices=(c1.prices||[]).map(p=>p.from<'2026-08-30'?Object.assign({},p,{from:'2026-08-30'}):p);const seen={};c1.prices=c1.prices.filter(p=>{if(seen[p.from])return false;seen[p.from]=true;return true;});changed=true;}
-    if(!(u.subscriptions||[]).some(x=>/account 2/i.test(x.name||'')||/developerabdullahsnetflix/i.test(x.name||''))){u.subscriptions=(u.subscriptions||[]);u.subscriptions.push({id:'s_haroon_acc2',kind:'monthly',cycle:'monthly',packageId:'pkg_c',name:'Account 2 · Developerabdullahsnetflix@gmail.com',currency:'PKR',start:'2026-09-20',end:null,prorate:true,waiveFirst:true,dueBy:null,prices:[{from:'2026-09-20',price:4200}],payments:[]});changed=true;}
-    const acc2=(u.subscriptions||[]).find(x=>/account 2/i.test(x.name||'')||/developerabdullahsnetflix/i.test(x.name||''));
-    if(acc2){if(acc2.waiveFirst!==true){acc2.waiveFirst=true;changed=true;}if(!(acc2.payments||[]).length){acc2.payments=[{id:'s_haroon_acc2_p1',date:'2026-09-20',amount:4200,currency:'PKR',rate:null,note:'covers Sep 24 – Oct 23'}];changed=true;}}
-  }
-  /* v8 (Sep 22, 2026): Mohib's account Gmail becomes his primary email; the Yahoo address moves to notes */
-  if(em==='mohibkazmi@yahoo.com'||em==='lkmaggdoto@gmail.com'||em==='ikmagdoto@gmail.com'||em==='maggdoto@gmail.com'){
-    if((u.name||'').trim().toLowerCase()==='mohib'){u.name='Mohib Haider Kazmi';changed=true;}
-    if(!digits(u.phone)){u.phone='923365558920';changed=true;}
-    if(u.email!=='maggdoto@gmail.com'){u.email='maggdoto@gmail.com';changed=true;}
-    let nt=String(u.notes||'').replace(/\s*·\s*Account email:\s*lkmaggdoto@gmail\.com/i,'').replace(/Account email:\s*lkmaggdoto@gmail\.com\s*(·\s*)?/i,'').trim();
-    if(!/mohibkazmi@yahoo\.com/i.test(nt))nt=(nt?nt+' · ':'')+'Contact email: mohibkazmi@yahoo.com';
-    if(nt!==(u.notes||'')){u.notes=nt;changed=true;}
-  }
-  if(em==='erenkumcuoglu@gmail.com'&&!normTg(u.telegram)){u.telegram='ragefulspartan';changed=true;}
-  if(em==='faizaneilahi9774@gmail.com'&&!digits(u.phone)){u.phone='923212107772';changed=true;}
-  if(!em&&(u.name||'').trim().toLowerCase()==='tabraiz'){u.email='tabraiz@smwcmanagement.com';changed=true;if(!digits(u.phone)){u.phone='923313508833';changed=true;}}
-  else if(em==='tabraiz@smwcmanagement.com'&&!digits(u.phone)){u.phone='923313508833';changed=true;}
-  if(em==='atabinfazl@gmail.com'&&!digits(u.phone)){u.phone='923465298200';changed=true;}
-  if(em==='erenkumcuoglu@gmail.com'&&!/telegram/i.test(u.notes||'')){u.notes='Pays in USDT (Binance); contact via Telegram';changed=true;}
-  /* v9/v10 (Sep 22, 2026): Eren has paid up to Nov 24; Tabraiz has paid Rs 4,200 and is charged 24 days for his first period (v9 had 22) */
-  const em2=(u.email||'').toLowerCase();
-  if(em2==='erenkumcuoglu@gmail.com'){const s=(u.subscriptions||[]).find(x=>x.kind!=='one-time'&&x.cycle!=='yearly');if(s&&!(s.payments||[]).some(p=>/paid up to nov 24/i.test(p.note||''))){s.payments=s.payments||[];s.payments.push({id:'s_eren_std_p4',date:'2026-09-22',amount:14,currency:'USD',rate:null,note:'paid up to Nov 24 (per Aly)'});changed=true;}}
-  if(em2==='tabraiz@smwcmanagement.com'){const s=(u.subscriptions||[]).find(x=>x.kind!=='one-time'&&x.cycle!=='yearly'&&(x.packageId==='pkg_c'||!x.packageId))||(u.subscriptions||[]).find(x=>x.kind!=='one-time');if(s&&!(s.payments||[]).some(p=>/per aly, 22 sep/i.test(p.note||''))){s.payments=s.payments||[];s.payments.push({id:'s_tabraiz_std_p1',date:'2026-09-22',amount:4200,currency:'PKR',rate:null,note:'per Aly, 22 Sep'});changed=true;}if(s&&(s.prorationDaysOverride==null||s.prorationDaysOverride===22)){s.prorationDaysOverride=24;changed=true;}}
+    for(const p of s.payments||[]){if(!p.currency||!isCur(p.currency)){p.currency=cur;changed=true;}if(p.rate===undefined){p.rate=null;changed=true;}}
+    if(s.kind!=='one-time'&&!s.cycle){s.cycle='monthly';changed=true;}}
+  /* v65: the one-off repairs of v3-v10 (named customers' contact details and receipts, a package guess, and a rule that forced
+     every recurring plan to prorate its first period) are retired. They ran again on every schema bump, and the proration rule
+     would have switched every plan the owner set to a full first month (v50 wholesalers, later corrections) back to prorated.
+     Every store already carries those repairs (schema 11); only the format-only normalisation above remains. */
   return changed?u:null;
 }
 async function maybeSeedShared(){
@@ -3597,7 +3552,9 @@ function renderPayments(){if($('#payPanel').hidden)return;const sel=$('#pl-prod'
   const rows=payLines().filter(l=>inRange(l.date,rb)&&(!payUI.prod||l.pid===payUI.prod)&&(!payUI.kind||(payUI.kind==='ref')===l.refund)&&(!q||[displayName(l.u),l.u.email||'',l.plan,l.note].join(' ').toLowerCase().includes(q)));
   const col=newSum(),ref=newSum();let np=0,nr=0;for(const l of rows){if(l.refund){sumAdd(ref,l.amount,l.currency,l.rate);nr++;}else{sumAdd(col,l.amount,l.currency,l.rate);np++;}}
   const net=netSum(col,ref,newSum());
-  $('#pl-tot').innerHTML=`Paid in <b>${esc(ownText(col,'PKR'))}</b> (${np} payment${np===1?'':'s'}) · Refunds <b class="refund">${nr?'\u2212'+esc(ownText(ref,'PKR')):esc(fmtAmt(0,'PKR'))}</b> (${nr}) · Net <b>${esc(ownText(net,'PKR'))}</b> · ${esc(rb.label)}`;
+  /* v65: the same converted PKR total as the Summary tiles (sumParts), the per-currency parts in brackets when there are several; before, only the parts were listed */
+  const plTot=(S,neg)=>S.n?(neg?'\u2212':'')+esc(sumParts(S,'PKR').p)+(!S.missing&&ownParts(S).length>1?` <span class="muted">(${esc(ownText(S,'PKR'))})</span>`:''):esc(fmtAmt(0,'PKR'));
+  $('#pl-tot').innerHTML=`Paid in <b>${plTot(col)}</b> (${np} payment${np===1?'':'s'}) · Refunds <b class="refund">${plTot(ref,nr>0)}</b> (${nr}) · Net <b>${plTot(net)}</b> · ${esc(rb.label)}`;
   $('#pl-body').innerHTML=rows.map(l=>`<tr class="${l.refund?'refund-row':''}" tabindex="0" data-user="${esc(l.id)}"><td class="num">${esc(l.date)}</td><td class="who">${esc(displayName(l.u))}</td><td class="plan">${esc(l.plan)}</td><td class="num amt">${esc(fmtAmt(l.refund?-l.amount:l.amount,l.currency))}${rateNote(l.rate)}</td><td class="note">${l.refund?'<span class="tag refund-tag">Refund</span>':''}${esc(l.note)}</td></tr>`).join('');
   $('#pl-none').hidden=rows.length>0;}
 function openPayments(){showPanel('payPanel');renderPayments();$('#payPanel').scrollIntoView({behavior:'smooth',block:'start'});}
