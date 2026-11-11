@@ -2,6 +2,19 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v72 - 2026-11-09
+
+- Edit user now leads with the product start dates and supplier costs (the part you change) and folds the contact fields (name, email, joined on, WhatsApp, Telegram, notes, sold through) behind a "Contact details" row. The row remembers whether you left it open.
+- Settings: the two message templates moved into "Queue messages" where they belong, and app name, tagline and reading model fold into a new "Branding" section. The main block is now about half as long; nothing was removed.
+
+## v71 - 2026-11-09
+
+- Settings is now a few rows instead of one long page. The main billing block (rates, tax, reminder days, proration, app name, templates) stays visible, and each optional section — Products, Wholesalers, Queue messages, AI reading, Mail, Security, Your data — folds behind its own heading. Tap a heading to open it; the open ones are remembered. "Show all" opens everything at once and "Hide all" folds it back. Every field and Save button is unchanged, just one tap away.
+
+## v70 - 2026-11-09
+
+- Add a customer is simpler: the Plan group now shows the four fields you fill every time (product, start date, price, currency) and puts the rest behind one "More plan options" button — joined on, payment schedule, plan label, supplier cost, proration choices and one-time due date. The button remembers whether you left it open, so a workflow that needs those fields opens them once and they stay open. Nothing was removed; every field is one tap away.
+
 ## v69 - 2026-11-09
 
 - A product saved without a "Cycle starts on" date: the Settings row now says what that means (its first customer's start day becomes its billing day, or the day it already renews on), the Summary pill names that real day instead of the retired shared date, and the Add form shows no first-bill preview until the first-customer choice is made.

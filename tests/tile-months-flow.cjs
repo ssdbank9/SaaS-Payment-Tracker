@@ -30,7 +30,7 @@ const norm=s=>s.replace(/\s+/g,' ').trim();
    'costs/c2':{date:'2026-09-05',description:'Domain',category:'Hosting',packageId:'',currency:'PKR',cost:500,tax:0,rate:null,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v69');
+  assert.equal(await page.locator('#app-ver').textContent(),'v72');
   await page.locator('#range').selectOption('all');await until(async()=>/16,200/.test(await page.locator('#t-col').textContent()),'Summary all time');
 
   // 1. the Collected tile opens the month list; the total line equals the tile; months newest first with payments and refunds
@@ -90,6 +90,6 @@ const norm=s=>s.replace(/\s+/g,' ').trim();
   await page.locator('#mo-close').click();assert.equal(await page.locator('#monthPanel').isHidden(),true);
   check('the panel fits at 390px and 1400px in light and dark with no sideways scroll, and Close hides it');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'69',checks},null,2));console.log('tile-months-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'72',checks},null,2));console.log('tile-months-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

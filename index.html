@@ -312,6 +312,16 @@ td.who .row-start,td.who .row-bill{display:block;margin-top:6px;min-height:44px;
 /* v55: the Add form's three groups */
 .add-grp{border:1px solid var(--line);border-radius:6px;padding:10px 12px 12px;margin:0 0 12px;min-width:0}
 .add-grp>legend{font-size:12px;font-weight:600;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.06em;padding:0 6px}
+.add-more-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:40px;margin:4px 0 0;padding:6px 12px;border:1px dashed var(--line-strong);border-radius:6px;background:transparent;color:var(--ink-2);font:inherit;font-size:13px;cursor:pointer}
+.add-more-btn .chev{color:var(--muted);transition:transform .15s}
+.add-more-btn[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.add-more-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* v71: Settings shows one optional section at a time; the main billing block stays visible */
+.set-tog{flex:none;width:28px;height:28px;min-height:0;padding:0;margin:0 4px 0 0;border:0;background:transparent;color:var(--muted);font:inherit;font-size:15px;line-height:1;cursor:pointer;transition:transform .15s}
+.set-tog[aria-expanded="true"]{transform:rotate(90deg)}
+.set-tog:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.block-head.clickable{cursor:pointer}
+.set-body{margin-top:2px}
 .add-checks{display:grid;gap:6px;margin-top:10px}.add-checks label.f.chk{display:block;align-self:auto;min-height:0;line-height:1.45;padding:4px 0}.add-checks label.f.chk input{width:16px;height:16px;min-height:0;padding:0;margin:0 8px 0 0;vertical-align:-3px}
 .add-paid{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}.add-paid-q{font-weight:600;font-size:13px;flex-basis:100%}
 .add-paid label.f.chk{min-height:40px;align-self:auto;font-size:14px}.add-paid input{width:18px;height:18px;min-height:0;padding:0;margin:0 6px 0 0}
@@ -729,7 +739,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v69</span>
+      <span class="small muted num" id="app-ver" title="App version">v72</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
@@ -840,7 +850,7 @@ table.costs td.cat{color:var(--ink-2)}
   </div>
 
   <section class="panel" id="settingsPanel" hidden aria-label="Settings">
-    <div class="panel-head"><h3>Settings</h3><button class="link" type="button" id="settings-close">Close</button></div>
+    <div class="panel-head"><h3>Settings</h3><button class="link" type="button" id="s-show-all">Show all</button><button class="link" type="button" id="settings-close">Close</button></div>
     <form id="settingsForm" novalidate>
       <div class="form-grid" style="grid-template-columns:minmax(160px,220px) 1fr">
         <label class="f">App name<input id="s-app-name" type="text" maxlength="40" placeholder="Wasooli" autocomplete="off"></label>
@@ -1016,23 +1026,28 @@ table.costs td.cat{color:var(--ink-2)}
         <label class="f">Payment method / notes<input id="a-notes" type="text" placeholder="e.g. NayaPay Noor, USDT (Binance)"></label>
       </div>
       </fieldset>
-      <fieldset class="add-grp" id="a-more"><legend>Plan</legend>
+      <fieldset class="add-grp"><legend>Plan</legend>
       <div class="form-grid">
         <label class="f">Package / product<select id="a-pkg" required></select></label>
         <label class="f" id="a-start-wrap">Package started on<input id="a-start" type="date" required></label>
-        <label class="f">Joined on <span class="muted">(same as the start unless you change it)</span><input id="a-join" type="date" required></label>
         <label class="f"><span id="a-price-lbl">Monthly price (Rs)</span><input id="a-price" type="number" min="0" step="0.01" required placeholder="4200" inputmode="decimal"></label>
         <label class="f">Customer pays in<select id="a-cur" required><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select></label>
         <label class="f">Billing<span id="a-cycle-wrap"></span></label>
+      </div>
+      <div id="a-first"></div>
+      <button class="btn sm add-more-btn" type="button" id="a-more-btn" aria-expanded="false">More plan options <span class="chev">›</span></button>
+      <div id="a-more-fields" hidden>
+      <div class="form-grid">
+        <label class="f">Joined on <span class="muted">(same as the start unless you change it)</span><input id="a-join" type="date" required></label>
         <label class="f" id="a-payment-wrap" hidden>Payment schedule<select id="a-payment"><option value="1">Monthly</option><option value="3">Every 3 months</option><option value="6">Every 6 months</option><option value="12" selected>Yearly</option><optgroup label="Custom: every N months"><option value="2">Every 2 months</option><option value="4">Every 4 months</option><option value="5">Every 5 months</option><option value="7">Every 7 months</option><option value="8">Every 8 months</option><option value="9">Every 9 months</option><option value="10">Every 10 months</option><option value="11">Every 11 months</option><option value="13">Every 13 months</option><option value="14">Every 14 months</option><option value="15">Every 15 months</option><option value="16">Every 16 months</option><option value="17">Every 17 months</option><option value="18">Every 18 months</option><option value="19">Every 19 months</option><option value="20">Every 20 months</option><option value="21">Every 21 months</option><option value="22">Every 22 months</option><option value="23">Every 23 months</option><option value="24">Every 24 months</option></optgroup></select></label>
         <label class="f">Plan label <span class="muted">(optional)</span><input id="a-plan" type="text" placeholder="only if it differs from the package"></label>
       </div>
-      <div id="a-first"></div>
       <div id="a-account-cost"></div><label class="f" id="a-due-wrap" hidden>One-time amount due on (optional)<input id="a-due" type="date"></label>
       <div class="add-checks">
         <label class="f chk" id="a-prorate-wrap"><input id="a-prorate" type="checkbox" checked>Prorate first period <span class="muted">(charge the join period by days)</span></label>
         <label class="f chk"><input id="a-waive" type="checkbox">Waive first partial period <span class="muted">(stub days free, billing starts next cycle)</span></label>
         <label class="f chk"><input id="a-own" name="ownStart" type="checkbox">Renews on its own start date <span class="muted">(e.g. started Aug 30: renews every Aug 30, or the 30th each month; unticked = the product's billing day)</span></label>
+      </div>
       </div>
       </fieldset>
       <fieldset class="add-grp"><legend>Payment</legend>
@@ -3510,6 +3525,8 @@ function detailHTML(id,u,a,today){
     </form>
     <form class="block edit-form" data-id="${id}" ${open.edit?'':'hidden'} novalidate>
       <h3 style="margin-bottom:8px">Edit user</h3><h3>Product start dates and supplier costs</h3>${accountStartInputs(u)}
+      <button class="btn sm add-more-btn" type="button" data-act="toggle-contact" aria-expanded="${editContactPref()?'true':'false'}">Contact details <span class="chev">›</span></button>
+      <div data-role="contact" ${editContactPref()?'':'hidden'}>
       <div class="form-grid">
         <label class="f">Name<input id="e-name-${id}" name="name" type="text" value="${esc(u.name||'')}"></label>
         <label class="f">Email<input id="e-email-${id}" name="email" type="email" value="${esc(u.email||'')}"></label>
@@ -3518,6 +3535,7 @@ function detailHTML(id,u,a,today){
         <label class="f">Telegram <span class="muted">(handle or phone, optional)</span><input id="e-tg-${id}" name="telegram" type="text" placeholder="@handle or +92…" value="${esc(u.telegram?(/^\d+$/.test(u.telegram)?'+'+u.telegram:'@'+u.telegram):'')}"></label>
         <label class="f">Payment method / notes<input id="e-notes-${id}" name="notes" type="text" value="${esc(u.notes||'')}"></label>
         ${wholesalers().length||u.wholesalerId?`<label class="f">Sold through<select name="wholesalerId">${wsOptions(u.wholesalerId||'')}${u.wholesalerId&&!wsById(u.wholesalerId)?`<option value="${esc(u.wholesalerId)}" selected>Removed wholesaler</option>`:''}</select></label>`:''}
+      </div>
       </div>
       <div class="form-actions">
         <button class="btn primary" type="submit">Save changes</button>
@@ -3812,7 +3830,47 @@ async function saveSettingGroup(key){
   finally{settingsSaving=false;buttons.forEach(b=>b.disabled=false);}
 }
 function openRemindRun(){showPanel('remindRun');renderRemindRun();$('#remindRun').scrollIntoView({behavior:'smooth',block:'start'});}
-function openSettings(){for(const k of Object.keys(settingGroups))settingStatus(k,'',false);$('#s-msg').textContent='';$('#s-rate').value=state.settings.rate||'';$('#s-rate-eur').value=state.settings.rateEUR||'';$('#s-rate-gbp').value=state.settings.rateGBP||'';/* v64 */$('#s-cost-tax').value=costTax();$('#s-remind-lead').value=remindLead();$('#s-reply-lead').value=replyLead();/* v68 */$('#s-ws-remind').value=wsRemindDays();/* v67 */$('#s-ws-payline').value=String(state.settings.wsPayLine||'');/* v68 */$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);{const lb=serverLinkBase(),bu=$('#s-base-url');if(state.backend==='api')bu.placeholder=lb||location.origin;bu.placeholder=lb||selfBase()||bu.placeholder;bu.disabled=!!lb;bu.title=lb?'Set on the server (LINK_DOMAIN): customer links always use this address':'';renderBaseUrlState();$('#s-base-url-link').hidden=!lb;if(lb)$('#s-base-url-link-val').textContent=lb;}fillQueueSettings();$('#s-wa-app').value=waApp();$('#s-dim').checked=dimOn();$('#mailBlock').hidden=state.backend!=='api';$('#aiBlock').hidden=state.backend!=='api';$('#securityBlock').hidden=state.backend!=='api';if(state.backend==='api'){loadMailSettings();loadAiSettings();loadSecurity(true);}ui.pkgEdit=clone(packages());renderPkgEditor();ui.wsEdit=clone(wholesalers());renderWsEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
+/* v71: Settings is long. Each named section folds behind its heading (state remembered) and the main
+   billing block stays visible, so the page reads as a few rows instead of 60 fields. Nothing is removed. */
+function setSectionKey(h3){return String(h3&&h3.textContent||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'section';}
+function setOpenState(){try{const a=JSON.parse(localStorage.getItem('pt-set-open')||'null');return Array.isArray(a)?a:['packages-products'];}catch(e){return ['packages-products'];}}
+function setOpenSave(list){try{localStorage.setItem('pt-set-open',JSON.stringify(list));}catch(e){}}
+/* v72: Edit user shows the plans first and folds the contact fields; the choice is remembered */
+function editContactPref(){try{return localStorage.getItem('pt-edit-contact')==='1';}catch(e){return false;}}
+function applySetSections(){const open=setOpenState();const all=[...document.querySelectorAll('#settingsPanel .set-body')];
+  for(const body of all){const on=open.includes(body.dataset.setBody);body.hidden=!on;const bh=body.previousElementSibling;const tog=bh&&bh.querySelector('.set-tog');if(tog)tog.setAttribute('aria-expanded',String(on));}
+  const btn=$('#s-show-all');if(btn)btn.textContent=all.some(b=>b.hidden)?'Show all':'Hide all';}
+function buildSetSections(){const panel=$('#settingsPanel');if(!panel)return;
+  if(panel.dataset.secs==='1'){applySetSections();return;}
+  panel.dataset.secs='1';
+  const attach=(bh,body,key)=>{const tog=document.createElement('button');tog.type='button';tog.className='set-tog';tog.setAttribute('aria-expanded','false');
+    tog.setAttribute('aria-label','Show or hide '+(bh.querySelector('h3')||bh).textContent.trim());tog.textContent='\u203a';
+    bh.insertBefore(tog,bh.firstChild);bh.classList.add('clickable');
+    const flip=()=>{const open=body.hidden;const list=setOpenState().filter(k=>k!==key);if(open)list.push(key);setOpenSave(list);applySetSections();};
+    tog.addEventListener('click',e=>{e.stopPropagation();flip();});
+    bh.addEventListener('click',e=>{if(e.target.closest('button:not(.set-tog),a,select,input,textarea'))return;flip();});};
+  /* wrap what follows each existing heading into its own body */
+  for(const bh of [...panel.querySelectorAll('.block-head')]){
+    const h3=bh.querySelector('h3');if(!h3)continue;
+    const key=setSectionKey(h3);
+    const body=document.createElement('div');body.className='set-body';body.dataset.setBody=key;
+    const sibs=[];for(let n=bh.nextElementSibling;n;n=n.nextElementSibling)sibs.push(n);
+    for(const n of sibs)body.appendChild(n);
+    bh.after(body);attach(bh,body,key);
+  }
+  /* v72: the two message templates belong with the Queue messages, not the main block */
+  const qb=panel.querySelector('.set-body[data-set-body="queue-messages"]');
+  if(qb){for(const id of ['s-template','s-final-template']){const el=$('#'+id);const lab=el&&el.closest('label');if(!lab)continue;const help=lab.nextElementSibling;qb.appendChild(lab);if(help&&help.tagName==='P')qb.appendChild(help);}}
+  /* v72: app name, tagline and reading model fold into their own Branding section */
+  const mainGrid=$('#settingsForm')&&$('#settingsForm').querySelector('.form-grid');
+  if(mainGrid){const bh=document.createElement('div');bh.className='block-head';bh.style.marginBottom='2px';
+    const h3=document.createElement('h3');h3.textContent='Branding';bh.appendChild(h3);mainGrid.after(bh);
+    const body=document.createElement('div');body.className='set-body';body.dataset.setBody='branding';bh.after(body);
+    const grid=document.createElement('div');grid.className='form-grid';grid.style.gridTemplateColumns='minmax(160px,220px) 1fr';body.appendChild(grid);
+    for(const id of ['s-app-name','s-tagline','s-model']){const el=$('#'+id);const lab=el&&el.closest('label');if(!lab)continue;const help=lab.nextElementSibling;grid.appendChild(lab);if(help&&help.tagName==='SPAN')grid.appendChild(help);}
+    attach(bh,body,'branding');}
+  applySetSections();}
+function openSettings(){buildSetSections();for(const k of Object.keys(settingGroups))settingStatus(k,'',false);$('#s-msg').textContent='';$('#s-rate').value=state.settings.rate||'';$('#s-rate-eur').value=state.settings.rateEUR||'';$('#s-rate-gbp').value=state.settings.rateGBP||'';/* v64 */$('#s-cost-tax').value=costTax();$('#s-remind-lead').value=remindLead();$('#s-reply-lead').value=replyLead();/* v68 */$('#s-ws-remind').value=wsRemindDays();/* v67 */$('#s-ws-payline').value=String(state.settings.wsPayLine||'');/* v68 */$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);{const lb=serverLinkBase(),bu=$('#s-base-url');if(state.backend==='api')bu.placeholder=lb||location.origin;bu.placeholder=lb||selfBase()||bu.placeholder;bu.disabled=!!lb;bu.title=lb?'Set on the server (LINK_DOMAIN): customer links always use this address':'';renderBaseUrlState();$('#s-base-url-link').hidden=!lb;if(lb)$('#s-base-url-link-val').textContent=lb;}fillQueueSettings();$('#s-wa-app').value=waApp();$('#s-dim').checked=dimOn();$('#mailBlock').hidden=state.backend!=='api';$('#aiBlock').hidden=state.backend!=='api';$('#securityBlock').hidden=state.backend!=='api';if(state.backend==='api'){loadMailSettings();loadAiSettings();loadSecurity(true);}ui.pkgEdit=clone(packages());renderPkgEditor();ui.wsEdit=clone(wholesalers());renderWsEditor();$('#pkg-err').textContent='';showPanel('settingsPanel');$('#settingsPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#s-rate').focus();}
 function fillQueueSettings(){$('#s-q1').value=queueTplOf(1);$('#s-q2').value=queueTplOf(2);$('#s-q3').value=queueTplOf(3);$('#s-payhow').value=payHowOf();}
 /* v68: the shared billing cycle settings are gone; each product carries its own cycle start */
 /* ---------- v21: AI reading (self-hosted): the keys live on the server; the page only ever sees a hint and the last test result.
@@ -3977,6 +4035,10 @@ function bind(){
     if(f==='name'||f==='email'||f==='phone'||f==='pkg'||f==='sel')renderQuick();else{const n=qa.rows.filter(x=>x.sel&&!x.dup).length;$('#qa-save').textContent=`Add ${n} user${n===1?'':'s'}`;}});
   $('#qa-save').addEventListener('click',quickSave);
   $('#add-close').addEventListener('click',()=>{$('#addPanel').hidden=true;});
+  /* v70: the rare plan fields sit behind one toggle that remembers its state */
+  {const mb=$('#a-more-btn'),mw=$('#a-more-fields');const set=o=>{mw.hidden=!o;mb.setAttribute('aria-expanded',String(o));};
+   try{set(localStorage.getItem('pt-add-more')==='1');}catch(e){set(false);}
+   mb.addEventListener('click',()=>{const o=mw.hidden;set(o);try{localStorage.setItem('pt-add-more',o?'1':'0');}catch(e){}});}
   $('#a-cur').addEventListener('change',updAddConv);$('#a-price').addEventListener('input',updAddConv);
   $('#a-join').addEventListener('input',()=>{$('#a-join').dataset.manual='1';if(!$('#a-start').dataset.manual)$('#a-start').value=$('#a-join').value;updAddConv();});
   $('#a-start').addEventListener('input',()=>{$('#a-start').dataset.manual='1';if(!$('#a-join').dataset.manual&&isDateKey($('#a-start').value))$('#a-join').value=$('#a-start').value;/* v55 */updAddConv();});
@@ -4093,6 +4155,9 @@ function bind(){
     cb.disabled=true;const ok=await persistUser(id,u);if(!ok){cb.disabled=false;cb.checked=!cb.checked;}else if(db)renderRemindRun();
   });
   $('#settings-close').addEventListener('click',closeSettings);
+  /* v71: Show all / Hide all for the folded Settings sections */
+  $('#s-show-all').addEventListener('click',()=>{const bodies=[...document.querySelectorAll('#settingsPanel .set-body')];
+    const anyClosed=bodies.some(b=>b.hidden);setOpenSave(anyClosed?bodies.map(b=>b.dataset.setBody):[]);applySetSections();});
   $('#m-save').addEventListener('click',saveMailSettings);$('#m-test').addEventListener('click',testMail);
   $('#ai-save').addEventListener('click',saveAiKey);$('#ai-test').addEventListener('click',()=>testAiKey(false));$('#ai-clear').addEventListener('click',clearAiKey);$('#ai-provider').addEventListener('change',()=>{showProviderFields();$('#ai-msg').textContent=aiProvider()==='gemini'?'Paste a Gemini key, press Load models, then Save.':'Paste an Anthropic key and press Save.';});$('#ai-load-models').addEventListener('click',loadGeminiModels);$('#ai-gemini-model').addEventListener('change',e=>{const t=$('#ai-gemini-model-text');t.hidden=e.target.value!=='__custom';if(!t.hidden){t.value='';t.focus();}});
   $('#ai-key').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveAiKey();}});
@@ -4186,6 +4251,7 @@ function bind(){
     const det=e.target.closest('tr.detail');if(!det)return;const id=det.dataset.id;
     const act=e.target.closest('[data-act]');if(!act)return;const A=act.dataset.act,sid=act.dataset.sub;
     if(A==='toggle'){if((act.dataset.key||'').startsWith('refund:'))openRefundDialog(id,sid);else if((act.dataset.key||'').startsWith('days:'))openBillDialog(id,sid,pStart(state.users[id].subscriptions.find(s=>s.id===sid),0));else toggleOpen(id,act.dataset.key);}
+    else if(A==='toggle-contact'){const f=act.closest('form');const w=f&&f.querySelector('[data-role=contact]');if(!w)return;const open=w.hidden;w.hidden=!open;act.setAttribute('aria-expanded',String(open));try{localStorage.setItem('pt-edit-contact',open?'1':'0');}catch(e){}}
     else if(A==='link-keep'){const u=clone(state.users[id]);const sb=u.subscriptions.find(x=>x.id===sid);if(!sb)return;delete sb.linkConflict;const ok=await persistUser(id,u);if(ok)toast('Kept your tier change.');}
     else if(A==='link-use'){const u=clone(state.users[id]);const sb=u.subscriptions.find(x=>x.id===sid);if(!sb||!sb.linkConflict)return;useLinkChoice(sb,sb.linkConflict);delete sb.linkConflict;const ok=await persistUser(id,u);if(ok)toast('Applied their choice.');}
     else if(Object.keys(RM_WHAT).includes(A)){/* v41: the same two-step Yes/Cancel that deleting a user or plan already has; remembered across redraws */ui.rmConfirm={id,A,d:Object.assign({},act.dataset)};act.outerHTML=rmConfirmHTML(A,act.dataset);}

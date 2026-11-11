@@ -12,7 +12,7 @@ const mon=(start,extra)=>Object.assign({id:'s1',kind:'monthly',cycle:'monthly',p
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
-  const ctx=await browser.newContext({viewport:{width:1400,height:900}});await stubWebFonts(ctx);await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-28');});
+  const ctx=await browser.newContext({viewport:{width:1400,height:900}});await stubWebFonts(ctx);await ctx.addInitScript(()=>{localStorage.setItem('pt-add-more','1');if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-28');});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   page.on('dialog',d=>d.accept());
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
@@ -73,6 +73,6 @@ const mon=(start,extra)=>Object.assign({id:'s1',kind:'monthly',cycle:'monthly',p
   check('#17 Removing a plan with the box unticked keeps its expense (the owner chooses)');
 
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'69',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'72',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -21,18 +21,31 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   const until=async(fn,what)=>{for(let i=0;i<60;i++){if(await fn())return;await page.waitForTimeout(250);}throw new Error('timed out waiting for '+what);};
   for(const d of ((await api('GET','/api/docs?prefix=users/')).j.docs||[]))await api('DELETE','/api/docs/'+d.path);
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2000);
-  assert.equal(await page.locator('#app-ver').textContent(),'v69');
+  assert.equal(await page.locator('#app-ver').textContent(),'v72');
   const payOpen=()=>page.locator('#paymentDialog').evaluate(d=>d.open);
   const openAdd=async()=>{if(await page.locator('#addPanel').isHidden())await page.locator('#btn-add').click();await page.locator('#addPanel').waitFor({state:'visible'});};
 
-  // 1. every field is on show, in three groups
+  // 1. common fields on show, rare fields behind one remembered toggle
   await openAdd();
   const legends=(await page.locator('#addForm .add-grp>legend').allTextContents()).map(x=>x.trim());assert.deepEqual(legends,['Customer','Plan','Payment']);
-  for(const id of ['a-name','a-email','a-phone','a-tg','a-notes','a-pkg','a-start','a-join','a-price','a-cur','a-cycle','a-plan','a-prorate','a-waive','a-own'])assert.equal(await page.locator('#'+id).isVisible(),true,id+' visible');
-  assert.equal(await page.locator('#addForm details').count(),0);
-  check('Add a customer shows every field without opening anything: Customer (name, email, WhatsApp, Telegram, notes), Plan (product, start, joined, price, currency, billing, label, proration choices), Payment');
+  for(const id of ['a-name','a-email','a-phone','a-tg','a-notes','a-pkg','a-start','a-price','a-cur','a-cycle'])assert.equal(await page.locator('#'+id).isVisible(),true,id+' visible');
+  for(const id of ['a-join','a-plan','a-prorate','a-waive','a-own'])assert.equal(await page.locator('#'+id).isVisible(),false,id+' hidden behind the toggle');
+  assert.equal(await page.locator('#a-more-btn').isVisible(),true,'toggle button visible');
+  await page.locator('#a-more-btn').click();
+  for(const id of ['a-join','a-plan','a-prorate','a-waive','a-own'])assert.equal(await page.locator('#'+id).isVisible(),true,id+' visible after the toggle');
+  check('Add a customer shows the common fields at once (name, email, phone, notes, product, start, price, currency) and the rare ones (joined on, label, proration, supplier cost) behind one "More plan options" button');
+
+  // 1b. the toggle stays open after a reload
+  await page.reload();await page.waitForSelector('#app-ver');await page.waitForTimeout(1500);await openAdd();
+  assert.equal(await page.locator('#a-join').isVisible(),true,'the toggle remembered being open');
+  await page.locator('#a-more-btn').click();
+  assert.equal(await page.locator('#a-join').isVisible(),false,'closed again');
+  await page.reload();await page.waitForSelector('#app-ver');await page.waitForTimeout(1500);await openAdd();
+  assert.equal(await page.locator('#a-join').isVisible(),false,'the toggle remembered being closed');
+  check('The "More plan options" button remembers its state across a reload');
 
   // 2. Joined on follows the start until it is changed by hand
+  await page.locator('#a-more-btn').click();/* open the toggle so the hidden fields can be filled */
   await page.locator('#a-start').fill('2026-10-10');assert.equal(await page.locator('#a-join').inputValue(),'2026-10-10');
   await page.locator('#a-join').fill('2026-10-01');await page.locator('#a-start').fill('2026-10-12');assert.equal(await page.locator('#a-join').inputValue(),'2026-10-01');
   await page.locator('#add-close').click();await page.reload();await page.waitForSelector('#app-ver');await page.waitForTimeout(1500);
@@ -77,6 +90,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   await page.locator('#add-close').click();
   check('the Add form fits at 390px and 1400px in light and dark with no sideways scroll; Save is reachable');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'69',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'72',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

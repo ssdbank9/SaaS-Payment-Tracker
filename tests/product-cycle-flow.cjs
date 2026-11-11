@@ -14,7 +14,7 @@ const plan=(id,start,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',na
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
   const ctx=await browser.newContext({viewport:{width:1400,height:900}});await stubWebFonts(ctx);
-  await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-20');localStorage.setItem('pt-sum-open','1');});
+  await ctx.addInitScript(()=>{localStorage.setItem('pt-add-more','1');if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-20');localStorage.setItem('pt-sum-open','1');});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   const api=async(method,pth,data)=>{const r=await ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};
@@ -35,7 +35,7 @@ const plan=(id,start,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',na
    'costs/lump1':{date:'2026-10-20',description:'Oct lump',category:'Product',packageId:'pkg_c',currency:'USD',cost:64,tax:0,rate:0,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v69');
+  assert.equal(await page.locator('#app-ver').textContent(),'v72');
 
   // 1. Settings → Products: seat cost on the yearly product, the own-start tick, the off-cycle count and the apply button
   await page.locator('#btn-settings').click();await page.locator('#pkgList').waitFor();
@@ -90,6 +90,6 @@ const plan=(id,start,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',na
   await page.locator('#btn-add').click();await page.locator('#addForm').waitFor({state:'visible'});await page.locator('#a-pkg').selectOption('pkg_own');assert.equal(await page.locator('#a-own').isChecked(),true);await page.locator('#a-pkg').selectOption('pkg_c');assert.equal(await page.locator('#a-own').isChecked(),false);
   check('a PKR supplier cost on a USD-seat product gets a note; Add plan previews on the product calendar (Oct 20 – Nov 14), pre-ticks own start for the own-start product and fills the yearly product\'s $8/month paid in PKR; Add user pre-ticks own start too');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'69',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'72',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -8,7 +8,7 @@ const checks=[];const check=n=>{checks.push(n);console.log('PASS '+n);};
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
   const ctx=await browser.newContext({viewport:{width:390,height:844}});await stubWebFonts(ctx);
-  await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-20');});
+  await ctx.addInitScript(()=>{localStorage.setItem('pt-add-more','1');if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-10-20');});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));
   await page.goto(pathToFileURL(path.resolve(__dirname,'..','index.html')).href,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(1500);

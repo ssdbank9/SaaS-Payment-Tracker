@@ -15,7 +15,7 @@ const plan=(start,price,extra)=>({id:'s1',kind:'monthly',cycle:'monthly',name:''
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
-  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await stubWebFonts(ctx);await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-11-13');});
+  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await stubWebFonts(ctx);await ctx.addInitScript(()=>{localStorage.setItem('pt-add-more','1');if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-11-13');});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   const api=async(method,pth,data)=>{const r=await ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};
@@ -32,7 +32,7 @@ const plan=(start,price,extra)=>({id:'s1',kind:'monthly',cycle:'monthly',name:''
    'users/d1':{name:'Direct Dan',phone:'923001234567',joinDate:'2026-10-15',subscriptions:[plan('2026-10-15',63)]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v69');
+  assert.equal(await page.locator('#app-ver').textContent(),'v72');
   const openQueue=async()=>{if(await page.locator('#remindRun').isHidden())await page.locator('#btn-reminders').click();await page.locator('#rr-body #ws-sec').waitFor();};
   const row=k=>page.locator(`#ws-sec .ws-q[data-kind=${k}]`);
 
@@ -75,7 +75,7 @@ const plan=(start,price,extra)=>({id:'s1',kind:'monthly',cycle:'monthly',name:''
   check('the Sent tick is stored in settings.wsSent per wholesaler and cycle, the badge drops to 3, and the tick is still there after a reload');
 
   // 5. Settings: "Remind a wholesaler" 0 turns the Renews soon statement off
-  await page.locator('#btn-settings').click();await page.locator('#s-ws-remind').waitFor();
+  await page.locator('#btn-settings').click();await page.locator('#s-show-all').click();/* v71: sections fold, open them all */await page.locator('#s-ws-remind').waitFor();
   assert.equal(await page.locator('#s-ws-remind').inputValue(),'3');
   await page.locator('#s-ws-remind').fill('0');await page.locator('[data-save-setting=wholesalers]').click();
   await until(async()=>(await doc('settings/main')).wsRemindDays===0,'wsRemindDays 0');
@@ -101,6 +101,6 @@ const plan=(start,price,extra)=>({id:'s1',kind:'monthly',cycle:'monthly',name:''
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no sideways scroll at ${w} ${scheme}`);}
   check('the statements fit at 390px and 1400px in light and dark with no sideways scroll');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'69',checks},null,2));console.log('wholesaler-statement-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'72',checks},null,2));console.log('wholesaler-statement-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

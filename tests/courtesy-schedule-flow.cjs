@@ -44,8 +44,8 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
   c=(await plan('cd1')).courtesy[2];assert.equal(c.to,null);assert.equal(c.from,'2027-02-24');check('every bill: Rs 100 off from 24 Feb with no end');
   assert.match(await det('cd1').locator('.courtesy-line').textContent(),/Courtesy discount:.*off the .*bill.*each bill from.*every bill from/);check('the plan shows a plain summary of its courtesy discounts');
   // remove asks first (the open form is also captured in both themes at 390px)
-  let d=await expand('cd1');await d.locator('[data-key="courtesy:s1"]').first().click();
-  {const f=d.locator('form.courtesy-form[data-sub=s1]');await f.locator('[name=tenure]').selectOption('n');await f.screenshot({path:path.join(out,'courtesy-form-light.png')});
+  let d=await expand('cd1');await d.locator('[data-key="courtesy:s1"]').first().click();await page.waitForTimeout(700);
+  {const f=page.locator('tr.detail[data-id="cd1"] form.courtesy-form[data-sub=s1]');await f.locator('[name=tenure]').selectOption('n');await f.screenshot({path:path.join(out,'courtesy-form-light.png')});
    await page.emulateMedia({colorScheme:'dark'});await page.waitForTimeout(300);await f.screenshot({path:path.join(out,'courtesy-form-dark.png')});await page.emulateMedia({colorScheme:'light'});}
   await d.locator('form.courtesy-form [data-act=courtesy-remove]').last().click();await d.locator('[data-act=courtesy-remove-yes]').click();
   await until(async()=>((await plan('cd1')).courtesy||[]).length===2,'courtesy removed');check('removing a courtesy discount asks Yes/Cancel and removes only that one');
@@ -69,6 +69,6 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR'});
   await page.screenshot({path:path.join(out,'courtesy-390.png'),fullPage:true});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.deepEqual(errors,[]);check('No sideways scroll and no unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'69',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'72',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

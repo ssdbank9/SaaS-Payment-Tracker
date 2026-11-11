@@ -16,10 +16,10 @@ const num=t=>Number(String(t).replace(/[^0-9.\-]/g,''));
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
-  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await stubWebFonts(ctx);await ctx.addInitScript(()=>{if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-11-25');});
+  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await stubWebFonts(ctx);await ctx.addInitScript(()=>{localStorage.setItem('pt-add-more','1');if(!localStorage.getItem('pt-today'))localStorage.setItem('pt-today','2026-11-25');});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v69');
+  assert.equal(await page.locator('#app-ver').textContent(),'v72');
   const api=async(method,pth,data)=>{const r=await ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};
   const doc=async p=>((await api('GET','/api/docs/'+p)).j||{}).data;
   const users=async()=>((await api('GET','/api/docs?prefix=users/')).j.docs||[]).map(x=>({id:(x.path||'').split('/')[1],...(x.data||x)}));
@@ -28,7 +28,7 @@ const num=t=>Number(String(t).replace(/[^0-9.\-]/g,''));
   const rate=(await doc('settings/main')).rate;assert.ok(rate>0,'the store has a default rate');
 
   // 1. Settings: a wholesaler and a product that renews on the 15th with its supplier cost
-  await page.locator('#btn-settings').click();await page.locator('#ws-add').click();
+  await page.locator('#btn-settings').click();await page.locator('#s-show-all').click();/* v71: sections fold */await page.locator('#ws-add').click();
   const ws=page.locator('#wsList .ws-row').last();await ws.locator('[data-w=name]').fill('Test Wholesaler A');await ws.locator('[data-w=phone]').fill('+880 1700 000001');
   await page.locator('[data-save-setting=wholesalers]').click();
   await until(async()=>((await doc('settings/main')).wholesalers||[]).length===1,'wholesaler saved');
@@ -129,7 +129,7 @@ const num=t=>Number(String(t).replace(/[^0-9.\-]/g,''));
   assert.match(await page.locator('#pkgBreak').textContent(),/By wholesaler[\s\S]*Test Wholesaler A[\s\S]*Test Wholesaler B/);
   check('the list filters to the wholesaler\'s two customers and Summary shows a By wholesaler table');
   const rb=page.locator('tr.row[data-id="'+b.id+'"]');await rb.click();const db=page.locator('tr.detail[data-id="'+b.id+'"]');await db.waitFor();
-  await db.locator('[data-key=edit]').first().click();await db.locator('select[name=wholesalerId]').selectOption('');await db.locator('form button[type=submit]',{hasText:'Save changes'}).click();
+  await db.locator('[data-key=edit]').first().click();if(await db.locator('[data-role=contact]').isHidden())await db.locator('[data-act=toggle-contact]').click();await db.locator('select[name=wholesalerId]').selectOption('');await db.locator('form button[type=submit]',{hasText:'Save changes'}).click();
   await until(async()=>!(await users()).find(u=>u.id===b.id).wholesalerId,'moved to direct');
   check('Edit user moves a customer back to direct');
 
@@ -139,6 +139,6 @@ const num=t=>Number(String(t).replace(/[^0-9.\-]/g,''));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#settings-close').click();
   await page.setViewportSize({width:1400,height:1000});await page.emulateMedia({colorScheme:'dark'});await page.locator('#btn-settings').click();await page.locator('#wsList').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'wholesaler-settings-1400-dark.png')});
   assert.deepEqual(errors,[]);check('No sideways scroll at 390px and no console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'69',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'72',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

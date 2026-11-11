@@ -10,7 +10,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);},sleep=ms=>new Promise(r=
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE,args:['--disable-gpu']});
  try{
-  const ctx=await browser.newContext({viewport:{width:1400,height:900},colorScheme:'light'});await stubWebFonts(ctx);await ctx.addInitScript(()=>localStorage.setItem('pt-today','2026-10-10'));
+  const ctx=await browser.newContext({viewport:{width:1400,height:900},colorScheme:'light'});await stubWebFonts(ctx);await ctx.addInitScript(() => {localStorage.setItem('pt-today','2026-10-10');localStorage.setItem('pt-edit-contact','1')});
   const page=await ctx.newPage();const errors=[],writes=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   page.on('request',r=>{if(['PUT','POST','PATCH','DELETE'].includes(r.method())&&r.url().includes('/api/'))writes.push(r.method()+' '+r.url().replace(base,''));});
   const api=async(method,pth,data)=>{const r=await ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};

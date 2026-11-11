@@ -15,7 +15,17 @@ const errors=[],checks=[];let browser,expectedFailure=false;
  const before=await doc('settings/main'),usersBefore=await(await ctx.request.get(base+'/api/docs?prefix=users/')).json();
  const save=k=>page.locator('[data-save-setting="'+k+'"]');const status=k=>page.locator('#setting-status-'+k);
  const check=n=>{checks.push(n);console.log('PASS '+n);};
- await page.locator('#btn-settings').click();assert.equal(await page.locator('[data-save-setting]').count(),19);check('All 19 general settings have adjacent focused saves and local statuses');
+  await page.locator('#btn-settings').click();assert.equal(await page.locator('[data-save-setting]').count(),19);
+  /* v71: the optional sections fold; Products is open by default */
+  assert.equal(await page.locator('#pkgList').isVisible(),true,'Products open by default');
+  assert.equal(await page.locator('#wsList').isVisible(),false,'Wholesalers folded by default');
+  await page.locator('#settingsPanel .block-head').filter({hasText:'Wholesalers'}).locator('.set-tog').first().click();
+  assert.equal(await page.locator('#wsList').isVisible(),true,'Wholesalers opens on its heading');
+  await page.reload();await page.waitForSelector('#app-ver');await page.waitForTimeout(1500);await page.locator('#btn-settings').click();await page.waitForTimeout(500);
+  assert.equal(await page.locator('#wsList').isVisible(),true,'the open section is remembered');
+  await page.locator('#s-show-all').click();await page.waitForTimeout(300);
+  check('Settings folds its optional sections (Products open by default, Wholesalers one tap away and remembered after a reload) and "Show all" opens every one');
+  check('All 19 general settings have adjacent focused saves and local statuses');
  await page.locator('#s-app-name').fill('Pending branding');await page.locator('#s-remind-lead').fill('99');
  const first=page.locator('#pkgList input[data-f=name]').first();const pid=await first.evaluate(el=>el.closest('.pkg-row').dataset.id);
  await first.fill('Renamed QA product');await save('packages').click();await assertStatus('packages',/Saved/);
