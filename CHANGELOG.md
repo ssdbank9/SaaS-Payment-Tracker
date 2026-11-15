@@ -2,6 +2,11 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v73 - 2026-11-15
+
+- Wholesalers can pay at the end of each cycle. Settings, Wholesalers has "Pays you: At the start / At the end of each cycle". For a wholesaler that pays at the end, each billing period of its customers is due the day after it ends (the Oct 15 - Nov 14 bill on Nov 15), so a period still running is not overdue: the list says "Due today", "Paid to Nov 14" or "Pays Dec 15", and the wholesaler statement asks only for the periods that have ended ("due soon" a few days before). Direct customers and other wholesalers are unchanged.
+- A yearly seat cost can follow the supplier's year. A yearly product whose cost is per Year has "Supplier year starts on" (blank = its Year starts on date). A new plan of it gets one cost line on the customer's join date for the rest of that supplier year, prorated by actual days when "Cost prorated by actual days" is chosen (for example $96 a year, joining Nov 15 for a year ending Jul 23: $66.02 plus PKR tax). The cost stays when the customer cancels, and the next year's cost is added only if the plan continues.
+
 ## v72 - 2026-11-09
 
 - Edit user now leads with the product start dates and supplier costs (the part you change) and folds the contact fields (name, email, joined on, WhatsApp, Telegram, notes, sold through) behind a "Contact details" row. The row remembers whether you left it open.
