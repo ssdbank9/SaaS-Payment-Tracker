@@ -32,7 +32,7 @@ const plan=(start,price,extra)=>({id:'s1',kind:'monthly',cycle:'monthly',name:''
    'users/d1':{name:'Dan Direct',phone:'923001234567',joinDate:'2026-10-20',subscriptions:[plan('2026-10-20',13)]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v76');
+  assert.equal(await page.locator('#app-ver').textContent(),'v77');
 
   // 1. the statement's Record payment opens the form: two bills due (ticked), the next bill not ticked, total $25
   if(await page.locator('#remindRun').isHidden())await page.locator('#btn-reminders').click();await page.locator('#rr-body #ws-sec').waitFor();
@@ -75,6 +75,6 @@ const plan=(start,price,extra)=>({id:'s1',kind:'monthly',cycle:'monthly',name:''
   await page.locator('#wspay-cancel').click();assert.equal(await dl.isVisible(),false);
   check('the End Payer heading in the customer list opens the same form (Bob ticked, the next bills of Ann and Cat unticked); it fits at 390px and 1400px in light and dark and closes with Not now');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'76',checks},null,2));console.log('wholesaler-pay-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'77',checks},null,2));console.log('wholesaler-pay-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

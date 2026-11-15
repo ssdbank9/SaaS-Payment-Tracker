@@ -2,6 +2,17 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v77 - 2026-11-15
+
+Fixes from the end-of-day test of v76:
+- Changing a plan's "Renews on" date keeps what was set on each bill (an agreed amount, a due date set by hand, a refund linked to a bill, a tier switch): the first bill keeps the first bill's settings, and so on. Before, a paid-up customer could turn overdue.
+- The wholesaler WhatsApp statement lists a bill due today even when an older bill of that customer was given a later due date, and it now includes one-time items still owed.
+- "Pays on day" refuses a number outside 1-31 with a message instead of clearing the pay day.
+- "Overdue since" names the day the bill was due, so a customer who started Nov 5 on the Oct 15 cycle reads "Overdue since Nov 5".
+- A new product without a cycle date takes its billing day from the first customer again (direct customers renew on their own start date since v75, which had left the product without a day).
+- Set bill no longer names a next bill after the plan's end.
+- The Owe money table fits a phone screen: the plan shows under the customer's name.
+
 ## v76 - 2026-11-15
 
 - Edit plan: "Renews on" has a new choice, "Another date I choose", with a "Bills run from" date. The customer's month then runs from that date (for example the 20th to the 19th) and each bill is due on it. The date can be changed again at any time; the bills are worked out again on the new date, recorded payments stay and fill them oldest first, and the supplier cost keeps the product's date.

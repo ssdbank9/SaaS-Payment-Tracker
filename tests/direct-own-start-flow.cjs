@@ -29,7 +29,7 @@ const norm=s=>String(s).replace(/\s+/g,' ').trim();
    'users/o2':{name:'Pete Prorated',phone:'923001234562',joinDate:'2026-10-26',subscriptions:[{id:'s1',kind:'monthly',cycle:'monthly',name:'',packageId:'pkg_cmax',currency:'USD',start:'2026-10-26',anchor:'2026-10-15',prorate:true,prices:[{from:'2026-10-26',price:15}],payments:[]}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v76');
+  assert.equal(await page.locator('#app-ver').textContent(),'v77');
 
   // 1. Owe money lists each unpaid bill with its period, due day and amount
   await page.locator('#payStrip [data-pf=owes]').click();await page.locator('#oweList table').waitFor();
@@ -78,6 +78,6 @@ const norm=s=>String(s).replace(/\s+/g,' ').trim();
     await page.screenshot({path:path.join(out,`owe-${w}-${scheme}.png`)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no sideways scroll at ${w} ${scheme}`);}
   check('no sideways scroll at 390px and 1400px in light and dark');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'76',checks},null,2));console.log('direct-own-start-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'77',checks},null,2));console.log('direct-own-start-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

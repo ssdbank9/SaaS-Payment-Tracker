@@ -24,7 +24,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   const byName=async n=>(await users()).find(d=>d.data.name===n);
   const row=async id=>(await page.locator('tr.row[data-id="'+id+'"]').innerText()).replace(/\s+/g,' ');
   const openAddForm=async()=>{if(await page.locator('#addPanel').isHidden())await page.locator('#btn-add').click();await page.locator('#addForm').waitFor();};
-  const addUser=async(name,pkg,start,choose,every)=>{await openAddForm();await page.locator('#a-pkg').selectOption(pkg);await page.locator('#a-name').fill(name);await page.locator('#a-start').fill(start);await page.locator('#a-price').fill('12000');
+  const addUser=async(name,pkg,start,choose,every,productDay)=>{await openAddForm();await page.locator('#a-pkg').selectOption(pkg);await page.locator('#a-name').fill(name);await page.locator('#a-start').fill(start);await page.locator('#a-price').fill('12000');if(productDay)await page.locator('#a-own').uncheck();/* v75: a direct customer renews on its own start date unless unticked */
     if(choose){await page.locator('#a-first input[value='+choose+']').check();if(every)await page.locator('#a-first [data-role=first-every]').selectOption(every);}
     await page.locator('#addForm button[type=submit]').click();await page.locator('#paymentDialog[open]').waitFor({timeout:15000});await page.locator('#payment-cancel').click();await page.waitForTimeout(800);};
 
@@ -38,14 +38,14 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   let t=await row(d.path.split('/')[1]);assert.match(t,/Rs 12,000 Overdue/);
   check('The first buyer\'s plan starts the product\'s own cycle on 10 Oct 2026 and is billed the full Rs 12,000 (not prorated)');
   await page.locator('tr.row[data-id="'+d.path.split('/')[1]+'"]').click();
-  assert.match((await page.locator('tr.detail[data-id="'+d.path.split('/')[1]+'"]').innerText()).replace(/\s+/g,' '),/yearly · PKR · own cycle from Oct 10/i);
+  assert.match((await page.locator('tr.detail[data-id="'+d.path.split('/')[1]+'"]').innerText()).replace(/\s+/g,' '),/yearly · PKR · renews every Oct 10 \(its own start date\)/i);
   await page.locator('tr.row[data-id="'+d.path.split('/')[1]+'"]').click();
-  check('The plan card says it follows the product\'s own cycle, renewing on the 10th each year');
+  check('The plan card says it renews every Oct 10, its own start date (v75), and that date is the product\'s own cycle');
 
   /* a later customer is not asked and is prorated against the product's cycle */
   await openAddForm();await page.locator('#a-pkg').selectOption('pkg_nt');
   assert.equal(await page.locator('#a-first [data-role=first-sale]').isHidden(),true);
-  await addUser('Second Buyer','pkg_nt','2027-01-15');
+  await addUser('Second Buyer','pkg_nt','2027-01-15',null,null,true);
   d=await byName('Second Buyer');s=d.data.subscriptions[0];assert.equal(s.anchor,'2026-10-10');
   t=await row(d.path.split('/')[1]);assert.match(t,/Rs 8,811/);
   check('A later customer (15 Jan 2027) joins the product\'s cycle and pays Rs 8,811 for 268 of its 365 days');
@@ -81,6 +81,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   check('No sideways scroll at 390px');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'76',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'77',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -36,7 +36,7 @@ const norm=s=>String(s).replace(/\s+/g,' ').trim();
    'users/o1':{name:'Olga Own',phone:'923001234561',joinDate:'2026-10-26',subscriptions:[plan('2026-10-26','2026-10-26',{ownStart:true,accountCost:{entries:[{amount:15,currency:'USD',from:'2026-10-26',paidIn:'USD',rate:null,supplier:''}],first:'prorated30',frequency:'monthly',anchor:'2026-10-15',overrides:{}}})]},
   },replace:[]});
   await reload();
-  assert.equal(await page.locator('#app-ver').textContent(),'v76');
+  assert.equal(await page.locator('#app-ver').textContent(),'v77');
 
   // 1. Settings: type 20 in Start Seller's "Pays on day" and save
   assert.match(await pill('w1'),/^Overdue since Oct 15/);
@@ -79,6 +79,6 @@ const norm=s=>String(s).replace(/\s+/g,' ').trim();
     await page.screenshot({path:path.join(out,`pay-day-${w}-${scheme}.png`)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no sideways scroll at ${w} ${scheme}`);}
   check('no sideways scroll at 390px dark and 1400px light');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'76',checks},null,2));console.log('pay-day-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'77',checks},null,2));console.log('pay-day-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
