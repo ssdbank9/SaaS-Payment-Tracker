@@ -2,6 +2,10 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v74 - 2026-11-15
+
+- Record one payment from a wholesaler. "Record payment" on a wholesaler's Queue statement, and on its heading in the customer list, opens one form listing each of its customers' bills: the bills due now are ticked, the next bill is listed unticked. Change an amount if the wholesaler paid a different sum for a bill, set the date received and an optional note, and save: each ticked bill is recorded on that customer's plan (one receipt per period when the amount is exact) with the note "via <wholesaler>", so every customer shows paid.
+
 ## v73 - 2026-11-15
 
 - Wholesalers can pay at the end of each cycle. Settings, Wholesalers has "Pays you: At the start / At the end of each cycle". For a wholesaler that pays at the end, each billing period of its customers is due the day after it ends (the Oct 15 - Nov 14 bill on Nov 15), so a period still running is not overdue: the list says "Due today", "Paid to Nov 14" or "Pays Dec 15", and the wholesaler statement asks only for the periods that have ended ("due soon" a few days before). Direct customers and other wholesalers are unchanged.

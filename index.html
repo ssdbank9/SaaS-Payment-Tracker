@@ -517,6 +517,14 @@ label.f.chk input{width:15px;height:15px;margin:0}
 .rec-form .rec-note,.rec-form .form-actions,.rec-form .d{grid-column:1/-1}
 .payment-dialog.panel{color:var(--ink);width:min(560px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);margin:auto;padding:18px;overflow-y:auto;box-shadow:var(--shadow)}
 .payment-dialog::backdrop{background:rgba(0,0,0,.45)}
+/* v74: one payment from a wholesaler, split over its customers' bills */
+.wspay-lines{display:grid;gap:8px;margin:10px 0}
+.wspay-line{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
+.wspay-line .wl-who{font-weight:600;overflow-wrap:anywhere}
+.wspay-line .wl-what{grid-column:2/4;overflow-wrap:anywhere}
+.wspay-line .wl-amt{display:flex;gap:6px;align-items:center;white-space:nowrap}
+.wspay-line .wl-amt input{width:6.5em}
+.wspay-line[data-due="0"]{border-style:dashed}
 .payment-dialog .panel-head{align-items:flex-start}
 .payment-dialog .panel-head h3{font-size:18px}
 .payment-dialog .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -739,7 +747,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v73</span>
+      <span class="small muted num" id="app-ver" title="App version">v74</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
@@ -1234,6 +1242,18 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     <p class="payment-preview" id="payment-preview" aria-live="polite"></p>
     <span class="err" id="payment-error" role="alert"></span>
     <div class="form-actions"><button class="btn primary" id="payment-save" type="submit">Record payment</button><button class="link" id="payment-cancel" type="button">Not now</button></div>
+  </form>
+</dialog>
+
+<dialog class="panel payment-dialog" id="wsPayDialog" aria-labelledby="wspay-title">
+  <div class="panel-head"><div><h3 id="wspay-title">Record wholesaler payment</h3><p class="small muted" id="wspay-who"></p></div><button class="link" id="wspay-close" type="button" aria-label="Close wholesaler payment form">Close</button></div>
+  <form id="wsPayForm" novalidate>
+    <p class="small">Tick the bills this payment covers. Each bill is recorded on that customer's plan, dated the day you received the money. Change an amount if the wholesaler paid a different sum for that bill.</p>
+    <div class="wspay-lines" id="wspay-lines"></div>
+    <div class="form-grid"><label class="f">Received on<input id="wspay-date" type="date" required></label><label class="f payment-wide">Note <span class="muted">(optional)</span><input id="wspay-note" type="text" maxlength="100" placeholder="e.g. USDT transaction"></label></div>
+    <p class="payment-preview" id="wspay-total" aria-live="polite"></p>
+    <span class="err" id="wspay-error" role="alert"></span>
+    <div class="form-actions"><button class="btn primary" id="wspay-save" type="submit">Record payment</button><button class="link" id="wspay-cancel" type="button">Not now</button></div>
   </form>
 </dialog>
 
@@ -2288,7 +2308,7 @@ function wsStatementText(r,today){const n=r.lines.length,cur=r.lines[0].s.curren
   const body=r.lines.map(l=>`- ${displayName(l.u)} · ${planLabel(l.s)} · ${fmtAmt(l.amount,l.s.currency)}${r.kind==='soon'?' · due '+fmtD(l.date):''}`).join('\n');
   return `${head}\n${body}\nTotal: ${ownText(r.sum,cur)}.\n${wsPayLine()}\n${appName()}`;}
 function wsRowHTML(r,today){const w=r.w,text=wsStatementText(r,today),s=wsSentOf(r),n=r.lines.length,days=wsRemindDays();
-  return `<div class="qrow ws-q" data-ws="${esc(w.id)}" data-key="${esc(r.key)}" data-kind="${r.kind}" data-sent="${s?'1':'0'}"><div class="qhead"><span class="who">${esc(w.name)}</span><span class="due">${r.kind==='due'?'Due now':`Renews within ${days} day${days===1?'':'s'}`} · ${n} account${n===1?'':'s'} · <b>${esc(ownText(r.sum,r.lines[0].s.currency))}</b></span><span class="remind-pair">${w.phone?`<a class="btn sm wa" ${waAttrs(waLinkTo(w.phone,text))} data-ch="whatsapp" title="${waTitle('statement')}">WhatsApp</a>`:`<button class="btn sm" type="button" disabled title="Add the wholesaler's WhatsApp number in Settings">add phone</button>`}<button class="btn sm" type="button" data-act="wscopy" title="Copy the statement">Copy</button></span><label class="chk" title="Records the channel and time; saved per wholesaler and cycle"><input type="checkbox" data-act="wssent" data-ws="${esc(w.id)}" data-key="${esc(r.key)}"${s?' checked':''}>Sent${s?` <span class="when">${esc(fmtWhen(s.at)||fmtD(s.at.slice(0,10)))} · ${esc(s.channel)}</span>`:''}</label></div><pre class="qmsg">${esc(text)}</pre></div>`;}
+  return `<div class="qrow ws-q" data-ws="${esc(w.id)}" data-key="${esc(r.key)}" data-kind="${r.kind}" data-sent="${s?'1':'0'}"><div class="qhead"><span class="who">${esc(w.name)}</span><span class="due">${r.kind==='due'?'Due now':`Renews within ${days} day${days===1?'':'s'}`} · ${n} account${n===1?'':'s'} · <b>${esc(ownText(r.sum,r.lines[0].s.currency))}</b></span><span class="remind-pair">${w.phone?`<a class="btn sm wa" ${waAttrs(waLinkTo(w.phone,text))} data-ch="whatsapp" title="${waTitle('statement')}">WhatsApp</a>`:`<button class="btn sm" type="button" disabled title="Add the wholesaler's WhatsApp number in Settings">add phone</button>`}<button class="btn sm" type="button" data-act="wscopy" title="Copy the statement">Copy</button>${r.kind==='due'?`<button class="btn sm primary" type="button" data-act="wspay" data-ws="${esc(w.id)}" title="Record one payment from ${esc(w.name)} for these bills">Record payment</button>`:''}</span><label class="chk" title="Records the channel and time; saved per wholesaler and cycle"><input type="checkbox" data-act="wssent" data-ws="${esc(w.id)}" data-key="${esc(r.key)}"${s?' checked':''}>Sent${s?` <span class="when">${esc(fmtWhen(s.at)||fmtD(s.at.slice(0,10)))} · ${esc(s.channel)}</span>`:''}</label></div><pre class="qmsg">${esc(text)}</pre></div>`;}
 /* ---------- v20 queue: today's stage from the date; one row per user still to message, with the rendered text, channel buttons and a Sent tick ---------- */
 function queueRows(today,st){const cycle=st.cycle;const rows=[];
   for(const id in state.users){const u=state.users[id];if(u.cancel||wsOf(u))continue;/* v67 */const a=analyze(u,today);const card=userCard(u,a,cycle,today);/* v68 */if(!card.due)continue;const rs=remState(u,cycle);if(rs.skipped)continue;
@@ -2939,6 +2959,38 @@ async function savePaymentDialog(e){e.preventDefault();const c=paymentContext();
   else ok=await recordPayment(d.id,s.id,list);
   d.busy=false;if(ok){$('#paymentDialog').close();ui.paymentDraft=null;}else{$('#payment-error').textContent='The payment was not saved. Your entries are kept here; try again.';refreshPaymentPreview();}
 }
+/* v74: one payment from a wholesaler covering its customers' bills. Lines = each plan of the wholesaler's customers with money due now (ticked)
+   or the next bill (not ticked). Saving records, per ticked line, the same receipts as Record payment (one per period when the amount is exact,
+   else one receipt of that amount), dated Received on, with the note "via <wholesaler>". Nothing is stored on the wholesaler itself. */
+function wsPayLines(wsId,today){const out=[];
+  for(const uid in state.users){const u=state.users[uid];if(u.wholesalerId!==wsId)continue;const a=analyze(u,today);
+    for(const s of u.subscriptions||[]){const sa=a.sa[s.id];if(!sa)continue;
+      if(s.kind!=='monthly'){if(sa.remaining>0){const t=paymentTarget(s,sa);if(t)out.push({uid,sid:s.id,k:null,owed:t.owed,cur:s.currency,due:!s.due||s.due<=today,what:'left on '+(s.name||'this item')});}continue;}
+      const od=(sa.periods||[]).filter(p=>(p.state==='unpaid'||p.state==='partial')&&(p.due||p.es)<=today);
+      let k=null,due=false;if(od.length){k=od[od.length-1].k;due=true;}else if(sa.nextSt&&sa.status!=='ended'&&!(s.end&&sa.nextSt>s.end)&&sa.nextAmount>0)k=sa.kPaid;
+      if(k==null)continue;const t=paymentTarget(s,sa,k);if(!t||!(t.owed>0))continue;
+      const dueOn=(sa.periods.find(p=>p.k===t.parts[t.parts.length-1].k)||{}).due;
+      out.push({uid,sid:s.id,k,owed:t.owed,cur:s.currency,due,what:'for '+t.parts.map(p=>fmtCycle(pFrom(p),p.en)).join(', ')+(!due&&dueOn?' · due '+fmtD(dueOn):'')});}}
+  return out.sort((x,y)=>(y.due-x.due)||displayName(state.users[x.uid]).localeCompare(displayName(state.users[y.uid])));}
+function openWsPay(wsId){if(!state.settingsLoaded)return;const w=wsById(wsId);if(!w)return;const today=todayISO(),lines=wsPayLines(wsId,today);
+  ui.wsPay={ws:wsId,lines,busy:false};$('#wsPayForm').reset();$('#wspay-error').textContent='';$('#wspay-who').textContent=w.name;$('#wspay-date').value=today;
+  $('#wspay-lines').innerHTML=lines.map((l,i)=>{const u=state.users[l.uid],s=u.subscriptions.find(x=>x.id===l.sid);return `<label class="wspay-line" data-i="${i}" data-due="${l.due?1:0}"><input type="checkbox" data-wl="on"${l.due?' checked':''} aria-label="Include ${esc(displayName(u))}"><span class="wl-who">${esc(displayName(u))} · ${esc(planLabel(s))}</span><span class="wl-amt"><input type="number" min="0" step="0.01" inputmode="decimal" data-wl="amt" value="${l.owed}" aria-label="Amount for ${esc(displayName(u))}"> ${esc(l.cur)}</span><span class="wl-what small muted">${esc(l.what)}${l.due?'':' · not due yet'}</span></label>`;}).join('')||'<p class="small muted">No bills are owed by this wholesaler\'s customers.</p>';
+  refreshWsPay();const dl=$('#wsPayDialog');if(!dl.open)dl.showModal();}
+function wsPayPicked(){const d=ui.wsPay;if(!d)return [];const out=[];for(const el of document.querySelectorAll('#wspay-lines .wspay-line')){const l=d.lines[+el.dataset.i];if(!l||!el.querySelector('[data-wl=on]').checked)continue;const raw=el.querySelector('[data-wl=amt]').value,n=Math.round(Number(raw)*100)/100;out.push({l,n,ok:validAmt(raw)&&n>0});}return out;}
+function refreshWsPay(){const d=ui.wsPay;if(!d)return;const P=wsPayPicked(),S=newSum();for(const x of P)if(x.ok)sumAdd(S,x.n,x.l.cur,null);const bad=P.some(x=>!x.ok),ok=P.length&&!bad&&isDateKey($('#wspay-date').value);
+  $('#wspay-total').textContent=P.length?(bad?'Enter an amount above zero for each ticked bill.':`${P.length} bill${P.length===1?'':'s'} · total received ${ownText(S,P[0].l.cur)}.`):'Tick at least one bill.';
+  const b=$('#wspay-save');b.disabled=d.busy||!ok;b.textContent=d.busy?'Saving…':ok?'Record '+ownText(S,P[0].l.cur):'Record payment';}
+function closeWsPay(){if(ui.wsPay&&ui.wsPay.busy)return;$('#wsPayDialog').close();ui.wsPay=null;}
+async function saveWsPay(e){e.preventDefault();const d=ui.wsPay;if(!d||d.busy)return;refreshWsPay();if($('#wspay-save').disabled)return;const w=wsById(d.ws);const P=wsPayPicked(),date=$('#wspay-date').value,note=$('#wspay-note').value.trim(),today=todayISO();
+  const tag='via '+(w?w.name:'wholesaler')+(note?' · '+note:'');const byU={};for(const x of P)(byU[x.l.uid]=byU[x.l.uid]||[]).push(x);
+  d.busy=true;refreshWsPay();let n=0,fail=0;const S=newSum();
+  for(const uid in byU){if(!state.users[uid]){fail+=byU[uid].length;continue;}const u=clone(state.users[uid]),a=analyze(state.users[uid],today);
+    for(const x of byU[uid]){const s=u.subscriptions.find(z=>z.id===x.l.sid);if(!s){fail++;continue;}const sa=a.sa[s.id];const t=s.kind==='monthly'?paymentTarget(s,sa,x.l.k):paymentTarget(s,sa);
+      const list=t&&t.parts.length&&Math.abs(x.n-t.owed)<0.005?recPayments(s,t,date):[{date,amount:x.n,currency:s.currency,rate:null,note:t&&t.parts.length?'for '+t.parts.map(p=>fmtCycle(pFrom(p),p.en)).join(', '):''}];
+      s.payments=(s.payments||[]).concat(list.map(p=>{const q=withLockedRate(s,p);return {id:newId('p'),date:q.date,amount:q.amount,currency:q.currency,rate:q.rate||null,note:(q.note?q.note+' · ':'')+tag};}));sumAdd(S,x.n,s.currency,null);n++;}
+    if(!(await persistUser(uid,u))){fail+=byU[uid].length;n-=byU[uid].length;}}
+  d.busy=false;if(fail){$('#wspay-error').textContent=`${fail} bill${fail===1?' was':'s were'} not saved${n?` (${n} saved)`:''}. Close the form and check the customers before trying again.`;refreshWsPay();return;}
+  $('#wsPayDialog').close();ui.wsPay=null;toast(`${n} bill${n===1?'':'s'} recorded from ${w?w.name:'the wholesaler'} · ${ownText(S,'USD')}.`);}
 let lastTbodyHTML='',tbodyDirty=true,tbodyObs=null;
 const RM_WHAT={'courtesy-remove':'this courtesy discount','pay-remove':'this receipt','refund-remove':'this refund','price-remove':'this price','tier-remove':'this tier change'};
 function rmConfirmHTML(A,d){const attrs=['sub','pay','ref','from'].filter(k=>d[k]!==undefined).map(k=>`data-${k}="${esc(d[k])}"`).join(' ');return `<span class="small rm-confirm">Remove ${RM_WHAT[A]}? <button class="link sm danger" type="button" data-act="${A}-yes" ${attrs}>Yes, remove</button> <button class="link sm" type="button" data-act="rm-no">Cancel</button></span>`;}
@@ -2970,7 +3022,7 @@ function renderTable(){
   const list=grouping?rows.slice().sort((x,y)=>gOrder.indexOf(gKey(x))-gOrder.indexOf(gKey(y))):rows;let lastG=null;
   for(const r of list){
     if(grouping){const k=gKey(r);if(k!==lastG){lastG=k;const grp=list.filter(x=>gKey(x)===k);let owe=newSum();for(const x of grp)owe=sumMerge(owe,x.a.balance);const w=wsById(k);
-      html+=`<tr class="grp" data-ws="${esc(k||'direct')}"><td colspan="10"><b>${w?esc(w.name):'Direct'}</b> · ${grp.length} customer${grp.length===1?'':'s'}${owe.n?` · <span class="grp-owe">owes ${esc(ownText(owe,'PKR'))}</span>`:' · nothing owed'}${w&&w.phone?` · <span class="muted">WhatsApp ${esc(fmtPhone(w.phone))}</span>`:''}</td></tr>`;}}
+      html+=`<tr class="grp" data-ws="${esc(k||'direct')}"><td colspan="10"><b>${w?esc(w.name):'Direct'}</b> · ${grp.length} customer${grp.length===1?'':'s'}${owe.n?` · <span class="grp-owe">owes ${esc(ownText(owe,'PKR'))}</span>`:' · nothing owed'}${w&&w.phone?` · <span class="muted">WhatsApp ${esc(fmtPhone(w.phone))}</span>`:''}${w?` · <button class="link sm" type="button" data-act="wspay" data-ws="${esc(w.id)}">Record payment</button>`:''}</td></tr>`;}}
     const {u,a,id}=r;const exp=ui.expanded===id;const late=a.status==='overdue';const reductions=billReductions(u,a,today);
     const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):(a.planParts.length&&!u.cancel?'nothing yet':'—');
     const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?`<span class="muted">paid to ${esc(fmtD(a.paidThrough))}</span>`:'<span class="muted">—</span>');
@@ -4076,6 +4128,10 @@ function bind(){
   ['#start-date','#start-prorate','#start-payment','#start-apply'].forEach(sel=>$(sel).addEventListener('input',refreshStartPreview));
   $('#payment-set-bill').addEventListener('click',()=>{const c=paymentContext();if(!c||c.d.busy||c.s.kind!=='monthly')return;const start=pStart(c.s,Number($('#payment-month').value));closePaymentDialog();openBillDialog(c.d.id,c.s.id,start);});
   $('#paymentForm').addEventListener('submit',savePaymentDialog);
+  /* v74: wholesaler payment */document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-act="wspay"]');if(!b)return;e.preventDefault();e.stopPropagation();openWsPay(b.dataset.ws);},true);
+  $('#wsPayForm').addEventListener('submit',saveWsPay);['#wspay-close','#wspay-cancel'].forEach(sel=>$(sel).addEventListener('click',closeWsPay));
+  $('#wsPayDialog').addEventListener('cancel',e=>{if(ui.wsPay&&ui.wsPay.busy)e.preventDefault();else ui.wsPay=null;});
+  ['input','change'].forEach(ev=>$('#wsPayForm').addEventListener(ev,refreshWsPay));
   ['#payment-close','#payment-cancel'].forEach(sel=>$(sel).addEventListener('click',closePaymentDialog));
   $('#paymentDialog').addEventListener('cancel',e=>{if(ui.paymentDraft&&ui.paymentDraft.busy)e.preventDefault();else ui.paymentDraft=null;});
   $('#payment-account').addEventListener('change',()=>{const c=paymentContext();if(!c||c.d.busy)return;c.d.sid=$('#payment-account').value;const next=paymentContext();$('#payment-currency').value=next.s.currency;$('#payment-rate').value='';fillPaymentMonths();paymentAutoAmount();});
