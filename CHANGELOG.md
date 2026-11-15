@@ -2,6 +2,11 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v76 - 2026-11-15
+
+- Edit plan: "Renews on" has a new choice, "Another date I choose", with a "Bills run from" date. The customer's month then runs from that date (for example the 20th to the 19th) and each bill is due on it. The date can be changed again at any time; the bills are worked out again on the new date, recorded payments stay and fill them oldest first, and the supplier cost keeps the product's date.
+- Settings, Wholesalers: "Pays on day" (1-31). Every bill of that wholesaler's customers is then due on that day of the month: after the cycle starts, or after it ends for a wholesaler that pays at the end (Nikhil on the 20th: the Oct 15 - Nov 14 bill is due Nov 20). Blank keeps the cycle date. A customer on a date of their own keeps it, and Set bill still changes one bill's due date.
+
 ## v75 - 2026-11-15
 
 - Direct customers pay from the day they start. Add user, Add plan and Quick add now tick "Renews on its own start date" for a direct customer (joined Oct 26: bills Oct 26 - Nov 25, then the 26th each month) and untick it when a wholesaler is chosen, so a wholesaler's customers stay on the product's date. Existing plans are not changed.
