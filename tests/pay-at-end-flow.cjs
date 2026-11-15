@@ -37,7 +37,7 @@ const yearCost={frequency:'yearly',anchor:'2026-07-24',first:'prorated',entries:
    'users/y1':{name:'Year Seat',phone:'923001234568',joinDate:'2026-11-15',subscriptions:[{id:'s1',kind:'monthly',cycle:'yearly',name:'',packageId:'pkg_g',currency:'PKR',start:'2026-11-15',end:'2027-07-23',anchor:'2026-11-15',ownStart:true,prorate:false,paymentEvery:1,prices:[{from:'2026-11-15',price:48000}],payments:[{id:'p2',date:'2026-11-15',amount:4000,currency:'PKR',rate:null,note:''}],accountCost:yearCost}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v77');
+  assert.equal(await page.locator('#app-ver').textContent(),'v78');
   const pill=async id=>norm(await page.locator(`#tbody tr.row[data-id=${id}] .m-st`).first().textContent());
 
   // 1. statuses: an end-of-cycle wholesaler's customer owes the Oct 15 - Nov 14 period on Nov 15, not since its start
@@ -96,6 +96,6 @@ const yearCost={frequency:'yearly',anchor:'2026-07-24',first:'prorated',entries:
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no sideways scroll at ${w} ${scheme}`);}
   check('Settings fits at 390px and 1400px in light and dark with no sideways scroll');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'77',checks},null,2));console.log('pay-at-end-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'78',checks},null,2));console.log('pay-at-end-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

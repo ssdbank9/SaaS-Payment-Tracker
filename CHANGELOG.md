@@ -2,6 +2,14 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v78 - 2026-11-16
+
+The first step of the new layout:
+- The app now opens on tabs: Today, Customers, Reminders, Money and More. On a phone they sit in a bar at the bottom of the screen; on a computer in a bar on the left.
+- Today shows this month's Collected, Costs and Net (the same numbers as the Summary for This month), who owes money now with a Record button for each bill (a wholesaler's customers are one line that opens the wholesaler payment form), what falls due in the next 7 days, and how many reminders are waiting.
+- Customers holds the customer list, Reminders the Queue, Money the Summary, charts, Payments, Analytics and costs, and More holds Settings, Search, Import / export and Sign out.
+- Nothing about the money or the saved data changed. "Use the old layout" under More brings back the one long page; "Try the new layout" at the top of that page switches back.
+
 ## v77 - 2026-11-15
 
 Fixes from the end-of-day test of v76:

@@ -41,7 +41,7 @@ const norm=s=>String(s).replace(/\s+/g,' ').trim();
    'users/f1':{name:'First Fresh',phone:'923001234564',joinDate:'2026-10-10',subscriptions:[{id:'s1',kind:'monthly',cycle:'yearly',name:'',packageId:'pkg_new',currency:'PKR',start:'2026-10-10',anchor:'2026-10-10',ownStart:true,prorate:true,paymentEvery:12,prices:[{from:'2026-10-10',price:12000}],payments:[]}]},
   },replace:[]});
   await reload();
-  assert.equal(await page.locator('#app-ver').textContent(),'v77');
+  assert.equal(await page.locator('#app-ver').textContent(),'v78');
 
   // 1. "Overdue since" is the bill's due day
   assert.match(await pill('c3'),/^Overdue since Nov 5/);assert.match(await pill('r1'),/^Paid to Nov 25/);assert.match(await pill('r2'),/^Pays Nov 30/);
@@ -96,6 +96,6 @@ const norm=s=>String(s).replace(/\s+/g,' ').trim();
     await page.screenshot({path:path.join(out,`owe-${w}-${scheme}.png`)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no sideways scroll at ${w} ${scheme}`);}
   check('the Owe money table fits 390px without swiping (plan under the name); no sideways scroll at 390 dark and 1400 light');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'77',checks},null,2));console.log('review-v77-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'78',checks},null,2));console.log('review-v77-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
