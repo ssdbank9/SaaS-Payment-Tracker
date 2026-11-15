@@ -330,6 +330,7 @@ td.who .row-start,td.who .row-bill{display:block;margin-top:6px;min-height:44px;
 /* v54: who owes / due soon / paid up; one compact line per customer on a phone; Cancel plan; the folded summary */
 .pay-strip{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
 .pay-strip[hidden]{display:none}
+.owe-list{margin:0 0 12px}.owe-list[hidden]{display:none}.owe-list h4{margin:0 0 6px;font-size:14px}.owe-list td.num,.owe-list th.num{text-align:right;white-space:nowrap}.owe-list td.when{white-space:nowrap}
 .ps-btn{display:inline-flex;align-items:baseline;gap:6px;min-height:40px;padding:6px 12px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
 .ps-btn b{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
 .ps-btn .ps-s{font-size:12px;font-family:var(--mono);color:var(--ink-2)}
@@ -747,7 +748,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v74</span>
+      <span class="small muted num" id="app-ver" title="App version">v75</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
@@ -977,6 +978,7 @@ table.costs td.cat{color:var(--ink-2)}
 
   <!-- v54: who owes, who is due soon, who is paid up; each button filters the list -->
   <div class="pay-strip" id="payStrip" role="group" aria-label="Show customers by payment" hidden></div>
+  <div class="owe-list" id="oweList" hidden></div><!-- v75: who owes, for which period -->
   <div class="toolbar">
     <input class="search" id="search" type="search" placeholder="Search name, email, plan or notes" aria-label="Search users">
     <button class="btn" type="button" id="btn-filter" aria-pressed="false">Hasn't paid</button>
@@ -1264,10 +1266,11 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     <div class="form-grid">
       <label class="f payment-wide">Account<select id="bill-account"></select></label>
       <label class="f payment-wide">Billing period<select id="bill-period"></select></label>
-      <label class="f payment-wide">Charge for this bill<select id="bill-mode"><option value="amount">Agreed amount for this bill</option><option value="normal">Full normal charge</option><option value="days">Charge for selected service dates</option><option value="computed">Use existing automatic calculation</option></select></label>
+      <label class="f payment-wide">Charge for this bill<select id="bill-mode"><option value="keep">Keep the charge as it is</option><option value="amount">Agreed amount for this bill</option><option value="normal">Full normal charge</option><option value="days">Charge for selected service dates</option><option value="computed">Use existing automatic calculation</option></select></label>
       <label class="f" id="bill-from-wrap" hidden>Access from (inclusive)<input id="bill-from" type="date"></label>
       <label class="f" id="bill-to-wrap" hidden>Access through (inclusive)<input id="bill-to" type="date"></label>
       <label class="f" id="bill-amount-wrap"><span id="bill-amount-label">Agreed bill amount</span><input id="bill-amount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <label class="f" id="bill-due-wrap">Payment due on <span class="muted" id="bill-due-def"></span><input id="bill-due" type="date"></label>
       <label class="f payment-wide">Has the money been received?<select id="bill-settlement"><option value="keep">Keep recorded payments as they are</option><option value="pending">No new payment — leave the amount owing</option><option value="new">Yes — record money received</option><option value="edit">Yes — correct an existing receipt</option></select></label>
       <label class="f payment-wide" id="bill-receipt-wrap" hidden>Receipt to correct<select id="bill-receipt"></select></label>
       <label class="f" id="bill-cash-wrap" hidden><span id="bill-cash-label">Actual amount received</span><input id="bill-cash" type="number" min="0" step="0.01" inputmode="decimal"></label>
@@ -1398,7 +1401,7 @@ document.addEventListener('change',e=>{const r=e.target;if(!r||!r.closest||!r.cl
 function syncFirstSale(root,pid){const box=root&&root.querySelector('[data-role=first-sale]');if(!box)return;const need=needsFirstChoice(pid);if(box.hidden===need)box.querySelectorAll('input[type=radio]').forEach(r=>{r.checked=false;});box.hidden=!need;syncFirstBill(root);}
 function pkgOwnAnchor(pid){let a='';for(const id in state.users)for(const s of state.users[id].subscriptions||[])if(s.kind==='monthly'&&s.packageId===pid&&isDateKey(s.anchor)&&!s.ownStart&&(!a||s.anchor<a))a=s.anchor;return a;}
 /* v47: the "Renews on" choice of a plan: its own start date (ownStart), a product's own cycle (anchor from the product), or the shared billing day */
-function setRenewOn(s,how){if(s.kind!=='monthly')return;if(how==='own'){s.ownStart=true;s.anchor=s.start;}else if(how==='shared'){delete s.ownStart;delete s.anchor;}else if(how==='product'){const a=pkgAnchorFor(pkgById(s.packageId),s.start);if(a){delete s.ownStart;s.anchor=a;}}/* v63: onto the product's calendar */}
+function setRenewOn(s,how){if(s.kind!=='monthly')return;if(s.accountCost&&!isDateKey(s.accountCost.anchor))s.accountCost.anchor=calOf(s).a;/* v75: moving the customer's renewal day does not move the supplier cost's day */if(how==='own'){s.ownStart=true;s.anchor=s.start;}else if(how==='shared'){delete s.ownStart;delete s.anchor;}else if(how==='product'){const a=pkgAnchorFor(pkgById(s.packageId),s.start);if(a){delete s.ownStart;s.anchor=a;}}/* v63: onto the product's calendar */}
 function renewOnText(s){if(!isDateKey(s.anchor))return '';const d=+s.anchor.slice(8,10);return s.ownStart?(subCycle(s)==='yearly'?'renews every '+MONTHS[+s.anchor.slice(5,7)-1]+' '+d+' (its own start date)':'renews on the '+ordinal(d)+' of each month (its own start date)'):'own cycle from '+fmtD(s.anchor);}
 /* v51: the product's own calendar boundary on or before a plan start (cycleStart, else the v50 renewDay); '' when the product has none */
 function calAnchorFor(c,m,start){let j=Math.floor(((+start.slice(0,4)-c.a.slice(0,4))*12+(+start.slice(5,7)-c.a.slice(5,7)))/m),g=0;while(cycleAtC(c,(j+1)*m)<=start&&g++<40)j++;while(cycleAtC(c,j*m)>start&&g++<80)j--;return cycleAtC(c,j*m);}/* v63: the calendar boundary on or before a date */
@@ -1650,6 +1653,8 @@ function normalizeUser(b,id){
     if(Array.isArray(s.courtesy)){const cl=[];for(const c of s.courtesy){const amt=Number(c&&c.amount);if(!(amt>0))continue;const e={id:String(c.id||newId('c')),amount:Math.round(amt*100)/100,note:String(c.note||'').slice(0,140),at:String(c.at||'').slice(0,10)};if(kind==='monthly'){if(!isDateKey(c.from))continue;e.from=c.from;e.to=isDateKey(c.to)?c.to:null;}cl.push(e);}if(cl.length)sub.courtesy=cl;}
     /* v54: why a plan was ended with Cancel plan; absent = none */
     if(kind==='monthly'&&sub.end&&s.endReason)sub.endReason=String(s.endReason).slice(0,140);
+    /* v75: payment due dates set by hand per bill {periodStart: date}; absent = the usual day */
+    if(kind==='monthly'&&s.dueOn&&typeof s.dueOn==='object'){const o={};for(const k in s.dueOn)if(isDateKey(k)&&isDateKey(s.dueOn[k]))o[k]=s.dueOn[k];if(Object.keys(o).length)sub.dueOn=o;}
     u.subscriptions.push(sub);
   }
   return u;
@@ -1690,7 +1695,7 @@ function analyzeMonthly(s,today,atEnd){
   const curIdx=periodIndexAt(s,today);
   const periods=[];let credit=paid,k=0,kPaid=0;
   while(active(k)&&k<2400){
-    const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const pf=periodFull(s,st,es);const full=pf.full;const due=late?addDays(en,1):es;/* v73 */
+    const st=pStart(s,k),en=addDays(pStart(s,k+1),-1);const es=st<s.start?s.start:st;const pf=periodFull(s,st,es);const full=pf.full;const dueSet=!!(s.dueOn&&isDateKey(s.dueOn[st]));const due=dueSet?s.dueOn[st]:late?addDays(en,1):es;/* v73; v75: or the date set by hand */
     const total=dayDiff(st,en)+1,days=dayDiff(es,en)+1;const prorated=k===0&&s.prorate!==false&&es>st&&days<total;
     const waived=k===0&&s.waiveFirst===true&&es>st;const pa=prorateCalc(s,full,days,total);const listed=waived?0:(prorated?pa.amt:full);const ov=periodOverride(s,st);const pr=billCharge(s,st,listed);
     let stt,covered;
@@ -1698,7 +1703,7 @@ function analyzeMonthly(s,today,atEnd){
     else if(credit+tol>=pr){stt='paid';covered=pr;credit=Math.max(0,credit-pr);kPaid=k+1;}/* v40: less than half a cent (USD) or half a rupee (PKR) short counts as paid: a payment converted from another currency leaves such a fraction */
     else if(credit>tol){stt=due<=today?'partial':'upcoming';covered=credit;credit=0;}/* v39: a period is due from es (the plan's own start when it begins mid-cycle), not from the cycle start st */
     else{stt=due<=today?'unpaid':'upcoming';covered=0;}
-    periods.push({k,st,en,es,due,months:payMonthsAt(s,st),pr,full,pkgId:pf.pid||pkgIdAt(s,es),pkgOv:!!pf.pid,prorated:prorated&&!waived,waived:waived&&pr===0,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0,listed,custom:!!ov,note:ov?ov.note:''});
+    periods.push({k,st,en,es,due,dueSet,months:payMonthsAt(s,st),pr,full,pkgId:pf.pid||pkgIdAt(s,es),pkgOv:!!pf.pid,prorated:prorated&&!waived,waived:waived&&pr===0,days,total,daysCharged:pa.days,rate:pa.rate,basisDays:pa.basis,override:pa.override,computed:pa.computed,rateOverride:pa.rateOverride,amtOverride:pa.amtOverride,discounted:pa.discounted,state:stt,covered,creditAfter:stt==='paid'?credit:0,listed,custom:!!ov,note:ov?ov.note:''});
     if(stt!=='paid'&&stt!=='waived'&&k>curIdx)break;
     if(stt==='paid'&&pr<=0&&k>curIdx+1)break;
     k++;
@@ -1706,7 +1711,7 @@ function analyzeMonthly(s,today,atEnd){
   const paidThrough=kPaid>0?periods[kPaid-1].en:addDays(s.start,-1);
   /* v30: nextSt is the cycle start of the period that needs money next (the key its period box, overrides and lookups use); nextDue is the day the
      money is actually due: the plan's own start date when that first period begins mid-cycle (a plan started or resumed mid-cycle), else the cycle start */
-  const nextSt=active(kPaid)?pStart(s,kPaid):null;const nextDue=nextSt?(late?pStart(s,kPaid+1):(nextSt<s.start?s.start:nextSt)):null;
+  const nextSt=active(kPaid)?pStart(s,kPaid):null;const nextDue=nextSt?(s.dueOn&&isDateKey(s.dueOn[nextSt])?s.dueOn[nextSt]:late?pStart(s,kPaid+1):(nextSt<s.start?s.start:nextSt)):null;
   const overdue=periods.filter(p=>(p.state==='unpaid'||p.state==='partial')&&p.due<=today);
   let amountDue=0;for(const p of overdue)amountDue+=p.pr-p.covered;const overdueAmount=amountDue;
   const np=nextSt?periods.find(p=>p.st===nextSt):null;const nextAmount=np?np.pr-np.covered:(nextDue?billCharge(s,nextSt,periodFull(s,nextSt,nextDue).full):0);/* v45: billCharge, so a fully discounted next bill shows 0 */const nextCredit=np?np.covered:0;
@@ -1717,7 +1722,7 @@ function analyzeMonthly(s,today,atEnd){
   else if(s.start>today)status='upcoming';
   else if(!nextDue||(s.end&&s.end<today&&!overdue.length))status='ended';
   else if(paidThrough>=today)status='current';
-  else if(late&&!overdue.length)status='current';/* v73: nothing due yet for a period still running */
+  else if(!overdue.length)status='current';/* v73/v75: nothing due yet (pays at cycle end, or a later due date set by hand) *//* v73: nothing due yet for a period still running */
   else if(overdue.length===1&&overdue[0].due===today&&overdue[0].covered===0)status='due-today';
   else status='overdue';
   if(s.dueBy&&(status==='overdue'||status==='due-today')&&overdueAmount>0)status=today>s.dueBy?'overdue':'open';
@@ -1785,10 +1790,10 @@ const perLabel=p=>fmtD(pFrom(p))+' – '+fmtD(p.en);
 function statusLabel(a){switch(a.status){case 'cancelled':return a.balance&&a.balance.n?'Cancelled · owes':'Cancelled · settled';
   /* v40: the pill names dates, not bill months: "Paid to Nov 23" is the last day covered, "Overdue since Oct 24" the day the first unpaid bill was due
      ("Paid to Oct" read as the end of October while the Oct bill runs 24 Oct to 23 Nov) */
-  case 'overdue':{const x=statusPeriod(a);if(!x)return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';return 'Overdue since '+fmtD(x.m.late?x.p.due:pFrom(x.p));}
+  case 'overdue':{const x=statusPeriod(a);if(!x)return a.overdue>1?`Overdue · ${a.overdue} periods`:'Overdue';return 'Overdue since '+fmtD(x.m.late||x.p.dueSet?x.p.due:pFrom(x.p));}
   case 'due-today':return 'Due today';
   case 'due-soon':return 'Due soon';
-  case 'current':{const x=statusPeriod(a);if(x)return 'Paid to '+fmtD(x.p.en);const m=a&&a.periods?a:(a&&a.statusA);return m&&m.late&&m.nextDue?'Pays '+fmtD(m.nextDue):'Current';}
+  case 'current':{const x=statusPeriod(a);if(x)return 'Paid to '+fmtD(x.p.en);const m=a&&a.periods?a:(a&&a.statusA);return m&&m.nextDue&&m.nextDue>todayISO()?'Pays '+fmtD(m.nextDue):'Current';}
   case 'open':{const x=statusPeriod(a);return x?'Open balance since '+fmtD(pFrom(x.p)):'Open balance';}
   case 'upcoming':return 'Starts later';case 'ended':return 'Ended';case 'paid':return 'Paid';case 'closed':return 'Sale cancelled';default:return 'No plan';}}
 /* v29: the pill's tooltip: the exact dates behind "Paid for Oct" */
@@ -2108,7 +2113,7 @@ function normAccountCost(v){
   if(!v||!Array.isArray(v.entries))return null;
   const entries=v.entries.filter(e=>e&&isDateKey(e.from)&&validAmt(e.amount)).map(e=>({from:e.from,amount:Number(e.amount),currency:normCostCur(e.currency),rate:normRate(e.rate),paidIn:e.paidIn==='PKR'?'PKR':'USD',supplier:String(e.supplier||'').slice(0,200)})).sort((a,b)=>a.from.localeCompare(b.from));
   if(!entries.length)return null;const out={frequency:v.frequency==='yearly'?'yearly':'monthly',first:['full','custom','free','prorated30'].includes(v.first)?v.first:'prorated',entries,overrides:{}};
-  if(out.first==='custom'&&validAmt(v.firstAmount))out.firstAmount=Number(v.firstAmount);if(isDateKey(v.end))out.end=v.end;/* v73: anchor = the supplier year a yearly cost follows (absent = the plan's own calendar) */if(out.frequency==='yearly'&&isDateKey(v.anchor))out.anchor=v.anchor;
+  if(out.first==='custom'&&validAmt(v.firstAmount))out.firstAmount=Number(v.firstAmount);if(isDateKey(v.end))out.end=v.end;/* v73: anchor = the supplier year a yearly cost follows (absent = the plan's own calendar) */if(isDateKey(v.anchor))out.anchor=v.anchor;/* v75: monthly costs too (the product's date when the customer renews on their own date) */
   for(const [st,c] of Object.entries(v.overrides||{}))if(isDateKey(st)&&c&&validAmt(c.cost)&&isDateKey(c.date))out.overrides[st]={date:c.date,cost:Number(c.cost),tax:Number(c.tax)||0,currency:normCostCur(c.currency),rate:normRate(c.rate),description:String(c.description||'').slice(0,500),category:String(c.category||'Product').slice(0,100),purchase:normPurchase(c.purchase)};
   return out;
 }
@@ -2127,7 +2132,7 @@ function costRecords(){
 function accountCostFields(s,prefix){
   const c=linkedCost(s),ac=s&&s.accountCost,e=ac&&ac.entries.at(-1),p=prefix||'',f=n=>p+n,mode=ac?'cycle':c?'once':'none';
   const fake=ac&&s.start?{kind:'monthly',cycle:ac.frequency,start:s.start,...(isDateKey(s.anchor)?{anchor:s.anchor}:{})}:null,from=fake?pStart(fake,periodIndexAt(fake,todayISO())+1):s&&s.start?s.start:todayISO();
-  return `<div class="account-cost-fields" data-purchase="${esc(JSON.stringify(c&&c.purchase||null))}" data-has-profile="${ac?'1':'0'}" data-kind="${esc(s&&s.kind||'')}" data-pkg="${esc(s&&s.packageId||'')}" data-anchor="${esc(s&&isDateKey(s.anchor)?s.anchor:'')}"><label class="f">Supplier cost<select name="${esc(f('accountCostMode'))}"><option value="none"${mode==='none'?' selected':''}>Not known yet / leave unchanged</option><option value="cycle"${mode==='cycle'?' selected':''}>Cost every cycle</option><option value="once"${mode==='once'?' selected':''}>One actual expense</option>${ac?'<option value="remove">No supplier cost: remove it (its cycle costs stop)</option>':''}</select></label>
+  return `<div class="account-cost-fields" data-purchase="${esc(JSON.stringify(c&&c.purchase||null))}" data-has-profile="${ac?'1':'0'}" data-kind="${esc(s&&s.kind||'')}" data-pkg="${esc(s&&s.packageId||'')}" data-anchor="${esc(s&&isDateKey(s.anchor)?s.anchor:'')}" data-cost-anchor="${esc(ac&&ac.anchor||'')}"><label class="f">Supplier cost<select name="${esc(f('accountCostMode'))}"><option value="none"${mode==='none'?' selected':''}>Not known yet / leave unchanged</option><option value="cycle"${mode==='cycle'?' selected':''}>Cost every cycle</option><option value="once"${mode==='once'?' selected':''}>One actual expense</option>${ac?'<option value="remove">No supplier cost: remove it (its cycle costs stop)</option>':''}</select></label>
     <div class="form-grid" data-role="account-cost-options"${mode==='none'?' hidden':''}>
       <label class="f">Cost amount<input name="${esc(f('accountCost'))}" type="number" min="0" step="0.01" value="${e?e.amount:c&&c.purchase?c.purchase.amount:c?c.cost:''}" placeholder="Leave blank if unknown"></label>
       <label class="f">Cost currency${costCurSelect('',f('accountCostCurrency'),e?e.currency:c&&c.purchase?'USD':c?c.currency:'USD')}</label>
@@ -2149,7 +2154,8 @@ function wireAccountCostFields(root){root.querySelectorAll('.account-cost-fields
     const preview=box.querySelector('[data-role=account-cost-preview]');
     /* v63: the preview follows the plan's own calendar (its anchor, its product's cycle, or its own start date), as the saved rows do */
     const pkgSel=form&&form.querySelector('#a-pkg,[name=packageId]'),pid=pkgSel?pkgSel.value:box.dataset.pkg,ownEl=form&&form.querySelector('#a-own,[name=ownStart]'),renewSel=form&&form.querySelector('[name=renewOn]');
-    const anchor=ownEl&&ownEl.checked||(renewSel&&renewSel.value==='own')?start:renewSel&&renewSel.value==='shared'?'':renewSel&&renewSel.value==='product'?pkgAnchorFor(pkgById(pid),start):box.dataset.hasProfile==='1'||box.dataset.anchor?box.dataset.anchor:(pid&&isDateKey(start)?ownAnchorFor(pid,firstChoice(form),start):'');
+    const planAnc=ownEl&&ownEl.checked||(renewSel&&renewSel.value==='own')?start:renewSel&&renewSel.value==='shared'?'':renewSel&&renewSel.value==='product'?pkgAnchorFor(pkgById(pid),start):box.dataset.hasProfile==='1'||box.dataset.anchor?box.dataset.anchor:(pid&&isDateKey(start)?ownAnchorFor(pid,firstChoice(form),start):'');
+    const ca=box.dataset.hasProfile==='1'?box.dataset.costAnchor:costCalStart(pkgById(pid),read('accountCostFrequency')),anchor=isDateKey(ca)?ca:planAnc;/* v75: the cost runs on the product's date, as saved */
     if(mode==='cycle'&&state.settingsLoaded&&isDateKey(start)&&isDateKey(from.value)&&validAmt(read('accountCost'))){const fake={kind:'monthly',cycle:read('accountCostFrequency'),start:from.value>start?from.value:start,...(isDateKey(anchor)?{anchor}:{})},st=pStart(fake,0),en=addDays(pStart(fake,1),-1),full=Number(read('accountCost'));let first=full;
       if(fake.start>st){const choice=read('accountCostFirst');if(choice==='free')first=0;else if(choice==='custom')first=Number(read('accountCostFirstAmount'))||0;else if(choice==='prorated')first=Math.round(full*(dayDiff(fake.start,en)+1)/(dayDiff(st,en)+1)*100)/100;else if(choice==='prorated30')first=prorate30(full,fake.start,en);}
       try{const one=pricedCost(first,read('accountCostCurrency'),paid,fake.start,normRate(read('accountCostRate'))),later=pricedCost(full,read('accountCostCurrency'),paid,pStart(fake,1),normRate(read('accountCostRate')));preview.textContent=`First affected cycle ${fmtD(fake.start,true)} – ${fmtD(en,true)}: ${costPaymentText(one)}. Following cycle: ${costPaymentText(later)}. Uses global rate/tax for that cycle. Customer receipts are unchanged.`+costCurrencyNote(pid,read('accountCostCurrency'));}catch(e){preview.textContent=e.message;}
@@ -2168,7 +2174,7 @@ function accountCostDraft(form,s,uid,prefix){
   if(!validAmt(raw))throw Error('Enter a cost of zero or more, or leave it blank.');const rateRaw=get('accountCostRate');if(rateRaw&&(!isFinite(Number(rateRaw))||Number(rateRaw)<=0))throw Error('Enter a cost exchange rate greater than zero.');
   if(mode==='cycle'&&s.kind==='one-time'&&!s.accountCost)throw Error('A one-time item takes one actual expense, not a cost every cycle.');
   if(mode==='cycle'){if(!isDateKey(s.start))throw Error('Choose this product’s start date before its cycle cost.');const prev=s.accountCost,entry={from:get('accountCostFrom')||s.start,amount:Number(raw),currency:normCostCur(get('accountCostCurrency')),rate:normRate(rateRaw),paidIn:get('accountCostPaidIn')==='PKR'?'PKR':'USD',supplier:get('accountCostSupplier').trim()},first=get('accountCostFirst'),firstAmount=get('accountCostFirstAmount');
-    if(first==='custom'&&!validAmt(firstAmount))throw Error('Enter the first partial-cycle cost.');const ac=prev?clone(prev):{frequency:get('accountCostFrequency')==='yearly'?'yearly':'monthly',entries:[],overrides:{}},latest=ac.entries.at(-1);if(!prev&&ac.frequency==='yearly'){const ys=costYearStart(pkgById(s.packageId));if(ys)ac.anchor=ys;}/* v73 */
+    if(first==='custom'&&!validAmt(firstAmount))throw Error('Enter the first partial-cycle cost.');const ac=prev?clone(prev):{frequency:get('accountCostFrequency')==='yearly'?'yearly':'monthly',entries:[],overrides:{}},latest=ac.entries.at(-1);if(!prev){const ys=costCalStart(pkgById(s.packageId),ac.frequency);if(ys)ac.anchor=ys;}/* v73 */
     if(!latest||['amount','currency','rate','supplier','paidIn'].some(k=>latest[k]!==entry[k])){if(!isDateKey(entry.from))throw Error('Choose when the new cost applies.');const fake={kind:'monthly',cycle:ac.frequency,start:s.start};if(prev&&entry.from!==s.start&&pStart(fake,periodIndexAt(fake,entry.from))!==entry.from)throw Error('A cost change must start on a billing cycle boundary.');if(entry.from<s.start)throw Error('Cost change cannot precede product start.');ac.entries=ac.entries.filter(e=>e.from!==entry.from);ac.entries.push(entry);ac.entries.sort((a,b)=>a.from.localeCompare(b.from));}
     pricedCost(raw,entry.currency,entry.paidIn,entry.from,entry.rate);ac.first=first;ac.firstAmount=first==='custom'?Number(firstAmount):null;s.accountCost=normAccountCost(ac);return null;
   }
@@ -2760,7 +2766,16 @@ function renderPayStrip(today,show){const el=$('#payStrip');el.hidden=!show;if(!
   for(const r of base){const k=payCat(r.a);if(k)n[k]++;if(k==='owes')owe=sumMerge(owe,r.a.balance);}
   const b=(k,lbl,sub)=>`<button type="button" class="ps-btn" data-pf="${k}" aria-pressed="${ui.payFilter===k}"><b>${n[k]}</b><span class="ps-l">${lbl}</span>${sub?`<span class="ps-s">${esc(sub)}</span>`:''}</button>`;
   const html=b('owes','Owe money',n.owes&&owe.n?sumParts(owe,'PKR').p:'')+b('soon','Due soon','')+b('paid','Paid up','')+(ui.payFilter?'<button type="button" class="link ps-all" data-pf="">Show everyone</button>':'');
-  if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}}
+  if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}renderOweList(today,ui.payFilter==='owes');}
+/* v75: under Owe money, one line per unpaid bill: customer, plan, the period, the day it was due and what is left */
+function oweLines(today){const out=[];for(const r of visibleRows(today)){if(payCat(r.a)!=='owes')continue;const u=r.u;
+  for(const s of u.subscriptions||[]){const sa=r.a.sa[s.id];if(!sa)continue;
+    if(s.kind==='monthly'){for(const p of sa.periods||[])if((p.state==='unpaid'||p.state==='partial')&&(p.due||p.es)<=today)out.push({id:r.id,u,s,period:fmtCycle(pFrom(p),p.en),due:p.due||p.es,amt:Math.max(0,p.pr-p.covered)});}
+    else if(sa.remaining>0&&(!s.due||s.due<=today))out.push({id:r.id,u,s,period:s.name||'One-time item',due:s.due||s.start||'',amt:sa.remaining});}}
+  return out.sort((a,b)=>String(a.due).localeCompare(String(b.due))||displayName(a.u).localeCompare(displayName(b.u)));}
+function renderOweList(today,show){const el=$('#oweList');if(!el)return;if(!show){el.hidden=true;if(el.dataset.html){el.innerHTML='';el.dataset.html='';}return;}const L=oweLines(today),S=newSum();for(const l of L)sumAdd(S,l.amt,l.s.currency,null);
+  const html=L.length?`<h4>Who owes and for which period · ${L.length} bill${L.length===1?'':'s'} · ${esc(ownText(S,'PKR'))}</h4><div class="table-wrap"><table class="pays owe-t"><thead><tr><th>Customer</th><th>Plan</th><th>Period</th><th>Due</th><th class="num">Owed</th></tr></thead><tbody>${L.map(l=>`<tr><td><button class="link sm" type="button" data-owe-open="${esc(l.id)}">${esc(displayName(l.u))}</button>${wsOf(l.u)?` <span class="muted small">via ${esc(wsOf(l.u).name)}</span>`:''}</td><td>${esc(planLabel(l.s))}</td><td>${esc(l.period)}</td><td class="when">${l.due?esc(fmtD(l.due)):''}</td><td class="num">${esc(fmtAmt(l.amt,l.s.currency))}</td></tr>`).join('')}</tbody></table></div>`:'<p class="small muted">Nobody owes money for a bill that is due.</p>';
+  el.hidden=false;if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}}
 function planCell(a){
   const top=acctHTML(a);
   if(!a.planParts.length)return top||'<span class="muted">—</span>';
@@ -2826,8 +2841,10 @@ function billingPeriods(s){const out=[];const end= Math.min(2399,Math.max(2,peri
 const exactBillLabel=(s,p)=>billingName(s,p)+' · '+fmtCycle(p.st,p.en);
 function billingOptions(s,selected){return billingPeriods(s).map(p=>`<option value="${p.st}"${p.st===selected?' selected':''}>${esc(exactBillLabel(s,p))}</option>`).join('');}
 function moneyDialogContext(kind){const d=ui[kind+'Draft'],u=d&&state.users[d.id],s=u&&(u.subscriptions||[]).find(x=>x.id===d.sid);return s?{d,u,s}:null;}
+/* v75: the usual due day of a bill: the day after it ends for a customer whose wholesaler pays at the end, else the day it starts (or the plan's start) */
+function billDefaultDue(s,p){return subAtEnd(s)?addDays(p.en,1):(p.st<s.start?s.start:p.st);}
 function fillBillPeriod(){const c=moneyDialogContext('bill');if(!c)return;const {s}=c,p=billingPeriods(s).find(p=>p.st===$('#bill-period').value);if(!p){refreshBillPreview();return;}
-  $('#bill-mode').value='amount';$('#bill-amount').value=p.pr;$('#bill-from').value=pFrom(p);$('#bill-to').value=p.en;$('#bill-from').min=pFrom(p);$('#bill-from').max=p.en;$('#bill-to').min=pFrom(p);$('#bill-to').max=p.en;
+  $('#bill-mode').value='amount';$('#bill-amount').value=p.pr;$('#bill-due').value=(s.dueOn||{})[p.st]||'';$('#bill-due-def').textContent='(blank = '+fmtD(billDefaultDue(s,p),true)+')';$('#bill-from').value=pFrom(p);$('#bill-to').value=p.en;$('#bill-from').min=pFrom(p);$('#bill-from').max=p.en;$('#bill-to').min=pFrom(p);$('#bill-to').max=p.en;
   $('#bill-amount-label').textContent='Agreed bill amount ('+s.currency+')';$('#bill-cash-label').textContent='Actual amount received ('+s.currency+')';$('#bill-cash').value=p.pr;refreshBillPreview();
 }
 function fillBillAccount(start){const c=moneyDialogContext('bill');if(!c)return;const {s}=c;$('#bill-period').innerHTML=billingOptions(s,start||pStart(s,Math.max(0,periodIndexAt(s,todayISO()))));
@@ -2837,14 +2854,15 @@ function openBillDialog(id,sid,start){if(!state.settingsLoaded)return;const u=st
 function billDraftUser(c,includeCash=true){const {u,s}=c,p=billingPeriods(s).find(p=>p.st===$('#bill-period').value);if(!p)return {error:'This account has no bill in that period.'};const mode=$('#bill-mode').value,settlement=$('#bill-settlement').value,sim=clone(u),ss=sim.subscriptions.find(x=>x.id===s.id);let amount=Number($('#bill-amount').value),note='Agreed bill for '+fmtCycle(p.st,p.en);
   if(mode==='normal')amount=p.full;else if(mode==='computed'){const plain=clone(s);setPeriodOverride(plain,p.st,null,undefined);amount=periodAmt(plain,p.k).pr+billRefundReduction(plain,p.st);}else if(mode==='days'){const from=$('#bill-from').value,to=$('#bill-to').value;if(!isDateKey(from)||!isDateKey(to)||from<pFrom(p)||to>p.en||to<from)return {error:'Service dates must be inside the selected bill, with the end on or after the start.'};const days=dayDiff(from,to)+1,divisor=periodBasisDays(s,p.total);amount=Math.min(p.full,roundCur(p.full*days/divisor,s.currency));note='Service '+fmtCycle(from,to)+'; '+days+' / '+divisor+' days';}
   if(mode==='amount'&&!validAmt($('#bill-amount').value))return {error:'Enter the agreed amount for this bill (zero is allowed).'};
-  if(mode==='computed')setPeriodOverride(ss,p.st,null,undefined);else {setPeriodOverride(ss,p.st,amount+billRefundReduction(s,p.st)+(mode==='amount'?courtesyAt(s,p.st):0),note);/* v45: a typed agreed amount is the final bill, so the courtesy is added back too */if(p.k===0)ss.prorationAmountOverride=null;}
+  {const dv=$('#bill-due').value;if(dv&&!isDateKey(dv))return {error:'Choose a valid due date, or leave it blank.'};ss.dueOn=Object.assign({},ss.dueOn||{});if(dv&&dv!==billDefaultDue(s,p))ss.dueOn[p.st]=dv;else delete ss.dueOn[p.st];if(!Object.keys(ss.dueOn).length)delete ss.dueOn;}/* v75 */
+  if(mode==='keep'){}else if(mode==='computed')setPeriodOverride(ss,p.st,null,undefined);else {setPeriodOverride(ss,p.st,amount+billRefundReduction(s,p.st)+(mode==='amount'?courtesyAt(s,p.st):0),note);/* v45: a typed agreed amount is the final bill, so the courtesy is added back too */if(p.k===0)ss.prorationAmountOverride=null;}
   if(includeCash&&(settlement==='new'||settlement==='edit')){const cash=$('#bill-cash').value,date=$('#bill-date').value;if(!validAmt(cash)||Number(cash)<=0||!isDateKey(date))return {error:'Enter the actual money received and its receipt date.'};const existing=settlement==='edit'&&(ss.payments||[]).find(p=>p.id===$('#bill-receipt').value);if(settlement==='edit'&&!existing)return {error:'Choose an existing receipt to correct.'};const receipt={id:existing?existing.id:'__bill_preview',date,amount:Number(cash),currency:existing?(existing.currency||s.currency):s.currency,rate:existing?existing.rate:null,note:existing?existing.note:'Received for '+exactBillLabel(s,p)};if(existing)ss.payments=ss.payments.map(p=>p.id===existing.id?Object.assign({},p,receipt):p);else ss.payments=(ss.payments||[]).concat(receipt);}
   settleRefunds(sim,ss,todayISO());return {sim,ss,p,amount:periodAmt(ss,p.k).pr,settlement};
 }
 function refreshBillPreview(){const c=moneyDialogContext('bill');if(!c)return;const {d,u,s}=c,mode=$('#bill-mode').value,settlement=$('#bill-settlement').value,cash=['new','edit'].includes(settlement);$('#bill-from-wrap').hidden=$('#bill-to-wrap').hidden=mode!=='days';$('#bill-amount-wrap').hidden=mode!=='amount';$('#bill-cash-wrap').hidden=$('#bill-date-wrap').hidden=!cash;$('#bill-receipt-wrap').hidden=settlement!=='edit';
   $('#billForm').querySelectorAll('input,select').forEach(el=>el.disabled=d.busy);$('#bill-save').textContent=d.busy?'Saving…':cash?'Save bill and receipt':'Save bill';const change=billDraftUser(c);$('#bill-save').disabled=d.busy||!!change.error;if(change.error){$('#bill-preview').textContent=change.error;return;}
   const before=analyzeMonthly(s,todayISO()),after=analyzeMonthly(change.ss,todayISO()),p=after.periods.find(x=>x.st===change.p.st)||Object.assign(periodAmt(change.ss,change.p.k),{covered:0}),nextBefore=periodAmt(s,change.p.k+1),nextAfter=periodAmt(change.ss,change.p.k+1);
-  let text=exactBillLabel(s,change.p)+'\nBill: '+fmtAmt(change.p.pr,s.currency)+' → '+fmtAmt(p.pr,s.currency)+'. Covered by recorded money: '+fmtAmt(p.covered,s.currency)+'. Still owing: '+fmtAmt(Math.max(0,p.pr-p.covered),s.currency)+'.\n';
+  let text=exactBillLabel(s,change.p)+'\nPayment due: '+fmtD(p.due||billDefaultDue(s,change.p),true)+((change.ss.dueOn||{})[change.p.st]?' (set by hand)':'')+'.\nBill: '+fmtAmt(change.p.pr,s.currency)+' → '+fmtAmt(p.pr,s.currency)+'. Covered by recorded money: '+fmtAmt(p.covered,s.currency)+'. Still owing: '+fmtAmt(Math.max(0,p.pr-p.covered),s.currency)+'.\n';
   text+=p.covered+0.005>=p.pr?'This bill is settled.':'This bill is not settled.';text+='\nNext bill: '+fmtAmt(nextBefore.pr,s.currency)+' → '+fmtAmt(nextAfter.pr,s.currency)+' for '+fmtCycle(nextAfter.st,nextAfter.en)+'.\nMoney kept: '+fmtAmt(before.paid,s.currency)+' → '+fmtAmt(after.paid,s.currency)+'.';
   const earlier=after.periods.filter(x=>x.st<change.p.st);if(earlier.length)text+='\nEarlier bills: '+earlier.slice(-3).map(x=>fmtCycle(x.st,x.en)+' — charge '+fmtAmt(x.pr,s.currency)+', covered '+fmtAmt(x.covered,s.currency)).join('; ')+'. Cash clears the oldest bill first.';
   const following=after.periods.find(x=>x.st===nextAfter.st);if(following&&following.covered>0)text+='\n'+fmtAmt(following.covered,s.currency)+' of real recorded money already covers the next bill; only '+fmtAmt(Math.max(0,following.pr-following.covered),s.currency)+' remains.';
@@ -3574,7 +3592,7 @@ function detailHTML(id,u,a,today){
         <label class="f" data-role="dueby-wrap">Remaining due by <span class="muted">(optional)</span><input id="as-dueby-${id}" name="dueBy" type="date"></label>
         <label class="f chk" data-role="prorate-wrap"><input id="as-prorate-${id}" name="prorate" type="checkbox" checked>Prorate first period</label>
         <label class="f chk" data-role="waive-wrap"><input id="as-waive-${id}" name="waiveFirst" type="checkbox">Waive first partial period</label>
-        <label class="f chk"><input id="as-own-${id}" name="ownStart" type="checkbox">Renews on its own start date <span class="muted">(e.g. started Aug 30: renews every Aug 30, or the 30th each month; unticked = the product's billing day)</span></label>
+        <label class="f chk"><input id="as-own-${id}" name="ownStart" type="checkbox"${state.users[id]&&state.users[id].wholesalerId?'':' checked'}>Renews on its own start date <span class="muted">(e.g. started Aug 30: renews every Aug 30, or the 30th each month; unticked = the product's billing day)</span></label>
       </div>
       ${accountCostFields(null)}
       <p class="cover" data-role="first-bill-preview" aria-live="polite"></p>
@@ -4023,6 +4041,8 @@ function pkgExtraHTML(p){if(p.cycle!=='monthly'&&p.cycle!=='yearly')return '';co
 const pkgCostFreq=p=>p&&p.cycle==='yearly'&&p.costPer==='year'?'yearly':'monthly';
 /* v73: the supplier year a product's yearly seat cost follows: Supplier year starts on, else Year starts on */
 function costYearStart(p){return p&&pkgCostFreq(p)==='yearly'?(isDateKey(p.costStart)?p.costStart:isDateKey(p.cycleStart)?p.cycleStart:null):null;}
+/* v75: the date a new plan's supplier cost runs on: the supplier year for a yearly cost, else the product's cycle date (blank = the plan's own dates) */
+function costCalStart(p,freq){if(!p)return null;if(freq==='yearly')return costYearStart(p);return isDateKey(p.cycleStart)?p.cycleStart:null;}
 function seatCostText(p){return fmtAmt(p.costAmount,p.costCurrency||'USD')+'/'+(pkgCostFreq(p)==='yearly'?'yr':'mo')+((p.costCurrency||'USD')==='USD'&&p.costPaidIn==='PKR'?' paid in PKR':'');}
 /* v63: the running plans of a product (monthly or yearly, not ended, customer not cancelled) */
 function seatPlans(p){const out=[],today=todayISO();if(!p)return out;for(const uid in state.users){const u=state.users[uid];if(u.cancel&&isDateKey(u.cancel.lastDay)&&u.cancel.lastDay<today)continue;for(const s of u.subscriptions||[]){if(s.kind!=='monthly'||s.packageId!==p.id)continue;if(s.end&&s.end<today)continue;out.push({uid,u,s});}}return out;}
@@ -4040,7 +4060,7 @@ function refreshSeat(){const p=pkgById(ui.seat&&ui.seat.pid);if(!p)return;const 
   $('#seat-preview').textContent=(plans.length?`Each plan gets one cost line per cycle in Costs from the date shown; cost lines before that date are unchanged. Receipts are untouched. `:'')+(lump.length?`Warning: ${lump.length} expense${lump.length===1?'':'s'} you entered for ${p.name} already fall${lump.length===1?'s':''} in the cycle from ${fmtD(from,true)} (${lump.map(c=>c.description+' '+fmtAmt(c.cost,c.currency)).join(', ')}). Applying seat costs there too counts the cost twice: delete that line, or start from the next cycle.`:'');}
 async function saveSeat(e){e.preventDefault();const p=pkgById(ui.seat&&ui.seat.pid);if(!p||ui.seat.busy)return;const from=$('#seat-from').value;if(!isDateKey(from)){$('#seat-error').textContent='Pick a cycle start.';return;}const plans=seatPlans(p);if(!plans.length){$('#seat-error').textContent='This product has no running plans.';return;}
   ui.seat.busy=true;$('#seat-save').disabled=true;let n=0,fail=0;const byUser={};for(const x of plans)(byUser[x.uid]=byUser[x.uid]||[]).push(x.s.id);
-  for(const uid in byUser){const u=clone(state.users[uid]);for(const sid of byUser[uid]){const s=u.subscriptions.find(z=>z.id===sid);const pf=planCycleFrom(s,from),en={from:pf,amount:p.costAmount,currency:p.costCurrency||'USD',paidIn:p.costPaidIn||'USD',rate:null,supplier:''};const ac=s.accountCost;const ent=(ac?ac.entries.filter(z=>z.from<pf):[]).concat([en]);const nx=normAccountCost({anchor:ac&&ac.anchor?ac.anchor:costYearStart(p),frequency:ac?ac.frequency:pkgCostFreq(p),first:ac?ac.first:'full',firstAmount:ac?ac.firstAmount:null,overrides:ac?ac.overrides:{},entries:ent});if(nx)s.accountCost=nx;}
+  for(const uid in byUser){const u=clone(state.users[uid]);for(const sid of byUser[uid]){const s=u.subscriptions.find(z=>z.id===sid);const pf=planCycleFrom(s,from),en={from:pf,amount:p.costAmount,currency:p.costCurrency||'USD',paidIn:p.costPaidIn||'USD',rate:null,supplier:''};const ac=s.accountCost;const ent=(ac?ac.entries.filter(z=>z.from<pf):[]).concat([en]);const nx=normAccountCost({anchor:ac&&ac.anchor?ac.anchor:costCalStart(p,ac?ac.frequency:pkgCostFreq(p)),frequency:ac?ac.frequency:pkgCostFreq(p),first:ac?ac.first:'full',firstAmount:ac?ac.firstAmount:null,overrides:ac?ac.overrides:{},entries:ent});if(nx)s.accountCost=nx;}
     if(await persistUser(uid,u))n+=byUser[uid].length;else fail+=byUser[uid].length;}
   ui.seat.busy=false;$('#seat-save').disabled=false;if(fail){$('#seat-error').textContent=fail+' plan'+(fail===1?' was':'s were')+' not saved. Try again.';return;}$('#seatDialog').close();ui.seat=null;toast('Seat cost '+seatCostText(p)+' applied to '+n+' plan'+(n===1?'':'s')+' from '+fmtD(from,true)+'.');}
 /* v50: Settings → Wholesalers editor (draft in ui.wsEdit until saved) */
@@ -4053,7 +4073,7 @@ function applyPkgCost(form,pid){const box=form&&form.querySelector('.account-cos
   else if(last!==undefined&&amt.value===last){amt.value='';f('accountCostMode').value='none';delete box.dataset.prefill;}
   if(box.refreshCostFields)box.refreshCostFields();}
 /* v50: a wholesaler's customer is charged the full first month (the wholesaler's terms), so choosing one unticks Prorate first period */
-function syncAddWs(){const w=wsById($('#a-ws').value);$('#a-prorate').checked=!w;$('#a-ws-hint').textContent=w?`Billed to ${w.name}${w.phone?' · messages go to '+fmtPhone(w.phone)+' when the customer has no number':''}. First month charged in full.`:'';updAddConv();}
+function syncAddWs(){const w=wsById($('#a-ws').value);$('#a-prorate').checked=!w;{const p=pkgById($('#a-pkg').value),want=!!(p&&p.cycle!=='one-time'&&(!w||p.ownStart));if($('#a-own')&&$('#a-own').checked!==want)$('#a-own').checked=want;}/* v75: direct = own start date, wholesaler = the product's date */$('#a-ws-hint').textContent=w?`Billed to ${w.name}${w.phone?' · messages go to '+fmtPhone(w.phone)+' when the customer has no number':''}. First month charged in full.`:'';updAddConv();}
 /* v55: "Have they paid?" in the Add form. addFirstPay(sub) is what Yes records: the payment box's default (the first unpaid bill,
    paymentTarget at kPaid, one receipt per covered period, dated today); a one-time item records its whole amount. */
 function addFirstPay(sub,joinDate){const u=normalizeUser({name:'_',joinDate:joinDate||sub.start,subscriptions:[sub]},'__add');const ss=u.subscriptions[0],a=analyze(u,todayISO()),sa=a.sa[ss.id];if(!sa)return null;
@@ -4108,7 +4128,7 @@ function bind(){
   $('#bill-period').addEventListener('change',fillBillPeriod);
   $('#bill-receipt').addEventListener('change',()=>{const c=moneyDialogContext('bill'),r=c.s.payments.find(r=>r.id===$('#bill-receipt').value);if(!r)return;$('#bill-cash').value=r.amount;$('#bill-cash-label').textContent='Actual amount received ('+(r.currency||c.s.currency)+')';$('#bill-date').value=r.date;refreshBillPreview();});
   $('#bill-settlement').addEventListener('change',()=>{if($('#bill-settlement').value==='edit')$('#bill-receipt').dispatchEvent(new Event('change'));else if($('#bill-settlement').value==='new'){$('#bill-cash-label').textContent='Actual amount received ('+moneyDialogContext('bill').s.currency+')';$('#bill-cash-label').textContent='Actual amount received ('+moneyDialogContext('bill').s.currency+')';const c=moneyDialogContext('bill'),change=billDraftUser(c,false);const p=!change.error&&(analyzeMonthly(change.ss,todayISO()).periods.find(p=>p.st===change.p.st)||{pr:change.amount,covered:0});$('#bill-cash').value=p?Math.max(0,p.pr-p.covered):'';$('#bill-date').value=todayISO();}refreshBillPreview();});
-  ['mode','amount','from','to','cash','date'].forEach(name=>$('#bill-'+name).addEventListener('input',refreshBillPreview));
+  ['mode','amount','from','to','cash','date','due'].forEach(name=>$('#bill-'+name).addEventListener('input',refreshBillPreview));
   $('#refundForm').addEventListener('submit',saveRefundDialog);
   /* v54: Cancel plan box */
   $('#cancelPlanForm').addEventListener('submit',saveCancelPlan);
@@ -4128,6 +4148,7 @@ function bind(){
   ['#start-date','#start-prorate','#start-payment','#start-apply'].forEach(sel=>$(sel).addEventListener('input',refreshStartPreview));
   $('#payment-set-bill').addEventListener('click',()=>{const c=paymentContext();if(!c||c.d.busy||c.s.kind!=='monthly')return;const start=pStart(c.s,Number($('#payment-month').value));closePaymentDialog();openBillDialog(c.d.id,c.s.id,start);});
   $('#paymentForm').addEventListener('submit',savePaymentDialog);
+  $('#oweList').addEventListener('click',e=>{const b=e.target.closest('[data-owe-open]');if(!b)return;const id=b.dataset.oweOpen,tr=document.querySelector(`#tbody tr.row[data-id="${id}"]`);if(!tr)return;if(ui.expanded!==id){const c=tr.querySelector('td.who');if(c)c.click();}setTimeout(()=>{const x=document.querySelector(`#tbody tr.row[data-id="${id}"]`);if(x)x.scrollIntoView({behavior:'smooth',block:'start'});},60);});/* v75 */
   /* v74: wholesaler payment */document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-act="wspay"]');if(!b)return;e.preventDefault();e.stopPropagation();openWsPay(b.dataset.ws);},true);
   $('#wsPayForm').addEventListener('submit',saveWsPay);['#wspay-close','#wspay-cancel'].forEach(sel=>$(sel).addEventListener('click',closeWsPay));
   $('#wsPayDialog').addEventListener('cancel',e=>{if(ui.wsPay&&ui.wsPay.busy)e.preventDefault();else ui.wsPay=null;});
@@ -4264,7 +4285,7 @@ function bind(){
   });
   const prefillFromPkg=(pkgSel,priceEl,curEl)=>{const p=pkgById(pkgSel.value);if(!p)return;const last=pkgSel.dataset.prefilled||'';if(p.price==null){if(last&&priceEl.value===last){priceEl.value='';delete pkgSel.dataset.prefilled;priceEl.dispatchEvent(new Event('input',{bubbles:true}));}return;}if(priceEl.value===''||priceEl.value===last){priceEl.value=p.price;pkgSel.dataset.prefilled=String(p.price);if(p.currency&&curEl)curEl.value=p.currency;priceEl.dispatchEvent(new Event('input',{bubbles:true}));if(curEl)curEl.dispatchEvent(new Event('change',{bubbles:true}));}};
   $('#a-ws').addEventListener('change',syncAddWs);
-  document.addEventListener('change',e=>{const t=e.target;if(t&&t.matches&&t.matches('#a-pkg,.addsub-form select[name=packageId]')){applyPkgCost(t.form,t.value);/* v63: a product whose customers renew on their own start date pre-ticks the box */const p=pkgById(t.value),ob=t.form&&t.form.querySelector('#a-own,[name=ownStart]');if(p&&ob&&ob.checked!==!!p.ownStart){ob.checked=!!p.ownStart;ob.dispatchEvent(new Event('change',{bubbles:true}));}}});
+  document.addEventListener('change',e=>{const t=e.target;if(t&&t.matches&&t.matches('#a-pkg,.addsub-form select[name=packageId]')){applyPkgCost(t.form,t.value);/* v63: a product whose customers renew on their own start date pre-ticks the box */const p=pkgById(t.value),ob=t.form&&t.form.querySelector('#a-own,[name=ownStart]');const viaWs=t.matches('#a-pkg')?!!wsById($('#a-ws').value):!!((state.users[t.form&&t.form.dataset.id]||{}).wholesalerId);const want=!!(p&&(p.ownStart||(!viaWs&&p.cycle!=='one-time')));/* v75: a direct customer pays from the day they started */if(p&&ob&&ob.checked!==want){ob.checked=want;ob.dispatchEvent(new Event('change',{bubbles:true}));}}});
   $('#a-pkg').addEventListener('change',()=>{if($('#a-pkg').value==='__new'){$('#a-pkg').value='';newPackageFlow();return;}const p=pkgById($('#a-pkg').value);if(p){$('#a-cycle').value=p.cycle;}syncFirstSale($('#a-first'),$('#a-pkg').value);prefillFromPkg($('#a-pkg'),$('#a-price'),$('#a-cur'));updAddConv();});
   $('#a-cycle-wrap').addEventListener('change',updAddConv);if($('#a-own'))$('#a-own').addEventListener('change',updAddConv);
   $('#ws-add').addEventListener('click',()=>{ui.wsEdit=ui.wsEdit||clone(wholesalers());ui.wsEdit.push({id:newId('ws'),name:'',phone:'',notes:'',payAt:''});renderWsEditor();const inputs=document.querySelectorAll('#wsList input[data-w=name]');if(inputs.length)inputs[inputs.length-1].focus();});
@@ -4313,7 +4334,7 @@ function bind(){
     if(row){if(e.target.closest('button,select,input'))return;ui.expanded=ui.expanded===row.dataset.id?null:row.dataset.id;renderTable();return;}
     const det=e.target.closest('tr.detail');if(!det)return;const id=det.dataset.id;
     const act=e.target.closest('[data-act]');if(!act)return;const A=act.dataset.act,sid=act.dataset.sub;
-    if(A==='toggle'){if((act.dataset.key||'').startsWith('refund:'))openRefundDialog(id,sid);else if((act.dataset.key||'').startsWith('days:'))openBillDialog(id,sid,pStart(state.users[id].subscriptions.find(s=>s.id===sid),0));else toggleOpen(id,act.dataset.key);}
+    if(A==='toggle'){if((act.dataset.key||'').startsWith('refund:'))openRefundDialog(id,sid);else if((act.dataset.key||'').startsWith('days:')){const ds=act.dataset.key.slice(5),s0=(state.users[id].subscriptions||[]).find(s=>s.id===ds);if(s0){openBillDialog(id,ds,pStart(s0,0));$('#bill-mode').value='days';refreshBillPreview();}}/* v75: the link has no data-sub; before, this threw and nothing opened */else toggleOpen(id,act.dataset.key);}
     else if(A==='toggle-contact'){const f=act.closest('form');const w=f&&f.querySelector('[data-role=contact]');if(!w)return;const open=w.hidden;w.hidden=!open;act.setAttribute('aria-expanded',String(open));try{localStorage.setItem('pt-edit-contact',open?'1':'0');}catch(e){}}
     else if(A==='link-keep'){const u=clone(state.users[id]);const sb=u.subscriptions.find(x=>x.id===sid);if(!sb)return;delete sb.linkConflict;const ok=await persistUser(id,u);if(ok)toast('Kept your tier change.');}
     else if(A==='link-use'){const u=clone(state.users[id]);const sb=u.subscriptions.find(x=>x.id===sid);if(!sb||!sb.linkConflict)return;useLinkChoice(sb,sb.linkConflict);delete sb.linkConflict;const ok=await persistUser(id,u);if(ok)toast('Applied their choice.');}
@@ -4588,7 +4609,7 @@ async function quickSave(){
   qa.busy=true;renderQuick();msg.textContent='Adding…';let added=0,failed=0,pays=0;const ws=wsById($('#qa-ws').value);
   for(const r of ok){
     const p=pkgById(r.pkg);const sub={id:newId('s'),kind:'monthly',cycle:p.cycle==='yearly'?'yearly':'monthly',name:'',packageId:p.id,currency:r.cur,start:r.joined,end:null,prorate:!ws,dueBy:null,prices:[{from:r.joined,price:Number(r.price)}],payments:[]};
-    /* v50: a fixed-day product renews on its day; its supplier cost from Settings starts with the plan */if(pkgHasCal(p))sub.anchor=pkgAnchorFor(p,r.joined);if(p.ownStart)setRenewOn(sub,'own');/* v63 */if(p.costAmount!=null&&sub.kind==='monthly'){const ac=normAccountCost({frequency:pkgCostFreq(p),first:p.costFirst||'prorated30',entries:[{from:r.joined,amount:p.costAmount,currency:p.costCurrency||'USD',paidIn:p.costPaidIn||'USD',rate:null,supplier:''}]});if(ac)sub.accountCost=ac;}
+    /* v50: a fixed-day product renews on its day; its supplier cost from Settings starts with the plan */if(pkgHasCal(p))sub.anchor=pkgAnchorFor(p,r.joined);if(p.ownStart||!ws)setRenewOn(sub,'own');/* v63; v75: a direct customer renews on the join date */if(p.costAmount!=null&&sub.kind==='monthly'){const ac=normAccountCost({anchor:costCalStart(p,pkgCostFreq(p)),frequency:pkgCostFreq(p),first:p.costFirst||'prorated30',entries:[{from:r.joined,amount:p.costAmount,currency:p.costCurrency||'USD',paidIn:p.costPaidIn||'USD',rate:null,supplier:''}]});if(ac)sub.accountCost=ac;}
     if(r.paid!=null&&r.paid>0){sub.payments.push({id:newId('p'),date:r.joined,amount:Number(r.paid),currency:r.cur,rate:null,note:r.months?`quick add · paid ${r.months} month${r.months===1?'':'s'}`:'quick add'});pays++;}
     const u={name:r.name,email:r.email,phone:r.phone,telegram:normTg(r.telegram),joinDate:r.joined,notes:'',subscriptions:[sub],...(ws?{wholesalerId:ws.id}:{})};
     const done=await persistUser(newId('u'),u);if(done){added++;r.done=true;}else failed++;

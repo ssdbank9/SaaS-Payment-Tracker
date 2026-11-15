@@ -2,6 +2,14 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v75 - 2026-11-15
+
+- Direct customers pay from the day they start. Add user, Add plan and Quick add now tick "Renews on its own start date" for a direct customer (joined Oct 26: bills Oct 26 - Nov 25, then the 26th each month) and untick it when a wholesaler is chosen, so a wholesaler's customers stay on the product's date. Existing plans are not changed.
+- The supplier cost keeps the product's date (the day you pay the supplier), whatever day the customer pays on: a customer who joins on the 5th of a product billed on the 15th has a cost for the 5th to the 14th, then a full cost each 15th. Changing a plan's "Renews on" no longer moves its supplier cost.
+- Owe money in the strip above the list now shows who owes for which bill: customer, plan, the period, the day it was due and the amount left, with the total; a name opens that customer.
+- Set bill can change when a bill is due: "Payment due on" (blank = the usual day) together with "Keep the charge as it is" moves only the due date. A bill due later is not overdue until then.
+- Fixed: "edit days / rate" on a prorated first bill opened nothing; it now opens Set bill for that bill on "Charge for selected service dates".
+
 ## v74 - 2026-11-15
 
 - Record one payment from a wholesaler. "Record payment" on a wholesaler's Queue statement, and on its heading in the customer list, opens one form listing each of its customers' bills: the bills due now are ticked, the next bill is listed unticked. Change an amount if the wholesaler paid a different sum for a bill, set the date received and an optional note, and save: each ticked bill is recorded on that customer's plan (one receipt per period when the amount is exact) with the note "via <wholesaler>", so every customer shows paid.

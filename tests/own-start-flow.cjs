@@ -27,7 +27,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
    'users/os2':{name:'Own Day Monthly',joinDate:'2026-10-10',confirmToken:tok,subscriptions:[{id:'s1',kind:'monthly',cycle:'monthly',name:'',packageId:'pkg_c',currency:'PKR',start:'2026-10-10',anchor:'2026-10-10',ownStart:true,prorate:true,prices:[{from:'2026-10-10',price:4200}],payments:[{id:'p1',date:'2026-10-10',amount:4200,currency:'PKR'}]}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v74');
+  assert.equal(await page.locator('#app-ver').textContent(),'v75');
 
   // 1. the annual plan on the shared calendar: Jul 24 year; switch Renews on to its own start date
   let d=await expand('os1');assert.match(await d.textContent(),/Jul 24, 2026/);
@@ -53,21 +53,21 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   d=await expand('os1');await until(async()=>/Jul 24, 2026 –/.test(await d.textContent()),'product year shown');
   check('switching to the product\'s cycle removes the own date and the plan follows the product\'s Jul 24 year again');
 
-  // 4. Add user: ticked = renews on its own day with no proration; unticked (default) = the product's cycle
+  // 4. Add user: ticked (v75: the default for a direct customer) = renews on its own day with no proration; unticked = the product's cycle
   await page.locator('#btn-add').click();await page.locator('#a-pkg').selectOption('pkg_c');
   await page.locator('#a-name').fill('Own Day New');await page.locator('#a-join').fill('2026-10-10');await page.locator('#a-start').fill('2026-10-10');await page.locator('#a-price').fill('4200');
-  assert.equal(await page.locator('#a-own').isChecked(),false);await page.locator('#a-own').check();
+  assert.equal(await page.locator('#a-own').isChecked(),true);/* v75: a direct customer renews on the start date by default */
   await until(async()=>/Rs 4,200 for 10 Oct – 9 Nov/.test(await page.locator('#a-bill-preview').textContent()),'own-day preview: '+await page.locator('#a-bill-preview').textContent());
   await page.locator('#addForm button[type=submit]').click();
   const findU=async n=>((await api('GET','/api/docs?prefix=users/')).j.docs||[]).map(x=>x.data||x).find(u=>u.name===n);
   await until(async()=>!!(await findU('Own Day New')),'user added');let nu=await findU('Own Day New');assert.equal(nu.subscriptions[0].anchor,'2026-10-10');assert.equal(nu.subscriptions[0].ownStart,true);
   await page.keyboard.press('Escape');await page.locator('#paymentDialog').evaluate(dl=>dl.open&&dl.close()).catch(()=>{});
   await page.locator('#btn-add').click();await page.locator('#a-pkg').selectOption('pkg_c');
-  await page.locator('#a-name').fill('Shared Day New');await page.locator('#a-join').fill('2026-10-10');await page.locator('#a-start').fill('2026-10-10');await page.locator('#a-price').fill('4200');
+  await page.locator('#a-own').uncheck();/* v75: untick to keep the product's cycle */await page.locator('#a-name').fill('Shared Day New');await page.locator('#a-join').fill('2026-10-10');await page.locator('#a-start').fill('2026-10-10');await page.locator('#a-price').fill('4200');
   await page.locator('#addForm button[type=submit]').click();await until(async()=>!!(await findU('Shared Day New')),'second user added');
   nu=await findU('Shared Day New');assert.equal(nu.subscriptions[0].anchor,'2026-09-24');assert.equal(nu.subscriptions[0].ownStart,undefined);/* v68: a new plan sits on its product's cycle (the 24th) */
   await page.locator('#paymentDialog').evaluate(dl=>dl.open&&dl.close()).catch(()=>{});
-  check('Add user: with Renews on its own start date ticked the plan bills Oct 10 - Nov 9 in full; left unticked (the default) it follows the product\'s cycle, the 24th');
+  check('Add user: with Renews on its own start date ticked the plan bills Oct 10 - Nov 9 in full; unticked it follows the product\'s cycle, the 24th');
 
   // 5. the link card carries an own-start plan's own due date
   await until(async()=>{const c=await doc('confirm/'+tok);return c&&c.cycles&&c.cycles['2026-11-10']&&c.cycles['2026-11-10'].plans.length===1;},'link card');/* v68: the card is keyed by the plan's own renewal date */
@@ -77,6 +77,6 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   await page.screenshot({path:path.join(out,'own-start-390.png')});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.deepEqual(errors,[]);check('No sideways scroll and no unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'74',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'75',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

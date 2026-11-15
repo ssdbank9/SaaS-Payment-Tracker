@@ -35,7 +35,7 @@ const plan=(id,start,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',na
    'costs/lump1':{date:'2026-10-20',description:'Oct lump',category:'Product',packageId:'pkg_c',currency:'USD',cost:64,tax:0,rate:0,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v74');
+  assert.equal(await page.locator('#app-ver').textContent(),'v75');
 
   // 1. Settings → Products: seat cost on the yearly product, the own-start tick, the off-cycle count and the apply button
   await page.locator('#btn-settings').click();await page.locator('#pkgList').waitFor();
@@ -82,14 +82,14 @@ const plan=(id,start,extra)=>Object.assign({id,kind:'monthly',cycle:'monthly',na
   await det('u3').locator('[data-key="edit:s1"]').first().click();await f.waitFor({state:'hidden'});
   await det('u3').locator('[data-key=addsub]').first().click();const add=det('u3').locator('.addsub-form');await add.waitFor({state:'visible'});
   await add.locator('[name=packageId]').selectOption('pkg_own');assert.equal(await add.locator('[name=ownStart]').isChecked(),true);
-  await add.locator('[name=packageId]').selectOption('pkg_c');assert.equal(await add.locator('[name=ownStart]').isChecked(),false);
+  await add.locator('[name=packageId]').selectOption('pkg_c');assert.equal(await add.locator('[name=ownStart]').isChecked(),true);/* v75: a direct customer */await add.locator('[name=ownStart]').uncheck();
   await add.locator('[name=price]').fill('4200');await add.locator('[name=date]').fill('2026-10-20');await page.waitForTimeout(300);
   assert.match(await add.locator('[data-role=account-cost-preview]').textContent(),/First affected cycle Oct 20, 2026 – Nov 14, 2026/);
   await add.locator('[name=packageId]').selectOption('pkg_g');await page.waitForTimeout(200);assert.equal(await add.locator('[name=accountCost]').inputValue(),'8');assert.equal(await add.locator('[name=accountCostPaidIn]').inputValue(),'PKR');assert.equal(await add.locator('[name=accountCostFrequency]').inputValue(),'monthly');
   await det('u3').locator('[data-key=addsub]').first().click();await add.waitFor({state:'hidden'});
-  await page.locator('#btn-add').click();await page.locator('#addForm').waitFor({state:'visible'});await page.locator('#a-pkg').selectOption('pkg_own');assert.equal(await page.locator('#a-own').isChecked(),true);await page.locator('#a-pkg').selectOption('pkg_c');assert.equal(await page.locator('#a-own').isChecked(),false);
+  await page.locator('#btn-add').click();await page.locator('#addForm').waitFor({state:'visible'});await page.locator('#a-pkg').selectOption('pkg_own');assert.equal(await page.locator('#a-own').isChecked(),true);await page.locator('#a-pkg').selectOption('pkg_c');assert.equal(await page.locator('#a-own').isChecked(),true);/* v75: direct */if(await page.locator('#a-ws option').count()>1){await page.locator('#a-ws').selectOption({index:1});assert.equal(await page.locator('#a-own').isChecked(),false);await page.locator('#a-ws').selectOption('');}
   check('a PKR supplier cost on a USD-seat product gets a note; Add plan previews on the product calendar (Oct 20 – Nov 14), pre-ticks own start for the own-start product and fills the yearly product\'s $8/month paid in PKR; Add user pre-ticks own start too');
   assert.deepEqual(errors,[]);check('No unexpected console/page errors');
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'74',checks},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:'75',checks},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
