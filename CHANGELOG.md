@@ -4,11 +4,11 @@ Version numbers here summarise the development history of the app. The version n
 
 ## v78 - 2026-11-16
 
-The first step of the new layout:
-- The app now opens on tabs: Today, Customers, Reminders, Money and More. On a phone they sit in a bar at the bottom of the screen; on a computer in a bar on the left.
+The first step of the new layout. It is on its own address, `/new` (for example `wasooli.duckdns.org/new`); the usual address keeps the site exactly as it was in v77, apart from the version number. Both use the same data and the same sign-in, so you can switch at any time.
+- The new page opens on tabs: Today, Customers, Reminders, Money and More. On a phone they sit in a bar at the bottom of the screen; on a computer in a bar on the left.
 - Today shows this month's Collected, Costs and Net (the same numbers as the Summary for This month), who owes money now with a Record button for each bill (a wholesaler's customers are one line that opens the wholesaler payment form), what falls due in the next 7 days, and how many reminders are waiting.
 - Customers holds the customer list, Reminders the Queue, Money the Summary, charts, Payments, Analytics and costs, and More holds Settings, Search, Import / export and Sign out.
-- Nothing about the money or the saved data changed. "Use the old layout" under More brings back the one long page; "Try the new layout" at the top of that page switches back.
+- Nothing about the money or the saved data changed. "Use the old layout" under More brings back the one long page; "Try the new layout" at the top of that page switches back. "Open the old site" under More goes to the usual address.
 
 ## v77 - 2026-11-15
 

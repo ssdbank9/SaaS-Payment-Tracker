@@ -31,6 +31,7 @@ TAGLINE = "Know who's paid."
 VERSION = "78"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
+NEW_PATH = os.environ.get("NEW_HTML") or os.path.join(ROOT, "new.html")  # v78: the redesign, served at /new
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
 ASSET_RE = re.compile(r"^[A-Za-z0-9_-]{8,40}\.(png|jpg|jpeg|webp|gif)$")
 BRAND_DIR = os.path.join(ROOT, "assets")  # v24: logo, icons and the web-app manifest, committed in the repo
@@ -92,28 +93,31 @@ app.session_interface = RotatingSessionInterface()
 if not auth.admin_path():
     print("WARNING: ADMIN_PATH is not set; the sign-in form stays at /login (visible to anyone). deploy/update.sh adds one on the VM.", file=sys.stderr)
 
-_index_cache = {"mtime": None, "html": ""}
+_index_cache = {}
 
 
-def index_html():
-    """The admin app, with a marker that switches the frontend to the api backend."""
-    st = os.stat(INDEX_PATH)
-    if _index_cache["mtime"] != st.st_mtime:
-        with open(INDEX_PATH, encoding="utf-8") as f:
+def index_html(path=None):
+    """The admin app, with a marker that switches the frontend to the api backend.
+    v78: path picks the page file (index.html at /, new.html at /new); each has its own cache entry."""
+    path = path or INDEX_PATH
+    st = os.stat(path)
+    cache = _index_cache.setdefault(path, {"mtime": None, "html": ""})
+    if cache["mtime"] != st.st_mtime:
+        with open(path, encoding="utf-8") as f:
             html = f.read()
         marker = '<meta charset="utf-8">'
         cfg = {"app": APP_NAME, "version": VERSION, "linkBase": LINK_BASE, "selfBase": SELF_BASE, "sessionDays": auth.SESSION_DAYS}
         inject = marker + '\n<script>window.__PT_SERVER__=%s;</script>' % json.dumps(cfg)
         html = html.replace(marker, inject, 1) if marker in html else inject + html
-        _index_cache.update(mtime=st.st_mtime, html=html)
-    return _index_cache["html"]
+        cache.update(mtime=st.st_mtime, html=html)
+    return cache["html"]
 
 
 @app.after_request
 def headers(resp):
     resp.headers.setdefault("X-Content-Type-Options", "nosniff")
     resp.headers.setdefault("Referrer-Policy", "same-origin")
-    if request.path.startswith("/api/") or request.path == "/":
+    if request.path.startswith("/api/") or request.path in ("/", "/new"):
         resp.headers["Cache-Control"] = "no-store"
     return resp
 
@@ -156,6 +160,15 @@ def home():
     if not auth.known_device(app):  # a session from before v25: mark this browser as the owner's so / keeps finding the sign-in page
         auth.set_device_cookie(app, resp)
     return resp
+
+
+@app.get("/new")
+@auth.login_required
+def new_home():
+    """v78: the redesigned page on its own address; / keeps serving the page as it was. Same data, same sign-in."""
+    if not os.path.isfile(NEW_PATH):
+        return neutral(404)
+    return Response(index_html(NEW_PATH), mimetype="text/html")
 
 
 def _login_view():

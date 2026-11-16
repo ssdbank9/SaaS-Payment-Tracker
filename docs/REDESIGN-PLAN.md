@@ -1,6 +1,10 @@
 # Wasooli redesign plan (drafted 2026-11-16, at v77)
 
-Status: plan only. Nothing is built. The owner uses every feature (WhatsApp, Email, Telegram, customer link pages, analytics,
+Status: phase 1 is built (v78). Rollout (decided 2026-11-16): the redesign is built in `new.html`, served at `/new`; the usual
+address keeps the v77 page until the owner says to swap, then the new page takes `/` and the old one moves to `/old`. A fix asked
+for meanwhile goes into both files.
+
+The owner uses every feature (WhatsApp, Email, Telegram, customer link pages, analytics,
 import/export, screenshot import, 3-step reminder rounds), so nothing is removed: the redesign changes where things live and how
 much shows at once. Data, money rules, URLs and the single-file build stay exactly as they are.
 

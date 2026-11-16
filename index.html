@@ -733,132 +733,10 @@ table.costs td.cat{color:var(--ink-2)}
 
 @media (max-width:1000px){ .tiles{grid-template-columns:repeat(3,minmax(0,1fr))} }
 @media (max-width:640px){ .tiles{grid-template-columns:1fr 1fr} .tile .val{font-size:18px} .wrap{padding-top:14px} }
-/* v78: Tabs / Today. body[data-ui] = tabs | classic (localStorage pt-layout, set before the first paint), body[data-tab] = the open tab.
-   Classic is the v77 page unchanged. A block marked data-pane shows only on the tabs it names; nothing moves in the DOM. */
-body:not([data-ui="tabs"]) .tabs-only{display:none!important}
-body[data-ui="tabs"] .classic-only{display:none!important}
-.try-tabs{font-size:12px}
-body[data-ui="tabs"][data-tab="today"] [data-pane]:not([data-pane~="today"]),
-body[data-ui="tabs"][data-tab="customers"] [data-pane]:not([data-pane~="customers"]),
-body[data-ui="tabs"][data-tab="reminders"] [data-pane]:not([data-pane~="reminders"]),
-body[data-ui="tabs"][data-tab="money"] [data-pane]:not([data-pane~="money"]),
-body[data-ui="tabs"][data-tab="more"] [data-pane]:not([data-pane~="more"]){display:none!important}
-body[data-ui="tabs"] .top{flex-wrap:nowrap;align-items:center;gap:10px;margin-bottom:14px}
-body[data-ui="tabs"] .brand{flex:1 1 auto;align-items:center;gap:8px}
-@media (min-width:761px){body[data-ui="tabs"] .top .brand{visibility:hidden}}/* v78: the side bar already shows the logo and name on a computer */
-body[data-ui="tabs"] .brand>div>p,body[data-ui="tabs"] #app-tagline,body[data-ui="tabs"] #btn-reminders,body[data-ui="tabs"] #btn-search,body[data-ui="tabs"] #btn-payments,
-body[data-ui="tabs"] #btn-analytics,body[data-ui="tabs"] #btn-settings,body[data-ui="tabs"] #btn-signout,body[data-ui="tabs"] #rr-close,body[data-ui="tabs"] #sumFold{display:none!important}
-body[data-ui="tabs"] .top .brand-mark{width:28px;height:28px;margin-top:0}
-body[data-ui="tabs"] #app-title{font-size:17px}
-body[data-ui="tabs"] .top-right{flex-wrap:nowrap;gap:10px;min-width:0}
-body[data-ui="tabs"] #summaryBlock.sum-closed{display:block}
-body[data-ui="tabs"] #staleBanner{position:sticky;top:0;z-index:25}
-.tb-item{position:relative;display:flex;align-items:center;border:0;background:none;color:var(--ink-2);font:inherit;font-weight:500;cursor:pointer;text-align:left}
-.tb-item:hover{color:var(--ink)}
-.tb-item[aria-current="page"]{color:var(--accent-ink);font-weight:600}
-.tb-item svg{width:22px;height:22px;flex:none}
-.tb-cnt{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--crit);color:var(--surface);font-size:11px;font-weight:600;font-family:var(--mono)}
-.tb-cnt[hidden],.td-rem[hidden],.more-item[hidden]{display:none}
-.tb-brand{display:flex;align-items:center;gap:10px;padding:0 8px 16px;font-size:18px;font-weight:600;min-width:0;overflow-wrap:anywhere}
-.tb-brand .brand-mark{width:32px;height:32px;margin:0}
-.tb-meta{margin-top:auto;padding:8px 12px 0;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2)}
-.tb-dot{width:8px;height:8px;border-radius:50%;background:var(--line-strong);flex:none}
-.tb-dot[data-mode="shared"]{background:var(--accent)}.tb-dot[data-mode="local"]{background:var(--warn)}.tb-dot[data-mode="error"]{background:var(--crit)}
-#more-meta{display:inline-flex;align-items:center;gap:6px}
-@media (max-width:760px){
-  body[data-ui="tabs"] .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-  body[data-ui="tabs"] #sync{font-size:0;gap:0}
-  body[data-ui="tabs"] .rate-badge{display:none}
-  body[data-ui="tabs"] .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:30}
-  .tab-bar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:0 4px env(safe-area-inset-bottom,0px);background:var(--surface);border-top:1px solid var(--line)}
-  .tab-bar .tb-brand,.tab-bar .tb-meta{display:none}
-  .tb-item{flex-direction:column;justify-content:center;gap:3px;min-height:64px;padding:6px 2px;font-size:12px;text-align:center}
-  .tb-cnt{position:absolute;top:5px;left:calc(50% + 5px)}
-}
-@media (min-width:761px){
-  body[data-ui="tabs"]{padding-left:220px}
-  .tab-bar{position:fixed;top:0;bottom:0;left:0;width:220px;z-index:20;display:flex;flex-direction:column;gap:4px;padding:20px 12px;background:var(--surface);border-right:1px solid var(--line);overflow-y:auto}
-  .tb-item{flex-direction:row;justify-content:flex-start;gap:12px;min-height:44px;padding:0 12px;border-radius:10px;font-size:14px}
-  .tb-item[aria-current="page"]{background:var(--accent-soft)}
-  .tb-cnt{margin-left:auto}
-}
-.today,.more-panel{display:flex;flex-direction:column;gap:18px;font-size:15px;line-height:1.35;margin-bottom:16px}
-.more-panel{gap:12px}
-#td-body{display:flex;flex-direction:column;gap:18px}#td-body:empty{display:none}
-.td-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;padding:0 4px}
-.td-h1{font-size:26px;font-weight:600;letter-spacing:-.01em;color:var(--ink);text-transform:none;margin:0}
-.td-date{font-size:13px;color:var(--ink-2)}
-.td-cards{display:flex;flex-wrap:wrap;gap:12px}
-.td-card{display:none}
-.td-month{display:flex;flex-direction:column;gap:10px;flex:3 1 540px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
-.td-month:hover{border-color:var(--accent-line)}
-.td-mlbl{font-size:13px;color:var(--ink-2)}
-.td-mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.td-m{display:flex;flex-direction:column;gap:2px;min-width:0}
-.td-m .l,.td-card .l{font-size:12px;color:var(--ink-2)}
-.td-m .v,.td-card .v{font-size:16px;font-weight:500;overflow-wrap:anywhere}
-.td-m .s,.td-card .s{display:none;font-size:13px;color:var(--ink-2)}
-.today .dk{display:none}
-.td-pos{color:var(--accent-ink)}.td-crit{color:var(--crit)}.td-warn{color:var(--warn)}
-.td-cols{display:flex;flex-wrap:wrap;gap:18px 20px;align-items:flex-start}
-.td-sec{flex:999 1 420px;min-width:0;display:flex;flex-direction:column;gap:8px}
-.td-sec.td-soon{flex:1 1 300px}
-.td-sh{display:flex;align-items:baseline;justify-content:space-between;gap:4px 8px;padding:0 4px;flex-wrap:wrap}
-.td-sh h3{font-size:16px;font-weight:600;color:var(--ink);margin:0}
-.td-tot{font-size:13px}
-.td-list{background:var(--surface);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;overflow:hidden}
-.td-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:12px 14px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:inherit;text-align:left}
-.td-row:last-child{border-bottom:0}
-button.td-row{cursor:pointer;min-height:56px}
-button.td-row:hover{background:var(--accent-tint)}
-.td-main{display:flex;flex-direction:column;gap:2px;min-width:0}
-.td-name{font-weight:600;overflow-wrap:anywhere}
-.td-sub{font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
-.td-when{font-size:12px;color:var(--crit)}
-.td-end{display:flex;align-items:center;gap:10px;flex:0 1 auto;min-width:0;justify-content:flex-end}
-.td-amt{font-weight:500;text-align:right;overflow-wrap:anywhere}
-.btn.td-rec{min-height:44px;padding:0 14px;border-radius:10px;font-weight:600;flex:none}
-.td-empty{padding:14px;color:var(--ink-2);font-size:14px}
-.td-rem{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:52px;padding:0 14px;background:var(--accent-soft);border:0;border-radius:14px;color:var(--accent-ink);font:inherit;font-weight:600;cursor:pointer;text-align:left}
-.more-item{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:58px;padding:6px 14px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
-.more-item:last-child{border-bottom:0}
-.more-item:hover{background:var(--accent-tint)}
-.more-item b{display:block;font-weight:600}
-.more-item .small{display:block;font-size:13px;color:var(--ink-2)}
-.more-item svg{flex:none;color:var(--muted)}
-.money-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;padding:0 4px}
-.money-bar .mb-acts{display:flex;gap:8px;flex-wrap:wrap}
-.money-bar .btn{min-height:44px;padding:0 16px;border-radius:10px}
-.money-bar .btn[aria-expanded="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
-@media (min-width:761px){
-  .td-card{display:flex;flex-direction:column;gap:4px;flex:1 1 180px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
-  .td-month{padding:0;background:none;border:0;gap:0}
-  .td-mlbl{display:none}
-  .td-mgrid{gap:12px}
-  .td-m{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;gap:4px}
-  .td-month:hover .td-m{border-color:var(--accent-line)}
-  .td-m .l,.td-card .l{font-size:13px}
-  .td-m .v,.td-card .v{font-size:20px}
-  .td-m .s,.td-card .s{display:block}
-  .today .dk{display:inline}
-  .td-row{padding:12px 16px}
-  .td-sh h3{font-size:17px}
-}
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
 </style>
 </head>
 <body>
-<script id="pickLayout">/* v78: the layout is chosen before the first paint: localStorage pt-layout "classic" = the one long page of v77, anything else = tabs */(function(){var u='tabs';try{if(localStorage.getItem('pt-layout')==='classic')u='classic';}catch(e){}document.body.dataset.ui=u;if(u==='tabs')document.body.dataset.tab='today';})();</script>
-<!-- v78: the tab bar (bottom of a phone, left side of a computer); tabs layout only -->
-<nav class="tab-bar tabs-only" id="tabBar" aria-label="Main">
-  <div class="tb-brand"><svg class="brand-mark" id="tb-mark" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false"><rect width="64" height="64" rx="14"/><path d="M11.5 22 L20 44 L28.5 27 L37 44 L52.5 16" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="tb-name">Wasooli</span></div>
-  <button type="button" class="tb-item" data-go="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="tb-l">Today</span></button>
-  <button type="button" class="tb-item" data-go="customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg><span class="tb-l">Customers</span></button>
-  <button type="button" class="tb-item" data-go="reminders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="tb-l">Reminders</span><span class="tb-cnt" id="tab-rem-cnt" hidden></span></button>
-  <button type="button" class="tb-item" data-go="money"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 20V10"/><path d="M12 20V4"/><path d="M19 20v-7"/></svg><span class="tb-l">Money</span></button>
-  <button type="button" class="tb-item" data-go="more"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span class="tb-l">More</span></button>
-  <div class="tb-meta" id="tb-meta"></div>
-</nav>
 
 <div class="wrap">
   <header class="top">
@@ -879,7 +757,6 @@ button.td-row:hover{background:var(--accent-tint)}
       <button class="btn" type="button" id="btn-analytics" aria-controls="analyticsPanel" aria-expanded="false" title="Users per package, collected vs costs, cumulative totals, outstanding">Analytics</button>
       <button class="btn" type="button" id="btn-settings" aria-controls="settingsPanel" aria-expanded="false">Settings</button>
       <button class="btn" type="button" id="btn-signout" data-act="logout" title="Sign out on this device" hidden>Sign out</button>
-      <button class="link classic-only try-tabs" type="button" id="tryTabs" title="Today, Customers, Reminders, Money and More as tabs">Try the new layout</button><!-- v78 -->
     </div>
   </header>
 
@@ -889,38 +766,19 @@ button.td-row:hover{background:var(--accent-tint)}
 
   <div class="banner" id="secBanner" hidden role="status" data-kind="security"><span><b>Your private sign-in address is ready.</b> The old address now shows a blank page to anyone who is not signed in, so bookmark this one: <code class="mono" id="secBannerUrl"></code></span><span class="banner-acts"><button class="btn sm" type="button" id="secBannerCopy">Copy</button><button class="btn sm" type="button" id="secBannerOpen">Settings → Security</button><button class="link sm" type="button" id="secBannerHide">Got it</button></span></div>
 
-  <div class="banner" id="remindBanner" data-pane="today" hidden role="status"><span id="remindBannerText"></span><button class="btn sm primary" type="button" id="remindBannerBtn">Open reminder run</button></div>
-  <section class="panel" id="remindRun" data-pane="reminders" hidden aria-label="Reminder run">
+  <div class="banner" id="remindBanner" hidden role="status"><span id="remindBannerText"></span><button class="btn sm primary" type="button" id="remindBannerBtn">Open reminder run</button></div>
+  <section class="panel" id="remindRun" hidden aria-label="Reminder run">
     <div class="panel-head"><div><div class="rr-tabs"><h3 id="rr-title">Queue</h3><span class="seg" id="rr-tabs"><button type="button" data-tab="queue" aria-pressed="true">Queue</button><button type="button" data-tab="run" aria-pressed="false">Reminder run</button><button type="button" data-tab="final" aria-pressed="false">Final notice</button></span></div><p class="small muted" id="rr-sub"></p></div><button class="link" type="button" id="rr-close">Close</button></div>
     <div id="rr-body"></div>
   </section>
-  <!-- v78: Today (tabs layout): the month in three numbers, who owes now, what falls due this week, messages waiting -->
-  <section class="today tabs-only" id="todayPanel" data-pane="today" aria-labelledby="td-title">
-    <div class="td-head"><h2 class="td-h1" id="td-title">Today</h2><span class="td-date" id="td-date"></span></div>
-    <div id="td-body"></div>
-    <button type="button" class="td-rem" id="td-rem" hidden><span class="td-rem-t"></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg></button>
-  </section>
-  <!-- v78: Money tab (tabs layout): Payments and Analytics, the same handlers as the classic header buttons -->
-  <div class="money-bar tabs-only" id="moneyBar" data-pane="money"><h2 class="td-h1">Money</h2><span class="mb-acts"><button class="btn" type="button" id="mb-pay" aria-controls="payPanel" aria-expanded="false">Payments</button><button class="btn" type="button" id="mb-an" aria-controls="analyticsPanel" aria-expanded="false">Analytics</button></span></div>
-  <!-- v78: More tab (tabs layout) -->
-  <section class="more-panel tabs-only" id="morePanel" data-pane="more" aria-labelledby="more-title">
-    <div class="td-head"><h2 class="td-h1" id="more-title">More</h2><span class="td-date" id="more-meta"></span></div>
-    <div class="td-list more-list">
-      <button type="button" class="more-item" data-more="settings"><span><b>Settings</b><span class="small">Products, wholesalers, messages, reminders, rates</span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button type="button" class="more-item" data-more="search"><span><b>Search</b><span class="small">Find customers by phone, notes, dates or money</span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button type="button" class="more-item" data-more="io"><span><b>Import / export</b><span class="small">Customers and costs as CSV</span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button type="button" class="more-item" id="more-signout" data-act="logout" hidden><span><b>Sign out</b><span class="small">On this device</span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button type="button" class="more-item" data-more="classic" id="more-classic"><span><b>Use the old layout</b><span class="small">Everything on one long page, as before. You can switch back.</span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg></button>
-    </div>
-  </section>
   <!-- v26: Analytics -->
-  <section class="panel" id="analyticsPanel" data-pane="money" hidden aria-label="Analytics">
+  <section class="panel" id="analyticsPanel" hidden aria-label="Analytics">
     <div class="panel-head an-head"><div><h3>Analytics</h3><p class="small muted" id="an-sub"></p></div><div class="chart-legend"><select id="an-prod" aria-label="Product" style="min-height:30px;padding:3px 8px;max-width:160px"><option value="">All products</option></select><span class="seg" id="an-cur" aria-label="Currency"><button type="button" data-cur="PKR" aria-pressed="true">PKR</button><button type="button" data-cur="USD" aria-pressed="false">USD</button></span><button class="link" type="button" id="an-close">Close</button></div></div>
     <div id="an-body"></div>
   </section>
 
   <!-- v48: every payment and refund of every customer, newest first -->
-  <section class="panel" id="payPanel" data-pane="money" hidden aria-label="Payments and refunds">
+  <section class="panel" id="payPanel" hidden aria-label="Payments and refunds">
     <div class="panel-head"><div><h3>Payments and refunds</h3><p class="small muted" id="pl-sub">Every payment received and refund given, newest first. Tap a line to open that customer.</p></div><button class="link" type="button" id="pl-close">Close</button></div>
     <div class="pl-filters">
       <input id="pl-q" type="search" placeholder="Search customer, product or note" aria-label="Search payments" autocomplete="off">
@@ -935,7 +793,7 @@ button.td-row:hover{background:var(--accent-tint)}
   </section>
 
   <!-- v66: Collected or Costs by month, opened from the Summary tiles; follows the Summary range and product filter -->
-  <section class="panel" id="monthPanel" data-pane="money" hidden aria-label="By month">
+  <section class="panel" id="monthPanel" hidden aria-label="By month">
     <div class="panel-head"><div><h3 id="mo-title">Collected by month</h3><p class="small muted" id="mo-sub"></p></div><button class="link" type="button" id="mo-close">Close</button></div>
     <div class="mo-head">
       <span class="seg" id="mo-kind" aria-label="Show"><button type="button" data-kind="col" aria-pressed="true">Collected</button><button type="button" data-kind="cost" aria-pressed="false">Costs</button></span>
@@ -949,7 +807,7 @@ button.td-row:hover{background:var(--accent-tint)}
   </section>
 
   <!-- v58: Search customers by anything (text, product, wholesaler, status, currency, dates, money) -->
-  <section class="panel" id="searchPanel" data-pane="more" hidden aria-label="Search customers">
+  <section class="panel" id="searchPanel" hidden aria-label="Search customers">
     <div class="panel-head"><div><h3>Search customers</h3><p class="small muted">Fill in any of the fields; customers must match all of them. Tap a customer to open them.</p></div><button class="link" type="button" id="sr-close">Close</button></div>
     <form id="srForm" novalidate>
       <div class="form-grid sr-grid">
@@ -975,8 +833,8 @@ button.td-row:hover{background:var(--accent-tint)}
 
 
   <!-- v54: on a phone the summary folds to one line (owed, collected); tap to open. A computer always shows it. -->
-  <button class="sum-fold" id="sumFold" data-pane="money" type="button" aria-expanded="false" aria-controls="summaryBlock"><span id="sumFoldText">Summary</span><span class="chev" aria-hidden="true">›</span></button>
-  <div class="summary-block sum-closed" id="summaryBlock" data-pane="money">
+  <button class="sum-fold" id="sumFold" type="button" aria-expanded="false" aria-controls="summaryBlock"><span id="sumFoldText">Summary</span><span class="chev" aria-hidden="true">›</span></button>
+  <div class="summary-block sum-closed" id="summaryBlock">
   <div class="sum-head">
     <h2>Summary</h2>
     <span class="cycle-note" id="cycle-note"></span>
@@ -1002,7 +860,7 @@ button.td-row:hover{background:var(--accent-tint)}
   </div>
   </div>
 
-  <section class="panel" id="settingsPanel" data-pane="more" hidden aria-label="Settings">
+  <section class="panel" id="settingsPanel" hidden aria-label="Settings">
     <div class="panel-head"><h3>Settings</h3><button class="link" type="button" id="s-show-all">Show all</button><button class="link" type="button" id="settings-close">Close</button></div>
     <form id="settingsForm" novalidate>
       <div class="form-grid" style="grid-template-columns:minmax(160px,220px) 1fr">
@@ -1121,9 +979,9 @@ button.td-row:hover{background:var(--accent-tint)}
   </section>
 
   <!-- v54: who owes, who is due soon, who is paid up; each button filters the list -->
-  <div class="pay-strip" id="payStrip" data-pane="customers" role="group" aria-label="Show customers by payment" hidden></div>
-  <div class="owe-list" id="oweList" data-pane="customers" hidden></div><!-- v75: who owes, for which period -->
-  <div class="toolbar" data-pane="customers">
+  <div class="pay-strip" id="payStrip" role="group" aria-label="Show customers by payment" hidden></div>
+  <div class="owe-list" id="oweList" hidden></div><!-- v75: who owes, for which period -->
+  <div class="toolbar">
     <input class="search" id="search" type="search" placeholder="Search name, email, plan or notes" aria-label="Search users">
     <button class="btn" type="button" id="btn-filter" aria-pressed="false">Hasn't paid</button>
     <select id="pkgFilter" aria-label="Filter by package"><option value="all">Package: all</option></select>
@@ -1144,7 +1002,7 @@ button.td-row:hover{background:var(--accent-tint)}
     <button class="btn primary" id="btn-add" type="button">Add user</button>
   </div>
 
-  <section class="panel" id="quickPanel" data-pane="customers" hidden aria-label="Quick add users">
+  <section class="panel" id="quickPanel" hidden aria-label="Quick add users">
     <div class="panel-head"><div><h3>Quick add</h3><p class="small muted">One line per user, in any order. Name is the only must; everything else has a default.</p></div><button class="link" type="button" id="quick-close">Close</button></div>
     <textarea id="qa-text" rows="4" placeholder="Ali Khan, ali@mail.com, +92 300 1234567, joined Sep 25, C&#10;Sara, sara@x.com, C Max, 4200&#10;Bilal +923001112222 G 50000 joined 2026-10-01 paid" aria-label="Users to add, one per line" autocapitalize="sentences"></textarea>
     <p class="qa-help" id="qa-help">Recognised: an email, a WhatsApp number, <code>@telegram</code> or <code>tg:handle</code>, <code>joined &lt;date&gt;</code> (default today), a package name (default C), a price (default the package price), <code>$</code>/<code>USD</code> or <code>Rs</code>, and <code>paid</code>, <code>paid 4200</code> or <code>paid 3 months</code> to record the first payment.</p>
@@ -1166,7 +1024,7 @@ button.td-row:hover{background:var(--accent-tint)}
     </div>
   </section>
 
-  <section class="panel" id="addPanel" data-pane="customers" hidden aria-label="Add user">
+  <section class="panel" id="addPanel" hidden aria-label="Add user">
     <div class="panel-head"><h3>Add a customer</h3><button class="link" type="button" id="add-close">Close</button></div>
     <!-- v55: every field stays on the form, grouped as Customer / Plan / Payment; "Have they paid?" is answered here -->
     <form id="addForm" novalidate>
@@ -1222,7 +1080,7 @@ button.td-row:hover{background:var(--accent-tint)}
     </form>
   </section>
 
-  <section class="panel" id="ioPanel" data-pane="more" hidden aria-label="Import and export">
+  <section class="panel" id="ioPanel" hidden aria-label="Import and export">
     <div class="panel-head"><h3>Import / export</h3><button class="link" type="button" id="io-close">Close</button></div>
     <div class="io-grid">
       <div>
@@ -1256,14 +1114,14 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     </div>
   </section>
 
-  <section class="panel" id="remindPanel" data-pane="customers" hidden aria-label="Remind everyone who has not paid">
+  <section class="panel" id="remindPanel" hidden aria-label="Remind everyone who has not paid">
     <div class="panel-head"><h3>Remind everyone who hasn't paid</h3><span class="small muted">One tap each opens WhatsApp with the message prefilled</span></div>
     <div class="remind-list" id="remindList"></div>
   </section>
 
-  <div id="loading" data-pane="today customers" class="loading">Loading shared data…</div>
+  <div id="loading" class="loading">Loading shared data…</div>
 
-  <section class="empty" id="empty" data-pane="customers" hidden>
+  <section class="empty" id="empty" hidden>
     <h3>No users yet</h3>
     <div class="steps">
       <div class="step"><span class="n">1</span><p><b>Add a user</b> with their name or email, the day they joined, their package or product, the currency they pay in and the price. The first billing period starts on the join date.</p></div>
@@ -1272,7 +1130,7 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn primary" type="button" id="empty-add">Add your first user</button><button class="btn" type="button" id="empty-quick">Quick add several</button></div>
   </section>
 
-  <section class="table-wrap" id="tableWrap" data-pane="customers" hidden>
+  <section class="table-wrap" id="tableWrap" hidden>
     <table id="table" aria-label="Users and payment status">
       <thead>
         <tr>
@@ -1293,7 +1151,7 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     <div class="nores" id="nores" hidden></div>
   </section>
 
-  <section class="costs-sec" id="costsSec" data-pane="money" aria-label="Costs">
+  <section class="costs-sec" id="costsSec" aria-label="Costs">
     <div class="costs-head">
       <div><h2>Costs</h2><span class="tot" id="costs-tot"></span></div>
       <div class="acts"><button class="btn sm" type="button" id="btn-shot">Import from screenshot</button><button class="btn primary sm" type="button" id="btn-cost">Add cost</button></div>
@@ -1363,7 +1221,7 @@ Haroon,haroon.mansha@gmail.com,2026-08-29,G,yearly,PKR,50000,2026-08-30,25000,PK
     </div>
   </section>
 
-  <p class="foot" id="foot" data-pane="more"></p>
+  <p class="foot" id="foot"></p>
 </div>
 
 <dialog class="panel payment-dialog" id="paymentDialog" aria-labelledby="payment-title">
@@ -2378,7 +2236,7 @@ function applyBranding(){const name=appName();const tag=tagline();const custom=n
   /* on the self-hosted server the default brand uses the files under /assets and the served manifest, so "Add to home screen" gets real PNG icons */
   const served=state.backend==='api'&&!custom;const key=name+'|'+tag+'|'+letter+'|'+(served?'s':'d');if(brand.key===key)return;brand.key=key;
   document.title=name+' · '+tag.replace(/[.!]+$/,'');const h=$('#app-title');if(h){h.textContent=name+' ';const sp=document.createElement('span');sp.className='tagline';sp.id='app-tagline';sp.textContent=tag;h.appendChild(sp);}const mt=$('#meta-app-title');if(mt)mt.content=name;const mn=$('#meta-app-name');if(mn)mn.content=name;const md=$('#meta-desc');if(md)md.content=tag;
-  const mk=$('#brand-mark');if(mk)mk.innerHTML='<rect width="64" height="64" rx="14"/>'+markInner(letter);const tm=$('#tb-mark');if(tm)tm.innerHTML='<rect width="64" height="64" rx="14"/>'+markInner(letter);const tn=$('#tb-name');if(tn)tn.textContent=name;/* v78: the side bar */
+  const mk=$('#brand-mark');if(mk)mk.innerHTML='<rect width="64" height="64" rx="14"/>'+markInner(letter);
   const svg='data:image/svg+xml,'+encodeURIComponent(markSVG(64,14,letter));const ic=$('#link-icon');if(ic)ic.href=svg;
   const tc=$('#link-touch'),lm=$('#link-manifest');
   if(served){if(tc)tc.href='/assets/apple-touch-icon.png';if(lm)lm.href='/manifest.webmanifest';return;}
@@ -2386,7 +2244,7 @@ function applyBranding(){const name=appName();const tag=tagline();const custom=n
   const big=markPNG(512,14,letter),mask=markPNG(512,0,letter);const icons=[{src:svg,sizes:'any',type:'image/svg+xml',purpose:'any'}];if(big)icons.push({src:big,sizes:'512x512',type:'image/png',purpose:'any'});if(mask)icons.push({src:mask,sizes:'512x512',type:'image/png',purpose:'maskable'});if(png)icons.push({src:png,sizes:'180x180',type:'image/png'});
   const man={name:name,short_name:name.length>12?name.split(/\s+/)[0].slice(0,12):name,description:tag,start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f3f5f3',theme_color:BRAND_GREEN,icons:icons};
   if(lm)lm.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));}
-function render(){accountCostCache=null;applyBranding();renderSync();renderTabMeta();/* v78 */renderBaseUrlState();/* v57 */if(!state.settingsLoaded){renderTable();return;}renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if(!$('#analyticsPanel').hidden)renderAnalytics();if(!$('#payPanel').hidden)renderPayments();if(!$('#searchPanel').hidden)renderSearch();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-rate-eur').value=state.settings.rateEUR||'';$('#s-rate-gbp').value=state.settings.rateGBP||'';/* v64 */$('#s-cost-tax').value=costTax();$('#s-remind-lead').value=remindLead();$('#s-reply-lead').value=replyLead();/* v68 */$('#s-ws-remind').value=wsRemindDays();/* v67 */$('#s-ws-payline').value=String(state.settings.wsPayLine||'');/* v68 */$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);$('#s-dim').checked=dimOn();fillQueueSettings();}}
+function render(){accountCostCache=null;applyBranding();renderSync();renderBaseUrlState();/* v57 */if(!state.settingsLoaded){renderTable();return;}renderPkgFilter();renderTiles();renderChart();renderTable();renderCosts();renderReminderBits();if(!$('#remindRun').hidden)renderRemindRun();if(!$('#analyticsPanel').hidden)renderAnalytics();if(!$('#payPanel').hidden)renderPayments();if(!$('#searchPanel').hidden)renderSearch();if($('#settingsPanel').hidden){$('#s-rate').value=state.settings.rate||'';$('#s-rate-eur').value=state.settings.rateEUR||'';$('#s-rate-gbp').value=state.settings.rateGBP||'';/* v64 */$('#s-cost-tax').value=costTax();$('#s-remind-lead').value=remindLead();$('#s-reply-lead').value=replyLead();/* v68 */$('#s-ws-remind').value=wsRemindDays();/* v67 */$('#s-ws-payline').value=String(state.settings.wsPayLine||'');/* v68 */$('#s-template').value=tplOf(state.settings.template);$('#s-final-template').value=finalTplOf(state.settings.finalTemplate);$('#s-basis').value=basis();$('#s-app-name').value=rawAppName(state.settings.appName);$('#s-tagline').value=rawTagline(state.settings.tagline);$('#s-model').value=readModel();$('#s-base-url').value=pubBaseRaw(state.settings.publicBaseUrl);$('#s-dim').checked=dimOn();fillQueueSettings();}}
 function renderSync(){
   const el=$('#sync');el.dataset.mode=state.mode;
   el.textContent=state.mode==='shared'?(state.backend==='api'?'Saved on your server, shared across your devices':'Shared with your team, saves live'):state.mode==='local'?'Saved in this browser only':state.mode==='error'?'Live data unavailable':'Connecting…';
@@ -2406,9 +2264,9 @@ function reminderRows(today,cs){const w=reminderWindow(today,cs);/* v68: one cyc
   return {w,overdue,cycle,covered,todo,all,due,skipped};}
 function renderReminderBits(){
   const today=todayISO();const ids=Object.keys(state.users);const ban=$('#remindBanner'),cnt=$('#rem-cnt');
-  if(!ids.length||!state.loaded){ban.hidden=true;cnt.hidden=true;syncTabBadge();return;}
+  if(!ids.length||!state.loaded){ban.hidden=true;cnt.hidden=true;return;}
   const R=reminderRows(today);const w=R.w;const n=R.overdue.length+R.cycle.length;syncConfirmRequests(R,today);
-  /* v68: every cycle date in a window counts */const act=activeDates(today);const qIds=new Set();let todo=0;for(const d of act){const Q=queueRows(today,stageFor(d.cs,today));todo+=Q.todo;for(const r of Q.rows)if(!r.sent)qIds.add(r.id+'@'+d.cs);}const st=act.length?stageFor(act[0].cs,today):stageToday(today);const Q={todo};for(const r of ownCycleDueRows(today))qIds.add(r.id);for(const r of wsStatementRows(today))if(!wsSentOf(r))qIds.add('ws:'+r.w.id+':'+r.key);/* v67 */cnt.hidden=!qIds.size;cnt.textContent=qIds.size;syncTabBadge();/* v78 */$('#btn-reminders').title=act.length?`${act.length} cycle date${act.length===1?'':'s'} in a reminder window: ${Q.todo} to send`:'Today\'s messages to send, answers from the link pages, final notice';
+  /* v68: every cycle date in a window counts */const act=activeDates(today);const qIds=new Set();let todo=0;for(const d of act){const Q=queueRows(today,stageFor(d.cs,today));todo+=Q.todo;for(const r of Q.rows)if(!r.sent)qIds.add(r.id+'@'+d.cs);}const st=act.length?stageFor(act[0].cs,today):stageToday(today);const Q={todo};for(const r of ownCycleDueRows(today))qIds.add(r.id);for(const r of wsStatementRows(today))if(!wsSentOf(r))qIds.add('ws:'+r.w.id+':'+r.key);/* v67 */cnt.hidden=!qIds.size;cnt.textContent=qIds.size;$('#btn-reminders').title=act.length?`${act.length} cycle date${act.length===1?'':'s'} in a reminder window: ${Q.todo} to send`:'Today\'s messages to send, answers from the link pages, final notice';
   const fd=act.find(d=>today>=d.replyBy&&today<d.cs);const finalDay=!!fd;
   if(finalDay){const w=fd;const F=finalRows(today,fd.cs);ban.hidden=false;ban.dataset.kind='final';$('#remindBannerBtn').textContent='Open final notice';
     $('#remindBannerText').innerHTML=`<b>Final notice day</b>: <b>${F.pending}</b> user${F.pending===1?'':'s'} not confirmed for the cycle starting <b>${esc(fmtD(w.nc,true))}</b>${F.rows.some(r=>r.deact)?` · ${F.rows.filter(r=>r.deact).length} already deactivated`:''}. Send the final notice and compile the deactivation list.`;return;}
@@ -2627,15 +2485,12 @@ function setTile(id,S,primary,alertNeg){
   const p=sumParts(S,primary);$('#'+id).textContent=S.n?p.p:fmtAmt(0,primary);
   $('#'+id+'2').innerHTML=S.n?(p.s?esc(p.s):setRateLink+' to combine'):' ';
 }
-/* v78: Collected, Refunds and Costs of a range (all products), as the Summary tiles show them; Today's month card uses the same function */
-function tileSums(rb){const col=newSum(),cost=newSum(),ref=newSum(),lossS=newSum();let npay=0,nref=0,ncost=0;
-  for(const p of allPayments())if(inRange(p.date,rb)){sumAdd(col,p.amount,p.currency,p.rate);npay++;}
-  for(const r of allRefunds())if(inRange(r.date,rb)){sumAdd(ref,r.amount,r.currency,r.rate);nref++;}
-  for(const id in costRecords()){const c=costRecords()[id];if(inRange(c.date,rb)){sumAdd(cost,costTotal(c),c.currency,c.rate);ncost++;if(c.kind==='loss')sumAdd(lossS,costTotal(c),c.currency,c.rate);}}
-  return {col,cost,ref,npay,nref,ncost,lossS};}
 function renderTiles(){
   const today=todayISO();const ids=Object.keys(state.users);const rb=rangeBounds();
-  let {col,cost,ref,npay,nref,ncost,lossS}=tileSums(rb);let out=newSum(),unpaid=0,overdueUsers=0,soon=0,withBal=0;/* v78: tileSums, shared with Today */
+  let col=newSum(),cost=newSum(),ref=newSum();let out=newSum(),unpaid=0,overdueUsers=0,soon=0,withBal=0,ncost=0,npay=0,nref=0;
+  for(const p of allPayments())if(inRange(p.date,rb)){sumAdd(col,p.amount,p.currency,p.rate);npay++;}
+  for(const r of allRefunds())if(inRange(r.date,rb)){sumAdd(ref,r.amount,r.currency,r.rate);nref++;}
+  let lossS=newSum();for(const id in costRecords()){const c=costRecords()[id];if(inRange(c.date,rb)){sumAdd(cost,costTotal(c),c.currency,c.rate);ncost++;if(c.kind==='loss')sumAdd(lossS,costTotal(c),c.currency,c.rate);}}
   let cancOwe=newSum(),cancN=0,activeN=0;
   for(const id of ids){const u=state.users[id];const a=analyze(u,today);out=sumMerge(out,a.balance);if(a.balance.n)withBal++;if(a.unpaid)unpaid++;if(a.status==='overdue'||(a.status==='cancelled'&&a.unpaid))overdueUsers++;if(a.status==='due-soon')soon++;if(u.cancel){if(a.balance.n){cancOwe=sumMerge(cancOwe,a.balance);cancN++;}}else activeN++;}
   const pf=prodFilterId();fillProdFilters();const pfx=pf?' · '+pkgName(pf):'';
@@ -2925,9 +2780,9 @@ function renderPayStrip(today,show){const el=$('#payStrip');el.hidden=!show;if(!
   const html=b('owes','Owe money',n.owes&&owe.n?sumParts(owe,'PKR').p:'')+b('soon','Due soon','')+b('paid','Paid up','')+(ui.payFilter?'<button type="button" class="link ps-all" data-pf="">Show everyone</button>':'');
   if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}renderOweList(today,ui.payFilter==='owes');}
 /* v75: under Owe money, one line per unpaid bill: customer, plan, the period, the day it was due and what is left */
-function oweLines(today,rows){const out=[];for(const r of rows||visibleRows(today)){/* v78: rows = Today's customers; absent = the list's visible rows */if(payCat(r.a)!=='owes')continue;const u=r.u;
+function oweLines(today){const out=[];for(const r of visibleRows(today)){if(payCat(r.a)!=='owes')continue;const u=r.u;
   for(const s of u.subscriptions||[]){const sa=r.a.sa[s.id];if(!sa)continue;
-    if(s.kind==='monthly'){for(const p of sa.periods||[])if((p.state==='unpaid'||p.state==='partial')&&(p.due||p.es)<=today)out.push({id:r.id,u,s,period:fmtCycle(pFrom(p),p.en),due:p.due||p.es,amt:Math.max(0,p.pr-p.covered),st:p.st});}
+    if(s.kind==='monthly'){for(const p of sa.periods||[])if((p.state==='unpaid'||p.state==='partial')&&(p.due||p.es)<=today)out.push({id:r.id,u,s,period:fmtCycle(pFrom(p),p.en),due:p.due||p.es,amt:Math.max(0,p.pr-p.covered)});}
     else if(sa.remaining>0&&(!s.due||s.due<=today))out.push({id:r.id,u,s,period:s.name||'One-time item',due:s.due||s.start||'',amt:sa.remaining});}}
   return out.sort((a,b)=>String(a.due).localeCompare(String(b.due))||displayName(a.u).localeCompare(displayName(b.u)));}
 function renderOweList(today,show){const el=$('#oweList');if(!el)return;if(!show){el.hidden=true;if(el.dataset.html){el.innerHTML='';el.dataset.html='';}return;}const L=oweLines(today),S=newSum();for(const l of L)sumAdd(S,l.amt,l.s.currency,null);
@@ -3169,7 +3024,7 @@ async function saveWsPay(e){e.preventDefault();const d=ui.wsPay;if(!d||d.busy)re
 let lastTbodyHTML='',tbodyDirty=true,tbodyObs=null;
 const RM_WHAT={'courtesy-remove':'this courtesy discount','pay-remove':'this receipt','refund-remove':'this refund','price-remove':'this price','tier-remove':'this tier change'};
 function rmConfirmHTML(A,d){const attrs=['sub','pay','ref','from'].filter(k=>d[k]!==undefined).map(k=>`data-${k}="${esc(d[k])}"`).join(' ');return `<span class="small rm-confirm">Remove ${RM_WHAT[A]}? <button class="link sm danger" type="button" data-act="${A}-yes" ${attrs}>Yes, remove</button> <button class="link sm" type="button" data-act="rm-no">Cancel</button></span>`;}
-function renderTable(){renderToday();/* v78: Today follows every list redraw (it ignores the list's filters) */
+function renderTable(){
   /* v39: the typed values of every open inline form are kept across a redraw (before, only Edit user, Add plan and Edit plan were), so a refresh triggered by another device or by this page's own background save cannot wipe a half-typed bill, receipt, price, refund or tier form */
   const formKey=f=>[f.className,f.dataset.id||'',f.dataset.sub||'',f.dataset.start||''].join('|');
   const accountDrafts=[...document.querySelectorAll('#tbody form')].filter(f=>!f.hidden).map(f=>({key:formKey(f),id:f.dataset.id,sub:f.dataset.sub,pending:f.dataset.pendingSubId,values:[...f.elements].filter(e=>e.name).map(e=>({name:e.name,value:e.value,base:fieldBase(e),checked:e.checked,costManual:e.dataset.costManual}))}));
@@ -3893,81 +3748,10 @@ function openCostForm(c){
 function costFormPayment(){const existing=costRecords()[$('#c-id').value],paid=$('#c-paid').value,snapshot=existing&&existing.purchase&&existing.purchase.paidIn===paid?existing.purchase:null;return pricedCost($('#c-cost').value,$('#c-cur').value,paid,$('#c-date').value,normRate($('#c-rate').value),$('#c-tax').value,snapshot);}
 function updCostConv(){{const loss=$('#c-kind').value==='loss';$('#c-seats-wrap').hidden=!loss;$('#c-ws-wrap').hidden=!loss||!wholesalers().length;$('#c-desc').placeholder=loss?'e.g. 7 Claude Max accounts lost':'e.g. Hetzner server';}const usd=$('#c-cur').value==='USD';$('#c-paid-wrap').hidden=!usd;$('#c-rate').closest('label').hidden=usd&&$('#c-paid').value==='PKR';try{const p=costFormPayment();$('#c-conv').textContent=costPaymentText(p);}catch(e){$('#c-conv').textContent=e.message;}}
 
-/* v78: Tabs / Today. Two layouts behind localStorage['pt-layout']: 'classic' = the one long page of v77, anything else = five tabs
-   (bottom bar on a phone, side bar on a computer). The tabs show the existing blocks marked data-pane; nothing is moved or rebuilt. */
-const TABS=['today','customers','reminders','money','more'];
-const PANEL_TAB={addPanel:'customers',quickPanel:'customers',remindRun:'reminders',analyticsPanel:'money',payPanel:'money',monthPanel:'money',settingsPanel:'more',searchPanel:'more',ioPanel:'more'};
-const tabsOn=()=>document.body.dataset.ui==='tabs';
-function setUiLayout(v){try{localStorage.setItem('pt-layout',v);}catch(e){}location.reload();}
-function setTab(name,opt){if(!tabsOn())return;opt=opt||{};if(!TABS.includes(name))name='today';const was=ui.tab;ui.tab=name;document.body.dataset.tab=name;
-  document.querySelectorAll('#tabBar [data-go]').forEach(b=>{if(b.dataset.go===name)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
-  if(name==='reminders'&&$('#remindRun').hidden){ui.rrTab='queue';ui.qStage=null;$('#remindRun').hidden=false;renderRemindRun();}/* the Queue, as the classic header button opens it */
-  if(name==='today')renderToday();
-  if(name==='money'&&was!=='money'){renderChart();if(!$('#analyticsPanel').hidden)renderAnalytics();}/* charts measure their box, which is hidden on other tabs */
-  if(name==='more')renderTabMeta();
-  if(!opt.keepScroll)window.scrollTo(0,0);}
-function syncTabBadge(){if(!tabsOn())return;const c=$('#rem-cnt'),n=c.hidden?0:(Number(c.textContent)||0);const b=$('#tab-rem-cnt');if(b){b.hidden=!n;b.textContent=n?String(n):'';}
-  const r=$('#td-rem');if(r){r.hidden=!n;r.querySelector('.td-rem-t').textContent=`${n} reminder${n===1?'':'s'} to send`;}}
-function renderTabMeta(){if(!tabsOn())return;const short=state.mode==='shared'?'Saved':state.mode==='local'?'Saved in this browser':state.mode==='error'?'Not connected':'Connecting…';
-  const html=`<span class="tb-dot" data-mode="${esc(state.mode)}" aria-hidden="true"></span>${esc(short)} · ${esc($('#app-ver').textContent)}`;
-  for(const id of ['tb-meta','more-meta']){const el=$('#'+id);if(el&&el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}}
-  const sy=$('#sync');sy.title=sy.textContent;const so=$('#more-signout');if(so)so.hidden=$('#btn-signout').hidden;}
-const WDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
-function dayWords(iso){const d=parseD(iso);return `${WDAYS[d.getDay()]}, ${d.getDate()} ${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`;}
-const weekDay=iso=>WDAYS[parseD(iso).getDay()].slice(0,3)+' '+fmtD(iso);
-/* bills not due yet whose due day falls within the next `days` days (a period still upcoming, a one-time item with a later due date) */
-function dueSoonLines(today,rows,days){const end=addDays(today,days),out=[];
-  for(const r of rows)for(const s of r.u.subscriptions||[]){const sa=r.a.sa[s.id];if(!sa)continue;
-    if(s.kind==='monthly'){for(const p of sa.periods||[]){const d=p.due||p.es,amt=p.pr-p.covered;if(p.state==='upcoming'&&d>today&&d<=end&&amt>tolOf(s.currency))out.push({id:r.id,u:r.u,s,period:fmtCycle(pFrom(p),p.en),due:d,amt,st:p.st});}}
-    else if(sa.remaining>0&&isDateKey(s.due)&&s.due>today&&s.due<=end)out.push({id:r.id,u:r.u,s,period:s.name||'One-time item',due:s.due,amt:sa.remaining});}
-  return out.sort((a,b)=>a.due.localeCompare(b.due)||displayName(a.u).localeCompare(displayName(b.u)));}
-/* Today's figures: every customer not cancelled (the list's search and filters do not apply); a wholesaler's customers are one entry */
-function todayData(today){const rows=Object.keys(state.users).filter(id=>!state.users[id].cancel).map(id=>({id,u:state.users[id],a:analyze(state.users[id],today)}));
-  const group=lines=>{const out=[],by={};for(const l of lines){const w=wsOf(l.u);if(!w){out.push({kind:'bill',l,due:String(l.due||''),name:displayName(l.u)});continue;}
-      let g=by[w.id];if(!g){g=by[w.id]={kind:'ws',w,lines:[],S:newSum(),ids:new Set(),due:String(l.due||''),name:w.name};out.push(g);}g.lines.push(l);sumAdd(g.S,l.amt,l.s.currency,null);g.ids.add(l.id);if(String(l.due||'')<g.due)g.due=String(l.due||'');}
-    for(const g of Object.values(by))g.of=rows.filter(r=>r.u.wholesalerId===g.w.id).length;
-    return out.sort((a,b)=>a.due.localeCompare(b.due)||a.name.localeCompare(b.name));};
-  const owe=oweLines(today,rows),soon=dueSoonLines(today,rows,7),S=newSum();for(const l of owe)sumAdd(S,l.amt,l.s.currency,null);
-  return {owe,soon,S,oweG:group(owe),soonG:group(soon),month:tileSums({from:today.slice(0,7)+'-01',to:today,label:mLabel(monthKey(today))})};}
-function renderToday(){if(!tabsOn()||ui.tab!=='today')return;const body=$('#td-body');if(!body)return;const today=todayISO();$('#td-date').textContent=dayWords(today);
-  let html='';
-  if(state.settingsLoaded&&state.loaded){const D=todayData(today),M=D.month,net=netSum(M.col,M.ref,M.cost),mon=MONTHS_FULL[+today.slice(5,7)-1];
-    const val=S=>S.n?sumParts(S,'PKR').p:fmtAmt(0,'PKR');const nv=net.missing?net.pkr+net.usd:net.pkr;const netCls=!net.n?'':nv<0?' td-crit':nv>0?' td-pos':'';
-    const when=d=>!d?'Owed':d<today?'Overdue since '+fmtD(d):'Due today';
-    const sub=l=>esc(planLabel(l.s))+(l.st?' · '+esc(l.period):'');
-    const oweRow=e=>e.kind==='ws'
-      ?`<div class="td-row" data-ws="${esc(e.w.id)}"><div class="td-main"><span class="td-name">${esc(e.w.name)}</span><span class="td-sub">Wholesaler · ${e.ids.size} of ${e.of} customer${e.of===1?'':'s'}</span><span class="td-when">${esc(when(e.due))}</span></div><div class="td-end"><span class="td-amt num td-crit">${esc(ownText(e.S,'PKR'))}</span><button type="button" class="btn primary td-rec" data-act="wspay" data-ws="${esc(e.w.id)}" aria-label="Record a payment from ${esc(e.w.name)}">Record<span class="dk"> payment</span></button></div></div>`
-      :`<div class="td-row" data-id="${esc(e.l.id)}" data-sid="${esc(e.l.s.id)}"><div class="td-main"><span class="td-name">${esc(e.name)}</span><span class="td-sub">${sub(e.l)}</span><span class="td-when">${esc(when(e.l.due))}</span></div><div class="td-end"><span class="td-amt num td-crit">${esc(fmtAmt(e.l.amt,e.l.s.currency))}</span><button type="button" class="btn primary td-rec" data-td-pay="${esc(e.l.id)}" data-sid="${esc(e.l.s.id)}" data-st="${esc(e.l.st||'')}" aria-label="Record a payment from ${esc(e.name)}">Record<span class="dk"> payment</span></button></div></div>`;
-    const soonRow=e=>e.kind==='ws'
-      ?`<button type="button" class="td-row" data-td-open="${esc(e.lines[0].id)}" data-ws="${esc(e.w.id)}"><span class="td-main"><span class="td-name">${esc(e.w.name)}</span><span class="td-sub">Wholesaler · ${e.lines.length} bill${e.lines.length===1?'':'s'} · ${esc(weekDay(e.due))}</span></span><span class="td-amt num">${esc(ownText(e.S,'PKR'))}</span></button>`
-      :`<button type="button" class="td-row" data-td-open="${esc(e.l.id)}" data-sid="${esc(e.l.s.id)}"><span class="td-main"><span class="td-name">${esc(e.name)}</span><span class="td-sub">${esc(planLabel(e.l.s))} · ${esc(weekDay(e.l.due))}</span></span><span class="td-amt num">${esc(fmtAmt(e.l.amt,e.l.s.currency))}</span></button>`;
-    html=`<div class="td-cards"><div class="td-card td-owed"><span class="l">Owed now</span><span class="v num${D.owe.length?' td-crit':''}">${esc(D.owe.length?ownText(D.S,'PKR'):fmtAmt(0,'PKR'))}</span><span class="s">${D.owe.length} bill${D.owe.length===1?'':'s'}</span></div>`
-      +`<button type="button" class="td-month" id="td-month" aria-label="${esc(mon)} so far: open Money"><span class="td-mlbl">${esc(mon)} so far</span><span class="td-mgrid">`
-      +`<span class="td-m"><span class="l">Collected<span class="dk"> in ${esc(mon)}</span></span><span class="v num" id="td-col">${esc(val(M.col))}</span><span class="s">${M.npay} payment${M.npay===1?'':'s'}</span></span>`
-      +`<span class="td-m"><span class="l">Costs<span class="dk"> in ${esc(mon)}</span></span><span class="v num" id="td-cost">${esc(val(M.cost))}</span><span class="s">${M.ncost} entr${M.ncost===1?'y':'ies'}</span></span>`
-      +`<span class="td-m"><span class="l">Net<span class="dk"> in ${esc(mon)}</span></span><span class="v num${netCls}" id="td-net">${esc(val(net))}</span><span class="s">after refunds and costs</span></span></span></button></div>`
-      +`<div class="td-cols"><section class="td-sec td-owes" aria-labelledby="td-owe-h"><div class="td-sh"><h3 id="td-owe-h">Owes now <span class="td-crit" id="td-owe-n">${D.oweG.length}</span></h3>${D.owe.length?`<span class="td-tot num td-crit" id="td-owe-tot">${esc(ownText(D.S,'PKR'))}</span>`:''}</div>`
-      +`<div class="td-list" id="td-owe">${D.oweG.length?D.oweG.map(oweRow).join(''):'<p class="td-empty">Nobody owes money today.</p>'}</div></section>`
-      +`<section class="td-sec td-soon" aria-labelledby="td-soon-h"><div class="td-sh"><h3 id="td-soon-h">Due this week <span class="td-warn" id="td-soon-n">${D.soonG.length}</span></h3></div>`
-      +`<div class="td-list" id="td-soon">${D.soonG.length?D.soonG.map(soonRow).join(''):'<p class="td-empty">Nothing is due in the next 7 days.</p>'}</div></section></div>`;}
-  if(body.dataset.html!==html){body.innerHTML=html;body.dataset.html=html;}syncTabBadge();}
-function initTabs(){const tt=$('#tryTabs');if(tt)tt.addEventListener('click',()=>setUiLayout('tabs'));if(!tabsOn())return;
-  $('#tabBar').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)setTab(b.dataset.go);});
-  $('#todayPanel').addEventListener('click',e=>{const p=e.target.closest('[data-td-pay]');if(p){openPaymentDialog(p.dataset.tdPay,p.dataset.sid,null,p.dataset.st||null);return;}
-    const o=e.target.closest('[data-td-open]');if(o){openCustomerFrom(null,o.dataset.tdOpen);return;}
-    if(e.target.closest('#td-month')){setTab('money');return;}if(e.target.closest('#td-rem'))setTab('reminders');});
-  $('#morePanel').addEventListener('click',e=>{const b=e.target.closest('[data-more]');if(!b)return;const k=b.dataset.more,go=id=>$('#'+id).scrollIntoView({behavior:'smooth',block:'start'});
-    if(k==='settings'){if($('#settingsPanel').hidden)openSettings();else go('settingsPanel');}
-    else if(k==='search'){if($('#searchPanel').hidden)openSearch();else go('searchPanel');}
-    else if(k==='io'){showPanel('ioPanel');go('ioPanel');}
-    else if(k==='classic')setUiLayout('classic');});
-  $('#mb-pay').addEventListener('click',()=>$('#btn-payments').click());$('#mb-an').addEventListener('click',()=>$('#btn-analytics').click());
-  setTab('today',{keepScroll:true});}
-
 /* ---------- events ---------- */
 function toast(msg,ms){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms||3400);}
-function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel','analyticsPanel','payPanel','searchPanel','monthPanel'])$('#'+p).hidden=p!==id;syncSettingsBtn();syncAnalyticsBtn();syncPayBtn();syncSearchBtn();if(tabsOn()&&PANEL_TAB[id])setTab(PANEL_TAB[id],{keepScroll:true});/* v78: a panel opens on its tab */}
-function syncPayBtn(){const b=$('#btn-payments');if(b)b.setAttribute('aria-expanded',String(!$('#payPanel').hidden));const m=$('#mb-pay');if(m)m.setAttribute('aria-expanded',String(!$('#payPanel').hidden));/* v78 */}
+function showPanel(id){for(const p of ['addPanel','ioPanel','settingsPanel','remindRun','quickPanel','analyticsPanel','payPanel','searchPanel','monthPanel'])$('#'+p).hidden=p!==id;syncSettingsBtn();syncAnalyticsBtn();syncPayBtn();syncSearchBtn();}
+function syncPayBtn(){const b=$('#btn-payments');if(b)b.setAttribute('aria-expanded',String(!$('#payPanel').hidden));}
 /* v48: every payment and refund, newest first, with search, product, kind and range filters. Totals use the same sums as the Summary tiles
    (allPayments / allRefunds with sumAdd), so with All products, no search and the same range they equal Collected and Refunds there. */
 const payUI={q:'',prod:'',kind:'',range:'all',from:'',to:''};
@@ -4060,12 +3844,12 @@ function searchCSV(){const today=todayISO(),rows=srRows(today),paidOn=isDateKey(
   const lines=rows.map(r=>[displayName(r.u),r.u.email||'',r.u.phone||'',r.u.telegram||'',(wsOf(r.u)||{}).name||'',(r.u.subscriptions||[]).map(s=>planLabel(s)).join(' / '),statusLabel(r.a),r.a.balance.n?ownText(r.a.balance,r.a.mainCur):'',Math.round(sortVal(r.a.balance)),r.u.joinDate||'',r.u.notes||''].concat(paidOn?[ownText(r.paid,r.a.mainCur)]:[]).map(csvCell).join(','));
   return [head.join(',')].concat(lines).join('\n')+'\n';}
 function openSearch(){showPanel('searchPanel');renderSearch();$('#searchPanel').scrollIntoView({behavior:'smooth',block:'start'});$('#sr-q').focus({preventScroll:true});}
-function openCustomerFrom(panelId,id){if(!state.users[id])return;if(panelId)$('#'+panelId).hidden=true;/* v78: null from Today */syncPayBtn();syncSearchBtn();
+function openCustomerFrom(panelId,id){if(!state.users[id])return;$('#'+panelId).hidden=true;syncPayBtn();syncSearchBtn();
   /* v58: clear the list's own filters so the customer is certainly in it */
   ui.payFilter='';ui.filterUnpaid=false;ui.pkgFilter='all';ui.wsFilter='';const pf=$('#pkgFilter');if(pf)pf.value='all';
-  if(state.users[id].cancel&&ui.statusFilter!=='all'){ui.statusFilter='all';const sf=$('#statusFilter');if(sf)sf.value='all';}ui.search='';const se=$('#search');if(se)se.value='';ui.expanded=id;setTab('customers',{keepScroll:true});/* v78 */renderTable();const row=document.querySelector('tr.row[data-id="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');if(row)row.scrollIntoView({behavior:'smooth',block:'start'});}
-function openCustomerFromPayments(id){if(!state.users[id])return;$('#payPanel').hidden=true;syncPayBtn();if(state.users[id].cancel&&ui.statusFilter!=='all'){ui.statusFilter='all';const sf=$('#statusFilter');if(sf)sf.value='all';}ui.search='';const se=$('#search');if(se)se.value='';ui.expanded=id;setTab('customers',{keepScroll:true});/* v78 */renderTable();const row=document.querySelector('tr.row[data-id="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');if(row)row.scrollIntoView({behavior:'smooth',block:'start'});}
-function syncAnalyticsBtn(){const b=$('#btn-analytics');if(b)b.setAttribute('aria-expanded',String(!$('#analyticsPanel').hidden));const m=$('#mb-an');if(m)m.setAttribute('aria-expanded',String(!$('#analyticsPanel').hidden));/* v78 */}
+  if(state.users[id].cancel&&ui.statusFilter!=='all'){ui.statusFilter='all';const sf=$('#statusFilter');if(sf)sf.value='all';}ui.search='';const se=$('#search');if(se)se.value='';ui.expanded=id;renderTable();const row=document.querySelector('tr.row[data-id="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');if(row)row.scrollIntoView({behavior:'smooth',block:'start'});}
+function openCustomerFromPayments(id){if(!state.users[id])return;$('#payPanel').hidden=true;syncPayBtn();if(state.users[id].cancel&&ui.statusFilter!=='all'){ui.statusFilter='all';const sf=$('#statusFilter');if(sf)sf.value='all';}ui.search='';const se=$('#search');if(se)se.value='';ui.expanded=id;renderTable();const row=document.querySelector('tr.row[data-id="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');if(row)row.scrollIntoView({behavior:'smooth',block:'start'});}
+function syncAnalyticsBtn(){const b=$('#btn-analytics');if(b)b.setAttribute('aria-expanded',String(!$('#analyticsPanel').hidden));}
 function syncSettingsBtn(){const open=!$('#settingsPanel').hidden;const b=$('#btn-settings');b.innerHTML=open?'<span class="glyph" aria-hidden="true">‹</span>Home':'Settings';b.setAttribute('aria-expanded',String(open));b.title=open?'Back to the user list':'Open settings';}
 function closeSettings(){$('#settingsPanel').hidden=true;syncSettingsBtn();window.scrollTo({top:0,behavior:'smooth'});}
 /* v36: only a chosen setting's validated keys reach storage. Drafts stay in the form. */
@@ -4452,7 +4236,7 @@ function bind(){
   $('#rr-close').addEventListener('click',()=>{$('#remindRun').hidden=true;});
   $('#rr-body').addEventListener('change',async e=>{
     const dc=e.target.closest('input[data-act="deact"]');
-    if(dc){const id=dc.dataset.user;if(!state.users[id]||state.users[id].cancel)return;const nc=rrDateOf(todayISO());/* v68 */ui.cancelPre[id]={lastDay:addDays(nc,-1),reason:'Not confirmed for the cycle starting '+fmtD(nc,true)};ui.expanded=id;ui.open[id]=Object.assign({},ui.open[id],{cancel:true});setTab('customers',{keepScroll:true});/* v78 */renderTable();const det=document.querySelector(`tr.detail[data-id="${id}"]`);if(det){det.scrollIntoView({behavior:'smooth',block:'start'});const f=det.querySelector('.cancel-form [name=lastDay]');if(f)f.focus();}dc.checked=false;return;}
+    if(dc){const id=dc.dataset.user;if(!state.users[id]||state.users[id].cancel)return;const nc=rrDateOf(todayISO());/* v68 */ui.cancelPre[id]={lastDay:addDays(nc,-1),reason:'Not confirmed for the cycle starting '+fmtD(nc,true)};ui.expanded=id;ui.open[id]=Object.assign({},ui.open[id],{cancel:true});renderTable();const det=document.querySelector(`tr.detail[data-id="${id}"]`);if(det){det.scrollIntoView({behavior:'smooth',block:'start'});const f=det.querySelector('.cancel-form [name=lastDay]');if(f)f.focus();}dc.checked=false;return;}
     const wsq=e.target.closest('input[data-act="wssent"]');/* v67 */
     if(wsq){const wid=wsq.dataset.ws,key=wsq.dataset.key;const all=normWsSent(state.settings.wsSent);const m=all[wid]||(all[wid]={});if(wsq.checked)m[key]={at:new Date().toISOString(),channel:qLastCh['ws:'+wid]||'manual'};else delete m[key];if(!Object.keys(m).length)delete all[wid];const prev=state.settings.wsSent;state.settings.wsSent=all;wsq.disabled=true;const ok=await persistSettings();if(!ok){state.settings.wsSent=prev;wsq.disabled=false;wsq.checked=!wsq.checked;}else renderRemindRun();return;}
     const qs=e.target.closest('input[data-act="qsent"]');
@@ -4495,12 +4279,12 @@ function bind(){
   {const sb=$('#summaryBlock'),sf=$('#sumFold');const setFold=open=>{sb.classList.toggle('sum-closed',!open);sf.setAttribute('aria-expanded',String(open));};
    let open=false;try{open=localStorage.getItem('pt-sum-open')==='1';}catch(e){}setFold(open);
    sf.addEventListener('click',()=>{const o=sb.classList.contains('sum-closed');setFold(o);try{localStorage.setItem('pt-sum-open',o?'1':'0');}catch(e){}});}
-  $('#tile-unpaid').addEventListener('click',()=>{if(Object.values(state.users).some(u=>u.cancel&&analyze(u,todayISO()).unpaid))ui.statusFilter='all';if(!ui.filterUnpaid)toggleFilter();setTab('customers',{keepScroll:true});/* v78 */$('#tableWrap').scrollIntoView({behavior:'smooth',block:'start'});});
+  $('#tile-unpaid').addEventListener('click',()=>{if(Object.values(state.users).some(u=>u.cancel&&analyze(u,todayISO()).unpaid))ui.statusFilter='all';if(!ui.filterUnpaid)toggleFilter();$('#tableWrap').scrollIntoView({behavior:'smooth',block:'start'});});
   document.querySelector('#table thead').addEventListener('click',e=>{const th=e.target.closest('th[data-sort]');if(!th)return;if(ui.sort===th.dataset.sort)ui.dir=-ui.dir;else{ui.sort=th.dataset.sort;ui.dir=1;}savePrefs();renderTable();});
 
   $('#pkgFilter').addEventListener('change',e=>{ui.pkgFilter=e.target.value;renderTable();});
   /* v31: a package in the Active accounts bar filters the list to it (tap again for all); accounts are active users' plans, so Status goes to active */
-  $('#acctBar').addEventListener('click',e=>{const b=e.target.closest('.acct-chip');if(!b)return;const k=b.dataset.pkg;const on=ui.pkgFilter!==k;ui.pkgFilter=on?k:'all';$('#pkgFilter').value=ui.pkgFilter;if(on&&ui.statusFilter==='cancelled')ui.statusFilter='active';renderTable();if(on){setTab('customers',{keepScroll:true});/* v78 */$('.toolbar').scrollIntoView({behavior:'smooth',block:'start'});}});
+  $('#acctBar').addEventListener('click',e=>{const b=e.target.closest('.acct-chip');if(!b)return;const k=b.dataset.pkg;const on=ui.pkgFilter!==k;ui.pkgFilter=on?k:'all';$('#pkgFilter').value=ui.pkgFilter;if(on&&ui.statusFilter==='cancelled')ui.statusFilter='active';renderTable();if(on)$('.toolbar').scrollIntoView({behavior:'smooth',block:'start'});});
   $('#statusFilter').addEventListener('change',e=>{ui.statusFilter=e.target.value;renderTable();});
   $('#wsFilter').addEventListener('change',e=>{ui.wsFilter=e.target.value;renderTable();});
   $('#btn-group').addEventListener('click',()=>{ui.groupWs=ui.groupWs===false;savePrefs();renderTable();});/* v68 */
@@ -5244,7 +5028,7 @@ function subscribe(){
   db.doc('settings/main').onSnapshot(snap=>{if(snap.exists){applySettingsDoc(snap.data()||{});state.settingsLoaded=true;render();if(state.backend==='api')refreshConfirmations();}},()=>{});
 }
 async function init(){
-  loadPrefs();bind();initTabs();/* v78 */render();
+  loadPrefs();bind();render();
   if(await detectServer()){await initApi();return;}
   const hasClaude=typeof window.claude==='object'&&window.claude&&typeof window.claude.use==='function';
   const use=n=>hasClaude?Promise.resolve().then(()=>window.claude.use(n)).catch(()=>null):Promise.resolve(null);
