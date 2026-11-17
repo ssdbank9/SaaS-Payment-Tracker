@@ -19,7 +19,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   // v78: the usual address keeps the page as it was; the new design is a separate file at /new, behind the same sign-in
-  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v80');
+  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v81');
   check('the usual address still serves the page without tabs');
   {const anon=await browser.newContext();const r=await anon.request.get(base+'/new',{maxRedirects:0});assert.equal(r.status(),302);assert.match(r.headers().location||'',/\/login\?next=\/new$/);await anon.close();}
   check('/new asks for sign-in first');
@@ -43,7 +43,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
    'costs/t78a':{date:'2026-11-03',description:'Tabs test seats',category:'Tools',packageId:'pkg_cmax',currency:'PKR',cost:2500,tax:0,rate:null,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v80');assert.equal(new URL(page.url()).pathname,'/new');
+  assert.equal(await page.locator('#app-ver').textContent(),'v81');assert.equal(new URL(page.url()).pathname,'/new');
   assert.deepEqual(await page.locator('#more-oldsite').evaluate(e=>[e.hidden,e.getAttribute('href')]),[false,'/']);check('More links back to the usual address');
   const tab=()=>page.evaluate(()=>document.body.dataset.tab);
   const go=async t=>{await page.locator(`#tabBar [data-go=${t}]`).click();await page.waitForTimeout(250);};
@@ -174,6 +174,16 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   assert.match(wally,/^Wally One \S.* Overdue since Nov 1 \$15$/,wally);
   const ow=await page.locator('#tbody tr.row[data-id=w1] .cu-owe').evaluate(e=>({c:getComputedStyle(e).color,ws:getComputedStyle(e.firstElementChild).whiteSpace,h:e.getBoundingClientRect().height}));assert.equal(ow.ws,'nowrap');assert.ok(ow.h<30,JSON.stringify(ow));
   check(`A closed row has no buttons, is at least 56px tall and hides the email and "via" lines; Wally One reads "${wally}" with the amount on one line`);
+  // P2-3b v81: a long products line wraps inside its cell (the chevron stays on the row), and the chips fit a 375px phone with two-digit counts
+  {const r=await page.evaluate(()=>{const row=document.querySelector('#tbody tr.row'),who=row.querySelector('td.who'),p=row.querySelector('.cu-prod'),old=p.textContent;p.textContent='Claude Pro \u00d72 \u00b7 Chatgpt Plus \u00b7 Cursor Pro \u00b7 Another Product';
+     const kids=[...row.children].filter(c=>getComputedStyle(c).display!=='none'),a=kids[0].getBoundingClientRect(),b=kids[kids.length-1].getBoundingClientRect(),e=row.querySelector('.cu-end').getBoundingClientRect();
+     const o={basis:getComputedStyle(who).flexBasis,sameLine:b.top<a.bottom&&b.left>=a.right-1,chevRight:b.right,endRight:e.right,w:innerWidth};p.textContent=old;return o;});
+   assert.ok(r.basis==='0px'&&r.sameLine&&r.chevRight<=r.w&&r.endRight<=r.chevRight,JSON.stringify(r));}
+  await page.setViewportSize({width:375,height:812});await page.waitForTimeout(200);
+  {const s=await page.evaluate(()=>{const el=document.querySelector('#payStrip'),bs=[...el.querySelectorAll('b')],old=bs.map(b=>b.textContent);['17','2','4','11'].forEach((v,i)=>{bs[i].textContent=v;});const o={sw:el.scrollWidth,cw:el.clientWidth};bs.forEach((b,i)=>{b.textContent=old[i];});return o;});
+   assert.ok(s.sw<=s.cw,'the chips fit at 375px: '+JSON.stringify(s));}
+  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(200);
+  check('A products line too long for one line wraps inside its cell with the chevron still on the row; the four chips fit a 375px phone with counts 17, 2, 4 and 11');
   // P2-4 chips: All / Owes / Due this week / Paid up with counts; each lists exactly its count
   const chips=await page.locator('#payStrip .ps-btn').evaluateAll(es=>es.map(e=>({pf:e.dataset.pf,l:e.querySelector('.ps-l').textContent,n:Number(e.querySelector('b').textContent),p:e.getAttribute('aria-pressed')})));
   assert.deepEqual(chips.map(c=>c.l),['All','Owes','Due this week','Paid up']);assert.equal(chips[0].p,'true');assert.equal(chips[0].n,(await rowNames()).length);
@@ -276,6 +286,6 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
     for(const t of ['reminders','money','more']){await go(t);assert.equal(await noSideScroll(),true,`1400 ${scheme} ${t}`);}}
   check('A computer shows the side bar (220px, full height) with the content to its right; Customers has no buttons on a closed row; no sideways scroll at 390px and 1400px in light and dark');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'80',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'81',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

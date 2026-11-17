@@ -37,7 +37,7 @@ const pay=(id,date,amount)=>({id,date,amount,currency:'PKR',rate:null,note:''});
    'users/pc':{name:'Bo Both',phone:'923003333333',email:'pc@example.test',joinDate:'2026-10-15',confirmToken:'BoBothTokenxxxxxxxxxxx',subscriptions:[plan('s1','pkg_c','2026-10-24','2026-07-24',4200,[pay('r1','2026-10-24',4200)]),plan('s2','pkg_f15','2026-10-15','2026-10-15',3000,[pay('r2','2026-10-15',3000)])]},
   },replace:[]});
   await setToday('2026-11-12');
-  assert.equal(await page.locator('#app-ver').textContent(),'v80');
+  assert.equal(await page.locator('#app-ver').textContent(),'v81');
 
   // 1. Settings: no shared billing day; the two leads
   await page.locator('#btn-settings').click();await page.locator('#s-remind-lead').waitFor();

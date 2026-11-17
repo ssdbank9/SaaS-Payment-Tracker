@@ -892,7 +892,8 @@ body[data-ui="tabs"] .nores{display:flex;flex-wrap:wrap;align-items:center;justi
 body[data-ui="tabs"] .nores[hidden]{display:none}
 body[data-ui="tabs"] .nores .btn{min-height:44px;padding:0 16px;border-radius:10px}
 @media (max-width:760px){
-  body[data-ui="tabs"] #table tr.row>td.who{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:1px;align-items:center;min-height:58px;padding:9px 4px 9px 14px}
+  body[data-ui="tabs"] #table tr.row>td.who{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:1px;align-items:center;min-height:58px;padding:9px 4px 9px 14px;flex:1 1 0;min-width:0}/* v81: flex-basis 0, so a long products line wraps inside the cell and the chevron stays on the row */
+  body[data-ui="tabs"] .pay-strip{gap:4px}body[data-ui="tabs"] .ps-btn{padding:0 8px;gap:4px;font-size:13px}/* v81: the four chips fit a 375px phone with two-digit counts */
   body[data-ui="tabs"] td.who .nm{grid-column:1;grid-row:1;font-weight:600;font-size:15px;overflow-wrap:anywhere}
   body[data-ui="tabs"] td.who .cu-prod{display:block;grid-column:1;grid-row:2;font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
   body[data-ui="tabs"] td.who .cu-end{display:flex;grid-column:2;grid-row:1/span 2;flex-direction:column;align-items:flex-end;gap:1px;text-align:right;max-width:46vw}
@@ -950,7 +951,7 @@ body[data-ui="tabs"] .nores .btn{min-height:44px;padding:0 16px;border-radius:10
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v80</span>
+      <span class="small muted num" id="app-ver" title="App version">v81</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>

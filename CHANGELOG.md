@@ -2,6 +2,12 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v81 - 2026-11-17
+
+Two display fixes on the Customers tab of the new page (`/new`), found on real data right after v80. No money figure or saved data changed.
+- A customer with several products (a long products line) no longer pushes the status off the right edge or drops the small arrow onto its own line; the products wrap under the name instead.
+- The four chips (All, Owes, Due this week, Paid up) now fit a narrow phone when the counts have two digits; before, "Paid up" was cut off at the edge.
+
 ## v80 - 2026-11-17
 
 The Customers tab of the new page (`/new`) is simpler. The usual address (`/`) and the old layout inside the new page are unchanged. No money figure or saved data changed.
