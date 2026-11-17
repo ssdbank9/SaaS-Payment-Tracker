@@ -2,6 +2,18 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v85 - 2026-11-17
+
+A simpler Reminders tab on the new page (`/new`). The usual address (`/`) and the old layout inside the new page are unchanged. Nothing about what is sent or saved has changed: the same customers are listed at each step, with the same message, the same WhatsApp, email and Telegram links and the same customer link, and every tick saves what it saved before.
+- The tab starts with one line saying what today needs, for example "29 messages to send today", or "Nothing to send today · next round starts Nov 24".
+- Then one section per bill date with a small 1 Reminder / 2 Repeat / 3 Final switcher. Today's step is marked "today"; tap another step to preview it, as before. Then Wholesalers, Overdue, and the answers customers gave on their link pages.
+- Each row has the name, what it is about and the amount, one main button (WhatsApp; Email or Telegram when there is no WhatsApp number; Add phone when there is no way to reach them) and the Sent tick. Email, Telegram, copy the message, copy the customer link, change the amount, leave out of this round, view the message and open the customer page are in the row's "..." menu. A wholesaler's menu has Copy the statement and Record payment.
+- Rows already ticked as sent fold away under "Sent at this step".
+- Answers from customer links: what each customer chose, with Use their choice / Keep mine and Confirm / Dismiss for a stop request. The name opens the customer page.
+- Tools (top right): Reminder run, Final notice, Leave customers out (the old Except list), Sent log, and How this works (the full explanations that used to fill the screen).
+- For the same customers the screen has about half the buttons it had.
+- Undo: revert this version's commit.
+
 ## v84 - 2026-11-17
 
 Shorter Add and Edit forms on the new page (`/new`). The usual address (`/`) and the old layout inside the new page are unchanged. Nothing about what a form saves has changed: each form still has every field it had, filled in the same way, and saves the same thing.

@@ -1145,6 +1145,72 @@ body[data-ui="tabs"] #qa-apply{grid-column:1/-1;min-height:46px;border-radius:12
   body[data-ui="tabs"] #quickPanel table.qa :is(input:not([type=checkbox]),select){width:100%}
 }
 body[data-ui="tabs"] #quickPanel table.qa input[type=checkbox]{width:22px;height:22px;min-height:0;margin:0;padding:0;accent-color:var(--accent)}
+/* v85: Reminders tab (tabs layout only, new.html). The classic Queue keeps its look: every rule below is scoped to body[data-ui="tabs"] or to
+   .rq-* elements drawn only in the tabs layout. One column, at most 820px wide on a computer. */
+body[data-ui="tabs"] #remindRun{background:none;border:0;border-radius:0;padding:0;box-shadow:none;max-width:820px;margin-bottom:16px}
+body[data-ui="tabs"] #remindRun>.panel-head{display:none}
+.rq{display:flex;flex-direction:column;gap:16px;font-size:15px;line-height:1.35;min-width:0}
+.rq-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 4px}
+.btn.rq-toolsb{flex:none;min-height:44px;padding:0 16px;border-radius:10px;font-size:15px;font-weight:600}
+.rq-line{margin:-10px 0 0;padding:0 4px;font-size:14px;color:var(--ink-2)}
+.rq-note{margin:0;padding:10px 14px;border-radius:12px;background:var(--warn-bg);font-size:14px;color:var(--ink)}
+.rq-note .link{font-size:14px;min-height:32px}
+.rq-sec{display:flex;flex-direction:column;gap:8px;min-width:0;margin:0}
+.rq-sh{display:flex;align-items:baseline;justify-content:space-between;gap:4px 10px;flex-wrap:wrap;padding:0 4px}
+.rq-sh h3{margin:0;font-size:16px;font-weight:600;color:var(--ink);text-transform:none;letter-spacing:0}
+.rq-over .rq-sh h3{color:var(--crit)}
+.rq-step{font-size:13px;color:var(--warn);font-weight:500}
+.rq-cnt{font-size:13px;color:var(--ink-2)}
+.rq-meta{margin:0;padding:0 4px;font-size:13px;color:var(--ink-2)}
+.rq-empty{margin:0;padding:12px 14px;border:1px dashed var(--line);border-radius:14px;font-size:14px;color:var(--ink-2)}
+.rq-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;background:var(--surface-2);border-radius:12px}
+.rq-steps button{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:44px;padding:2px 4px;border:0;border-radius:9px;background:none;color:var(--ink-2);font:inherit;font-size:14px;font-weight:500;line-height:1.15;cursor:pointer}
+.rq-steps button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.rq-steps .rq-today{font-size:11px;font-weight:600;color:var(--accent-ink)}
+.rq-steps button:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+.rq-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+body[data-ui="tabs"] .rq-row.qrow,body[data-ui="tabs"] .rq-row.rr-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:6px 8px;margin:0;padding:8px 10px 8px 4px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;min-width:0}
+body[data-ui="tabs"] .rq-row.rq-notick{grid-template-columns:minmax(0,1fr) auto;padding-left:14px}
+body[data-ui="tabs"] .rq-row:last-child{border-bottom:0}
+body[data-ui="tabs"] .rq-row.qrow[data-sent="1"]{background:var(--accent-tint)}
+.rq-tick{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:44px;min-height:44px;margin:0;font-size:11px;color:var(--ink-2);cursor:pointer}
+.rq-tick input{width:22px;height:22px;margin:0;accent-color:var(--accent);cursor:pointer}
+.rq-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rq-main .who{font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.rq-what{font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
+.rq-what b{font-weight:600;color:var(--ink)}
+.rq-pl{display:block}
+.rq-nw{white-space:nowrap;color:var(--ink);font-weight:500}
+.rq-done{color:var(--good)}
+.rq-acts{display:flex;align-items:center;gap:6px;flex:none}
+.btn.rq-go{min-height:44px;padding:0 14px;border-radius:10px;font-size:15px;font-weight:600;white-space:nowrap}
+.btn.rq-go.wa::before{display:none}
+.btn.rq-add{color:var(--accent-ink)}
+.rq-row .amt-form,.rq-row .qamt-box{grid-column:1/-1;min-width:0}
+.rq-sentf summary{display:flex;align-items:center;min-height:44px;padding:0 4px;font-size:14px;font-weight:500;color:var(--ink-2);cursor:pointer}
+.rq-sentf summary:focus-visible,.rq-howd summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:8px}
+.rq-ans{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px 14px 12px;border-bottom:1px solid var(--line);min-width:0}
+.rq-ans:last-child{border-bottom:0}
+.link.rq-cust{min-height:44px;padding:0;font-size:15px;font-weight:600;text-align:left;overflow-wrap:anywhere}
+.rq-ans-x{display:flex;flex-direction:column;gap:8px;width:100%;padding:10px 12px;border-radius:12px;background:var(--warn-bg);font-size:14px;color:var(--ink)}
+.rq-ans-acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.rq-ans-acts .btn{min-height:44px;border-radius:10px;font-size:14px;font-weight:600;white-space:normal;line-height:1.2}
+.rq-subhead{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:12px;padding:0 4px}
+.rq-howd summary{display:inline-flex;align-items:center;min-height:44px;font-size:14px;font-weight:600;color:var(--accent-ink);cursor:pointer}
+.rq-howd p{margin:0 0 6px;font-size:14px;color:var(--ink-2);max-width:68ch}
+.rq-how p{margin:0 0 10px;font-size:14px;line-height:1.45;color:var(--ink)}
+.rq-view .rq-subhead{margin-bottom:0}
+.rq-exr{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:8px;min-height:56px;padding:6px 14px 6px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.rq-exr:last-child{border-bottom:0}
+.rq-exr input{justify-self:center;width:22px;height:22px;margin:0;accent-color:var(--accent)}
+.rq-log{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.rq-log:last-child{border-bottom:0}
+.rq-when{flex:none;font-size:13px;color:var(--ink-2);white-space:nowrap}
+pre.qmsg.rq-msg{margin:4px 0 0;font-size:14px;max-height:none}
+.cps-body a.cpm-item{text-decoration:none;box-sizing:border-box}
+body[data-ui="tabs"] #remindRun .fn-bar .btn.sm,body[data-ui="tabs"] #remindRun .rr-row .btn.sm{min-height:40px;padding:6px 12px}
+body[data-ui="tabs"] #remindRun .table-wrap{border-radius:12px}
+@media (max-width:760px){body[data-ui="tabs"] #remindRun .rr-row:not(.rq-row){grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
 </style>
 </head>
@@ -1173,7 +1239,7 @@ body[data-ui="tabs"] #quickPanel table.qa input[type=checkbox]{width:22px;height
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v84</span>
+      <span class="small muted num" id="app-ver" title="App version">v85</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
@@ -2744,8 +2810,8 @@ function rrDatePicker(today){const ds=billDates(today);const act=ds.filter(d=>d.
 function renderRemindRun(){
   document.querySelectorAll('#rr-tabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===ui.rrTab)));
   $('#rr-title').textContent=ui.rrTab==='final'?'Final notice':ui.rrTab==='queue'?'Queue':'Reminder run';
-  if(ui.rrTab==='final'){renderFinalNotice();return;}
-  if(ui.rrTab==='queue'){renderQueue();return;}
+  if(ui.rrTab==='final'){renderFinalNotice();rqSubHeadFor();/* v85 */return;}
+  if(ui.rrTab==='queue'){if(tabsOn()){renderRemindTabs();return;}/* v85: the Reminders tab */renderQueue();return;}
   const today=todayISO();const cs=rrDateOf(today);const R=reminderRows(today,cs);const w=R.w;const key=w.nc;/* v68: one cycle date at a time */
   $('#rr-sub').textContent=`Cycle starting ${fmtD(w.nc,true)} · remind from ${fmtD(w.start)} · replies by ${fmtD(w.replyBy)} · ${w.open?'window open now':(today<w.start?'window opens '+fmtD(w.start):w.nc===today?'the cycle starts today':'window closed; cycle starts '+fmtD(w.nc))}. Ticks are saved per user for this cycle.`;
   const tog=(r,f,label)=>{const st=remState(r.u,key);const v=st[f];return `<label class="chk f"><input type="checkbox" data-act="rem" data-user="${esc(r.id)}" data-f="${f}"${v?' checked':''}>${label}${v?` <span class="when">${esc(fmtD(v))}</span>`:''}</label>`;};
@@ -2761,7 +2827,7 @@ function renderRemindRun(){
   html+=`<div class="rr-sec"><h4>Due for the cycle starting ${esc(fmtD(w.nc))} · ${R.cycle.length}</h4>${R.cycle.length?R.cycle.map(r=>row(r,'cycle')).join(''):'<p class="small muted">Nobody else has an amount due for this cycle.</p>'}</div>`;
   if(R.covered.length)html+=`<p class="small muted" style="margin-top:10px">Already covered for ${esc(fmtD(w.nc))}, no reminder needed: ${esc(R.covered.map(r=>displayName(r.u)).join(', '))}.</p>`;
   if(!R.all.length)html='<p class="small muted">No users yet.</p>';
-  $('#rr-body').innerHTML=html;
+  $('#rr-body').innerHTML=html;rqSubHeadFor();/* v85 */
 }
 /* v39: plans of a product with its own cycle are not part of the shared 24th message rounds; they appear in the Queue on their own due date
    and stay there while overdue, until paid */
@@ -4331,6 +4397,7 @@ function initTabs(){const tt=$('#tryTabs');if(tt)tt.addEventListener('click',()=
   initCustomersTab();/* v80 */
   initCustPage();/* v82 */
   initFormsP4();/* v84 */
+  initRemindTabs();/* v85 */
   $('#tabBar').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(!b)return;if(ui.expanded){ui.expanded=null;ui.cuScroll=0;renderTable();}/* v82: a tab shows its own first screen */setTab(b.dataset.go);});
   $('#todayPanel').addEventListener('click',e=>{const p=e.target.closest('[data-td-pay]');if(p){openPaymentDialog(p.dataset.tdPay,p.dataset.sid,null,p.dataset.st||null);return;}
     const o=e.target.closest('[data-td-open]');if(o){openCustomerFrom(null,o.dataset.tdOpen);return;}
@@ -4489,6 +4556,149 @@ function cpSync(){if(!tabsOn())return;const b=document.body,id=ui.expanded&&stat
   if(!cpPop&&!cpSkipPop&&history.state&&history.state.cp){cpSkipPop=true;try{history.back();}catch(e){cpSkipPop=false;}}cpPop=false;
   const y=ui.cuScroll||0;window.scrollTo(0,y);}
 function cpBack(){if(!document.body.dataset.cust)return;const id=ui.expanded;ui.expanded=null;renderTable();const r=id&&document.querySelector(`#tbody tr.row[data-id="${cpCss(id)}"]`);if(r)r.focus({preventScroll:true});}
+/* v85: Reminders tab (tabs layout only; the classic Queue, Reminder run and Final notice are unchanged and index.html has none of this).
+   Presentation only: the rows come from queueRows, wsStatementRows and ownCycleDueRows, the messages from queueText, wsStatementText and
+   reminderText, the links from waLink / waLinkTo / mailLink / tgLink, exactly as renderQueue draws them. Every Sent tick, Except box, amount
+   form, Copy, Record payment and answer button carries the data-act the #rr-body listeners already handle, so what is sent and saved is the
+   same. One main button per row (WhatsApp, else Email, else Telegram, else Add phone); the rest is in the row's More menu (#cpSheet), built
+   from the row's hidden .rq-x controls. Rarely used views (Reminder run, Final notice, Except, Sent log, How this works) are under Tools. */
+let rqLast='';
+const RQ_STEP={1:'Reminder',2:'Repeat',3:'Final'};
+const rqMoney=t=>esc(t).replace(/((?:Rs|\$|€|£) ?-?[\d][\d.,]*)/g,'<span class="rq-nw">$1</span>');/* an amount never wraps inside itself */
+const rqTick=(attrs,on,who)=>`<label class="rq-tick" title="Tick after sending; records the channel and time"><input type="checkbox" ${attrs}${on?' checked':''} aria-label="Sent to ${esc(who)}"><span>Sent</span></label>`;
+const rqMoreBtn=who=>`<button class="cp-more rq-more" type="button" data-rq="menu" aria-haspopup="dialog" aria-label="More for ${esc(who)}: other ways to send, copy, view the message">${CP_DOTS}</button>`;
+function rqAnsWord(a,id){const u=state.users[id];const s=u&&a.plan_id?(u.subscriptions||[]).find(x=>x.id===a.plan_id):null;const pl=s?' ('+(acctParts(u,s).label||planLabel(s))+')':'';const tgt=pkgName(a.target_package_id)||'another product';
+  return (a.answer==='continue'?'Continues':a.answer==='upgrade'?'Upgrade to '+tgt:a.answer==='downgrade'?'Move to '+tgt:a.answer==='discontinue'?'Stop':String(a.answer||''))+pl;}
+/* one queue row of a cycle date: the same text, links and Sent tick as renderQueue's row */
+function rqRowHTML(r,st,cycle){const u=r.u,c=r.card,s=r.sent,id=r.id,who=displayName(u),text=queueText(r,st);
+  const ch={};if(waPhone(u))ch.whatsapp=`${waAttrs(waLink(u,text))} data-ch="whatsapp" title="${waTitle('message')}"`;
+  if(u.email)ch.email=`href="${esc(mailLink(u,`${appName()}: your ${c.tierText} plan for ${c.periodText}`,text))}" data-ch="email" title="Opens your mail app with the message prefilled"`;
+  if(tgLink(u))ch.telegram=`href="${esc(tgLink(u))}" target="_blank" rel="noopener noreferrer" data-ch="telegram" title="Opens the Telegram chat; the message is not prefilled (copy it first)"`;
+  const NAME={whatsapp:'WhatsApp',email:'Email',telegram:'Telegram'},LONG={whatsapp:'Send on WhatsApp',email:'Send by email',telegram:'Open Telegram'};const main=['whatsapp','email','telegram'].find(k=>ch[k]);
+  const mainHTML=main?`<a class="btn primary rq-go" ${ch[main]}>${NAME[main]}</a>`:`<button class="btn rq-go rq-add" type="button" data-rq="addphone" data-user="${esc(id)}" title="Opens Edit details to add a WhatsApp number">Add phone</button>`;
+  const x=['whatsapp','email','telegram'].filter(k=>ch[k]&&k!==main).map(k=>`<a ${ch[k]} data-rqx="${k}">${LONG[k]}</a>`);
+  if(main&&!waPhone(u))x.push(`<button type="button" data-rq="addphone" data-user="${esc(id)}" data-rqx="addphone" title="Opens Edit details">Add a WhatsApp number</button>`);
+  x.push(`<button type="button" data-act="qcopy" data-user="${esc(id)}" data-rqx="copy" title="${u.telegram?'Paste it into Telegram, which cannot prefill it':'Copies the text below'}">Copy the message</button>`);
+  if(publicBase())x.push(`<button type="button" data-act="copy-link" data-user="${esc(id)}" data-rqx="link" title="Their private choice page: continue, upgrade or stop">Copy the customer link</button>`);
+  x.push(`<button type="button" data-act="qamt" data-user="${esc(id)}" data-rqx="amt" title="A discount or correction for this bill; the message updates at once">Change the amount in the message</button>`);
+  x.push(`<label data-rqx="skip" title="Left out of every step for this bill date (Except)"><input type="checkbox" data-act="skip" data-cycle="${esc(cycle)}" data-user="${esc(id)}"${remState(u,cycle).skipped?' checked':''}>Leave out of this round</label>`);
+  const ans=st.stage===1&&r.answered?' · answered on the link: '+esc(answersFor(id,cycle).map(a=>rqAnsWord(a,id)).join(', ')):'';
+  const amt=/^(Rs|\$|€|£)/.test(c.amountText)?c.amountText.replace(/ \(.*$/,''):c.amountText;/* the total; the message keeps the full breakdown */const what=`${esc(c.tierText)} · ${rqMoney(amt)}${c.plans.some(p=>p.custom)?' (set by hand)':''} · due ${esc(fmtD(cycle))}${ans}${s?` · <span class="rq-done">sent ${esc(fmtWhen(s.at)||fmtD(s.at.slice(0,10)))}, ${esc(s.channel)}${s.by==='notify'?' (auto)':''}</span>`:''}`;
+  const linkify=t=>esc(t).replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+  return `<div class="qrow rq-row" data-user="${esc(id)}" data-cs="${esc(cycle)}" data-sent="${s?'1':'0'}">${rqTick(`data-act="qsent" data-user="${esc(id)}" data-stage="${st.stage}" data-cycle="${cycle}"`,!!s,who)}<span class="rq-main"><b class="who">${esc(who)}</b><span class="rq-what">${what}</span></span><span class="rq-acts">${mainHTML}${rqMoreBtn(who)}</span><div class="rq-x" hidden>${x.join('')}</div>${ui.qOpen[id]?qAmtBox(r,cycle):''}<pre class="qmsg" hidden>${linkify(text)}</pre></div>`;}
+/* a wholesaler statement: wsRowHTML's text, link, Copy, Record payment and Sent tick */
+function rqWsHTML(r,today){const w=r.w,text=wsStatementText(r,today),s=wsSentOf(r),n=r.lines.length,days=wsRemindDays();
+  const main=w.phone?`<a class="btn primary rq-go" ${waAttrs(waLinkTo(w.phone,text))} data-ch="whatsapp" title="${waTitle('statement')}">WhatsApp</a>`:`<button class="btn rq-go rq-add" type="button" data-act="open-settings" title="Add the wholesaler's WhatsApp number in Settings, Wholesalers">Add phone</button>`;
+  const x=[`<button type="button" data-act="wscopy" data-rqx="copy" title="Copies the statement">Copy the statement</button>`];
+  if(r.kind==='due')x.push(`<button type="button" data-act="wspay" data-ws="${esc(w.id)}" data-rqx="pay" title="One payment from ${esc(w.name)} for these bills">Record payment</button>`);
+  const what=`${r.kind==='due'?'Due now':`Renews within ${days} day${days===1?'':'s'}`} · ${n} account${n===1?'':'s'} · ${rqMoney(ownText(r.sum,r.lines[0].s.currency))}${s?` · <span class="rq-done">sent ${esc(fmtWhen(s.at)||fmtD(s.at.slice(0,10)))}, ${esc(s.channel)}</span>`:''}`;
+  return `<div class="qrow ws-q rq-row" data-ws="${esc(w.id)}" data-key="${esc(r.key)}" data-kind="${r.kind}" data-sent="${s?'1':'0'}">${rqTick(`data-act="wssent" data-ws="${esc(w.id)}" data-key="${esc(r.key)}"`,!!s,w.name)}<span class="rq-main"><b class="who">${esc(w.name)}</b><span class="rq-what">${what}</span></span><span class="rq-acts">${main}${rqMoreBtn(w.name)}</span><div class="rq-x" hidden>${x.join('')}</div><pre class="qmsg" hidden>${esc(text)}</pre></div>`;}
+/* an overdue customer: the Overdue section's links (remindControl / emailControl / telegramControl); it has no Sent tick, as before */
+function rqOwnHTML(r,today){const u=r.u,a=r.a,id=r.id,who=displayName(u);const text=reminderText(u,a,today,'overdue',null,undefined);
+  const ch={};if(waPhone(u))ch.whatsapp=`${waAttrs(waLink(u,text))} title="${waTitle('reminder')}"`;
+  if(u.email)ch.email=`href="${esc(mailLink(u,'Payment reminder: '+reminderText(u,a,today,'overdue','{package} {period}'),text))}" title="Opens your mail app with the reminder prefilled"`;
+  if(tgLink(u))ch.telegram=`href="${esc(tgLink(u))}" target="_blank" rel="noopener noreferrer" title="Opens the Telegram chat; the message is not prefilled"`;
+  const NAME={whatsapp:'WhatsApp',email:'Email',telegram:'Telegram'},LONG={whatsapp:'Send on WhatsApp',email:'Send by email',telegram:'Open Telegram'};const main=['whatsapp','email','telegram'].find(k=>ch[k]);
+  const mainHTML=main?`<a class="btn primary rq-go" ${ch[main]} data-rqo="${main}">${NAME[main]}</a>`:`<button class="btn rq-go rq-add" type="button" data-rq="addphone" data-user="${esc(id)}" title="Opens Edit details to add a WhatsApp number">Add phone</button>`;
+  const x=['whatsapp','email','telegram'].filter(k=>ch[k]&&k!==main).map(k=>`<a ${ch[k]} data-rqo="${k}" data-rqx="${k}">${LONG[k]}</a>`);
+  if(main&&!waPhone(u))x.push(`<button type="button" data-rq="addphone" data-user="${esc(id)}" data-rqx="addphone" title="Opens Edit details">Add a WhatsApp number</button>`);
+  const what=r.plans.map(p=>`<span class="rq-pl">${esc(planLabel(p.s))} · ${rqMoney(fmtAmt(p.sa.overdueAmount,p.s.currency))} ${p.sa.nextDue===today?'due today':'overdue since '+esc(fmtD(p.sa.nextDue))}</span>`).join('');
+  return `<div class="rr-row rq-row rq-notick" data-user="${esc(id)}" data-own="1"><span class="rq-main"><b class="who">${esc(who)}</b><span class="rq-what">${what}</span></span><span class="rq-acts">${mainHTML}${rqMoreBtn(who)}</span><div class="rq-x" hidden>${x.join('')}</div><pre class="qmsg" hidden>${esc(text)}</pre></div>`;}
+/* answers from the customer link pages: what each customer chose, a tier change that differs from yours (use theirs / keep mine), a stop request (confirm / dismiss) */
+function rqAnsHTML(){const out=[];
+  for(const id of Object.keys(state.users)){const u=state.users[id];const who=displayName(u);const lines=[],acts=[];
+    for(const c of Object.keys(confirmAnswers.byCycle||{}).filter(c=>answersFor(id,c).length).sort())for(const a of answersFor(id,c))lines.push(`<span class="rq-what">Bill of ${esc(fmtD(c))}: <b>${esc(rqAnsWord(a,id))}</b> · answered ${esc(fmtWhen(a.at)||'')}${a.applied_at?' · applied':''}${a.note?` · “${esc(a.note)}”`:''}</span>`);
+    for(const s of u.subscriptions||[]){const c=s.linkConflict;if(!c||!isDateKey(c.cycle))continue;const mine=(s.tierHistory||[]).find(t=>t.from===c.cycle&&t.via!=='link');
+      acts.push(`<div class="rq-ans-x"><span>Chose <b>${esc(pkgName(c.packageId)||'another tier')}</b> from ${esc(fmtD(c.cycle,true))} on the link${c.at?' ('+esc(fmtD(c.at))+')':''}. You had set ${esc(mine?(pkgName(mine.packageId)||'another tier'):'a different tier')} for that bill. Nothing was changed.</span><span class="rq-ans-acts"><button class="btn primary" type="button" data-act="link-use" data-user="${esc(id)}" data-sub="${esc(s.id)}">Use their choice</button><button class="btn" type="button" data-act="link-keep" data-user="${esc(id)}" data-sub="${esc(s.id)}">Keep mine</button></span></div>`);}
+    const d=u.discontinue;if(d&&!u.cancel){const lastDay=discLastDay(u,d);const partial=d.planIds&&d.planIds.length?(u.subscriptions||[]).filter(s=>d.planIds.includes(s.id)).map(s=>acctParts(u,s).label||planLabel(s)).join(', '):'';
+      acts.push(`<div class="rq-ans-x"><span>Asked to stop${partial?' <b>'+esc(partial)+'</b>':''} from ${esc(fmtD(d.cycleStart,true))}${d.at?' (on the link '+esc(fmtWhen(d.at))+')':''}${d.note?` · “${esc(d.note)}”`:''}</span><span class="rq-ans-acts"><button class="btn primary" type="button" data-act="disc-confirm" data-user="${esc(id)}" title="${partial?'Ends that plan':'Runs Cancel subscription'} with the last day ${esc(fmtD(lastDay,true))}">Confirm · last day ${esc(fmtD(lastDay))}</button><button class="btn" type="button" data-act="disc-dismiss" data-user="${esc(id)}" title="Keep the account; the answer stays recorded">Dismiss</button></span></div>`);}
+    if(lines.length||acts.length)out.push({who,acts:acts.length,html:`<div class="rq-ans" data-user="${esc(id)}"><button class="link rq-cust" type="button" data-rq="cust" data-user="${esc(id)}" title="Open the customer page">${esc(who)}</button>${lines.join('')}${acts.join('')}</div>`});}
+  out.sort((x,y)=>(y.acts?1:0)-(x.acts?1:0)||x.who.localeCompare(y.who));return out;}
+/* the full explanations the classic Queue prints, behind Tools, How this works */
+function rqHowHTML(today){const dates=billDates(today);const act=dates.filter(d=>d.stage>0);const shown=act.length?act:dates.slice(0,1);const p=t=>`<p>${t}</p>`;let h='';
+  h+=p(esc(act.length?`Today ${fmtD(today,true)} · ${act.length} cycle date${act.length===1?'':'s'} in a reminder window. Tap Sent after sending; the tick is saved per user, stage and cycle.`:`Today ${fmtD(today,true)} · no messages are due today.${shown.length?` The next cycle starts ${fmtD(shown[0].cs,true)}: stage 1 opens on ${fmtD(shown[0].start)}, stage 2 on ${fmtD(shown[0].replyBy)}, stage 3 on ${fmtD(shown[0].cs)}.`:''}`));
+  for(const d of shown)h+=p(esc(`Bills on ${fmtD(d.cs,true)}: step 1, reminder, from ${fmtD(d.start)} to ${fmtD(addDays(d.replyBy,-1))}; step 2, repeat to anyone without an answer, from the reply-by day ${fmtD(d.replyBy)}; step 3, final note to anyone still silent, on ${fmtD(d.cs)} (the cycle starts and the account continues at the current tier). From step 2, customers who answered on the link are left out.`));
+  h+=p('Except: tick anyone to leave out of every step for that bill date (for example, someone who told you separately). Saved for that date only.');
+  h+=p(esc(`Wholesalers: one message per wholesaler instead of one per customer: the accounts due now, listed from each product's cycle day until paid${wsRemindDays()?`, and the accounts that renew within ${wsRemindDays()} day${wsRemindDays()===1?'':'s'} (set in Settings, Wholesalers)`:'; the reminder before an account renews is off (Settings, Wholesalers)'}. Tap Sent after sending; the tick is saved per wholesaler and cycle.`));
+  h+=p('Overdue: plans with money due today or earlier, listed from their due date until paid. A wholesaler\'s customers are on the wholesaler statement instead.');
+  h+=p(state.backend==='api'?'Answers: what customers chose on their link page. Continue ticks Confirmed, a new product is set from that bill, and a stop request waits for you to confirm or dismiss it.':'Answers from the link pages arrive only on the self-hosted server; here the queue shows everyone due.');
+  return `<div class="rq-how">${h}</div>`;}
+function rqMainHTML(today){const dates=billDates(today);const act=dates.filter(d=>d.stage>0);const shown=act.length?act:dates.slice(0,1);
+  const cnt=$('#rem-cnt'),n=cnt&&!cnt.hidden?(Number(cnt.textContent)||0):0;const next=dates.find(d=>d.start>today)||dates[0];
+  const line=n?`${n} message${n===1?'':'s'} to send today`:`Nothing to send today${act.length?'':next?` · next round starts ${fmtD(next.start>today?next.start:next.cs)}`:''}`;
+  let h=`<div class="rq"><div class="rq-head"><h2 class="td-h1" id="rq-title">Reminders</h2><button class="btn rq-toolsb" type="button" data-rq="tools" aria-haspopup="dialog">Tools</button></div><p class="rq-line" id="rq-line">${esc(line)}</p>`;
+  if(!Object.keys(state.users).length)return h+'<p class="rq-empty">No customers yet.</p></div>';
+  if(!publicBase())h+=`<p class="rq-note">Messages have no customer link yet. <button class="link" type="button" data-act="open-settings">Set the Public base URL</button></p>`;
+  if(state.backend!=='api')h+=`<p class="rq-note">Answers from the link pages arrive only on the self-hosted server; here every customer due is listed.</p>`;
+  for(const d of shown){const auto=stageFor(d.cs,today);const pv=ui.qStageBy[d.cs];const st=pv&&pv!==auto.stage?{stage:pv,cycle:d.cs,w:auto.w,auto:false}:auto;
+    const Q=st.stage?queueRows(today,st):{rows:[],todo:0,sent:0,cycle:d.cs,stage:0};const cycle=d.cs;
+    const why={1:`runs ${fmtD(d.start)} – ${fmtD(addDays(d.replyBy,-1))}`,2:`to anyone without an answer, from ${fmtD(d.replyBy)}`,3:`to anyone still silent, on ${fmtD(cycle)}`};
+    const steps=`<div class="rq-steps q-stages" role="group" aria-label="Step for bills on ${esc(fmtD(cycle))}">${[1,2,3].map(k=>`<button type="button" data-stage="${k}" data-cs="${esc(cycle)}" aria-pressed="${st.stage===k}"><span>${k} ${RQ_STEP[k]}</span>${auto.stage===k?'<span class="rq-today">today</span>':''}</button>`).join('')}</div>`;
+    const todo=Q.rows.filter(r=>!r.sent),done=Q.rows.filter(r=>r.sent);
+    const meta=st.stage?`${Q.todo} to send · ${Q.sent} sent · step ${st.stage} ${why[st.stage]}${st.auto?'':' (preview)'}`:`Step 1 starts ${fmtD(d.start)} · pick a step to preview its messages`;
+    let list='';if(st.stage){if(!Q.rows.length)list=`<p class="rq-empty">${st.stage>=2?'Everyone due for this date has answered on the link (or is left out).':'Nobody has an amount due for this date.'}</p>`;else{if(todo.length)list+=`<div class="rq-card">${todo.map(r=>rqRowHTML(r,st,cycle)).join('')}</div>`;else list+=`<p class="rq-empty">All sent at this step.</p>`;
+      if(done.length){const k='sent:'+cycle+':'+st.stage;list+=`<details class="rq-sentf" data-rqd="${esc(k)}"${ui.rqOpen&&ui.rqOpen[k]?' open':''}><summary>Sent at this step · ${done.length}</summary><div class="rq-card">${done.map(r=>rqRowHTML(r,st,cycle)).join('')}</div></details>`;}}}
+    h+=`<section class="rq-sec rr-sec q-cycle" data-cs="${esc(cycle)}" aria-label="Bills on ${esc(fmtD(cycle))}"><div class="rq-sh"><h3>Bills on ${esc(fmtD(cycle))}</h3><span class="rq-step">${auto.stage?`Today: step ${auto.stage} of 3`:'No step today'}</span></div>${steps}<p class="rq-meta">${esc(meta)}</p>${list}</section>`;}
+  if(!shown.length)h+=`<section class="rq-sec"><div class="rq-sh"><h3>Bills</h3></div><p class="rq-empty">No bills coming up.</p></section>`;
+  const W=wsStatementRows(today);
+  if(wholesalers().length){const todoW=W.filter(r=>!wsSentOf(r)),doneW=W.filter(r=>wsSentOf(r));let l='';if(todoW.length)l+=`<div class="rq-card">${todoW.map(r=>rqWsHTML(r,today)).join('')}</div>`;else l+=`<p class="rq-empty">${W.length?'All statements sent.':'No statement to send.'}</p>`;
+    if(doneW.length){const k='sent:ws';l+=`<details class="rq-sentf" data-rqd="${k}"${ui.rqOpen&&ui.rqOpen[k]?' open':''}><summary>Sent · ${doneW.length}</summary><div class="rq-card">${doneW.map(r=>rqWsHTML(r,today)).join('')}</div></details>`;}
+    h+=`<section class="rq-sec" id="ws-sec" aria-label="Wholesalers"><div class="rq-sh"><h3>Wholesalers</h3>${W.length?`<span class="rq-cnt">${W.length}</span>`:''}</div><p class="rq-meta">One statement per wholesaler: accounts due now${wsRemindDays()?` and renewing within ${wsRemindDays()} day${wsRemindDays()===1?'':'s'}`:''}.</p>${l}</section>`;}
+  const own=ownCycleDueRows(today);
+  h+=`<section class="rq-sec rq-over" id="overdue-sec" aria-label="Overdue"><div class="rq-sh"><h3>Overdue</h3>${own.length?`<span class="rq-cnt">${own.length}</span>`:''}</div>${own.length?`<p class="rq-meta">Due today or earlier, until paid.</p><div class="rq-card">${own.map(r=>rqOwnHTML(r,today)).join('')}</div>`:'<p class="rq-empty">Nobody is overdue.</p>'}</section>`;
+  const ans=rqAnsHTML();
+  if(ans.length)h+=`<section class="rq-sec" id="rq-answers" aria-label="Answers from customer links"><div class="rq-sh"><h3>Answers from customer links</h3><span class="rq-cnt">${ans.length}</span></div><div class="rq-card">${ans.map(x=>x.html).join('')}</div></section>`;
+  return h+'</div>';}
+/* Tools: Except (customers left out of a round, per bill date) */
+function rqExceptHTML(today){const dates=billDates(today);const act=dates.filter(d=>d.stage>0);const shown=act.length?act:dates.slice(0,1);let h='';
+  for(const d of shown){const key=d.cs;const R=reminderRows(today,key);const dueTxt=r=>r.a.unpaid?ownText(r.a.balance.n?r.a.balance:r.a.due,r.a.mainCur)+' overdue':ownText(r.a.cycleDue,r.a.mainCur);
+    h+=`<section class="rq-sec" data-cs="${esc(key)}"><div class="rq-sh"><h3>Bills on ${esc(fmtD(key))}</h3><span class="rq-cnt">${R.skipped.length} left out</span></div>${R.due.length?`<div class="rq-card rq-except">${R.due.map(r=>`<label class="rq-exr"><input type="checkbox" data-act="skip" data-cycle="${esc(key)}" data-user="${esc(r.id)}"${remState(r.u,key).skipped?' checked':''}><span class="rq-main"><b class="who">${esc(displayName(r.u))}</b><span class="rq-what">${rqMoney(dueTxt(r))}</span></span></label>`).join('')}</div>`:'<p class="rq-empty">Nobody is due on this date.</p>'}</section>`;}
+  return rqSubHead('Leave customers out','Tick anyone to leave out of every step for that bill date (for example, someone who told you separately). Saved for that date only.')+(h||'<p class="rq-empty">No bills coming up.</p>');}
+/* Tools: the Sent log (every Sent tick saved on customers and wholesalers, newest first) */
+function rqSentHTML(){const L=[];
+  for(const id in state.users){const u=state.users[id];const R=u.reminders||{};for(const k of Object.keys(R))for(const x of (R[k]&&R[k].sent)||[])L.push({at:String(x.at||''),who:displayName(u),what:`Bills on ${fmtD(x.cycleStart||k)} · step ${x.stage} · ${x.channel||'manual'}${x.by==='notify'?' (auto)':''}`});}
+  const WS=normWsSent(state.settings.wsSent);for(const wid of Object.keys(WS)){const w=wholesalers().find(x=>x.id===wid);for(const key of Object.keys(WS[wid])){const x=WS[wid][key]||{};const dt=key.slice(key.indexOf(':')+1);L.push({at:String(x.at||''),who:w?w.name:'Wholesaler',what:`Statement · ${key.startsWith('soon:')?'renews soon, due '+(isDateKey(dt)?fmtD(dt):dt):'due now'+(isDateKey(dt)?' ('+fmtD(dt)+')':'')} · ${x.channel||'manual'}`});}}
+  L.sort((a,b)=>b.at.localeCompare(a.at));
+  return rqSubHead('Sent log','Every Sent tick, newest first. Untick a row on the Reminders screen to take it back.')+(L.length?`<div class="rq-card">${L.slice(0,120).map(x=>`<div class="rq-log"><span class="rq-main"><b class="who">${esc(x.who)}</b><span class="rq-what">${esc(x.what)}</span></span><span class="rq-when">${esc(fmtWhen(x.at)||x.at.slice(0,10))}</span></div>`).join('')}</div>`:'<p class="rq-empty">Nothing marked as sent yet.</p>');}
+function rqSubHead(title,how){const k='how:'+title;return `<div class="rq-subhead"><button class="cp-back rq-back" type="button" data-rq="back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>Reminders</button><h2 class="td-h1">${esc(title)}</h2>${how?`<details class="rq-howd" data-rqd="${esc(k)}"${ui.rqOpen&&ui.rqOpen[k]?' open':''}><summary>How this works</summary><p>${esc(how)}</p></details>`:''}</div>`;}
+/* the Reminder run and Final notice views keep their classic content; the tabs layout adds a Back bar with the classic explanation folded */
+function rqSubHeadFor(){if(!tabsOn())return;const b=$('#rr-body');if(!b)return;b.insertAdjacentHTML('afterbegin',rqSubHead(ui.rrTab==='final'?'Final notice':'Reminder run',$('#rr-sub').textContent));rqLast='';}
+function renderRemindTabs(){const today=todayISO(),v=ui.rqView||'';const h=v==='except'?`<div class="rq rq-view">${rqExceptHTML(today)}</div>`:v==='sent'?`<div class="rq rq-view">${rqSentHTML()}</div>`:rqMainHTML(today);
+  const body=$('#rr-body');if(h!==rqLast||!body.querySelector(':scope>.rq')){body.innerHTML=h;rqLast=h;}}/* an unchanged screen is not redrawn, so focus and an open fold survive a refresh */
+const rqSel=row=>row.dataset.ws?`#rr-body .rq-row[data-ws="${cpCss(row.dataset.ws)}"][data-key="${cpCss(row.dataset.key)}"]`:row.dataset.own?`#rr-body .rq-row[data-own="1"][data-user="${cpCss(row.dataset.user)}"]`:`#rr-body .rq-row[data-user="${cpCss(row.dataset.user)}"][data-cs="${cpCss(row.dataset.cs)}"]`;
+function rqView(v){ui.rqView=v;ui.rrTab='queue';rqLast='';renderRemindRun();window.scrollTo(0,0);const h=document.querySelector('#rr-body .rq-back,#rr-body .rq-toolsb');if(h)h.focus({preventScroll:true});}
+function rqOpenRun(tab){ui.rqView='';ui.rrTab=tab;renderRemindRun();window.scrollTo(0,0);const h=document.querySelector('#rr-body .rq-back');if(h)h.focus({preventScroll:true});}
+/* the More menu of a row: built from the row's hidden controls; a link opens from the menu itself, a button clicks the row's own control */
+function rqMenu(btn){const row=btn.closest('.rq-row');if(!row)return;const sel=rqSel(row),who=row.querySelector('.who').textContent,sub=row.querySelector('.rq-what').textContent;
+  const IC={email:'link',telegram:'link',whatsapp:'link',copy:'several',link:'link',amt:'bill',skip:'end',pay:'pay',addphone:'edit'};const items=[];
+  for(const el of row.querySelectorAll('.rq-x [data-rqx]')){const k=el.dataset.rqx,t=el.textContent.trim(),hint=el.title||'';
+    if(el.tagName==='A'){const rec=row.classList.contains('qrow')&&el.dataset.ch?` data-rqch="${esc(el.dataset.ch)}" data-rqkey="${esc(row.dataset.ws?'ws:'+row.dataset.ws:row.dataset.user)}"`:'';
+      items.push({html:`<a class="cpm-item" data-k="${esc(k)}" href="${esc(el.getAttribute('href'))}"${el.getAttribute('target')?` target="${esc(el.getAttribute('target'))}"`:''} rel="noopener noreferrer"${rec}>${cpIcon(IC[k])}<span class="cpm-t"><b>${esc(t)}</b>${hint?`<span>${esc(hint)}</span>`:''}</span></a>`});continue;}
+    const box=el.querySelector('input[type=checkbox]');const label=box?(box.checked?'Put back into this round':t):t;
+    items.push({key:k,t:label,h:hint,ic:IC[k]||'edit',go:()=>{const r2=document.querySelector(sel);const e2=r2&&r2.querySelector(`.rq-x [data-rqx="${k}"]`);const c=e2&&(e2.querySelector('input')||e2);if(c)c.click();}});}
+  const msg=row.querySelector('.qmsg');if(msg)items.push({key:'view',t:row.dataset.ws?'View the statement':'View the message',h:'The text that is sent',ic:'bill',sub:()=>cpSheet(row.dataset.ws?'Statement':'Message',who,[{html:`<pre class="qmsg rq-msg">${esc(msg.textContent)}</pre>`}])});
+  if(row.dataset.user&&state.users[row.dataset.user])items.push({key:'cust',t:'Open the customer page',h:'Payments, plans and contact details',ic:'edit',go:()=>openCustomerFrom(null,row.dataset.user)});
+  cpSheet(who,sub,items,()=>{const r2=document.querySelector(sel);return r2&&r2.querySelector('.rq-more');});}
+function rqTools(){const today=todayISO();const nSk=activeDates(today).reduce((t,d)=>t+reminderRows(today,d.cs).skipped.length,0);
+  cpSheet('Tools','Used now and then',[
+    {key:'run',t:'Reminder run',h:'One bill date: who to remind, with Reminded and Confirmed ticks and the date picker',ic:'several',go:()=>rqOpenRun('run')},
+    {key:'final',t:'Final notice',h:'Not confirmed by the reply-by day: the deactivation list, copy or download',ic:'end',go:()=>rqOpenRun('final')},
+    {key:'except',t:'Leave customers out (Except…)',h:nSk?`${nSk} left out of a round now`:'Nobody is left out of a round now',ic:'cut',go:()=>rqView('except')},
+    {key:'sent',t:'Sent log',h:'What was sent, when and how',ic:'dates',go:()=>rqView('sent')},
+    {key:'how',t:'How this works',h:'The three steps, the reply-by day, wholesalers, overdue and answers',ic:'adv',sub:()=>cpSheet('How this works','',[{html:rqHowHTML(today)}])}],()=>document.querySelector('#rr-body .rq-toolsb'));}
+/* v85: the answer actions of the customer page, shared with the Reminders tab (the same saves) */
+async function linkKeep(id,sid){const u=clone(state.users[id]);const sb=u.subscriptions.find(x=>x.id===sid);if(!sb)return;delete sb.linkConflict;const ok=await persistUser(id,u);if(ok)toast('Kept your tier change.');}
+async function linkUse(id,sid){const u=clone(state.users[id]);const sb=u.subscriptions.find(x=>x.id===sid);if(!sb||!sb.linkConflict)return;useLinkChoice(sb,sb.linkConflict);delete sb.linkConflict;const ok=await persistUser(id,u);if(ok)toast('Applied their choice.');}
+async function discDismiss(id){const u=clone(state.users[id]);u.discontinue=null;const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: kept; the Discontinue answer stays on record.`);}
+function initRemindTabs(){const b=$('#rr-body'),d=$('#cpSheet');if(!b||!d)return;ui.rqOpen={};
+  b.addEventListener('toggle',e=>{const t=e.target;if(t&&t.matches&&t.matches('details[data-rqd]'))ui.rqOpen[t.dataset.rqd]=t.open;},true);
+  b.addEventListener('click',async e=>{const q=e.target.closest('[data-rq]');
+    if(q){const k=q.dataset.rq;if(k==='menu')rqMenu(q);else if(k==='tools')rqTools();else if(k==='back'){ui.rqView='';ui.rrTab='queue';rqLast='';renderRemindRun();window.scrollTo(0,0);const t=document.querySelector('#rr-body .rq-toolsb');if(t)t.focus({preventScroll:true});}
+      else if(k==='cust')openCustomerFrom(null,q.dataset.user);else if(k==='addphone'){const id=q.dataset.user;openCustomerFrom(null,id);cpOpenForm(id,'edit','.edit-form','[data-role=contact]',cpShowContact);}return;}
+    const a=e.target.closest('button[data-act="link-use"],button[data-act="link-keep"],button[data-act="disc-dismiss"]');if(!a||!a.dataset.user||!state.users[a.dataset.user])return;a.disabled=true;
+    if(a.dataset.act==='link-use')await linkUse(a.dataset.user,a.dataset.sub);else if(a.dataset.act==='link-keep')await linkKeep(a.dataset.user,a.dataset.sub);else await discDismiss(a.dataset.user);a.disabled=false;});
+  /* a link chosen in a row's menu records its channel for the Sent tick, as the row's own link does (#rr-body's a[data-ch] listener) */
+  d.addEventListener('click',e=>{const a=e.target.closest('a[data-rqch]');if(a)qLastCh[a.dataset.rqkey]=a.dataset.rqch;const l=e.target.closest('a.cpm-item');if(l)setTimeout(cpSheetDone,0);});}
 function initCustPage(){const tb=$('#tbody'),d=$('#cpSheet');if(!tb||!d)return;
   try{if(history.state&&history.state.cp)history.replaceState(null,'');history.scrollRestoration='manual';}catch(e){}
   tb.addEventListener('click',e=>{const b=e.target.closest('[data-cp]');if(!b)return;const det=b.closest('tr.detail');if(!det)return;const id=det.dataset.id,k=b.dataset.cp,sid=b.dataset.sub;
@@ -5251,8 +5461,8 @@ function bind(){
     const act=e.target.closest('[data-act]');if(!act)return;const A=act.dataset.act,sid=act.dataset.sub;
     if(A==='toggle'){if((act.dataset.key||'').startsWith('refund:'))openRefundDialog(id,sid);else if((act.dataset.key||'').startsWith('days:')){const ds=act.dataset.key.slice(5),s0=(state.users[id].subscriptions||[]).find(s=>s.id===ds);if(s0){openBillDialog(id,ds,pStart(s0,0));$('#bill-mode').value='days';refreshBillPreview();}}/* v75: the link has no data-sub; before, this threw and nothing opened */else toggleOpen(id,act.dataset.key);}
     else if(A==='toggle-contact'){const f=act.closest('form');const w=f&&f.querySelector('[data-role=contact]');if(!w)return;const open=w.hidden;w.hidden=!open;act.setAttribute('aria-expanded',String(open));try{localStorage.setItem('pt-edit-contact',open?'1':'0');}catch(e){}}
-    else if(A==='link-keep'){const u=clone(state.users[id]);const sb=u.subscriptions.find(x=>x.id===sid);if(!sb)return;delete sb.linkConflict;const ok=await persistUser(id,u);if(ok)toast('Kept your tier change.');}
-    else if(A==='link-use'){const u=clone(state.users[id]);const sb=u.subscriptions.find(x=>x.id===sid);if(!sb||!sb.linkConflict)return;useLinkChoice(sb,sb.linkConflict);delete sb.linkConflict;const ok=await persistUser(id,u);if(ok)toast('Applied their choice.');}
+    else if(A==='link-keep')await linkKeep(id,sid);/* v85: shared with the Reminders tab */
+    else if(A==='link-use')await linkUse(id,sid);
     else if(Object.keys(RM_WHAT).includes(A)){/* v41: the same two-step Yes/Cancel that deleting a user or plan already has; remembered across redraws */ui.rmConfirm={id,A,d:Object.assign({},act.dataset)};act.outerHTML=rmConfirmHTML(A,act.dataset);}
     else if(A==='rm-no'){ui.rmConfirm=null;renderTable();}
     else if(A==='package-start')openStartDialog(id,sid);
@@ -5283,7 +5493,7 @@ function bind(){
     else if(A==='del-yes'){const nm=displayName(state.users[id]);const box=act.parentElement.querySelector('[data-role=del-costs]');const lc=box&&box.checked?(state.users[id].subscriptions||[]).map(linkedCost).filter(Boolean):[];const ok=await removeUser(id);if(ok){let n=0;for(const c of lc)if(await deleteLinkedCost(c.id))n++;ui.expanded=null;toast('Deleted '+nm+(n?` and ${n} linked expense${n===1?'':'s'}`:'')+'.');}}
     else if(A==='del-no')renderTable();
     else if(A==='disc-confirm'){act.disabled=true;await confirmDiscontinue(id);}
-    else if(A==='disc-dismiss'){const u=clone(state.users[id]);u.discontinue=null;const ok=await persistUser(id,u);if(ok)toast(`${displayName(u)}: kept; the Discontinue answer stays on record.`);}
+    else if(A==='disc-dismiss')await discDismiss(id);
   });
   tbody.addEventListener('keydown',e=>{const row=e.target.closest('tr.row');if(row&&(e.key==='Enter'||e.key===' ')&&e.target===row){e.preventDefault();row.click();}});
   tbody.addEventListener('submit',async e=>{

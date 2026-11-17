@@ -19,7 +19,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   // v78: the usual address keeps the page as it was; the new design is a separate file at /new, behind the same sign-in
-  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v84');
+  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v85');
   check('the usual address still serves the page without tabs');
   {const anon=await browser.newContext();const r=await anon.request.get(base+'/new',{maxRedirects:0});assert.equal(r.status(),302);assert.match(r.headers().location||'',/\/login\?next=\/new$/);await anon.close();}
   check('/new asks for sign-in first');
@@ -43,7 +43,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
    'costs/t78a':{date:'2026-11-03',description:'Tabs test seats',category:'Tools',packageId:'pkg_cmax',currency:'PKR',cost:2500,tax:0,rate:null,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v84');assert.equal(new URL(page.url()).pathname,'/new');
+  assert.equal(await page.locator('#app-ver').textContent(),'v85');assert.equal(new URL(page.url()).pathname,'/new');
   assert.deepEqual(await page.locator('#more-oldsite').evaluate(e=>[e.hidden,e.getAttribute('href')]),[false,'/']);check('More links back to the usual address');
   const tab=()=>page.evaluate(()=>document.body.dataset.tab);
   const go=async t=>{await page.locator(`#tabBar [data-go=${t}]`).click();await page.waitForTimeout(250);};

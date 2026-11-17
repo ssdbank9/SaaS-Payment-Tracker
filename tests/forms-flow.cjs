@@ -45,7 +45,7 @@ function strip(d){const ids=new Set();const walk=v=>{if(Array.isArray(v))return 
   for(let i=1;i<=11;i++)docs['users/f'+i]={...twin(),name:'Filler Customer Number '+i,phone:'92300222'+String(1000+i)};
   assert.equal((await api('POST','/api/import',{docs,replace:[]})).status,200);
   await page.goto(base+'/new',{waitUntil:'domcontentloaded'});await page.waitForSelector('#tabBar',{timeout:30000});await page.waitForTimeout(2000);
-  assert.equal(await page.locator('#app-ver').textContent(),'v84');
+  assert.equal(await page.locator('#app-ver').textContent(),'v85');
   const go=async t=>{await page.locator(`#tabBar [data-go=${t}]`).click();await page.waitForTimeout(250);};
   const shown=sel=>page.locator(sel).first().isVisible();
   const noSideScroll=()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth);
