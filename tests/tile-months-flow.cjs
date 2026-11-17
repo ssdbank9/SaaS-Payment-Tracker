@@ -30,7 +30,7 @@ const norm=s=>s.replace(/\s+/g,' ').trim();
    'costs/c2':{date:'2026-09-05',description:'Domain',category:'Hosting',packageId:'',currency:'PKR',cost:500,tax:0,rate:null,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v82');
+  assert.equal(await page.locator('#app-ver').textContent(),'v83');
   await page.locator('#range').selectOption('all');await until(async()=>/16,200/.test(await page.locator('#t-col').textContent()),'Summary all time');
 
   // 1. the Collected tile opens the month list; the total line equals the tile; months newest first with payments and refunds

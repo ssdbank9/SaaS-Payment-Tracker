@@ -1055,7 +1055,7 @@ body[data-ui="tabs"][data-cust] .detail-card::before{display:none}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v82</span>
+      <span class="small muted num" id="app-ver" title="App version">v83</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
@@ -4362,10 +4362,11 @@ let cpPop=false,cpSkipPop=false;
 /* called by renderTable: enter or leave the customer page to match ui.expanded */
 function cpSync(){if(!tabsOn())return;const b=document.body,id=ui.expanded&&state.users[ui.expanded]?ui.expanded:null;
   if(id&&ui.tab==='customers'){if(b.dataset.cust===id)return;const fresh=!b.dataset.cust;b.dataset.cust=id;
-    try{if(history.state&&history.state.cp)history.replaceState({cp:id},'');else history.pushState({cp:id},'');}catch(e){}
+    /* v83: while a step back is still on its way (cpSkipPop), the entry is added when it lands (popstate), so two quick taps never step back twice */
+    try{if(cpSkipPop){}else if(history.state&&history.state.cp)history.replaceState({cp:id},'');else history.pushState({cp:id},'');}catch(e){}
     if(fresh){window.scrollTo(0,0);const h=document.querySelector('#tbody .cp-name');if(h)h.focus({preventScroll:true});}return;}
   if(!b.dataset.cust)return;delete b.dataset.cust;if(!id)ui.expanded=null;ui.allBills={};const cpd=$('#cpSheet');if(cpd&&cpd.open){cpd.dataset.nofocus='1';cpd.close();}
-  if(!cpPop&&history.state&&history.state.cp){cpSkipPop=true;try{history.back();}catch(e){cpSkipPop=false;}}cpPop=false;
+  if(!cpPop&&!cpSkipPop&&history.state&&history.state.cp){cpSkipPop=true;try{history.back();}catch(e){cpSkipPop=false;}}cpPop=false;
   const y=ui.cuScroll||0;window.scrollTo(0,y);}
 function cpBack(){if(!document.body.dataset.cust)return;const id=ui.expanded;ui.expanded=null;renderTable();const r=id&&document.querySelector(`#tbody tr.row[data-id="${cpCss(id)}"]`);if(r)r.focus({preventScroll:true});}
 function initCustPage(){const tb=$('#tbody'),d=$('#cpSheet');if(!tb||!d)return;
@@ -4377,7 +4378,7 @@ function initCustPage(){const tb=$('#tbody'),d=$('#cpSheet');if(!tb||!d)return;
   d.addEventListener('click',e=>{if(e.target===d){d.close();return;}const b=e.target.closest('.cpm-item');if(!b||b.disabled)return;const it=cpItems[+b.dataset.i];if(!it)return;if(it.sub){it.sub();return;}cpSheetDone();it.go();});
   d.addEventListener('close',()=>{if(d.dataset.nofocus){delete d.dataset.nofocus;return;}const el=typeof cpBackTo==='function'?cpBackTo():null;if(el)el.focus({preventScroll:true});});
   $('#cps-x').addEventListener('click',()=>d.close());$('#cps-close').addEventListener('click',()=>d.close());
-  window.addEventListener('popstate',e=>{if(cpSkipPop){cpSkipPop=false;return;}const st=e.state;
+  window.addEventListener('popstate',e=>{if(cpSkipPop){cpSkipPop=false;const c=document.body.dataset.cust;if(c){try{history.pushState({cp:c},'');}catch(x){}}/* v83: a customer opened meanwhile gets its entry now */return;}const st=e.state;
     if(document.body.dataset.cust&&!(st&&st.cp)){cpPop=true;ui.expanded=null;renderTable();cpPop=false;return;}
     if(st&&st.cp&&state.users[st.cp]&&!document.body.dataset.cust){ui.cuScroll=window.scrollY;ui.expanded=st.cp;if(ui.tab!=='customers')setTab('customers',{keepScroll:true});renderTable();}});
   document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented||!document.body.dataset.cust)return;if(document.querySelector('dialog[open]'))return;

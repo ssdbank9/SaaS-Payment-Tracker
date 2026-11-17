@@ -2,6 +2,11 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v83 - 2026-11-17
+
+One safety fix on the customer page of the new site (`/new`). No money figure or saved data changed.
+- Closing a customer and opening another one almost at the same instant could step the browser back twice and leave the page. The page now waits for the first step back to finish before it counts the next one, so Back always returns to the customer list.
+
 ## v82 - 2026-11-17
 
 On the new page (`/new`), a customer now opens on a page of their own instead of inside the list. The usual address (`/`) and the old layout inside the new page are unchanged. No money figure or saved data changed, and nothing new is saved: every button opens a form or box you already know.

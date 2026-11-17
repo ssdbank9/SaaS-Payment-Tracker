@@ -19,7 +19,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   // v78: the usual address keeps the page as it was; the new design is a separate file at /new, behind the same sign-in
-  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v82');
+  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v83');
   check('the usual address still serves the page without tabs');
   {const anon=await browser.newContext();const r=await anon.request.get(base+'/new',{maxRedirects:0});assert.equal(r.status(),302);assert.match(r.headers().location||'',/\/login\?next=\/new$/);await anon.close();}
   check('/new asks for sign-in first');
@@ -43,7 +43,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
    'costs/t78a':{date:'2026-11-03',description:'Tabs test seats',category:'Tools',packageId:'pkg_cmax',currency:'PKR',cost:2500,tax:0,rate:null,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v82');assert.equal(new URL(page.url()).pathname,'/new');
+  assert.equal(await page.locator('#app-ver').textContent(),'v83');assert.equal(new URL(page.url()).pathname,'/new');
   assert.deepEqual(await page.locator('#more-oldsite').evaluate(e=>[e.hidden,e.getAttribute('href')]),[false,'/']);check('More links back to the usual address');
   const tab=()=>page.evaluate(()=>document.body.dataset.tab);
   const go=async t=>{await page.locator(`#tabBar [data-go=${t}]`).click();await page.waitForTimeout(250);};
@@ -384,6 +384,14 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   await openCust('t3');await go('today');assert.equal(await cust(),'');await go('customers');assert.equal(await cust(),'');assert.equal(await shown('#custHead'),true);
   await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>history.state&&history.state.cp||''),'','no page entry left in the history by a tab switch');
   check('Back, the browser Back and Escape each return from the page to the list at the scroll position it had (the address stays /new); switching tab and coming back shows the list');
+  // P3-7b v83: opening and closing customers faster than the browser steps back must not step back twice (that left the site)
+  {const r=await page.evaluate(async()=>{const vis=e=>{const b=e.getBoundingClientRect();return b.width>0&&b.height>0;};const ids=[...document.querySelectorAll('#tbody tr.row')].filter(vis).slice(0,2).map(x=>x.dataset.id);
+     for(const id of [ids[0],ids[1],ids[0]]){document.querySelector(`#tbody tr.row[data-id="${id}"] .nm`).click();document.querySelector('#tbody tr.detail [data-cp=back]').click();}
+     document.querySelector(`#tbody tr.row[data-id="${ids[1]}"] .nm`).click();await new Promise(z=>setTimeout(z,600));
+     return {path:location.pathname,cust:document.body.dataset.cust||'',want:ids[1],cp:(history.state&&history.state.cp)||''};});
+   assert.deepEqual([r.path,r.cust,r.cp],['/new',r.want,r.want],JSON.stringify(r));
+   await page.goBack();await page.waitForTimeout(500);assert.equal(new URL(page.url()).pathname,'/new','browser Back after a fast sequence stays on the site');assert.equal(await cust(),'');assert.equal(await shown('#tabBar'),true);}
+  check('Opening and closing three customers with no pause, then opening a fourth, stays on /new with that customer open; the browser Back then returns to the list');
 
   // P3-8 the visible buttons and the length of a 3-plan customer at 390px
   await openCust('t3');
@@ -476,6 +484,6 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
     for(const t of ['reminders','money','more']){await go(t);assert.equal(await noSideScroll(),true,`1400 ${scheme} ${t}`);}}
   check('A computer shows the side bar (220px, full height) with the content to its right; Customers has no buttons on a closed row; no sideways scroll at 390px and 1400px in light and dark');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'82',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'83',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
