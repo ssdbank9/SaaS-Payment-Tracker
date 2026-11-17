@@ -2,6 +2,14 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v79 - 2026-11-17
+
+Four display fixes found while looking at the new page (`/new`) on a phone. No money figure or saved data changed.
+- Today: an amount no longer breaks one character per line when the plan line beside it is long (for example "€15" next to "Claude Pro - 2 · 26 Oct – 25 Nov 2026"). A wholesaler total in two currencies shows one currency per line.
+- Today: on a phone the month card is three rows (Collected, Costs, Net) with the amount on the right, so a long amount such as "Rs 101,784.99" stays on one line. On a computer it is still three cards.
+- Customers: the box that said "Due soon" now says "Due this week" and counts the customers who owe nothing today and have a bill falling due in the next 7 days, the same bills Today lists under Due this week. Before, it only counted one-time items, so it could say 0 while Today listed four bills. Tapping it lists those customers; the Status choice in Search follows the same rule.
+- Customers, on a phone: a wholesaler heading now wraps onto a second line instead of making the list wider than the screen, so its "Record payment" is visible without scrolling sideways. This one is on the usual address too, because both pages share that list.
+
 ## v78 - 2026-11-16
 
 The first step of the new layout. It is on its own address, `/new` (for example `wasooli.duckdns.org/new`); the usual address keeps the site exactly as it was in v77, apart from the version number. Both use the same data and the same sign-in, so you can switch at any time.

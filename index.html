@@ -579,6 +579,7 @@ label.f.chk input{width:15px;height:15px;margin:0}
 /* v68: group headings in the customer list (By supplier) */
 #tbody tr.grp td{background:var(--surface-2);color:var(--ink-2);font-size:12.5px;padding:7px 12px;border-top:1px solid var(--line);cursor:default}
 #tbody tr.grp td b{color:var(--ink)}
+@media (max-width:760px){#tbody tr.grp td{white-space:normal;line-height:1.6}}/* v79: the heading wraps on a phone, so Record payment stays on screen */
 #tbody tr.grp .grp-owe{color:var(--danger,#b42318);font-weight:600}.pl-table tbody tr:hover td,.pl-table tbody tr:focus-visible td{background:var(--surface-2)}.pl-table td.who{white-space:normal;min-width:110px}.pl-table td.plan{white-space:normal;color:var(--ink-2)}
 .pays{margin-top:10px;font-size:12px;width:100%;border-collapse:collapse;min-width:0}
 .pays td,.pays th{padding:4px 8px 4px 0;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;vertical-align:top}
@@ -750,7 +751,7 @@ table.costs td.cat{color:var(--ink-2)}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v78</span>
+      <span class="small muted num" id="app-ver" title="App version">v79</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>

@@ -36,7 +36,7 @@ const norm=s=>String(s).replace(/\s+/g,' ').trim();
    'users/o1':{name:'Olga Own',phone:'923001234561',joinDate:'2026-10-26',subscriptions:[plan('2026-10-26','2026-10-26',{ownStart:true,accountCost:{entries:[{amount:15,currency:'USD',from:'2026-10-26',paidIn:'USD',rate:null,supplier:''}],first:'prorated30',frequency:'monthly',anchor:'2026-10-15',overrides:{}}})]},
   },replace:[]});
   await reload();
-  assert.equal(await page.locator('#app-ver').textContent(),'v78');
+  assert.equal(await page.locator('#app-ver').textContent(),'v79');
 
   // 1. Settings: type 20 in Start Seller's "Pays on day" and save
   assert.match(await pill('w1'),/^Overdue since Oct 15/);

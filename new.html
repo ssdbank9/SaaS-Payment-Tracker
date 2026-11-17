@@ -579,6 +579,7 @@ label.f.chk input{width:15px;height:15px;margin:0}
 /* v68: group headings in the customer list (By supplier) */
 #tbody tr.grp td{background:var(--surface-2);color:var(--ink-2);font-size:12.5px;padding:7px 12px;border-top:1px solid var(--line);cursor:default}
 #tbody tr.grp td b{color:var(--ink)}
+@media (max-width:760px){#tbody tr.grp td{white-space:normal;line-height:1.6}}/* v79: the heading wraps on a phone, so Record payment stays on screen */
 #tbody tr.grp .grp-owe{color:var(--danger,#b42318);font-weight:600}.pl-table tbody tr:hover td,.pl-table tbody tr:focus-visible td{background:var(--surface-2)}.pl-table td.who{white-space:normal;min-width:110px}.pl-table td.plan{white-space:normal;color:var(--ink-2)}
 .pays{margin-top:10px;font-size:12px;width:100%;border-collapse:collapse;min-width:0}
 .pays td,.pays th{padding:4px 8px 4px 0;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;vertical-align:top}
@@ -793,10 +794,11 @@ body[data-ui="tabs"] #staleBanner{position:sticky;top:0;z-index:25}
 .td-month{display:flex;flex-direction:column;gap:10px;flex:3 1 540px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
 .td-month:hover{border-color:var(--accent-line)}
 .td-mlbl{font-size:13px;color:var(--ink-2)}
-.td-mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.td-m{display:flex;flex-direction:column;gap:2px;min-width:0}
-.td-m .l,.td-card .l{font-size:12px;color:var(--ink-2)}
+.td-mgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}/* v79: one row per figure on a phone, so a long amount stays on one line */
+.td-m{display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:12px;min-width:0}
+.td-m .l,.td-card .l{font-size:13px;color:var(--ink-2)}
 .td-m .v,.td-card .v{font-size:16px;font-weight:500;overflow-wrap:anywhere}
+.td-m .v{white-space:nowrap;overflow-wrap:normal}
 .td-m .s,.td-card .s{display:none;font-size:13px;color:var(--ink-2)}
 .today .dk{display:none}
 .td-pos{color:var(--accent-ink)}.td-crit{color:var(--crit)}.td-warn{color:var(--warn)}
@@ -815,8 +817,8 @@ button.td-row:hover{background:var(--accent-tint)}
 .td-name{font-weight:600;overflow-wrap:anywhere}
 .td-sub{font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
 .td-when{font-size:12px;color:var(--crit)}
-.td-end{display:flex;align-items:center;gap:10px;flex:0 1 auto;min-width:0;justify-content:flex-end}
-.td-amt{font-weight:500;text-align:right;overflow-wrap:anywhere}
+.td-end{display:flex;align-items:center;gap:10px;flex:none;justify-content:flex-end}/* v79: the amount and the button keep their width; the name and plan line wrap instead */
+.td-amt{font-weight:500;text-align:right;white-space:nowrap;flex:none}
 .btn.td-rec{min-height:44px;padding:0 14px;border-radius:10px;font-weight:600;flex:none}
 .td-empty{padding:14px;color:var(--ink-2);font-size:14px}
 .td-rem{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:52px;padding:0 14px;background:var(--accent-soft);border:0;border-radius:14px;color:var(--accent-ink);font:inherit;font-weight:600;cursor:pointer;text-align:left}
@@ -835,8 +837,9 @@ a.more-item{text-decoration:none;box-sizing:border-box}
   .td-card{display:flex;flex-direction:column;gap:4px;flex:1 1 180px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
   .td-month{padding:0;background:none;border:0;gap:0}
   .td-mlbl{display:none}
-  .td-mgrid{gap:12px}
-  .td-m{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;gap:4px}
+  .td-mgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .td-m{flex-direction:column;align-items:stretch;justify-content:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;gap:4px}
+  .td-m .v{white-space:normal;overflow-wrap:anywhere}
   .td-month:hover .td-m{border-color:var(--accent-line)}
   .td-m .l,.td-card .l{font-size:13px}
   .td-m .v,.td-card .v{font-size:20px}
@@ -873,7 +876,7 @@ a.more-item{text-decoration:none;box-sizing:border-box}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v78</span>
+      <span class="small muted num" id="app-ver" title="App version">v79</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
@@ -958,7 +961,7 @@ a.more-item{text-decoration:none;box-sizing:border-box}
         <label class="f sr-wide">Anything<input id="sr-q" type="search" placeholder="Name, email, phone, Telegram, notes, payment note" autocomplete="off"></label>
         <label class="f">Product<select id="sr-prod"><option value="">Any product</option></select></label>
         <label class="f" id="sr-ws-wrap">Sold through<select id="sr-ws"><option value="">Anyone</option></select></label>
-        <label class="f">Status<select id="sr-status"><option value="">Any status</option><option value="owes">Owes money</option><option value="soon">Due soon</option><option value="paid">Paid up</option><option value="upcoming">Starts later</option><option value="active">Not cancelled</option><option value="cancelled">Cancelled</option></select></label>
+        <label class="f">Status<select id="sr-status"><option value="">Any status</option><option value="owes">Owes money</option><option value="soon">Due this week</option><option value="paid">Paid up</option><option value="upcoming">Starts later</option><option value="active">Not cancelled</option><option value="cancelled">Cancelled</option></select></label>
         <label class="f">Pays in<select id="sr-cur"><option value="">Any currency</option><option value="PKR">PKR (Rs)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select></label>
         <div class="f sr-pair"><span>Joined between</span><span class="sr-two"><input id="sr-join-from" type="date" aria-label="Joined from"><input id="sr-join-to" type="date" aria-label="Joined to"></span></div>
         <div class="f sr-pair"><span>Plan started between</span><span class="sr-two"><input id="sr-start-from" type="date" aria-label="Plan started from"><input id="sr-start-to" type="date" aria-label="Plan started to"></span></div>
@@ -2883,8 +2886,11 @@ function renderAnalytics(){
 }
 function openAnalytics(){showPanel('analyticsPanel');renderAnalytics();$('#analyticsPanel').scrollIntoView({behavior:'smooth',block:'start'});}
 
-/* v54: the strip's three groups: owes (overdue or due today, as the Not paid tile), due soon, paid up */
-const payCat=a=>a.unpaid?'owes':a.status==='due-soon'?'soon':(a.status==='current'||a.status==='paid')?'paid':'';
+/* v54: the strip's three groups: owes (overdue or due today, as the Not paid tile), due soon, paid up.
+   v79: with the customer and the date, due soon also covers a customer who owes nothing now and has a bill falling due within 7 days
+   (the Today tab's Due this week); before, only a one-time item counted, so the strip said 0 while Today listed bills */
+const soonBill=(u,a,today)=>!u.cancel&&dueSoonLines(today,[{id:'',u,a}],7).length>0;
+const payCat=(a,u,today)=>a.unpaid?'owes':(a.status==='due-soon'||(u&&today&&soonBill(u,a,today)))?'soon':(a.status==='current'||a.status==='paid')?'paid':'';
 function visibleRows(today,skipPay){
   const q=ui.search.trim().toLowerCase();
   const rows=Object.keys(state.users).map(id=>({id,u:state.users[id],a:analyze(state.users[id],today)}))
@@ -2893,7 +2899,7 @@ function visibleRows(today,skipPay){
     .filter(r=>ui.pkgFilter==='all'||(ui.pkgFilter==='none'?r.a.pkgIds.has(''):r.a.pkgIds.has(ui.pkgFilter)))
     .filter(r=>ui.statusFilter==='all'||(ui.statusFilter==='cancelled'?!!r.u.cancel:!r.u.cancel))
     .filter(r=>!ui.wsFilter||(ui.wsFilter==='direct'?!r.u.wholesalerId:r.u.wholesalerId===ui.wsFilter))/* v50 */
-    .filter(r=>skipPay||!ui.payFilter||payCat(r.a)===ui.payFilter);
+    .filter(r=>skipPay||!ui.payFilter||payCat(r.a,r.u,today)===ui.payFilter);
   const byName=(x,y)=>displayName(x.u).localeCompare(displayName(y.u));
   const cmp={
     status:(x,y)=>(RANK[x.a.status]-RANK[y.a.status])||(y.a.overdue-x.a.overdue)||byName(x,y),
@@ -2922,9 +2928,9 @@ function renderAcctBar(){const bar=$('#acctBar');const ids=Object.keys(state.use
   bar.innerHTML=`<span class="lbl">Active accounts</span><span class="acct-n">${S.n}</span>${S.rows.map(r=>`<button type="button" class="acct-chip" data-pkg="${esc(fv(r.k))}" aria-pressed="${ui.pkgFilter===fv(r.k)}" title="${esc(`${r.n} ${acctName(r.k)} account${r.n===1?'':'s'} held by ${r.users} user${r.users===1?'':'s'}`+(ui.pkgFilter===fv(r.k)?' · tap to show all packages':' · tap to list them'))}"><span>${esc(acctName(r.k))}</span><b>${r.n}</b></button>`).join('')}<span class="note">held by ${S.users} active user${S.users===1?'':'s'}${S.one?` · ${S.one} one-time item${S.one===1?'':'s'} not counted`:''}</span>`;}
 /* v54: the strip above the list. Counts follow the search and the other filters, not the strip's own choice */
 function renderPayStrip(today,show){const el=$('#payStrip');el.hidden=!show;if(!show)return;const base=visibleRows(today,true);let owe=newSum();const n={owes:0,soon:0,paid:0};
-  for(const r of base){const k=payCat(r.a);if(k)n[k]++;if(k==='owes')owe=sumMerge(owe,r.a.balance);}
+  for(const r of base){const k=payCat(r.a,r.u,today);if(k)n[k]++;if(k==='owes')owe=sumMerge(owe,r.a.balance);}
   const b=(k,lbl,sub)=>`<button type="button" class="ps-btn" data-pf="${k}" aria-pressed="${ui.payFilter===k}"><b>${n[k]}</b><span class="ps-l">${lbl}</span>${sub?`<span class="ps-s">${esc(sub)}</span>`:''}</button>`;
-  const html=b('owes','Owe money',n.owes&&owe.n?sumParts(owe,'PKR').p:'')+b('soon','Due soon','')+b('paid','Paid up','')+(ui.payFilter?'<button type="button" class="link ps-all" data-pf="">Show everyone</button>':'');
+  const html=b('owes','Owe money',n.owes&&owe.n?sumParts(owe,'PKR').p:'')+b('soon','Due this week','')+b('paid','Paid up','')+(ui.payFilter?'<button type="button" class="link ps-all" data-pf="">Show everyone</button>':'');
   if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}renderOweList(today,ui.payFilter==='owes');}
 /* v75: under Owe money, one line per unpaid bill: customer, plan, the period, the day it was due and what is left */
 function oweLines(today,rows){const out=[];for(const r of rows||visibleRows(today)){/* v78: rows = Today's customers; absent = the list's visible rows */if(payCat(r.a)!=='owes')continue;const u=r.u;
@@ -3937,11 +3943,12 @@ function renderToday(){if(!tabsOn()||ui.tab!=='today')return;const body=$('#td-b
     const val=S=>S.n?sumParts(S,'PKR').p:fmtAmt(0,'PKR');const nv=net.missing?net.pkr+net.usd:net.pkr;const netCls=!net.n?'':nv<0?' td-crit':nv>0?' td-pos':'';
     const when=d=>!d?'Owed':d<today?'Overdue since '+fmtD(d):'Due today';
     const sub=l=>esc(planLabel(l.s))+(l.st?' · '+esc(l.period):'');
+    const amtLines=S=>esc(ownText(S,'PKR')).split(' + ').join(' +<br>');/* v79: a total in several currencies, one per line */
     const oweRow=e=>e.kind==='ws'
-      ?`<div class="td-row" data-ws="${esc(e.w.id)}"><div class="td-main"><span class="td-name">${esc(e.w.name)}</span><span class="td-sub">Wholesaler · ${e.ids.size} of ${e.of} customer${e.of===1?'':'s'}</span><span class="td-when">${esc(when(e.due))}</span></div><div class="td-end"><span class="td-amt num td-crit">${esc(ownText(e.S,'PKR'))}</span><button type="button" class="btn primary td-rec" data-act="wspay" data-ws="${esc(e.w.id)}" aria-label="Record a payment from ${esc(e.w.name)}">Record<span class="dk"> payment</span></button></div></div>`
+      ?`<div class="td-row" data-ws="${esc(e.w.id)}"><div class="td-main"><span class="td-name">${esc(e.w.name)}</span><span class="td-sub">Wholesaler · ${e.ids.size} of ${e.of} customer${e.of===1?'':'s'}</span><span class="td-when">${esc(when(e.due))}</span></div><div class="td-end"><span class="td-amt num td-crit">${amtLines(e.S)}</span><button type="button" class="btn primary td-rec" data-act="wspay" data-ws="${esc(e.w.id)}" aria-label="Record a payment from ${esc(e.w.name)}">Record<span class="dk"> payment</span></button></div></div>`
       :`<div class="td-row" data-id="${esc(e.l.id)}" data-sid="${esc(e.l.s.id)}"><div class="td-main"><span class="td-name">${esc(e.name)}</span><span class="td-sub">${sub(e.l)}</span><span class="td-when">${esc(when(e.l.due))}</span></div><div class="td-end"><span class="td-amt num td-crit">${esc(fmtAmt(e.l.amt,e.l.s.currency))}</span><button type="button" class="btn primary td-rec" data-td-pay="${esc(e.l.id)}" data-sid="${esc(e.l.s.id)}" data-st="${esc(e.l.st||'')}" aria-label="Record a payment from ${esc(e.name)}">Record<span class="dk"> payment</span></button></div></div>`;
     const soonRow=e=>e.kind==='ws'
-      ?`<button type="button" class="td-row" data-td-open="${esc(e.lines[0].id)}" data-ws="${esc(e.w.id)}"><span class="td-main"><span class="td-name">${esc(e.w.name)}</span><span class="td-sub">Wholesaler · ${e.lines.length} bill${e.lines.length===1?'':'s'} · ${esc(weekDay(e.due))}</span></span><span class="td-amt num">${esc(ownText(e.S,'PKR'))}</span></button>`
+      ?`<button type="button" class="td-row" data-td-open="${esc(e.lines[0].id)}" data-ws="${esc(e.w.id)}"><span class="td-main"><span class="td-name">${esc(e.w.name)}</span><span class="td-sub">Wholesaler · ${e.lines.length} bill${e.lines.length===1?'':'s'} · ${esc(weekDay(e.due))}</span></span><span class="td-amt num">${amtLines(e.S)}</span></button>`
       :`<button type="button" class="td-row" data-td-open="${esc(e.l.id)}" data-sid="${esc(e.l.s.id)}"><span class="td-main"><span class="td-name">${esc(e.name)}</span><span class="td-sub">${esc(planLabel(e.l.s))} · ${esc(weekDay(e.l.due))}</span></span><span class="td-amt num">${esc(fmtAmt(e.l.amt,e.l.s.currency))}</span></button>`;
     html=`<div class="td-cards"><div class="td-card td-owed"><span class="l">Owed now</span><span class="v num${D.owe.length?' td-crit':''}">${esc(D.owe.length?ownText(D.S,'PKR'):fmtAmt(0,'PKR'))}</span><span class="s">${D.owe.length} bill${D.owe.length===1?'':'s'}</span></div>`
       +`<button type="button" class="td-month" id="td-month" aria-label="${esc(mon)} so far: open Money"><span class="td-mlbl">${esc(mon)} so far</span><span class="td-mgrid">`
@@ -4038,7 +4045,7 @@ function srRows(today){const q=srVal('q').toLowerCase(),qd=q.replace(/\D/g,'').r
     if(q){const hay=srHay(u);if(!hay.includes(q)&&!(qd.length>=3&&String(u.phone||'').includes(qd)))continue;}
     if(prod&&!a.pkgIds.has(prod))continue;
     if(ws&&(ws==='direct'?!!u.wholesalerId:u.wholesalerId!==ws))continue;
-    if(st){const k=payCat(a);if(st==='cancelled'?!u.cancel:st==='active'?!!u.cancel:st==='upcoming'?(u.cancel||a.status!=='upcoming'):(u.cancel||k!==st))continue;}
+    if(st){const k=payCat(a,u,today);if(st==='cancelled'?!u.cancel:st==='active'?!!u.cancel:st==='upcoming'?(u.cancel||a.status!=='upcoming'):(u.cancel||k!==st))continue;}
     if(cur&&!subs.some(s=>s.currency===cur))continue;
     if((isDateKey(jf)||isDateKey(jt))&&!inSpan(u.joinDate,jf,jt))continue;
     if((isDateKey(sf)||isDateKey(stt))&&!subs.some(s=>inSpan(s.start,sf,stt)))continue;

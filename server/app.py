@@ -28,7 +28,7 @@ import notify  # noqa: E402
 
 APP_NAME = "Wasooli"
 TAGLINE = "Know who's paid."
-VERSION = "78"
+VERSION = "79"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.environ.get("INDEX_HTML") or os.path.join(ROOT, "index.html")
 NEW_PATH = os.environ.get("NEW_HTML") or os.path.join(ROOT, "new.html")  # v78: the redesign, served at /new

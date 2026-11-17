@@ -19,7 +19,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   // v78: the usual address keeps the page as it was; the new design is a separate file at /new, behind the same sign-in
-  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v78');
+  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v79');
   check('the usual address still serves the page without tabs');
   {const anon=await browser.newContext();const r=await anon.request.get(base+'/new',{maxRedirects:0});assert.equal(r.status(),302);assert.match(r.headers().location||'',/\/login\?next=\/new$/);await anon.close();}
   check('/new asks for sign-in first');
@@ -43,7 +43,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
    'costs/t78a':{date:'2026-11-03',description:'Tabs test seats',category:'Tools',packageId:'pkg_cmax',currency:'PKR',cost:2500,tax:0,rate:null,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v78');assert.equal(new URL(page.url()).pathname,'/new');
+  assert.equal(await page.locator('#app-ver').textContent(),'v79');assert.equal(new URL(page.url()).pathname,'/new');
   assert.deepEqual(await page.locator('#more-oldsite').evaluate(e=>[e.hidden,e.getAttribute('href')]),[false,'/']);check('More links back to the usual address');
   const tab=()=>page.evaluate(()=>document.body.dataset.tab);
   const go=async t=>{await page.locator(`#tabBar [data-go=${t}]`).click();await page.waitForTimeout(250);};
@@ -72,6 +72,14 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   assert.equal(soon.length,1,soon.join(' | '));assert.match(soon[0],/^Sam Soon .*Fri Nov 20 Rs 4,000$/,soon.join(' | '));
   check('Due this week lists Sam Soon on Fri Nov 20 (Rs 4,000, 5 days away) and not Nora Nine on Nov 24 (9 days away)');
 
+  // 3b. v79: on a phone an amount never breaks inside itself, and the month card is one row per figure
+  const amt=await page.locator('#todayPanel .td-amt').evaluateAll(es=>es.map(e=>{const cs=getComputedStyle(e),lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.5,lines=e.querySelectorAll('br').length+1;return {ws:cs.whiteSpace,ok:e.getBoundingClientRect().height<lh*(lines+0.6)};}));
+  assert.ok(amt.length>=3&&amt.every(a=>a.ws==='nowrap'&&a.ok),JSON.stringify(amt));
+  assert.equal(await page.locator('#td-owe .td-row[data-ws=ws_a] .td-amt br').count(),1,'the wholesaler total is one currency per line');
+  const mv=await page.locator('#td-month .td-m').evaluateAll(es=>es.map(e=>{const v=e.querySelector('.v'),cs=getComputedStyle(v);return {top:Math.round(e.getBoundingClientRect().top),ws:cs.whiteSpace,h:v.getBoundingClientRect().height,lh:parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.5};}));
+  assert.ok(mv.length===3&&mv[0].top<mv[1].top&&mv[1].top<mv[2].top&&mv.every(m=>m.ws==='nowrap'&&m.h<m.lh*1.6),JSON.stringify(mv));
+  check('At 390px each amount on Today stays on one line (a total in two currencies is one currency per line) and the month card is three rows: Collected, Costs, Net');
+
   // 4. the month card equals the Summary tiles for This month, All products
   const card=[];for(const id of ['td-col','td-cost','td-net'])card.push(norm(await page.locator('#'+id).textContent()));
   assert.ok(card[1]!=='Rs 0',card.join(' | '));
@@ -89,6 +97,13 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
     assert.equal(await noSideScroll(),true,`no sideways scroll on ${t}`);
     if(t!=='today')await page.screenshot({path:path.join(out,`${t}-390-light.png`),fullPage:true});}
   await go('customers');assert.equal(await shown('.toolbar'),true);assert.equal(await shown('#payStrip'),true);
+  // v79: the wholesaler heading wraps, so its Record payment is on screen; the strip's Due this week is the customers Today lists
+  const gb=await page.locator('tr.grp[data-ws=ws_a] [data-act=wspay]').boundingBox();assert.ok(gb&&gb.x>=0&&gb.x+gb.width<=390,'the wholesaler heading button is on screen: '+JSON.stringify(gb));
+  assert.equal(norm(await page.locator('#payStrip [data-pf=soon] .ps-l').textContent()),'Due this week');assert.equal(norm(await page.locator('#payStrip [data-pf=soon] b').textContent()),'1');
+  await page.locator('#payStrip [data-pf=soon]').click();await page.waitForTimeout(300);
+  {const names=norm(await page.locator('#tbody').innerText());assert.ok(/Sam Soon/.test(names)&&!/Nora Nine|Dana Direct|Wally One/.test(names),names.slice(0,300));}
+  await page.locator('#payStrip [data-pf=""]').click();await page.waitForTimeout(300);assert.ok(/Nora Nine/.test(await page.locator('#tbody').innerText()));
+  check('Customers at 390px: the wholesaler heading keeps Record payment on screen; the strip says Due this week 1 and lists Sam Soon only, as Today does');
   await go('money');assert.equal(await shown('#costsSec'),true);assert.equal(await shown('#moneyBar'),true);
   check('Each tab shows its own blocks (Today, the customer list, the Queue, the Summary and costs, More) and hides the others; aria-current follows; no sideways scroll');
 
@@ -153,6 +168,6 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
     for(const t of ['reminders','money','more']){await go(t);assert.equal(await noSideScroll(),true,`1400 ${scheme} ${t}`);}}
   check('A computer shows the side bar (220px, full height) with the content to its right; no sideways scroll at 390px and 1400px in light and dark');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'78',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'79',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

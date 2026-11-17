@@ -19,7 +19,7 @@ const check=n=>{checks.push(n);console.log('PASS '+n);};
   const api=async(method,pth,data)=>{const r=await ctx.request.fetch(base+pth,{method,headers:H,data:data===undefined?undefined:JSON.stringify(data)});let j=null;try{j=await r.json();}catch(e){}return {status:r.status(),j};};
   const doc=async p=>((await api('GET','/api/docs/'+p)).j||{}).data;
   const until=async(fn,what)=>{for(let i=0;i<80;i++){if(await fn())return;await page.waitForTimeout(250);}throw new Error('timed out waiting for '+what);};
-  assert.equal(await page.locator('#app-ver').textContent(),'v78');
+  assert.equal(await page.locator('#app-ver').textContent(),'v79');
   const cur=await doc('meta/schema');assert.ok(cur&&Number(cur.version)>=11,'a seeded store is at the current schema');
 
   // an old store: schema 4, a wholesaler customer on a full first month, a plan with a lower-case code and a receipt without a currency,
