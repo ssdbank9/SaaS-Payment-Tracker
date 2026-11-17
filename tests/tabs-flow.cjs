@@ -19,7 +19,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   // v78: the usual address keeps the page as it was; the new design is a separate file at /new, behind the same sign-in
-  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v81');
+  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v82');
   check('the usual address still serves the page without tabs');
   {const anon=await browser.newContext();const r=await anon.request.get(base+'/new',{maxRedirects:0});assert.equal(r.status(),302);assert.match(r.headers().location||'',/\/login\?next=\/new$/);await anon.close();}
   check('/new asks for sign-in first');
@@ -43,7 +43,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
    'costs/t78a':{date:'2026-11-03',description:'Tabs test seats',category:'Tools',packageId:'pkg_cmax',currency:'PKR',cost:2500,tax:0,rate:null,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v81');assert.equal(new URL(page.url()).pathname,'/new');
+  assert.equal(await page.locator('#app-ver').textContent(),'v82');assert.equal(new URL(page.url()).pathname,'/new');
   assert.deepEqual(await page.locator('#more-oldsite').evaluate(e=>[e.hidden,e.getAttribute('href')]),[false,'/']);check('More links back to the usual address');
   const tab=()=>page.evaluate(()=>document.body.dataset.tab);
   const go=async t=>{await page.locator(`#tabBar [data-go=${t}]`).click();await page.waitForTimeout(250);};
@@ -139,10 +139,11 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   // 10. tapping a customer on Today opens that customer on Customers; Search (More) does too
   await page.locator('#td-soon [data-td-open=d2]').click();await page.waitForTimeout(500);
   assert.equal(await tab(),'customers');assert.equal(await page.locator('tr.detail[data-id=d2]').count(),1);
+  assert.equal(await page.evaluate(()=>document.body.dataset.cust),'d2');assert.equal(norm(await page.locator('#tbody tr.detail[data-id=d2] .cp-name').textContent()),'Sam Soon');assert.equal(await shown('#custHead'),false);assert.ok(await page.evaluate(()=>scrollY)<5,'the page opens at its top');
   await go('more');await page.locator('[data-more=search]').click();await page.waitForTimeout(300);assert.equal(await tab(),'more');assert.equal(await shown('#searchPanel'),true);
   await page.locator('#sr-q').fill('Nora');await page.waitForTimeout(300);await page.locator('#sr-body tr[data-user=d3]').click();await page.waitForTimeout(500);
-  assert.equal(await tab(),'customers');assert.equal(await page.locator('tr.detail[data-id=d3]').count(),1);
-  check('Tapping Sam Soon under Due this week opens Customers with Sam expanded; a Search result (More) opens that customer on Customers');
+  assert.equal(await tab(),'customers');assert.equal(await page.locator('tr.detail[data-id=d3]').count(),1);assert.equal(await page.evaluate(()=>document.body.dataset.cust),'d3');assert.equal(await shown('#tbody tr.detail[data-id=d3] .cp-pay'),true);
+  check('Tapping Sam Soon under Due this week opens his customer page (v82) on Customers; a Search result (More) opens that customer\'s page too');
 
   // 10b. v80 phase 2: the Customers list (tabs layout, 390px)
   await go('customers');
@@ -240,15 +241,193 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   assert.equal(norm(await page.locator('#nores').innerText()),'No customers match. Clear filters');
   await page.locator('#nores-clear').click();await page.waitForTimeout(300);assert.equal(await page.locator('#search').inputValue(),'');assert.equal(await shown('#nores'),false);assert.equal((await rowNames()).length,chips[0].n);
   check('A search that matches nobody shows "No customers match." with Clear filters, which brings the whole list back');
-  // P2-10 opening a row shows the details with Record payment and Cancel plan
+  // P2-10 (v82) opening a row shows the customer page with Record payment, and Cancel plans in its More menu
   await page.locator('#tbody tr.row[data-id=w1] .nm').click();await page.waitForTimeout(400);
-  assert.equal(await page.locator('tr.detail[data-id=w1]').count(),1);assert.equal(await shown('#tbody tr.row[data-id=w1] .row-pay'),true);assert.equal(await shown('#tbody tr.row[data-id=w1] .row-cancel'),true);
+  assert.equal(await page.locator('tr.detail[data-id=w1]').count(),1);assert.equal(await page.evaluate(()=>document.body.dataset.cust),'w1');
+  assert.equal(await shown('#tbody tr.detail[data-id=w1] .cp-pay'),true);assert.equal(await shown('#tbody tr.row[data-id=w1]'),false);
   await page.screenshot({path:path.join(out,'customers-open-390-light.png'),fullPage:true});
-  await page.locator('#tbody tr.row[data-id=w1] .row-pay').click();await pd.waitFor();assert.equal(norm(await page.locator('#payment-who').textContent()),'Wally One');
+  await page.locator('#tbody tr.detail[data-id=w1] .cp-pay').click();await pd.waitFor();assert.equal(norm(await page.locator('#payment-who').textContent()),'Wally One');
   await page.locator('#payment-close').click().catch(async()=>{await page.keyboard.press('Escape');});await until(async()=>!(await pd.isVisible()),'payment dialog closed');
-  await page.locator('#tbody tr.row[data-id=w1] .nm').click();await page.waitForTimeout(300);assert.equal(await page.locator('tr.detail').count(),0);
+  await page.locator('#tbody tr.detail[data-id=w1] [data-cp=cmenu]').click();await page.waitForTimeout(250);assert.equal(await page.locator('#cpSheet [data-k=cancelplans]').isEnabled(),true);
+  await page.locator('#cpSheet [data-k=cancelplans]').click();await page.waitForTimeout(300);assert.equal(await page.locator('#cancelPlanDialog').evaluate(d=>d.open),true);
+  await page.locator('#cp-close').click();await until(async()=>!(await page.locator('#cancelPlanDialog').evaluate(d=>d.open)),'cancel plan dialog closed');
+  await page.locator('#tbody tr.detail[data-id=w1] [data-cp=back]').click();await page.waitForTimeout(300);assert.equal(await page.locator('tr.detail').count(),0);
   assert.equal(await noSideScroll(),true);await page.screenshot({path:path.join(out,'customers-390-light.png'),fullPage:true});
-  check('Tapping Wally One opens the details with Record payment and Cancel plan shown; Record payment opens the payment box for Wally One; tapping again closes it; no sideways scroll');
+  check('Tapping Wally One opens his page with Record payment (it opens the payment box for Wally One) and Cancel plans in the More menu (it opens the Cancel plan box); Back closes the page; no sideways scroll');
+  // v82 phase 3: the customer page. More test data: a customer with 3 plans of different products (a long product name), PKR and USD,
+  // a price change, a refund, a one-time item and an ended plan; a plain 3-plan customer; customers to save against.
+  {const st2=await doc('settings/main');await api('PATCH','/api/docs/settings/main',{packages:st2.packages.filter(p=>p.id!=='pkg_long').concat([{id:'pkg_long',name:'Claude Max Team Annual Workspace',cycle:'monthly',price:4200,currency:'PKR',description:'',cycleStart:'2026-09-05'}])});}
+  const mp=(id,pkg,cur,price,start,extra)=>({id,kind:'monthly',cycle:'monthly',name:'',packageId:pkg,currency:cur,start,anchor:start,ownStart:true,prorate:false,prices:[{from:start,price}],payments:[],...(extra||{})});
+  const pay=(id,date,amount,currency)=>({id,date,amount,currency:currency||'PKR',note:''});
+  await api('POST','/api/import',{docs:{
+   'users/m3':{name:'Mira Manyplans-Longname Qureshi-Siddiqui',phone:'923001234570',email:'mira.manyplans@example.com',telegram:'miratest',joinDate:'2026-06-01',notes:'Pays by NayaPay',subscriptions:[
+     mp('s1','pkg_long','PKR',4000,'2026-09-05',{prices:[{from:'2026-09-05',price:4000},{from:'2026-10-05',price:4200}],payments:[pay('p1','2026-09-05',4000),pay('p2','2026-10-05',4200)]}),
+     mp('s2','pkg_cmax','USD',15,'2026-10-20',{payments:[{...pay('p3','2026-10-20',15,'USD'),rate:280}],refunds:[{id:'r1',date:'2026-10-25',amount:5,currency:'USD',rate:280,note:'outage'}]}),
+     {...mp('s4','pkg_g','PKR',50000,'2026-03-01',{payments:[pay('p4','2026-03-01',50000)]}),cycle:'yearly',prorationBasis:'actual',paymentEvery:12},
+     {id:'s3',kind:'one-time',name:'Account setup',packageId:'',currency:'PKR',start:'2026-11-01',total:3000,due:'2026-11-20',payments:[pay('p5','2026-11-01',2000)]},
+     {...mp('s5','pkg_c','PKR',4200,'2026-06-01',{payments:[pay('p6','2026-06-01',4200),pay('p7','2026-07-01',4200),pay('p8','2026-08-01',4200)]}),end:'2026-08-31',endReason:'moved to the long plan'}]},
+   'users/t3':{name:'Tara Three',phone:'923001234571',email:'tara@example.com',joinDate:'2026-09-10',subscriptions:[
+     mp('s1','pkg_c','PKR',4200,'2026-09-10',{payments:[pay('p1','2026-09-10',4200),pay('p2','2026-10-10',4200)]}),mp('s2','pkg_cmax','USD',15,'2026-09-12',{payments:[{...pay('p3','2026-09-12',15,'USD'),rate:280},{...pay('p4','2026-10-12',15,'USD'),rate:280}]}),
+     mp('s3','pkg_long','PKR',4200,'2026-09-14',{payments:[pay('p5','2026-09-14',4200),pay('p6','2026-10-14',4200)]})]},
+   'users/e1':{name:'Eddie Ends',phone:'923001234572',joinDate:'2026-10-10',subscriptions:[mp('s1','pkg_c','PKR',4200,'2026-10-10',{payments:[pay('p1','2026-10-10',4200)]}),mp('s2','pkg_cmax','PKR',5000,'2026-10-10',{payments:[pay('p2','2026-10-10',5000)]})]},
+   'users/r1':{name:'Rita Resume',phone:'923001234573',joinDate:'2026-10-01',subscriptions:[mp('s1','pkg_c','PKR',4200,'2026-10-01',{payments:[pay('p1','2026-10-01',4200)]})]},
+  },replace:[]});
+  await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);await go('customers');
+  const cust=()=>page.evaluate(()=>document.body.dataset.cust||'');
+  const sheetOpen=()=>page.locator('#cpSheet').evaluate(d=>d.open);
+  const dlgOpen=id=>page.locator('#'+id).evaluate(d=>d.open);
+  const D=id=>`#tbody tr.detail[data-id=${id}]`;
+  const openCust=async id=>{await page.locator(`#tbody tr.row[data-id=${id}] .nm`).click();await page.waitForTimeout(400);assert.equal(await cust(),id);};
+  const back=async()=>{await page.locator('#tbody [data-cp=back]').click();await page.waitForTimeout(300);assert.equal(await cust(),'');};
+  const menu=async(sel,key)=>{await page.locator(sel).click();await page.waitForTimeout(250);assert.equal(await sheetOpen(),true,'menu '+sel);if(key){const it=page.locator(`#cpSheet .cpm-item[data-k=${key}]`);assert.equal(await it.isEnabled(),true,key+' enabled');await it.click();await page.waitForTimeout(400);}};
+  const formOn=sel=>page.locator(sel).first().evaluate(f=>!f.hidden&&f.getBoundingClientRect().height>0);
+  const closeForm=async(sel,key)=>{await page.locator(`${sel} [data-act=toggle][data-key="${key}"]`).first().click();await page.waitForTimeout(250);assert.equal(await page.locator(sel).first().evaluate(f=>f.hidden),true,'closed '+sel);};
+  const closeDlg=async(id,btn)=>{await page.locator('#'+btn).click();await until(async()=>!(await dlgOpen(id)),id+' closed');};
+  const user=id=>doc('users/'+id);
+
+  // P3-1 the page: its own screen with Back; the list, header, chips and other rows are hidden
+  await page.evaluate(()=>scrollTo(0,0));await openCust('m3');
+  assert.equal(await shown('#custHead'),false);assert.equal(await shown('.toolbar'),false);assert.equal(await shown('#payStrip'),false);assert.equal(await shown('#tbody tr.row[data-id=d3]'),false);assert.equal(await shown('#tbody tr.grp'),false);
+  assert.equal(norm(await page.locator(D('m3')+' .cp-name').textContent()),'Mira Manyplans-Longname Qureshi-Siddiqui');
+  const top=norm(await page.locator(D('m3')+' .cp-top').innerText());assert.match(top,/^Owes Rs 5,200 \+ \$5 3 plans · 1 one-time .*Record payment WhatsApp Email Telegram$/,top);
+  assert.equal(await page.locator(D('m3')+' .cp-card').count(),5);assert.equal(await page.locator(D('m3')+' .cp-card[data-ended]').count(),1);assert.equal(await page.locator(D('m3')+' .cp-card.cp-one').count(),1);
+  const c1=norm(await page.locator(D('m3')+' .cp-card[data-sub=s1]').innerText());
+  assert.match(c1,/^Claude Max Team Annual Workspace Rs 4,200 a month .*Renews on the 5th Paid to Nov 4 Your cost Not set 5 Dec 2026 . 4 Jan 2027 Upcoming · due Dec 5 Rs 4,200 5 Nov . 4 Dec 2026 Not paid · was due Nov 5 Rs 4,200 5 Oct . 4 Nov 2026 Paid Rs 4,200 All bills and payments$/,c1);
+  assert.match(norm(await page.locator(D('m3')+' .cp-card[data-sub=s3]').innerText()),/^Account setup One-time .*Total Rs 3,000 Paid Rs 2,000 Left · due Nov 20 Rs 1,000 Record Rs 1,000 Payments and refunds$/);
+  assert.match(norm(await page.locator(D('m3')+' .cp-card[data-sub=s5]').innerText()),/^C Rs 4,200 a month Ended Aug 31 .*from Jun 1, 2026 to Aug 31, 2026\. Nothing owed\. Reason: moved to the long plan\. Change last day All bills and payments$/);
+  check('A customer opens as its own page: Back, name, "Owes Rs 5,200 + $5", Record payment, WhatsApp / Email / Telegram; one card per plan with renews on, paid to, your cost and the latest 3 bills; a one-time card (total, paid, left, Record Rs 1,000) and a muted ended plan with its last day');
+
+  // P3-2 phone layout at 390 and 375, light and dark: nothing sideways, amounts on one line, long names wrap inside their box
+  const layout=async tag=>{assert.equal(await noSideScroll(),true,'no sideways scroll '+tag);
+    const r=await page.evaluate(()=>{const W=innerWidth,d=document.querySelector('#tbody tr.detail');const one=e=>{const cs=getComputedStyle(e),lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.4;return e.getBoundingClientRect().height<lh*1.6;};
+      const amts=[...d.querySelectorAll('.cp-ba,.cp-owe>span,.cp-price,.cp-f .v.num')].filter(e=>e.getBoundingClientRect().width>0);
+      const out=[...d.querySelectorAll('.cp *')].filter(e=>{const b=e.getBoundingClientRect();return b.width>0&&(b.right>W+0.5||b.left<-0.5);}).map(e=>e.className||e.tagName);
+      return {amts:amts.length,bad:amts.filter(e=>!one(e)).map(e=>e.textContent),out};});
+    assert.ok(r.amts>=10&&!r.bad.length&&!r.out.length,tag+' '+JSON.stringify(r));};
+  await layout('390 light');await page.screenshot({path:path.join(out,'customer-390-light.png'),fullPage:true});
+  await page.setViewportSize({width:375,height:812});await page.waitForTimeout(250);await layout('375 light');await page.screenshot({path:path.join(out,'customer-375-light.png'),fullPage:true});
+  await page.emulateMedia({colorScheme:'dark'});await page.waitForTimeout(200);await layout('375 dark');await page.screenshot({path:path.join(out,'customer-375-dark.png'),fullPage:true});
+  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(250);await layout('390 dark');await page.screenshot({path:path.join(out,'customer-390-dark.png'),fullPage:true});
+  await page.emulateMedia({colorScheme:'light'});await page.waitForTimeout(200);
+  check('At 375px and 390px, light and dark: no sideways scroll, nothing outside the screen, every amount on one line, the long name and product wrap inside their boxes');
+
+  // P3-3 the plan More menu: every entry opens its existing form or dialog
+  const pm=D('m3')+' [data-cp=pmenu][data-sub=s1]',q=c=>`${D('m3')} .${c}[data-sub=s1]`;
+  await menu(pm);const keys=await page.locator('#cpSheet .cpm-item').evaluateAll(es=>es.map(e=>e.dataset.k));
+  assert.deepEqual(keys,['price','adjust','refund','dates','product','upto','advanced','end','remove']);
+  const sb2=await page.locator('#cpSheet').boundingBox();assert.ok(sb2.x===0&&sb2.width===390&&sb2.y+sb2.height>=843,'a bottom sheet '+JSON.stringify(sb2));await page.screenshot({path:path.join(out,'plan-menu-390-light.png')});
+  await page.locator('#cps-close').click();await page.waitForTimeout(250);assert.equal(await sheetOpen(),false);assert.equal(await page.evaluate(()=>document.activeElement&&document.activeElement.dataset.cp),'pmenu','focus back on More');
+  await menu(pm);await page.keyboard.press('Escape');await page.waitForTimeout(250);assert.equal(await sheetOpen(),false);assert.equal(await cust(),'m3','Escape closes the menu, not the page');
+  await menu(pm);await page.mouse.click(195,30);await page.waitForTimeout(250);assert.equal(await sheetOpen(),false,'backdrop closes');
+  await menu(pm,'price');assert.equal(await formOn(q('price-form')),true);assert.equal(await shown(D('m3')+' .cp-also [data-key="courtesy:s1"]'),true);assert.ok(/Price history/.test(await page.locator(D('m3')+' .cp-card[data-sub=s1]').innerText()));await closeForm(q('price-form'),'price:s1');
+  await menu(pm,'adjust');assert.equal(await sheetOpen(),true);assert.equal(await page.locator('#cps-bill').inputValue(),'2026-11-05');assert.deepEqual(await page.locator('#cpSheet .cpm-item').evaluateAll(es=>es.map(e=>e.dataset.k)),['bill','amt','courtesy']);
+  await page.locator('#cpSheet [data-k=bill]').click();await page.waitForTimeout(300);assert.equal(await dlgOpen('billDialog'),true);assert.equal(await page.locator('#bill-account').inputValue(),'s1');assert.equal(await page.locator('#bill-period').inputValue(),'2026-11-05');await closeDlg('billDialog','bill-close');
+  await menu(pm,'adjust');await page.locator('#cps-bill').selectOption('2026-12-05');await page.locator('#cpSheet [data-k=amt]').click();await page.waitForTimeout(400);
+  assert.equal(await formOn(`${D('m3')} .amt-form[data-sub=s1][data-start="2026-12-05"]`),true);await page.locator(`${D('m3')} .amt-form[data-sub=s1] [data-act=amt-cancel]`).click();await page.waitForTimeout(250);
+  await menu(pm,'adjust');await page.locator('#cpSheet [data-k=courtesy]').click();await page.waitForTimeout(400);assert.equal(await formOn(q('courtesy-form')),true);
+  assert.deepEqual(await page.locator(q('courtesy-form')).evaluate(f=>[f.elements.from.value,f.elements.tenure.value]),['2026-11-05','one']);await closeForm(q('courtesy-form'),'courtesy:s1');
+  await menu(pm,'refund');assert.equal(await dlgOpen('refundDialog'),true);assert.equal(await page.locator('#refund-account').inputValue(),'s1');await closeDlg('refundDialog','refund-close');
+  await menu(pm,'dates');assert.deepEqual(await page.locator('#cpSheet .cpm-item').evaluateAll(es=>es.map(e=>e.dataset.k)),['start','renew']);await page.locator('#cpSheet [data-k=start]').click();await page.waitForTimeout(300);assert.equal(await dlgOpen('startDialog'),true);assert.equal(await page.locator('#start-account').inputValue(),'s1');await closeDlg('startDialog','start-close');
+  await menu(pm,'dates');await page.locator('#cpSheet [data-k=renew]').click();await page.waitForTimeout(400);assert.equal(await formOn(q('subedit-form')),true);await closeForm(q('subedit-form'),'edit:s1');
+  await menu(pm,'product');assert.deepEqual(await page.locator('#cpSheet .cpm-item').evaluateAll(es=>es.map(e=>e.dataset.k)),['tier','cost','pkg']);await page.locator('#cpSheet [data-k=tier]').click();await page.waitForTimeout(400);assert.equal(await formOn(q('tier-form')),true);await closeForm(q('tier-form'),'tier:s1');
+  await menu(pm,'product');await page.locator('#cpSheet [data-k=cost]').click();await page.waitForTimeout(400);assert.equal(await formOn(q('subedit-form')),true);assert.equal(await shown(q('subedit-form')+' .account-cost-fields'),true);await closeForm(q('subedit-form'),'edit:s1');
+  await menu(pm,'upto');assert.equal(await formOn(q('upto-form')),true);await page.locator(q('upto-form')+' [data-act=toggle][data-key="upto:s1"]').first().click();await page.waitForTimeout(250);
+  await menu(pm,'advanced');assert.equal(await formOn(q('subedit-form')),true);await closeForm(q('subedit-form'),'edit:s1');
+  await menu(pm,'end');assert.equal(await dlgOpen('cancelPlanDialog'),true);assert.deepEqual(await page.locator('#cp-list input').evaluateAll(es=>es.filter(e=>e.checked).map(e=>e.value)),['s1']);await closeDlg('cancelPlanDialog','cp-close');
+  await menu(pm,'remove');assert.equal(await shown(q('subedit-form')+' [data-act=sub-remove-yes]'),true);await page.locator(q('subedit-form')+' [data-act=sub-remove-no]').click();await page.waitForTimeout(300);await closeForm(q('subedit-form'),'edit:s1');
+  assert.equal((await user('m3')).subscriptions.length,5,'nothing removed');
+  await menu(D('m3')+' [data-cp=pmenu][data-sub=s3]');assert.deepEqual(await page.locator('#cpSheet .cpm-item').evaluateAll(es=>es.map(e=>e.dataset.k)),['refund','courtesy','edit','remove']);await page.keyboard.press('Escape');await page.waitForTimeout(200);
+  check('The plan More menu (a bottom sheet; Close, Escape and the backdrop close it, focus returns): Change price (with price history and the Courtesy / Standing discount links), Adjust a bill (pick a bill, then Set bill, Bill it as another product or a one-off courtesy discount on that bill), Refund, Plan dates (start dialog, Renews on / end in Edit plan), Change product or cost (tier form, supplier cost), Pay several months, Advanced, End this plan (only that plan ticked) and Remove this plan (its confirmation) each open the existing form or dialog; a one-time item has Refund, Courtesy discount, Edit item, Remove');
+
+  // P3-4 the customer More menu
+  const cm=D('m3')+' [data-cp=cmenu]';
+  await menu(cm);assert.deepEqual(await page.locator('#cpSheet .cpm-item').evaluateAll(es=>es.map(e=>e.dataset.k)),['edit','add','link','cancelplans','cancel','delete']);
+  assert.match(norm(await page.locator('#cps-sub').textContent()),/^3 plans · customer since Jun 1, 2026 · paid /);await page.screenshot({path:path.join(out,'customer-menu-390-light.png')});await page.keyboard.press('Escape');await page.waitForTimeout(200);
+  await menu(cm,'edit');assert.equal(await formOn(D('m3')+' .edit-form'),true);assert.equal(await shown(D('m3')+' .edit-form [name=phone]'),true);await closeForm(D('m3')+' .edit-form','edit');
+  await menu(cm,'add');assert.equal(await formOn(D('m3')+' .addsub-form'),true);await closeForm(D('m3')+' .addsub-form','addsub');
+  await menu(cm,'cancelplans');assert.equal(await dlgOpen('cancelPlanDialog'),true);await closeDlg('cancelPlanDialog','cp-close');
+  await menu(cm,'cancel');assert.equal(await formOn(D('m3')+' .cancel-form'),true);await closeForm(D('m3')+' .cancel-form','cancel');
+  await menu(cm,'delete');assert.equal(await shown(D('m3')+' .edit-form [data-act=del-yes]'),true);await page.locator(D('m3')+' .edit-form [data-act=del-no]').click();await page.waitForTimeout(300);await closeForm(D('m3')+' .edit-form','edit');
+  assert.ok(await user('m3'),'not deleted');
+  check('The customer More menu: Edit details (contact fields shown), Add a plan or one-time item, Copy the customer link, Cancel plans (dialog), Cancel the whole subscription (form) and Delete customer (its Yes / Cancel confirmation) each open the existing form or dialog');
+
+  // P3-5 a tapped bill: Record payment for it saves a payment for that bill
+  await page.locator(D('m3')+' .cp-bill[data-sub=s1][data-start="2026-11-05"]').click();await page.waitForTimeout(250);
+  assert.match(norm(await page.locator('#cps-title').textContent()),/^Bill 5 Nov . 4 Dec 2026$/);assert.deepEqual(await page.locator('#cpSheet .cpm-item').evaluateAll(es=>es.map(e=>e.dataset.k)),['rec','bill','amt','courtesy']);
+  await page.locator('#cpSheet [data-k=rec]').click();await pd.waitFor();assert.equal(await page.locator('#payment-account').inputValue(),'s1');assert.match(await page.locator('#payment-month option:checked').textContent(),/5 Nov . 4 Dec 2026/);assert.equal(Number(await page.locator('#payment-amount').inputValue()),4200);
+  await page.locator('#payment-save').click();await until(async()=>!(await pd.isVisible()),'payment dialog closed');
+  await until(async()=>((await user('m3')).subscriptions[0].payments||[]).length===3,'the bill payment stored');assert.equal((await user('m3')).subscriptions[0].payments[2].amount,4200);
+  await until(async()=>/Paid Rs 4,200 5 Oct/.test(norm(await page.locator(D('m3')+' .cp-card[data-sub=s1]').innerText()))&&/5 Nov . 4 Dec 2026 Paid/.test(norm(await page.locator(D('m3')+' .cp-card[data-sub=s1]').innerText())),'the bill shows Paid');
+  check('Tapping the 5 Nov - 4 Dec bill offers Record payment for this bill and the three Adjust ways; Record payment opens the payment box on that plan and bill with Rs 4,200; saving stores the payment and the bill reads Paid');
+
+  // P3-6 the top Record payment, under the Owes chip: the page stays open when the customer stops owing
+  await back();await page.locator('#payStrip [data-pf=owes]').click();await page.waitForTimeout(300);await openCust('m3');
+  await page.locator(D('m3')+' .cp-pay').click();await pd.waitFor();assert.match(norm(await page.locator('#payment-who').textContent()),/^Mira Manyplans/);
+  await page.locator('#payment-account').selectOption('s2');await page.waitForTimeout(250);assert.equal(Number(await page.locator('#payment-amount').inputValue()),5);
+  const n2=((await user('m3')).subscriptions[1].payments||[]).length;await page.locator('#payment-save').click();await until(async()=>!(await pd.isVisible()),'payment dialog closed');
+  await until(async()=>((await user('m3')).subscriptions[1].payments||[]).length===n2+1,'the payment stored');assert.equal(await cust(),'m3','the page stays open');
+  await until(async()=>/^Owes Rs 1,000$/.test(norm(await page.locator(D('m3')+' .cp-owe').innerText())),'only the one-time item owed');
+  await page.locator(D('m3')+' .cp-card[data-sub=s3] .cp-rec1').click();await pd.waitFor();assert.equal(await page.locator('#payment-account').inputValue(),'s3');assert.equal(Number(await page.locator('#payment-amount').inputValue()),1000);
+  await page.locator('#payment-save').click();await until(async()=>!(await pd.isVisible()),'payment dialog closed');await until(async()=>((await user('m3')).subscriptions[3].payments||[]).length===2,'the item payment stored');
+  await until(async()=>/Nothing owed/.test(await page.locator(D('m3')+' .cp-owe').innerText()),'nothing owed');
+  await back();assert.ok(!(await rowNames()).includes('Mira Manyplans-Longname Qureshi-Siddiqui'),'back on the Owes list, which she has left');await page.locator('#payStrip [data-pf=""]').click();await page.waitForTimeout(300);
+  check('Record payment at the top opens the payment box for the plan that needs money ($5 on C Max); saving stores it and the page reads "Owes Rs 1,000"; the one-time card Record Rs 1,000 opens the box on that item; after saving, the page stays open (even under the Owes chip) and reads "Nothing owed"; Back returns to the Owes list without her');
+
+  // P3-7 Back, the browser Back and Escape return to the list where it was
+  const list0=await page.evaluate(()=>{scrollTo(0,document.documentElement.scrollHeight);return scrollY;});assert.ok(list0>50,'the list scrolls: '+list0);
+  const lastRow=await page.locator('#tbody tr.row').evaluateAll(rs=>{const v=rs.filter(r=>{const b=r.getBoundingClientRect();return b.top>0&&b.bottom<innerHeight-80;});return v.length?v[v.length-1].dataset.id:'';});assert.ok(lastRow);
+  await openCust(lastRow);assert.ok(await page.evaluate(()=>scrollY)<5,'the page opens at its top');assert.equal(new URL(page.url()).pathname,'/new');
+  await back();assert.ok(Math.abs(await page.evaluate(()=>scrollY)-list0)<3,'Back restores the list position');
+  await openCust(lastRow);await page.goBack();await page.waitForTimeout(500);assert.equal(await cust(),'');assert.equal(new URL(page.url()).pathname,'/new','still on the site');assert.ok(Math.abs(await page.evaluate(()=>scrollY)-list0)<3,'browser Back restores the list position');
+  assert.equal(await page.locator('#tbody tr.row').count()>5,true);
+  await openCust(lastRow);await page.keyboard.press('Escape');await page.waitForTimeout(300);assert.equal(await cust(),'');assert.ok(Math.abs(await page.evaluate(()=>scrollY)-list0)<3,'Escape restores the list position');
+  await openCust('t3');await go('today');assert.equal(await cust(),'');await go('customers');assert.equal(await cust(),'');assert.equal(await shown('#custHead'),true);
+  await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>history.state&&history.state.cp||''),'','no page entry left in the history by a tab switch');
+  check('Back, the browser Back and Escape each return from the page to the list at the scroll position it had (the address stays /new); switching tab and coming back shows the list');
+
+  // P3-8 the visible buttons and the length of a 3-plan customer at 390px
+  await openCust('t3');
+  const cnt=await page.evaluate(()=>{const d=document.querySelector('#tbody tr.detail');const vis=[...d.querySelectorAll('button,a[href],select,input')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0;});
+    const cards=[...d.querySelectorAll('.cp-card')],last=cards[cards.length-1].getBoundingClientRect(),first=d.getBoundingClientRect();
+    return {all:vis.length,bills:vis.filter(e=>e.classList.contains('cp-bill')).length,other:vis.filter(e=>!e.classList.contains('cp-bill')).map(e=>e.dataset.cp||e.dataset.act||e.textContent.trim()),screens:Math.round((last.bottom-first.top)/innerHeight*100)/100};});
+  console.log('visible controls (3 plans, 390px): '+JSON.stringify(cnt));
+  assert.equal(cnt.bills,9);assert.equal(cnt.other.length,12,JSON.stringify(cnt.other));assert.ok(cnt.screens<=2.2,'about two screens: '+cnt.screens);
+  await page.screenshot({path:path.join(out,'customer3-390-light.png'),fullPage:true});
+  check(`A customer with 3 plans at 390px shows ${cnt.other.length} buttons (Back, More, Record payment, WhatsApp, Email, Telegram and a More and All bills per plan) plus ${cnt.bills} bill rows, ${cnt.screens} screens long before All bills`);
+
+  // P3-9 a poll redraw keeps the page, an open form, what was typed and the scroll position
+  await back();await openCust('e1');await menu(D('e1')+' [data-cp=pmenu][data-sub=s1]','price');await page.locator('#pr-price-s1').fill('4321');
+  const y0=await page.evaluate(()=>scrollY);const nora=await doc('users/d3');await api('POST','/api/import',{docs:{'users/d3':{...nora,name:'Nora Polled'}},replace:[]});
+  await until(async()=>(await page.evaluate(()=>{const e=document.querySelector('#tbody tr.row[data-id=d3] .nm');return e?e.textContent:'';}))==='Nora Polled','the background refresh redrew the list');
+  await page.waitForTimeout(500);
+  assert.equal(await cust(),'e1');assert.equal(await page.locator('#pr-price-s1').inputValue(),'4321');assert.equal(await formOn(`${D('e1')} .price-form[data-sub=s1]`),true);assert.ok(Math.abs(await page.evaluate(()=>scrollY)-y0)<3,'scroll kept');
+  check('A background refresh (another device changed a customer) leaves the page open with the Change price form still open, "4321" still typed and the scroll position kept');
+
+  // P3-10 saves through the page: a price change, a refund, ending one plan
+  const from=await page.locator('#pr-from-s1').inputValue();await page.locator(`${D('e1')} .price-form[data-sub=s1] button[type=submit]`).click();
+  await until(async()=>((await user('e1')).subscriptions[0].prices||[]).some(p=>p.from===from&&p.price===4321),'the price stored');
+  await menu(D('e1')+' [data-cp=pmenu][data-sub=s1]','refund');assert.equal(await dlgOpen('refundDialog'),true);await page.locator('#refund-amount').fill('500');await page.locator('#refund-save').click();await until(async()=>!(await dlgOpen('refundDialog')),'refund saved');
+  await until(async()=>((await user('e1')).subscriptions[0].refunds||[]).length===1,'the refund stored');assert.equal((await user('e1')).subscriptions[0].refunds[0].amount,500);
+  await menu(D('e1')+' [data-cp=pmenu][data-sub=s2]','end');assert.deepEqual(await page.locator('#cp-list input').evaluateAll(es=>es.filter(e=>e.checked).map(e=>e.value)),['s2']);
+  await page.locator('#cp-save').click();await until(async()=>!(await dlgOpen('cancelPlanDialog')),'plan ended');
+  await until(async()=>!!(await user('e1')).subscriptions[1].end,'the end stored');{const e=await user('e1');assert.ok(!e.subscriptions[0].end&&!e.cancel,'the other plan and the customer continue');}
+  check(`Through the page: Change price saves Rs 4,321 from ${from}; Refund saves a Rs 500 refund; End this plan ends only that plan (the other plan runs, the customer is not cancelled)`);
+
+  // P3-11 Cancel, then Resume
+  await back();await openCust('r1');await menu(D('r1')+' [data-cp=cmenu]','cancel');assert.equal(await formOn(D('r1')+' .cancel-form'),true);
+  await page.locator(D('r1')+' .cancel-form button[type=submit]').click();await until(async()=>!!(await user('r1')).cancel,'cancelled');assert.equal(await cust(),'r1','the page stays open');
+  await until(async()=>(await page.locator(D('r1')+' .cp-cx').count())===1,'the cancellation card');await page.screenshot({path:path.join(out,'customer-cancelled-390-light.png'),fullPage:true});
+  await page.locator(D('r1')+' .cp-cx [data-key=react]').click();await page.waitForTimeout(300);assert.equal(await formOn(D('r1')+' .react-form'),true);
+  await page.locator(D('r1')+' .react-form button[type=submit]').click();await until(async()=>!(await user('r1')).cancel,'resumed');
+  await until(async()=>(await page.locator(D('r1')+' .cp-cx').count())===0,'the card goes');
+  check('Cancel the whole subscription saves the cancellation and the page shows it with Resume; Resume saves and the customer runs again');
+
+  // P3-12 a computer: the page is full width beside the side bar (no list beside it), light and dark
+  await back();for(const scheme of ['light','dark']){await page.setViewportSize({width:1400,height:900});await page.emulateMedia({colorScheme:scheme});await page.waitForTimeout(200);await openCust('m3');
+    assert.equal(await noSideScroll(),true);const bx=await page.locator(D('m3')+' .cp').boundingBox();assert.ok(bx.x>=220&&bx.width<=820,JSON.stringify(bx));
+    await page.screenshot({path:path.join(out,`customer-1400-${scheme}.png`),fullPage:true});await menu(D('m3')+' [data-cp=pmenu][data-sub=s1]');const mb=await page.locator('#cpSheet').boundingBox();assert.ok(mb.width<=460,'a small dialog: '+JSON.stringify(mb));await page.keyboard.press('Escape');await page.waitForTimeout(200);await back();}
+  await page.setViewportSize({width:390,height:844});await page.emulateMedia({colorScheme:'light'});await page.waitForTimeout(200);
+  check('At 1400px, light and dark: the customer page sits beside the side bar, at most 820px wide, no sideways scroll; the More menu is a small dialog');
 
   // 11. More: Settings opens; the old layout and back
   await go('more');await page.locator('[data-more=settings]').click();await page.waitForTimeout(300);assert.equal(await shown('#settingsPanel'),true);assert.equal(await tab(),'more');
@@ -260,7 +439,18 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   assert.equal(await shown('#btn-fsheet'),false);assert.equal(await shown('#cu-add'),false);assert.equal(await page.locator('#payStrip .ps-btn').count(),3);assert.equal(await page.locator('#payStrip [data-pf=""]').count(),0);
   assert.equal(await page.locator('#tbody .cu-end,#tbody .grp-fold').count(),0);assert.equal(norm(await page.locator('#payStrip [data-pf=owes] .ps-l').textContent()),'Owe money');
   assert.ok(await page.locator('#tbody tr.row .row-pay').first().isVisible(),'Record payment on a closed classic row');
-  check('The old layout is unchanged: every control on the toolbar, the three-box strip (Owe money, Due this week, Paid up), Record payment on each row, no Filter sheet or folding headings');
+  /* v82: the classic layout still opens a customer inside the list (the details under the row, no customer page) */
+  await page.locator('#tbody tr.row[data-id=d2] .nm').click();await page.waitForTimeout(400);
+  assert.equal(await page.locator('#tbody tr.detail[data-id=d2] .detail-head').count(),1);assert.equal(await page.locator('#tbody .cp').count(),0);assert.equal(await shown('#tbody tr.row[data-id=d2]'),true);assert.equal(await shown('.toolbar'),true);assert.equal(await page.evaluate(()=>document.body.dataset.cust||''),'');
+  await page.locator('#tbody tr.row[data-id=d2] .nm').click();await page.waitForTimeout(300);assert.equal(await page.locator('#tbody tr.detail').count(),0);
+  check('The old layout is unchanged: every control on the toolbar, the three-box strip (Owe money, Due this week, Paid up), Record payment on each row, a customer opens inside the list, no Filter sheet or folding headings');
+  /* v82: the details the old layout draws in /new are the same, character for character, as the usual page draws at / (the customer page must not change them) */
+  {const grab=async id=>{await page.locator(`#tbody tr.row[data-id=${id}] .nm`).click();await page.waitForTimeout(500);const h=await page.locator(`#tbody tr.detail[data-id=${id}]`).innerHTML();await page.locator(`#tbody tr.row[data-id=${id}] .nm`).click();await page.waitForTimeout(300);return h;};
+   const ids=['m3','w1','e1'],inNew={};for(const id of ids)inNew[id]=await grab(id);
+   await page.goto(base+'/',{waitUntil:'domcontentloaded'});await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);assert.equal(await page.locator('#tabBar').count(),0);
+   for(const id of ids){const h=await grab(id);if(h!==inNew[id]){let i=0;while(i<h.length&&h[i]===inNew[id][i])i++;assert.fail(`details of ${id} differ at ${i}: / has "${h.slice(Math.max(0,i-60),i+80)}" and /new has "${inNew[id].slice(Math.max(0,i-60),i+80)}"`);}assert.ok(h.length>2000,id+' details drawn');}
+   await page.goto(base+'/new',{waitUntil:'domcontentloaded'});await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(1500);assert.equal(await page.evaluate(()=>document.body.dataset.ui),'classic');}
+  check('In the old layout a customer\'s details (4 plans with a one-time item and an ended plan; a wholesaler customer; a customer with an ended plan) are identical to the usual page\'s');
   /* the layout choice has its own storage key: saving a list preference (which rewrites pt-ui) must not flip the layout, and the preference must survive */
   const sortV=await page.locator('#sort option').nth(1).getAttribute('value');await page.locator('#sort').selectOption(sortV);await page.waitForTimeout(300);
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(1500);
@@ -286,6 +476,6 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
     for(const t of ['reminders','money','more']){await go(t);assert.equal(await noSideScroll(),true,`1400 ${scheme} ${t}`);}}
   check('A computer shows the side bar (220px, full height) with the content to its right; Customers has no buttons on a closed row; no sideways scroll at 390px and 1400px in light and dark');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'81',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'82',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

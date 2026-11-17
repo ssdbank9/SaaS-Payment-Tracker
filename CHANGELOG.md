@@ -2,6 +2,18 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v82 - 2026-11-17
+
+On the new page (`/new`), a customer now opens on a page of their own instead of inside the list. The usual address (`/`) and the old layout inside the new page are unchanged. No money figure or saved data changed, and nothing new is saved: every button opens a form or box you already know.
+- At the top: Back to the list, the name, what they owe, one large Record payment, then WhatsApp, Email and Telegram ("Add phone", "Add email" or "Add Telegram" when one is missing). The phone's back gesture, the browser's Back button and Escape also return to the list, at the place you left it.
+- If the customer answered on their link page, their answer is shown under the top with the usual choices (use their choice or keep yours, confirm or dismiss a stop request).
+- One card per plan: the product, the price, the day it renews, paid to, your cost, and the latest 3 bills. Tap a bill to record a payment for it or to adjust it. "All bills and payments" shows every bill, the price history and the payments list with Edit and Remove.
+- A one-time item shows its total, what was paid and what is left, with a Record button. An ended plan is grey with its last day. A cancelled customer shows the cancellation with Resume and Edit cancellation.
+- The "..." button on a plan: Change price, Adjust a bill, Refund, Plan dates, Change product or cost, Pay several months, Advanced (the full Edit plan), End this plan, Remove this plan.
+- Adjust a bill gathers what used to be four separate buttons: pick the bill, then change its amount, days or due date (Set bill), bill it as another product, or take an amount off that bill only.
+- The "..." button at the top: Edit details, Add a plan or one-time item, Copy the customer link, Cancel plans, Cancel the whole subscription (or Resume and Edit cancellation when cancelled), Delete customer.
+- On a phone the menus open from the bottom; on a computer they are small boxes, and the customer page sits next to the side bar.
+
 ## v81 - 2026-11-17
 
 Two display fixes on the Customers tab of the new page (`/new`), found on real data right after v80. No money figure or saved data changed.

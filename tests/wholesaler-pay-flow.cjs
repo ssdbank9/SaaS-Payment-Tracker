@@ -32,7 +32,7 @@ const plan=(start,price,extra)=>({id:'s1',kind:'monthly',cycle:'monthly',name:''
    'users/d1':{name:'Dan Direct',phone:'923001234567',joinDate:'2026-10-20',subscriptions:[plan('2026-10-20',13)]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v81');
+  assert.equal(await page.locator('#app-ver').textContent(),'v82');
 
   // 1. the statement's Record payment opens the form: two bills due (ticked), the next bill not ticked, total $25
   if(await page.locator('#remindRun').isHidden())await page.locator('#btn-reminders').click();await page.locator('#rr-body #ws-sec').waitFor();

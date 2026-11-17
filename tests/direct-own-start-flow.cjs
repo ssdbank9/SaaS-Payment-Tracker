@@ -29,7 +29,7 @@ const norm=s=>String(s).replace(/\s+/g,' ').trim();
    'users/o2':{name:'Pete Prorated',phone:'923001234562',joinDate:'2026-10-26',subscriptions:[{id:'s1',kind:'monthly',cycle:'monthly',name:'',packageId:'pkg_cmax',currency:'USD',start:'2026-10-26',anchor:'2026-10-15',prorate:true,prices:[{from:'2026-10-26',price:15}],payments:[]}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v81');
+  assert.equal(await page.locator('#app-ver').textContent(),'v82');
 
   // 1. Owe money lists each unpaid bill with its period, due day and amount
   await page.locator('#payStrip [data-pf=owes]').click();await page.locator('#oweList table').waitFor();
