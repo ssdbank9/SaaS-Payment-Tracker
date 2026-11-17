@@ -1027,6 +1027,124 @@ body[data-ui="tabs"][data-cust] .detail-card::before{display:none}
 .btn.cps-close{min-height:48px;margin-top:8px;border-radius:12px;font-weight:600}
 @media (max-width:760px){.cp-name{font-size:24px}}
 @media (min-width:761px){.cp-facts{gap:12px}}
+/* v84: Add and Edit forms in the tabs layout (new.html only). The fields, ids and names are the old forms'; they are regrouped (p4-*) and
+   restyled here: labels above fields, 16px text (no zoom on a phone), 48px fields, 44px targets, one primary button, at most 640px wide. */
+body[data-ui="tabs"] #addPanel,body[data-ui="tabs"] #quickPanel{max-width:640px;background:none;border:0;padding:4px 0 0}
+body[data-ui="tabs"] #addPanel .panel-head,body[data-ui="tabs"] #quickPanel .panel-head{align-items:center;margin-bottom:6px}
+body[data-ui="tabs"] #addPanel .panel-head h3,body[data-ui="tabs"] #quickPanel .panel-head h3{font-size:22px;font-weight:600;padding-left:4px}
+body[data-ui="tabs"] #quickPanel .panel-head p{font-size:13px;padding-left:4px}
+body[data-ui="tabs"] #add-close,body[data-ui="tabs"] #quick-close{flex:none;min-height:44px;padding:0 8px;font-size:15px;font-weight:600;text-decoration:none}
+body[data-ui="tabs"] #addForm{display:flex;flex-direction:column;gap:14px}
+body[data-ui="tabs"] #addForm>fieldset.add-grp{display:none}
+body[data-ui="tabs"] :is(#addForm,#quickPanel,.subedit-form,.addsub-form,.edit-form) [hidden]{display:none!important}
+.p4-first,.p4-pay{display:flex;flex-direction:column;gap:14px;min-width:0}
+.p4-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end;min-width:0}
+.p4-checks{display:flex;flex-direction:column;gap:2px;min-width:0}
+.p4-sh{margin:6px 0 -4px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.p4-h{margin:0;font-size:17px;font-weight:600;color:var(--ink)}
+.p4-note{margin:0;font-size:14px;color:var(--ink-2);overflow-wrap:break-word}
+.p4-note .link{font-size:14px;min-height:32px}
+body[data-ui="tabs"] #a-conv{display:block;margin-top:-6px;font-size:13px;color:var(--ink-2)}
+body[data-ui="tabs"] :is(#addForm,#quickPanel,.subedit-form,.addsub-form,.edit-form) label.f{font-size:13px;gap:5px;color:var(--ink-2)}
+body[data-ui="tabs"] :is(#addForm,#quickPanel,.subedit-form,.addsub-form,.edit-form) :is(input:not([type=checkbox]):not([type=radio]),select){width:100%;min-height:48px;padding:0 12px;border-radius:12px;font-size:16px;color:var(--ink)}
+body[data-ui="tabs"] #quickPanel textarea{min-height:120px;padding:10px 12px;border-radius:12px;font-family:var(--mono);font-size:16px}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .phone-in input.cc{width:72px!important;flex:none}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .phone-in input:not(.cc){width:auto!important;flex:1 1 0;min-width:0}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) label.f.chk{display:flex;flex-direction:row;align-items:center;gap:10px;min-height:44px;padding:2px 0;font-size:15px;font-weight:400;color:var(--ink);line-height:1.35;align-self:stretch}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) label.f.chk input[type=checkbox]{flex:none;width:22px;height:22px;min-height:0;margin:0;padding:0;accent-color:var(--accent)}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) label.f.chk:not(.add-paid label){display:grid;grid-template-columns:22px minmax(0,1fr);align-items:center;column-gap:10px;row-gap:0}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) label.f.chk .muted{grid-column:2;font-size:13px}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .phone-hint{font-size:12px}
+/* one primary button, the rest quiet */
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .form-actions{flex-direction:column;align-items:stretch;gap:6px;margin-top:2px}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .form-actions>span[style]{display:none}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .form-actions .btn.primary{min-height:52px;padding:0 16px;border-radius:12px;font-size:16px;font-weight:600}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .form-actions>.btn:not(.primary){min-height:46px;border:0;background:none;color:var(--accent-ink);font-size:15px;font-weight:600}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .form-actions .link{align-self:center;min-height:44px;font-size:15px;text-decoration:none}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .form-actions .del-wrap{align-self:center;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 10px}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .form-actions .err{font-size:14px;text-align:center}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .form-actions .err:empty{display:none}
+/* the first bill preview and "Have they paid the first bill?" */
+body[data-ui="tabs"] :is(#a-bill-preview,.addsub-form [data-role=first-bill-preview]){margin:0;padding:10px 12px;border-radius:12px;background:var(--accent-soft);color:var(--accent-ink);font-size:14px;overflow-wrap:break-word}
+body[data-ui="tabs"] :is(#a-bill-preview,.addsub-form [data-role=first-bill-preview]):empty{display:none}
+body[data-ui="tabs"] #addForm .add-paid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+body[data-ui="tabs"] #addForm .add-paid .add-paid-q{grid-column:1/-1;font-size:13px;font-weight:500;color:var(--ink-2)}
+body[data-ui="tabs"] #addForm .add-paid label.f.chk{position:relative;justify-content:center;min-height:46px;padding:4px 6px;border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);color:var(--ink);font-size:14px;font-weight:500;line-height:1.2;text-align:center;cursor:pointer;overflow-wrap:anywhere}
+body[data-ui="tabs"] #addForm .add-paid label.f.chk input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+body[data-ui="tabs"] #addForm .add-paid label.f.chk:has(input:checked){background:var(--ink);border-color:var(--ink);color:var(--surface);font-weight:600}
+body[data-ui="tabs"] #addForm .add-paid label.f.chk:has(input:focus-visible){outline:2px solid var(--focus);outline-offset:2px}
+body[data-ui="tabs"] #addForm .add-paid label.f.chk .muted{display:none}
+body[data-ui="tabs"] #a-paid-hint{margin-top:-8px;font-size:13px;color:var(--ink-2)}
+/* a folding group: More options (Add customer, Add a plan), Price / Dates / Advanced (Edit plan), Plan start dates and costs (Edit details) */
+.p4-g{display:flex;flex-direction:column;gap:12px;min-width:0}
+.p4-gs-w{display:flex;flex-direction:column;gap:10px;min-width:0}
+.p4-gh{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:56px;padding:6px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.p4-gh:hover{background:var(--surface-2)}
+.p4-gh:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.p4-gt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.p4-gt b{font-size:15px;font-weight:600}
+.p4-gx{color:var(--warn)}
+.p4-gs{font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
+.p4-chev{flex:none;transition:transform .15s}
+.p4-gh[aria-expanded="true"] .p4-chev{transform:rotate(180deg)}
+.p4-gb{display:flex;flex-direction:column;gap:12px;min-width:0}
+.p4-gb[hidden]{display:none}
+.p4-gb>.pay-row,.p4-gb>.chg-block{display:flex;flex-direction:column;gap:12px}
+body[data-ui="tabs"] .subedit-form:not([hidden]),body[data-ui="tabs"] .addsub-form:not([hidden]),body[data-ui="tabs"] .edit-form:not([hidden]){display:flex;flex-direction:column;gap:14px;max-width:640px}
+body[data-ui="tabs"] .cp-card .subedit-form .p4-gh{background:var(--bg)}
+body[data-ui="tabs"] .edit-form>h3{margin:0!important;font-size:17px}
+body[data-ui="tabs"] .edit-form [data-role=contact] .form-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+body[data-ui="tabs"] .edit-form fieldset[data-account-fields]{margin:0;padding:10px 12px 12px;border:1px solid var(--line);border-radius:12px;min-width:0}
+body[data-ui="tabs"] .edit-form fieldset[data-account-fields]>legend{padding:0 4px;font-size:13px;font-weight:600;overflow-wrap:anywhere}
+body[data-ui="tabs"] .edit-form fieldset[data-account-fields]>p{margin:6px 0}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .account-cost-fields{display:flex;flex-direction:column;gap:10px;min-width:0}
+body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .account-cost-fields .form-grid{margin-top:0;grid-template-columns:minmax(0,1fr);gap:12px}
+body[data-ui="tabs"] :is(.addsub-form,.subedit-form) .first-sale,body[data-ui="tabs"] #addForm .first-sale{margin:0;border-radius:12px}
+body[data-ui="tabs"] .first-sale label{min-height:44px}
+@media (min-width:761px){
+  body[data-ui="tabs"] .edit-form [data-role=contact] .form-grid,
+  body[data-ui="tabs"] :is(#addForm,.subedit-form,.addsub-form,.edit-form) .account-cost-fields .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+/* Add several (Quick add): paste, read, check each line as a card, save */
+body[data-ui="tabs"] .p4-lbl{display:block;margin:0 0 5px 2px;font-size:13px;font-weight:500;color:var(--ink-2)}
+body[data-ui="tabs"] #quickPanel .qa-help{font-size:13px}
+body[data-ui="tabs"] #quickPanel .form-actions{flex-direction:column;align-items:stretch;gap:6px}
+body[data-ui="tabs"] #qa-parse{min-height:46px;border:1px solid var(--accent);border-radius:12px;background:var(--surface);color:var(--accent-ink);font-size:15px;font-weight:600}
+body[data-ui="tabs"] #qa-save{min-height:52px;border-radius:12px;font-size:16px;font-weight:600;white-space:normal}
+body[data-ui="tabs"] #qa-clear,body[data-ui="tabs"] #qa-one{align-self:center;min-height:44px;font-size:15px;font-weight:600;text-decoration:none}
+body[data-ui="tabs"] #qa-one{display:flex;align-items:center;margin:8px auto 0}
+body[data-ui="tabs"] #quickPanel .review-bar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
+body[data-ui="tabs"] #quickPanel .review-bar label[hidden]{display:none}
+body[data-ui="tabs"] #qa-apply{grid-column:1/-1;min-height:46px;border-radius:12px;font-size:15px}
+@media (max-width:760px){
+  body[data-ui="tabs"] #quickPanel .table-wrap{overflow:visible;border:0;background:none}
+  body[data-ui="tabs"] #quickPanel table.qa{display:block;min-width:0;width:100%}
+  body[data-ui="tabs"] #quickPanel table.qa thead{display:block;margin-bottom:8px}
+  body[data-ui="tabs"] #quickPanel table.qa thead tr{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 4px}
+  body[data-ui="tabs"] #quickPanel table.qa thead th{display:none;padding:0;border:0}
+  body[data-ui="tabs"] #quickPanel table.qa thead th:first-child{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;color:var(--ink-2);text-transform:none;letter-spacing:0;background:none}
+  body[data-ui="tabs"] #quickPanel table.qa thead th:first-child::after{content:"All lines"}
+  body[data-ui="tabs"] #quickPanel table.qa tbody{display:flex;flex-direction:column;gap:10px}
+  body[data-ui="tabs"] #quickPanel table.qa tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+  body[data-ui="tabs"] #quickPanel table.qa td{display:flex;flex-direction:column;gap:4px;min-width:0;padding:0;border:0;font-size:13px;font-weight:500;color:var(--ink-2);background:none}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(1){grid-column:1/-1;flex-direction:row;align-items:center;gap:10px;min-height:32px}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(2),body[data-ui="tabs"] #quickPanel table.qa td.flag{grid-column:1/-1}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(1)::after{content:"Include this line"}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(2)::before{content:"Name"}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(3)::before{content:"Email"}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(4)::before{content:"WhatsApp"}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(5)::before{content:"Telegram"}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(6)::before{content:"Joined"}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(7)::before{content:"Product"}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(8)::before{content:"Price"}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(9)::before{content:"Pays in"}
+  body[data-ui="tabs"] #quickPanel table.qa td:nth-child(10)::before{content:"Paid now"}
+  body[data-ui="tabs"] #quickPanel table.qa td.flag{white-space:normal;color:var(--warn)}
+  body[data-ui="tabs"] #quickPanel table.qa td.flag:empty{display:none}
+  body[data-ui="tabs"] #quickPanel table.qa td.r{text-align:left}
+  body[data-ui="tabs"] #quickPanel table.qa :is(input:not([type=checkbox]),select){width:100%}
+}
+body[data-ui="tabs"] #quickPanel table.qa input[type=checkbox]{width:22px;height:22px;min-height:0;margin:0;padding:0;accent-color:var(--accent)}
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
 </style>
 </head>
@@ -1055,7 +1173,7 @@ body[data-ui="tabs"][data-cust] .detail-card::before{display:none}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v83</span>
+      <span class="small muted num" id="app-ver" title="App version">v84</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
@@ -3445,6 +3563,7 @@ function renderTable(){renderToday();/* v78: Today follows every list redraw (it
     for(const e of typed){e.dispatchEvent(new Event('input',{bubbles:true}));/* v45: a changed select or box also gets change, which shows what depends on it (Number of bills, the new-price block) */if(e.tagName==='SELECT'||(e.type==='checkbox'&&e.checked!==e.defaultChecked))e.dispatchEvent(new Event('change',{bubbles:true}));}
     for(const v of picks){const r=[...f.querySelectorAll('input[type=radio]')].find(x=>x.name===v.name&&x.value===v.value);if(r&&!r.checked){r.checked=true;r.dispatchEvent(new Event('change',{bubbles:true}));}}}
   if(ui.rmConfirm){const c=ui.rmConfirm;const el=[...document.querySelectorAll('tr.detail[data-id="'+c.id+'"] [data-act="'+c.A+'"]')].find(b=>['sub','pay','ref','from'].every(k=>c.d[k]===undefined||b.dataset[k]===c.d[k]));if(el)el.outerHTML=rmConfirmHTML(c.A,c.d);else ui.rmConfirm=null;}
+  if(tabsOn())p4AfterRender();/* v84: the More options line and changed counts of the open forms */
   if(tbodyObs)tbodyObs.takeRecords();tbodyDirty=false;
   cpSync();/* v82 */
 }
@@ -4211,6 +4330,7 @@ function initCustomersTab(){const sh=$('#filterSheet'),body=$('#fs-body'),fb=$('
 function initTabs(){const tt=$('#tryTabs');if(tt)tt.addEventListener('click',()=>setUiLayout('tabs'));if(!tabsOn())return;
   initCustomersTab();/* v80 */
   initCustPage();/* v82 */
+  initFormsP4();/* v84 */
   $('#tabBar').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(!b)return;if(ui.expanded){ui.expanded=null;ui.cuScroll=0;renderTable();}/* v82: a tab shows its own first screen */setTab(b.dataset.go);});
   $('#todayPanel').addEventListener('click',e=>{const p=e.target.closest('[data-td-pay]');if(p){openPaymentDialog(p.dataset.tdPay,p.dataset.sid,null,p.dataset.st||null);return;}
     const o=e.target.closest('[data-td-open]');if(o){openCustomerFrom(null,o.dataset.tdOpen);return;}
@@ -4253,15 +4373,15 @@ function cpPlanCard(id,u,s,sa,today,X){const open=ui.open[id]||{},all=!!(ui.allB
   const renew=s.end&&(!nx||s.end<nx.st)?['Ends on',fmtD(s.end)]:nx?['Renews on',many?fmtD(nx.st):'the '+ordinal(+nx.st.slice(8,10))]:['Renews on','—'];
   const owes=sa.overdueAmount>0,yc=yourCostText(s).replace(/^Your cost:?\s*/,''),cost=yc?yc.charAt(0).toUpperCase()+yc.slice(1):'Not set';
   const head=`<div class="cp-ch"><div class="cp-ct"><h4 class="cp-pn">${esc(name)}</h4><span class="cp-price num">${esc(price)}</span>${s.discount?`<span class="cp-acct">after ${esc(discountLabel(s))}</span>`:''}${acct?`<span class="cp-acct">${esc(acct)}</span>`:''}${ended?`<span class="cu-st" data-status="ended">Ended ${esc(fmtD(s.end))}</span>`:`<span class="cu-st" data-status="${esc(sa.status)}">${esc(statusLabel(sa))}</span>`}${tierBadgeHTML(s,today)}</div>${cpMoreBtn(s.id,name+' plan')}</div>`;
-  const facts=ended?`<p class="cp-txt">${esc(price)} from ${esc(fmtD(s.start,true))} to ${esc(fmtD(s.end,true))}. ${owes?'Still owes '+esc(fmtAmt(sa.overdueAmount,cur))+'.':'Nothing owed.'}${s.endReason?' Reason: '+esc(s.endReason)+'.':''}</p><div class="cp-acts2 one"><button class="btn" type="button" data-act="toggle" data-key="edit:${esc(s.id)}">Change last day</button></div>`
+  const facts=ended?`<p class="cp-txt">${esc(price)} from ${esc(fmtD(s.start,true))} to ${esc(fmtD(s.end,true))}. ${owes?'Still owes '+esc(fmtAmt(sa.overdueAmount,cur))+'.':'Nothing owed.'}${s.endReason?' Reason: '+esc(s.endReason)+'.':''}</p><div class="cp-acts2 one"><button class="btn" type="button" data-act="toggle" data-key="edit:${esc(s.id)}" data-p4open="dates">Change last day</button></div>`
     :`<div class="cp-facts"><div class="cp-f"><span class="l">${renew[0]}</span><span class="v">${esc(renew[1])}</span></div><div class="cp-f"><span class="l">Paid to</span><span class="v${owes?' bad':sa.kPaid?' ok':''}">${esc(sa.kPaid?fmtD(sa.paidThrough):'Nothing yet')}</span></div><div class="cp-f"><span class="l">Your cost</span><span class="v">${esc(cost)}</span></div></div>`;
   const latest=ended?[]:cpLatest(sa,today);
   const bills=latest.length?`<div class="cp-bills">${latest.map(p=>cpBillRow(s,p,today)).join('')}</div>`:'';
   const hist=(X.histTxt?`<div class="hist">Price history: ${X.histTxt}</div>`:'')+(X.tierHist||'');
   const allBody=all?`<div class="cp-allb">${X.facts}${hist}<div class="periods">${X.cells}</div>${payRows(s)}</div>`:'';
   const histOnly=!all&&hist&&(open['price:'+s.id]||open['tier:'+s.id])?`<div class="cp-allb">${hist}</div>`:'';
-  const also=open['price:'+s.id]?`<p class="cp-also">Also: <button class="link" type="button" data-act="toggle" data-key="courtesy:${esc(s.id)}">Courtesy discount</button> for one bill, several or every bill · <button class="link" type="button" data-act="toggle" data-key="edit:${esc(s.id)}">Standing discount</button> in Advanced (Edit plan)</p>`:'';
-  return `<section class="cp-box cp-card" data-sub="${esc(s.id)}"${ended?' data-ended="1"':''} aria-label="${esc(name)} plan">${head}${X.unconv?`<p class="cp-txt">${X.unconv}</p>`:''}${facts}${bills}${cpAllBtn(s.id,all,'All bills and payments')}${allBody}${histOnly}${X.forms}${also}</section>`;}
+  const also=open['price:'+s.id]?`<p class="cp-also">Also: <button class="link" type="button" data-act="toggle" data-key="courtesy:${esc(s.id)}">Courtesy discount</button> for one bill, several or every bill · <button class="link" type="button" data-act="toggle" data-key="edit:${esc(s.id)}" data-p4open="price">Standing discount</button> in Edit plan, under Price</p>`:'';
+  return `<section class="cp-box cp-card" data-sub="${esc(s.id)}"${ended?' data-ended="1"':''} aria-label="${esc(name)} plan">${head}${X.unconv?`<p class="cp-txt">${X.unconv}</p>`:''}${facts}${bills}${cpAllBtn(s.id,all,'All bills and payments')}${allBody}${histOnly}${p4PlanForms(X.forms,id,s,sa)}${also}</section>`;}
 function cpOneCard(id,u,s,sa,today,X){const all=!!(ui.allBills||{})[s.id],cur=s.currency,pn=pkgName(s.packageId),name=s.name||pn||'One-time item';
   const head=`<div class="cp-ch"><div class="cp-ct"><h4 class="cp-pn">${esc(name)}</h4>${pn&&pn!==name?`<span class="cp-acct">${esc(pn)}</span>`:''}<span class="cp-tag">${s.renews?'One-time, yearly':'One-time'}</span><span class="cu-st" data-status="${esc(sa.status)}">${esc(statusLabel(sa))}</span></div>${cpMoreBtn(s.id,name)}</div>`;
   const facts=`<div class="cp-facts"><div class="cp-f"><span class="l">Total</span><span class="v num">${esc(fmtAmt(sa.total,cur))}</span></div><div class="cp-f"><span class="l">Paid</span><span class="v num">${esc(fmtAmt(sa.paid,cur))}</span></div><div class="cp-f"><span class="l">Left${s.due&&sa.remaining>0?' · due '+esc(fmtD(s.due)):''}</span><span class="v num${sa.remaining>0?' warn':''}">${esc(fmtAmt(sa.remaining,cur))}</span></div></div>`;
@@ -4283,8 +4403,8 @@ function cpPageHTML(id,u,a,today,cards,F){const ws=wsOf(u),subs=u.subscriptions|
   const hist=cancelHistHTML(u);
   const cx=u.cancel?`<section class="cp-box cp-note cp-cx" aria-label="Cancellation"><h4>Cancelled · last day ${esc(fmtD(u.cancel.lastDay,true))}</h4><span>${u.cancel.reason?esc(u.cancel.reason)+'. ':''}${u.cancel.note?esc(u.cancel.note)+'. ':''}${owes?'Still owes '+esc(ownText(a.balance,a.mainCur))+' for bills before the last day.':'Settled: nothing owed.'} No further bills or reminders.</span>${hist}<div class="cp-acts2"><button class="btn primary" type="button" data-act="toggle" data-key="react" aria-expanded="${!!(ui.open[id]||{}).react}">Resume</button><button class="btn" type="button" data-act="toggle" data-key="cancel">Edit cancellation</button></div></section>`:(hist?`<div class="cp-txt">${hist}</div>`:'');
   return `<div class="cp" data-cp-page="${esc(id)}"><div class="cp-bar"><button class="cp-back" type="button" data-cp="back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>Customers</button><button class="cp-more" type="button" data-cp="cmenu" aria-haspopup="dialog" aria-label="More for this customer: edit details, add a plan, cancel">${CP_DOTS}</button></div>`
-    +`<div class="cp-who"><h3 class="cp-name" tabindex="-1">${esc(displayName(u))}</h3><span class="cp-sub">${esc(sub)}</span>${u.notes?`<span class="cp-sub">${esc(u.notes)}</span>`:''}</div>${top}${cx}${cpLinkHTML(id,u)}<div class="cp-forms">${F.editF}${F.cancelF}${F.reactF}</div>`
-    +`${cards.join('')||'<p class="cp-txt">No plan yet.</p>'}${subs.length?'':'<button class="cp-add" type="button" data-cp="add">Add a plan</button>'}<div class="cp-forms">${F.addsubF}</div></div>`;}
+    +`<div class="cp-who"><h3 class="cp-name" tabindex="-1">${esc(displayName(u))}</h3><span class="cp-sub">${esc(sub)}</span>${u.notes?`<span class="cp-sub">${esc(u.notes)}</span>`:''}</div>${top}${cx}${cpLinkHTML(id,u)}<div class="cp-forms">${p4EditUser(F.editF)}${F.cancelF}${F.reactF}</div>`
+    +`${cards.join('')||'<p class="cp-txt">No plan yet.</p>'}${subs.length?'':'<button class="cp-add" type="button" data-cp="add">Add a plan</button>'}<div class="cp-forms">${p4AddSub(F.addsubF)}</div></div>`;}
 /* ---- the More menus ---- */
 let cpItems=[],cpBackTo=null;
 function cpSheet(title,sub,items,backTo){const d=$('#cpSheet');if(!d)return;$('#cps-title').textContent=title;const sp=$('#cps-sub');sp.textContent=(sub||'').replace(/(Rs|\$|€|£) (?=\d)/g,'$1 ');/* an amount never breaks after its symbol */sp.hidden=!sub;cpItems=items;if(backTo!==undefined)cpBackTo=backTo;
@@ -4338,13 +4458,13 @@ function cpPlanMenu(id,sid){const u=state.users[id];const s=u&&(u.subscriptions|
     refund,
     {key:'dates',t:'Plan dates',h:'Start date, how often they pay, the day it renews, end date',ic:'dates',sub:()=>cpSheet('Plan dates',name+' · '+displayName(u),[
       {key:'start',t:'Start date and how often they pay',h:'Package start, first bill by days, pay every N months',ic:'dates',go:()=>openStartDialog(id,sid)},
-      {key:'renew',t:'Renews on and end date',h:'In Edit plan: Renews on, End date, Remaining due by',ic:'edit',go:()=>cpOpenForm(id,'edit:'+sid,edSel,'[name=renewOn]')}])},
+      {key:'renew',t:'Renews on and end date',h:'Edit plan, Dates: start, end, renews on, remaining due by',ic:'edit',go:()=>{p4Pre(id,sid,['dates']);cpOpenForm(id,'edit:'+sid,edSel,'[name=renewOn]');}}])},
     {key:'product',t:'Change product or cost',h:'Move to another product, or set what this seat costs you',ic:'swap',sub:()=>cpSheet('Change product or cost',name+' · '+displayName(u),[
       {key:'tier',t:'Move to another product',h:canTier?'From a bill you pick, at that product\'s price (tier history is there)':'No other product with the same billing',ic:'swap',off:!canTier,go:()=>cpOpenForm(id,'tier:'+sid,q('tier-form'))},
-      {key:'cost',t:'Your cost for this seat',h:'In Edit plan: supplier cost (set, keep or remove)',ic:'pay',go:()=>cpOpenForm(id,'edit:'+sid,edSel,'.account-cost-fields')},
-      {key:'pkg',t:'Product of every bill',h:'In Edit plan: Package / product',ic:'edit',go:()=>cpOpenForm(id,'edit:'+sid,edSel,'[name=packageId]')}])},
+      {key:'cost',t:'Your cost for this seat',h:'Edit plan, Advanced: supplier cost (set, keep or remove)',ic:'pay',go:()=>{p4Pre(id,sid,['adv']);cpOpenForm(id,'edit:'+sid,edSel,'.account-cost-fields');}},
+      {key:'pkg',t:'Product of every bill',h:'Edit plan, Advanced: Package / product',ic:'edit',go:()=>{p4Pre(id,sid,['adv']);cpOpenForm(id,'edit:'+sid,edSel,'[name=packageId]');}}])},
     {key:'upto',t:'Pay several months',h:sa.nextDue?'Record payment for every bill up to one you pick (Paid up to)':'Nothing left to pay on this plan',ic:'several',off:!sa.nextDue,go:()=>cpOpenForm(id,'upto:'+sid,q('upto-form'))},
-    {key:'advanced',t:'Advanced',h:'Edit plan: label, currency, first bill by days or free, how days are counted, discount',ic:'adv',go:()=>cpOpenForm(id,'edit:'+sid,edSel)},
+    {key:'advanced',t:'Advanced',h:'Edit plan with every group open: price and currency, dates, product, label, first bill, your cost',ic:'adv',go:()=>{p4Pre(id,sid,['price','dates','adv']);cpOpenForm(id,'edit:'+sid,edSel);}},
     {key:'end',t:'End this plan',h:running?'Pick the last day; bills stop after it. History is kept.':u.cancel?'The customer is cancelled; see Edit cancellation':'This plan has already ended',ic:'end',danger:true,off:!running,go:()=>cpEndPlan(id,sid)},
     {key:'remove',t:'Remove this plan',h:'For a plan added by mistake. Deletes it and its payments.',ic:'del',danger:true,go:()=>cpRemoveSub(id,sid)}],back);}
 function cpCustMenu(id){const u=state.users[id];if(!u)return;const t0=todayISO(),a=analyze(u,t0),nm=(u.subscriptions||[]).filter(s=>s.kind==='monthly'&&!(s.end&&s.end<t0)).length;
@@ -4383,6 +4503,149 @@ function initCustPage(){const tb=$('#tbody'),d=$('#cpSheet');if(!tb||!d)return;
     if(st&&st.cp&&state.users[st.cp]&&!document.body.dataset.cust){ui.cuScroll=window.scrollY;ui.expanded=st.cp;if(ui.tab!=='customers')setTab('customers',{keepScroll:true});renderTable();}});
   document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented||!document.body.dataset.cust)return;if(document.querySelector('dialog[open]'))return;
     const det=document.querySelector('#tbody tr.detail');if(det&&det.querySelector('form:not([hidden])'))return;const t=e.target;if(t&&t.closest&&t.closest('input,select,textarea'))return;cpBack();});}
+
+/* v84: Add and Edit forms in the tabs layout (new.html only; the classic layout and index.html keep the old forms). Presentation only: every
+   field of the old forms stays in the DOM with its id, name and value, so each submit handler reads exactly what it read before. Add customer
+   shows six fields, "Have they paid the first bill?" and More options (every other field, each holding its normal default); Add a plan the
+   same; Edit plan has three groups (Price, Dates, Advanced); Edit details shows the contact fields and folds each plan's start date and cost.
+   p4G: which groups of an open form are open (kept across poll redraws, dropped when the form closes). p4T: the More options fields the owner
+   changed by hand and the value each had before (the "N changed" line). A refused save opens the group holding the field it is about,
+   scrolls to that field and focuses it; the handler's own message stays where it was. Nothing here saves. */
+const p4G={},p4T={};
+const P4_CHEV='<svg class="p4-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>';
+const P4_ADD_SUM='Email, Telegram, notes, joined on, billing, currency, renewal day, proration, your cost';
+const P4_AS_SUM='Billing, label, currency, due dates, renewal day, proration, your cost';
+const P4_WORDS={'a-email':'email','a-tg':'Telegram','a-notes':'notes','a-join':'joined on',cycle:'billing',kind:'billing','a-cur':'pays in',currency:'pays in','a-payment':'how often they pay',paymentEvery:'how often they pay','a-plan':'label',name:'label','a-due':'due date',oneDue:'due date',dueBy:'remaining due by',ownStart:'renews on its own start date','a-prorate':'prorate first period',prorate:'prorate first period','a-waive':'waive first days',waiveFirst:'waive first days'};
+const p4Word=k=>/^accountCost/.test(k)?'your cost':P4_WORDS[k]||k;
+const p4KeyOf=f=>f.id==='addForm'?'add':(f.dataset.id||'')+'|'+(f.classList.contains('subedit-form')?'se:'+(f.dataset.sub||''):f.classList.contains('addsub-form')?'as':'ed');
+const p4FormByKey=k=>k==='add'?$('#addForm'):[...document.querySelectorAll('#tbody form')].find(f=>!f.hidden&&p4KeyOf(f)===k)||null;
+const p4Val=el=>el.type==='checkbox'?String(el.checked):el.value;
+const p4Fk=el=>el.name||el.id||'';
+const p4MoreBody=f=>f.id==='addForm'?$('#a-opts-body'):f.querySelector('.p4-more>.p4-gb');
+const p4Lab=(f,n)=>{const el=f.querySelector(`[name="${n}"]`);return el?el.closest('label'):null;};
+function p4Relabel(lab,txt){if(!lab)return;for(const n of lab.childNodes)if(n.nodeType===3&&n.nodeValue.trim()){n.nodeValue=txt;return;}}
+function p4El(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+function p4Note(html){const p=p4El('p','p4-note');p.innerHTML=html;return p;}
+function p4Group(g,title,sum,open,nodes){const w=p4El('div','p4-g');w.dataset.p4g=g;
+  w.innerHTML=`<button type="button" class="p4-gh" data-p4t="${g}" aria-expanded="${open?'true':'false'}"><span class="p4-gt"><b>${esc(title)}<span class="p4-gx"></span></b><span class="p4-gs">${esc(sum)}</span></span>${P4_CHEV}</button><div class="p4-gb"${open?'':' hidden'}></div>`;
+  const b=w.lastElementChild;for(const n of nodes)if(n)b.appendChild(n);return w;}
+function p4Parse(html,sel){const t=document.createElement('template');t.innerHTML=html;return {t,f:t.content.querySelector(sel)};}
+/* Edit plan (a monthly or yearly plan): Price, Dates, Advanced; every field of the old row lands in exactly one group */
+function p4PlanForms(html,id,s,sa){if(!html||s.kind!=='monthly')return html;const {t,f}=p4Parse(html,'form.subedit-form');if(!f)return html;const k=p4KeyOf(f);
+  if(f.hasAttribute('hidden')){delete p4G[k];return html;}
+  const row=f.querySelector(':scope>.pay-row'),acts=f.querySelector(':scope>.form-actions');if(!row||!acts)return html;
+  const st=p4G[k]||(p4G[k]={}),L=n=>p4Lab(f,n),today=todayISO(),cur=s.currency,price=sa.tiered?sa.curPrice:sa.price,nx=(sa.periods||[]).find(p=>p.st>today);
+  const renew=s.end&&(!nx||s.end<nx.st)?'ends '+fmtD(s.end,true):nx?'renews on '+(subCycle(s)==='yearly'?fmtD(nx.st,true):'the '+ordinal(+nx.st.slice(8,10))):'';
+  const yc=yourCostText(s).replace(/^Your cost:?\s*/,'');p4Relabel(L('start'),'Start date');
+  const gP=p4Group('price','Price',[fmtAmt(price,cur)+cpPer(s),'pays in '+cur,s.discount?discountLabel(s):'no standing discount'].join(' · '),!!st.price,
+    [p4Note(`${esc(fmtAmt(price,cur))}${esc(cpPer(s))} now. <button class="link" type="button" data-act="toggle" data-key="price:${esc(s.id)}">Change the price from a date</button>`),L('currency'),L('cycle'),f.querySelector(':scope>[data-role=chg-block]'),L('discType'),L('discValue')]);
+  const gD=p4Group('dates','Dates',['started '+fmtD(s.start,true),renew].filter(Boolean).join(' · '),!!st.dates,
+    [L('start'),L('end'),L('dueBy'),L('renewOn'),f.querySelector('[data-role=renew-date]'),p4Note(`How often they pay, and a first bill by days: <button class="link" type="button" data-cp="startdlg" data-sub="${esc(s.id)}">Start date and how often they pay</button>`)]);
+  const gA=p4Group('adv','Advanced',[pkgName(s.packageId)||'no product',yc?'your cost '+yc:'no supplier cost'].join(' · '),!!st.adv,
+    [L('packageId'),L('name'),L('basis'),L('prorate'),L('waiveFirst'),f.querySelector(':scope>.account-cost-fields'),f.querySelector(':scope>p.small.muted')]);
+  for(const n of [...row.children])gA.lastElementChild.appendChild(n);/* nothing is left behind */row.remove();
+  const w=p4El('div','p4-gs-w');w.append(gP,gD,gA);f.insertBefore(p4El('h4','p4-h','Edit plan'),f.firstChild);f.insertBefore(w,acts);
+  for(const n of [...f.children])if(n!==w&&n!==acts&&!n.matches('h4.p4-h')&&n.querySelector&&n.querySelector('input,select,textarea'))gA.lastElementChild.appendChild(n);
+  return t.innerHTML;}
+/* Add a plan or one-time item: product, price, start date, the first-sale question and the bill preview; the rest under More options */
+function p4AddSub(html){const {t,f}=p4Parse(html,'form.addsub-form');if(!f)return html;const k=p4KeyOf(f);
+  if(f.hasAttribute('hidden')){delete p4G[k];delete p4T[k];return html;}
+  const row=f.querySelector(':scope>.pay-row'),acts=f.querySelector(':scope>.form-actions');if(!row||!acts)return html;
+  const st=p4G[k]||(p4G[k]={}),L=n=>p4Lab(f,n),q=r=>f.querySelector(`[data-role="${r}"]`);
+  const pl=q('pkg-label');if(pl)pl.textContent='Product';const lp=L('price');if(lp){const a=lp.querySelector('[data-role=amt-label]');if(a){const c=p4El('span','p4-cur');c.dataset.role='p4-cur';a.after(c);}}
+  const two=p4El('div','p4-two');two.append(lp,L('date'));const ck=p4El('div','p4-checks');ck.append(q('prorate-wrap'),q('waive-wrap'),L('ownStart'));
+  const more=p4Group('more','More options',P4_AS_SUM,!!st.more,[L('kind'),L('name'),L('currency'),q('one-due-wrap'),q('payment-wrap'),q('dueby-wrap'),ck,f.querySelector(':scope>.account-cost-fields')]);more.classList.add('p4-more');
+  f.insertBefore(p4El('h4','p4-h','Add a plan or one-time item'),row);f.insertBefore(L('packageId'),row);f.insertBefore(two,row);
+  const fs=q('first-sale');if(fs)f.insertBefore(fs,row);const pv=q('first-bill-preview');if(pv)f.insertBefore(pv,row);
+  for(const n of [...row.children])more.lastElementChild.appendChild(n);row.remove();f.insertBefore(more,acts);
+  return t.innerHTML;}
+/* Edit details: the contact fields first, each plan's start date and supplier cost folded below */
+function p4EditUser(html){const {t,f}=p4Parse(html,'form.edit-form');if(!f)return html;const k=p4KeyOf(f);
+  if(f.hasAttribute('hidden')){delete p4G[k];return html;}
+  const c=f.querySelector('[data-role=contact]');if(!c)return html;const st=p4G[k]||(p4G[k]={});
+  const hs=f.querySelectorAll(':scope>h3');if(hs[0])hs[0].textContent='Edit details';if(hs[1])hs[1].remove();
+  const tog=f.querySelector('[data-act=toggle-contact]');if(tog)tog.remove();c.removeAttribute('hidden');
+  const grid=c.querySelector('.form-grid')||c;for(const n of ['name','phone','email','telegram','joinDate','notes','wholesalerId']){const l=p4Lab(f,n);if(l)grid.appendChild(l);}
+  const fs=[...f.querySelectorAll(':scope>fieldset[data-account-fields]')];
+  if(fs.length){const n=fs.length;c.after(p4Group('plans','Plan start dates and costs',`${n} plan${n===1?'':'s'}: the date each started and what each costs you`,!!st.plans,fs));}
+  return t.innerHTML;}
+/* the More options line: how many fields the owner changed there, and which */
+function p4Snap(f){const k=p4KeyOf(f),T=p4T[k]||(p4T[k]={auto:{},touched:{}}),body=p4MoreBody(f);if(!body)return T;
+  for(const el of body.querySelectorAll('input,select,textarea')){if(el.type==='hidden'||el.type==='radio')continue;const fk=p4Fk(el);if(fk&&!(fk in T.touched))T.auto[fk]=p4Val(el);}return T;}
+function p4Changed(el){if(el.type==='hidden'||el.type==='radio'||el.disabled||/accountCostFrom$/.test(el.name||''))return false;if(el.type==='checkbox')return el.checked!==el.defaultChecked;return el.value!==fieldBase(el);}
+function p4Sum(f){if(!f)return;const k=p4KeyOf(f);
+  if(k==='add'||f.classList.contains('addsub-form')){const T=p4T[k]||{touched:{}},body=p4MoreBody(f),seen=new Set();if(!body)return;
+    for(const el of body.querySelectorAll('input,select,textarea')){if(el.type==='hidden'||el.type==='radio')continue;const fk=p4Fk(el);
+      const ch=el.id==='a-join'?!!el.dataset.manual&&isDateKey(el.value)&&el.value!==$('#a-start').value:(fk in T.touched)&&p4Val(el)!==T.touched[fk];if(ch)seen.add(p4Word(fk));}
+    const g=body.parentElement,n=seen.size,x=g.querySelector('.p4-gx'),s=g.querySelector('.p4-gs'),tx=n?` · ${n} changed`:'',sx=n?'Changed: '+[...seen].join(', '):k==='add'?P4_ADD_SUM:P4_AS_SUM;
+    if(x.textContent!==tx)x.textContent=tx;if(s.textContent!==sx)s.textContent=sx;
+    const c=f.querySelector('[data-role=p4-cur]'),cu=f.elements.namedItem('currency');if(c&&cu&&cu.value){const cx=' ('+curSym(cu.value)+')';if(c.textContent!==cx)c.textContent=cx;}return;}
+  for(const g of f.querySelectorAll('.p4-g')){let n=0;for(const el of g.querySelectorAll('.p4-gb input,.p4-gb select,.p4-gb textarea'))if(p4Changed(el))n++;const x=g.querySelector('.p4-gx'),tx=n?` · ${n} changed`:'';if(x&&x.textContent!==tx)x.textContent=tx;}}
+/* an event the owner caused is one not sent from inside another event's handlers (the product prefill, the own-start sync and the
+   first-sale "Billed" choice send theirs while the owner's own event is still being handled) */
+const p4Stack=[];
+function p4Push(e){for(let i=p4Stack.length-1;i>=0;i--)if(p4Stack[i].eventPhase===0)p4Stack.splice(i,1);p4Stack.push(e);}
+const p4Own=e=>p4Stack[0]===e;
+function p4Track(e){if(!tabsOn())return;const t=e.target;if(!t||!t.closest)return;const f=t.closest('#addForm,#tbody form.addsub-form,#tbody form.subedit-form,#tbody form.edit-form');if(!f)return;
+  if(f.id==='addForm'||f.classList.contains('addsub-form')){const k=p4KeyOf(f),T=p4T[k]||(p4T[k]={auto:{},touched:{}}),body=p4MoreBody(f),fk=p4Fk(t);
+    if(p4Own(e)&&body&&body.contains(t)&&fk&&t.type!=='radio'&&!(fk in T.touched))T.touched[fk]=fk in T.auto?T.auto[fk]:p4Val(t);p4Snap(f);}
+  p4Sum(f);}
+/* after a table redraw (renderTable, before its observer is reset): the line and the changed counts of the open forms */
+function p4AfterRender(){document.querySelectorAll('#tbody form.addsub-form:not([hidden]),#tbody form.subedit-form:not([hidden]),#tbody form.edit-form:not([hidden])').forEach(f=>{if(f.classList.contains('addsub-form'))p4Snap(f);p4Sum(f);});}
+/* a refused save: which field the handler's message is about */
+const P4_COST=/^(Enter a cost|A one-time item takes one actual expense|Enter the first partial|Choose when the new cost|A cost change|Cost change cannot|Choose the expense date)/;
+const P4_ERR={
+  add:[[/name or an email|already tracked/,'#a-name'],[/email/i,'#a-email'],[P4_COST,'#a-account-cost select'],[/joined/,'#a-join'],[/package started|start date/i,'#a-start'],[/package or product/,'#a-pkg'],[/price/i,'#a-price'],[/Phone/,'#a-phone'],[/first customer for a new product/,'#a-first input[type=radio]'],[/Billing cycle/,'#a-cycle']],
+  as:[[/first customer for a new product/,'[data-role=first-sale] input[type=radio]'],[/package or product/,'[name=packageId]'],[/Billing cycle/,'[name=kind]'],[P4_COST,'.account-cost-fields select'],[/price|total amount/i,'[name=price]'],[/date/i,'[name=date]']],
+  se:[[P4_COST,'.account-cost-fields select'],[/Choose a package/,'[name=packageId]'],[/Billing cycle/,'[name=cycle]'],[/new price per|exchange rate|default rate/i,'[name=chgPrice]'],[/discount/i,'[name=discValue]'],[/end date/i,'[name=end]'],[/bills run from/,'[name=renewDate]'],[/start/i,'[name=start]']],
+  ed:[[/name or an email|already has that/,'[name=name]'],[/email/i,'[name=email]'],[/join date/,'[name=joinDate]'],[/Phone/,'[name=phone]'],[P4_COST,'[data-account-fields] .account-cost-fields select'],[/start/i,'[data-account-fields] input[type=date]']]};
+function p4AddMore(o){const b=$('#a-opts-body'),h=$('#a-opts-btn');if(!b||!h)return;b.hidden=!o;h.setAttribute('aria-expanded',o?'true':'false');}
+function p4Reveal(f,k,sel,msg){let el=sel?f.querySelector(sel):null;
+  if(k==='add'){if(!el||$('#a-opts-body').contains(el))p4AddMore(true);}
+  else{const st=p4G[k]||(p4G[k]={}),g=el&&el.closest('.p4-g');let re=false;
+    if(g){if(!st[g.dataset.p4g]){st[g.dataset.p4g]=true;re=true;}}else if(!el)f.querySelectorAll('.p4-g').forEach(x=>{if(!st[x.dataset.p4g]){st[x.dataset.p4g]=true;re=true;}});
+    if(re){renderTable();f=p4FormByKey(k);if(!f)return;el=sel?f.querySelector(sel):null;const er=f.querySelector('[data-role=addsub-err],[data-role=edit-err]');if(er&&msg&&!er.textContent){er.textContent=msg;if(tbodyObs)tbodyObs.takeRecords();}}}
+  const box=el?(el.closest('label,fieldset')||el):f.querySelector('.err:not(:empty)');if(box)box.scrollIntoView({behavior:'smooth',block:'center'});if(el)try{el.focus({preventScroll:true});}catch(x){}}
+function p4Explain(f,k){let msg='';
+  if(k==='add')msg=$('#a-err').textContent.trim();
+  else{const e=f.isConnected&&f.querySelector('[data-role=addsub-err],[data-role=edit-err]');msg=e?e.textContent.trim():'';
+    if(!msg){const ts=[...document.querySelectorAll('.toast:not([data-p4seen])')];msg=ts.length?ts[ts.length-1].textContent.trim():'';}}
+  if(!msg||/^(Not saved|Saved|Added)\b/.test(msg))return;
+  const cur=k==='add'?f:p4FormByKey(k);if(!cur||cur.hidden||(k==='add'&&$('#addPanel').hidden))return;
+  const rules=P4_ERR[k==='add'?'add':(k.split('|')[1]||'').slice(0,2)]||[];let sel=null;for(const [re,s] of rules)if(re.test(msg)){sel=s;break;}
+  p4Reveal(cur,k,sel,msg);}
+/* Add customer: the same form, its fields moved into the first screen, the payment question and More options */
+function p4InitAdd(){const f=$('#addForm');if(!f||f.dataset.p4)return;f.dataset.p4='1';
+  const lab=s=>{const el=$(s);return el?el.closest('label'):null;},sh=t=>p4El('h4','p4-sh',t);
+  p4Relabel(lab('#a-pkg'),'Product');p4Relabel($('#a-start-wrap'),'Starts on');
+  const first=p4El('div','p4-first'),two=p4El('div','p4-two');first.id='a-first-screen';two.append(lab('#a-price'),$('#a-start-wrap'));
+  first.append(lab('#a-name'),lab('#a-phone'),lab('#a-pkg'),two,$('#a-conv'),$('#a-ws-wrap'),$('#a-first'));
+  const ck=p4El('div','p4-checks');ck.append(lab('#a-own'),$('#a-prorate-wrap'),lab('#a-waive'));
+  const bc=p4El('div','p4-two');bc.append($('#a-cycle-wrap').closest('label'),lab('#a-cur'));
+  const more=p4Group('more','More options',P4_ADD_SUM,false,[sh('Contact'),lab('#a-email'),lab('#a-tg'),lab('#a-notes'),sh('Plan'),lab('#a-join'),bc,$('#a-payment-wrap'),lab('#a-plan'),$('#a-due-wrap'),ck,sh('Your cost'),$('#a-account-cost')]);
+  more.id='a-opts';more.classList.add('p4-more');const hb=more.querySelector('.p4-gh'),body=more.querySelector('.p4-gb');hb.id='a-opts-btn';hb.setAttribute('aria-controls','a-opts-body');body.id='a-opts-body';
+  const q=f.querySelector('.add-paid-q');if(q)q.textContent='Have they paid the first bill?';
+  const oth=f.querySelector('input[name=a-paid][value=other]');if(oth)p4Relabel(oth.nextElementSibling,'Other amount');
+  $('#a-paid-hint').textContent='With Other amount, or with no answer, the payment box opens right after the customer is saved.';
+  const pay=p4El('div','p4-pay');pay.append($('#a-bill-preview'),f.querySelector('.add-paid'),$('#a-paid-hint'));
+  const g1=f.querySelector('fieldset.add-grp');f.insertBefore(first,g1);f.insertBefore(pay,g1);f.insertBefore(more,g1);
+  f.querySelectorAll('fieldset.add-grp input,fieldset.add-grp select,fieldset.add-grp textarea').forEach(el=>body.appendChild(el.closest('label')||el));/* nothing is left in the hidden old groups */
+  hb.addEventListener('click',()=>p4AddMore(body.hidden));
+  let shown=false;new MutationObserver(()=>{const p=$('#addPanel');if(p.hidden){shown=false;return;}if(shown)return;shown=true;delete p4T.add;p4AddMore(false);p4Snap(f);p4Sum(f);}).observe($('#addPanel'),{attributes:true,attributeFilter:['hidden']});}
+/* Add several: the Quick add panel with the look of the new forms; same parser, same review, same save */
+function p4InitQuick(){const p=$('#quickPanel');if(!p||p.dataset.p4)return;p.dataset.p4='1';const h=p.querySelector('.panel-head h3');if(h)h.textContent='Add several';
+  const l=p4El('label','p4-lbl','One customer per line: name, WhatsApp number or email, product, price');l.htmlFor='qa-text';$('#qa-text').before(l);$('#qa-parse').textContent='Read the list';
+  const one=p4El('button','link p4-one','Add just one instead');one.type='button';one.id='qa-one';p.appendChild(one);one.addEventListener('click',()=>openAdd());}
+/* Edit plan opened on a group: Plan dates → Dates, Change product or cost → Advanced, Advanced → every group */
+function p4Pre(id,sid,gs){const g={};for(const x of gs)g[x]=true;p4G[id+'|se:'+sid]=g;}
+function initFormsP4(){p4InitAdd();p4InitQuick();const tb=$('#tbody');
+  tb.addEventListener('click',e=>{const b=e.target.closest('[data-p4open]');if(!b)return;const det=b.closest('tr.detail'),sid=(b.dataset.key||'').split(':')[1];if(det&&sid)p4G[det.dataset.id+'|se:'+sid]=Object.assign({},p4G[det.dataset.id+'|se:'+sid],{[b.dataset.p4open]:true});},true);
+  tb.addEventListener('click',e=>{const sd=e.target.closest('[data-cp=startdlg]');if(sd){const det=sd.closest('tr.detail');if(det)openStartDialog(det.dataset.id,sd.dataset.sub);return;}
+    const b=e.target.closest('[data-p4t]');if(!b)return;const f=b.closest('form');if(!f)return;const k=p4KeyOf(f),g=b.dataset.p4t,st=p4G[k]||(p4G[k]={});st[g]=!st[g];renderTable();
+    const nf=p4FormByKey(k),nb=nf&&nf.querySelector(`[data-p4t="${g}"]`);if(nb)nb.focus({preventScroll:true});});
+  for(const ev of ['input','change']){window.addEventListener(ev,p4Push,true);document.addEventListener(ev,p4Track);}
+  document.addEventListener('submit',e=>{const f=e.target;if(!tabsOn()||!f||!f.matches||!f.matches('#addForm,#tbody form.addsub-form,#tbody form.subedit-form,#tbody form.edit-form'))return;
+    document.querySelectorAll('.toast').forEach(x=>{x.dataset.p4seen='1';});const k=p4KeyOf(f);setTimeout(()=>p4Explain(f,k),0);},true);}
 
 /* ---------- events ---------- */
 function toast(msg,ms){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms||3400);}

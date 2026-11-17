@@ -41,7 +41,7 @@ const norm=s=>String(s).replace(/\s+/g,' ').trim();
    'users/f1':{name:'First Fresh',phone:'923001234564',joinDate:'2026-10-10',subscriptions:[{id:'s1',kind:'monthly',cycle:'yearly',name:'',packageId:'pkg_new',currency:'PKR',start:'2026-10-10',anchor:'2026-10-10',ownStart:true,prorate:true,paymentEvery:12,prices:[{from:'2026-10-10',price:12000}],payments:[]}]},
   },replace:[]});
   await reload();
-  assert.equal(await page.locator('#app-ver').textContent(),'v83');
+  assert.equal(await page.locator('#app-ver').textContent(),'v84');
 
   // 1. "Overdue since" is the bill's due day
   assert.match(await pill('c3'),/^Overdue since Nov 5/);assert.match(await pill('r1'),/^Paid to Nov 25/);assert.match(await pill('r2'),/^Pays Nov 30/);

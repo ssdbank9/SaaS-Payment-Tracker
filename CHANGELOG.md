@@ -2,6 +2,16 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v84 - 2026-11-17
+
+Shorter Add and Edit forms on the new page (`/new`). The usual address (`/`) and the old layout inside the new page are unchanged. Nothing about what a form saves has changed: each form still has every field it had, filled in the same way, and saves the same thing.
+- Add customer asks for six things first: name, WhatsApp number, product, price, start date and who sold it (when you have wholesalers). Then the first bill, "Have they paid the first bill?" and Save. Everything else (email, Telegram, notes, joined on, billing, currency, renewal day, proration, your cost, label) sits under More options, already filled in as before. When you change something there, the closed section says so, for example "More options · 2 changed".
+- If a save is refused because of a field under More options (a wrong email, a billing cycle that does not match the product), More options opens by itself and the field is selected, with the usual message.
+- Add several (paste one customer per line) has the same look: read the list, check each customer as a card, save.
+- Add a plan on a customer's page asks for product, price and start date first; the rest is under More options.
+- Edit plan is split into three short sections: Price (currency, billing cycle, a new price from a later bill, standing discount), Dates (start, end, renews on, remaining due by) and Advanced (product, label, proration, supplier cost). Plan dates opens it on Dates, Change product or cost on Advanced, Advanced with all three open.
+- Edit details shows the contact fields first; each plan's start date and cost are under "Plan start dates and costs".
+
 ## v83 - 2026-11-17
 
 One safety fix on the customer page of the new site (`/new`). No money figure or saved data changed.

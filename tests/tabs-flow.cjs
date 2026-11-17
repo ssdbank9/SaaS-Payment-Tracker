@@ -19,7 +19,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   // v78: the usual address keeps the page as it was; the new design is a separate file at /new, behind the same sign-in
-  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v83');
+  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v84');
   check('the usual address still serves the page without tabs');
   {const anon=await browser.newContext();const r=await anon.request.get(base+'/new',{maxRedirects:0});assert.equal(r.status(),302);assert.match(r.headers().location||'',/\/login\?next=\/new$/);await anon.close();}
   check('/new asks for sign-in first');
@@ -43,7 +43,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
    'costs/t78a':{date:'2026-11-03',description:'Tabs test seats',category:'Tools',packageId:'pkg_cmax',currency:'PKR',cost:2500,tax:0,rate:null,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v83');assert.equal(new URL(page.url()).pathname,'/new');
+  assert.equal(await page.locator('#app-ver').textContent(),'v84');assert.equal(new URL(page.url()).pathname,'/new');
   assert.deepEqual(await page.locator('#more-oldsite').evaluate(e=>[e.hidden,e.getAttribute('href')]),[false,'/']);check('More links back to the usual address');
   const tab=()=>page.evaluate(()=>document.body.dataset.tab);
   const go=async t=>{await page.locator(`#tabBar [data-go=${t}]`).click();await page.waitForTimeout(250);};
@@ -454,11 +454,21 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   check('The old layout is unchanged: every control on the toolbar, the three-box strip (Owe money, Due this week, Paid up), Record payment on each row, a customer opens inside the list, no Filter sheet or folding headings');
   /* v82: the details the old layout draws in /new are the same, character for character, as the usual page draws at / (the customer page must not change them) */
   {const grab=async id=>{await page.locator(`#tbody tr.row[data-id=${id}] .nm`).click();await page.waitForTimeout(500);const h=await page.locator(`#tbody tr.detail[data-id=${id}]`).innerHTML();await page.locator(`#tbody tr.row[data-id=${id}] .nm`).click();await page.waitForTimeout(300);return h;};
-   const ids=['m3','w1','e1'],inNew={};for(const id of ids)inNew[id]=await grab(id);
+   /* v84: also an open Edit plan form, an open Edit user form and the Add form, as the old layout of /new draws them */
+   const grabForms=async()=>{const r={};await page.locator('#tbody tr.row[data-id=m3] .nm').click();await page.waitForTimeout(500);
+     await page.locator(D('m3')+' .sub-acts [data-act=toggle][data-key="edit:s1"]').click();await page.waitForTimeout(400);r['Edit plan']=await page.locator(D('m3')+' .subedit-form[data-sub=s1]').evaluate(f=>f.hidden?'':f.outerHTML);
+     await page.locator(D('m3')+' .detail-acts [data-act=toggle][data-key=edit]').click();await page.waitForTimeout(400);r['Edit user']=await page.locator(D('m3')+' .edit-form').evaluate(f=>f.hidden?'':f.outerHTML);
+     await page.locator(D('m3')+' .subedit-form[data-sub=s1] [data-act=toggle][data-key="edit:s1"]').first().click();await page.waitForTimeout(300);await page.locator(D('m3')+' .edit-form [data-act=toggle][data-key=edit]').first().click();await page.waitForTimeout(300);
+     await page.locator('#tbody tr.row[data-id=m3] .nm').click();await page.waitForTimeout(300);
+     await page.locator('#btn-add').click();await page.locator('#addPanel').waitFor({state:'visible'});r['Add form']=await page.locator('#addForm').evaluate(f=>f.outerHTML);await page.locator('#add-close').click();await page.waitForTimeout(200);return r;};
+   /* an empty style="" left on a focused field by the browser at run time is not markup; it is removed from both before comparing */
+   const same=(what,h,n)=>{h=h.replace(/ style=""/g,'');n=n.replace(/ style=""/g,'');if(h!==n){let i=0;while(i<h.length&&h[i]===n[i])i++;assert.fail(`${what} differ at ${i}: / has "${h.slice(Math.max(0,i-60),i+80)}" and /new has "${n.slice(Math.max(0,i-60),i+80)}"`);}};
+   const ids=['m3','w1','e1'],inNew={};for(const id of ids)inNew[id]=await grab(id);const formsNew=await grabForms();
    await page.goto(base+'/',{waitUntil:'domcontentloaded'});await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);assert.equal(await page.locator('#tabBar').count(),0);
-   for(const id of ids){const h=await grab(id);if(h!==inNew[id]){let i=0;while(i<h.length&&h[i]===inNew[id][i])i++;assert.fail(`details of ${id} differ at ${i}: / has "${h.slice(Math.max(0,i-60),i+80)}" and /new has "${inNew[id].slice(Math.max(0,i-60),i+80)}"`);}assert.ok(h.length>2000,id+' details drawn');}
+   for(const id of ids){const h=await grab(id);same('details of '+id,h,inNew[id]);assert.ok(h.length>2000,id+' details drawn');}
+   {const formsOld=await grabForms();for(const k of Object.keys(formsOld)){assert.ok(formsOld[k].length>1500,k+' drawn open');same(k,formsOld[k],formsNew[k]);}}
    await page.goto(base+'/new',{waitUntil:'domcontentloaded'});await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(1500);assert.equal(await page.evaluate(()=>document.body.dataset.ui),'classic');}
-  check('In the old layout a customer\'s details (4 plans with a one-time item and an ended plan; a wholesaler customer; a customer with an ended plan) are identical to the usual page\'s');
+  check('In the old layout a customer\'s details (4 plans with a one-time item and an ended plan; a wholesaler customer; a customer with an ended plan), an open Edit plan form, an open Edit user form and the Add form are identical to the usual page\'s');
   /* the layout choice has its own storage key: saving a list preference (which rewrites pt-ui) must not flip the layout, and the preference must survive */
   const sortV=await page.locator('#sort option').nth(1).getAttribute('value');await page.locator('#sort').selectOption(sortV);await page.waitForTimeout(300);
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(1500);
@@ -484,6 +494,6 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
     for(const t of ['reminders','money','more']){await go(t);assert.equal(await noSideScroll(),true,`1400 ${scheme} ${t}`);}}
   check('A computer shows the side bar (220px, full height) with the content to its right; Customers has no buttons on a closed row; no sideways scroll at 390px and 1400px in light and dark');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'83',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'84',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
