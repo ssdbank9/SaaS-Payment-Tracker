@@ -2,6 +2,16 @@
 
 Version numbers here summarise the development history of the app. The version numbers shown inside the published artifact may differ from these.
 
+## v80 - 2026-11-17
+
+The Customers tab of the new page (`/new`) is simpler. The usual address (`/`) and the old layout inside the new page are unchanged. No money figure or saved data changed.
+- At the top: the title "Customers" and one Add button. The Add form has "Add several at once" for Quick add. Import / export stays under More.
+- Search and one Filter button share a line. Filter opens a panel (from the bottom on a phone) with Package, Sold by, Status, Sort, Group by wholesaler, Hasn't paid, Advanced search and Clear filters. The button shows how many filters are on, for example "Filter · 2".
+- Four chips under the search: All, Owes, Due this week and Paid up, each with its count. The owe table is gone from this tab; Today's "Owes now" shows the same bills.
+- Each customer is one row: the name with the products under it, and on the right the status (for example "Paid to Nov 23" or "Overdue since Oct 26") and what is owed. A closed row has no buttons; tap it to open the details, where Record payment and Cancel plan are.
+- Each wholesaler group, and the Direct group, folds when you tap its heading and stays folded next time. A search or a chip other than All still shows every match. The heading keeps the group's total and its Record payment. On a computer it also shows the wholesaler's WhatsApp number; a phone heading has no room for it.
+- When nothing matches, the list says "No customers match." with a Clear filters button.
+
 ## v79 - 2026-11-17
 
 Four display fixes found while looking at the new page (`/new`) on a phone. No money figure or saved data changed.

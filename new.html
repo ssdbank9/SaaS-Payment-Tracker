@@ -848,6 +848,80 @@ a.more-item{text-decoration:none;box-sizing:border-box}
   .td-row{padding:12px 16px}
   .td-sh h3{font-size:17px}
 }
+/* v80: Customers tab (tabs layout only): header with Add, search + Filter on one line, chips, the Filter sheet, one-line rows, wholesaler groups that fold.
+   The classic layout keeps the v79 look: every rule below is scoped to body[data-ui="tabs"] or to elements drawn only in the tabs layout. */
+.cu-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:0 4px}
+.btn.cu-add{min-height:44px;padding:0 18px;border-radius:10px;font-weight:600;font-size:15px}
+.add-sev{margin:-4px 0 12px;font-size:14px}.add-sev .link{min-height:44px;font-size:14px;font-weight:600}
+body[data-ui="tabs"] .toolbar{flex-wrap:nowrap;gap:8px;margin-bottom:10px}
+body[data-ui="tabs"] .toolbar>:not(#search):not(#btn-fsheet){display:none!important}
+body[data-ui="tabs"] .toolbar .search{flex:1 1 auto;min-width:0;min-height:46px;padding:0 12px;border-radius:12px;font-size:15px}
+#btn-fsheet{flex:none;min-height:46px;padding:0 14px;border-radius:12px;font-size:15px;font-weight:500;white-space:nowrap}
+#btn-fsheet[data-n]:not([data-n="0"]){border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+body[data-ui="tabs"] .pay-strip{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;margin:0 0 14px;padding:1px;scrollbar-width:none}
+body[data-ui="tabs"] .pay-strip::-webkit-scrollbar{display:none}
+body[data-ui="tabs"] .ps-btn{flex:none;flex-direction:row;align-items:center;gap:5px;min-height:44px;padding:0 11px;border:1px solid var(--line-strong);border-radius:22px;background:var(--surface);font-size:13.5px;font-weight:600;text-align:left;white-space:nowrap}
+body[data-ui="tabs"] .ps-btn b{order:2;font-size:inherit;font-weight:600;color:inherit}
+body[data-ui="tabs"] .ps-btn[data-pf=""]{color:var(--ink)}
+body[data-ui="tabs"] .ps-btn[data-pf="owes"]{color:var(--crit)}
+body[data-ui="tabs"] .ps-btn[data-pf="soon"]{color:var(--warn)}
+body[data-ui="tabs"] .ps-btn[data-pf="paid"]{color:var(--good)}
+body[data-ui="tabs"] .ps-btn[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+body[data-ui="tabs"] td.who .em,body[data-ui="tabs"] td.who .ws-tag,body[data-ui="tabs"] td.who .ct,body[data-ui="tabs"] td.who .m-st,body[data-ui="tabs"] td.who .m-acct,body[data-ui="tabs"] td.who .row-money{display:none!important}
+body[data-ui="tabs"] tr.row:not([aria-expanded="true"]) .row-acts{display:none!important}
+.cu-prod,.cu-end{display:none}
+.cu-st{font-size:13px;font-weight:500;color:var(--ink-2);line-height:1.3}
+.cu-st[data-status="overdue"],.cu-st[data-status="cancelled"]{color:var(--crit)}
+.cu-st[data-status="due-soon"],.cu-st[data-status="due-today"],.cu-st[data-status="open"]{color:var(--warn)}
+.cu-st[data-status="current"],.cu-st[data-status="paid"]{color:var(--good)}
+.cu-owe{font-family:var(--mono);font-size:13.5px;font-weight:500;color:var(--crit);font-variant-numeric:tabular-nums}
+.cu-owe>span{display:block;white-space:nowrap}
+body[data-ui="tabs"] #tbody tr.grp{cursor:pointer}
+body[data-ui="tabs"] #tbody tr.grp td{padding:0;white-space:normal;line-height:1.35}
+.grp-in{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:48px;padding:2px 4px 2px 0}
+.grp-fold{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 8px 4px 14px;border:0;background:none;color:var(--ink-2);font:inherit;font-size:13.5px;text-align:left;cursor:pointer}
+.grp-fold b{color:var(--ink);font-weight:600}
+.grp-fold .grp-t{min-width:0;overflow-wrap:anywhere}
+.grp-fold .grp-ph{color:var(--muted)}@media (max-width:760px){.grp-fold .grp-ph{display:none}}/* the wholesaler's number: on a computer only, the phone heading has no room */
+.grp-fold svg{flex:none;margin-left:auto;color:var(--muted);transition:transform .15s}
+.grp-fold[aria-expanded="false"] svg{transform:rotate(-90deg)}
+.grp-fold:focus-visible{outline:2px solid var(--focus);outline-offset:-2px;border-radius:6px}
+#tbody tr.grp .grp-fold .grp-owe{white-space:nowrap;color:var(--crit)}
+.btn.link.grp-pay,.link.grp-pay{flex:none;min-height:44px;padding:0 10px;font-size:14px;font-weight:600;white-space:nowrap}
+body[data-ui="tabs"] .nores{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;color:var(--ink-2);font-size:15px}
+body[data-ui="tabs"] .nores[hidden]{display:none}
+body[data-ui="tabs"] .nores .btn{min-height:44px;padding:0 16px;border-radius:10px}
+@media (max-width:760px){
+  body[data-ui="tabs"] #table tr.row>td.who{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:1px;align-items:center;min-height:58px;padding:9px 4px 9px 14px}
+  body[data-ui="tabs"] td.who .nm{grid-column:1;grid-row:1;font-weight:600;font-size:15px;overflow-wrap:anywhere}
+  body[data-ui="tabs"] td.who .cu-prod{display:block;grid-column:1;grid-row:2;font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
+  body[data-ui="tabs"] td.who .cu-end{display:flex;grid-column:2;grid-row:1/span 2;flex-direction:column;align-items:flex-end;gap:1px;text-align:right;max-width:46vw}
+  body[data-ui="tabs"] td.who .row-acts{grid-column:1/-1;margin-top:10px}
+  body[data-ui="tabs"] #table tr.row{align-items:stretch}
+  body[data-ui="tabs"] #table tr.row>td:last-child{display:flex;align-items:center;padding:0 12px 0 2px}
+}
+@media (min-width:761px){
+  body[data-ui="tabs"] #table th:nth-child(9),body[data-ui="tabs"] #table tr.row>td:nth-child(9){display:none}
+  body[data-ui="tabs"] #table tr.row>td{padding-top:12px;padding-bottom:12px}
+}
+.fsheet{padding:0;border:0;border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);width:min(440px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow-y:auto}
+.fsheet::backdrop{background:rgba(0,0,0,.45)}
+.fsheet [hidden]{display:none!important}
+.fs-in{display:flex;flex-direction:column;gap:12px;padding:12px 16px 18px}
+.fs-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.fs-head h2{margin:0;padding-left:2px;font-size:20px;font-weight:600;color:var(--ink);text-transform:none;letter-spacing:0}
+.fs-x{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:12px;background:none;color:var(--ink);cursor:pointer}
+.fs-x:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.fs-body{display:flex;flex-direction:column;gap:10px}
+.fs-body select{width:100%;min-width:0;min-height:46px;border-radius:12px;font-size:15px}
+.fs-body .btn{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:48px;padding:0 14px;border-radius:12px;font-size:15px;font-weight:500;text-align:left}
+.fs-body .btn::after{content:"Off";font-size:13px;font-weight:500;color:var(--ink-2)}
+.fs-body .btn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+.fs-body .btn[aria-pressed="true"]::after{content:"On";font-weight:600;color:var(--accent-ink)}
+.fs-acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:4px}
+.fs-acts .btn{min-height:46px;border-radius:12px;font-size:15px;white-space:normal}
+.fs-acts .primary{grid-column:1/-1;min-height:50px;font-weight:600}
+@media (max-width:760px){.fsheet{width:100%;max-width:100%;margin:auto 0 0;border-radius:16px 16px 0 0;max-height:88dvh}.fs-in{padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}}
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
 </style>
 </head>
@@ -876,7 +950,7 @@ a.more-item{text-decoration:none;box-sizing:border-box}
     <div class="top-right">
       <span class="rate-badge" id="rate-badge"></span>
       <span id="sync" class="sync" data-mode="connecting">Connecting…</span>
-      <span class="small muted num" id="app-ver" title="App version">v79</span>
+      <span class="small muted num" id="app-ver" title="App version">v80</span>
       <button class="btn" type="button" id="btn-reminders" title="Today's messages to send, answers from the link pages, final notice">Queue<span class="cnt" id="rem-cnt" hidden></span></button>
       <button class="btn" type="button" id="btn-search" aria-controls="searchPanel" aria-expanded="false" title="Find customers by anything: phone, notes, dates, money">Search</button>
       <button class="btn" type="button" id="btn-payments" aria-controls="payPanel" aria-expanded="false" title="Every payment and refund of every customer">Payments</button>
@@ -1128,8 +1202,11 @@ a.more-item{text-decoration:none;box-sizing:border-box}
   <!-- v54: who owes, who is due soon, who is paid up; each button filters the list -->
   <div class="pay-strip" id="payStrip" data-pane="customers" role="group" aria-label="Show customers by payment" hidden></div>
   <div class="owe-list" id="oweList" data-pane="customers" hidden></div><!-- v75: who owes, for which period -->
+  <!-- v80: Customers tab header (tabs layout): the title and one Add button -->
+  <div class="cu-head tabs-only" id="custHead" data-pane="customers"><h2 class="td-h1" id="cu-title">Customers</h2><button class="btn primary cu-add" type="button" id="cu-add">Add</button></div>
   <div class="toolbar" data-pane="customers">
     <input class="search" id="search" type="search" placeholder="Search name, email, plan or notes" aria-label="Search users">
+    <button class="btn tabs-only" type="button" id="btn-fsheet" aria-haspopup="dialog" aria-controls="filterSheet">Filter</button><!-- v80 -->
     <button class="btn" type="button" id="btn-filter" aria-pressed="false">Hasn't paid</button>
     <select id="pkgFilter" aria-label="Filter by package"><option value="all">Package: all</option></select>
     <select id="wsFilter" aria-label="Filter by wholesaler" hidden></select>
@@ -1148,6 +1225,15 @@ a.more-item{text-decoration:none;box-sizing:border-box}
     <button class="btn" id="btn-quick" type="button" title="Type or paste one line per user">Quick add</button>
     <button class="btn primary" id="btn-add" type="button">Add user</button>
   </div>
+  <!-- v80: Filter and sort (tabs layout): a bottom sheet on a phone, a small dialog on a computer. The toolbar's Package, Sold by, Status,
+       Sort, By supplier and Hasn't paid controls are moved in here when the tabs layout starts; changes apply at once -->
+  <dialog class="fsheet tabs-only" id="filterSheet" aria-labelledby="fs-title">
+    <div class="fs-in">
+      <div class="fs-head"><h2 id="fs-title">Filter and sort</h2><button class="fs-x" type="button" id="fs-close" aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button></div>
+      <div class="fs-body" id="fs-body"></div>
+      <div class="fs-acts"><button class="btn" type="button" id="fs-adv">Advanced search</button><button class="btn" type="button" id="fs-clear">Clear filters</button><button class="btn primary" type="button" id="fs-done">Show customers</button></div>
+    </div>
+  </dialog>
 
   <section class="panel" id="quickPanel" data-pane="customers" hidden aria-label="Quick add users">
     <div class="panel-head"><div><h3>Quick add</h3><p class="small muted">One line per user, in any order. Name is the only must; everything else has a default.</p></div><button class="link" type="button" id="quick-close">Close</button></div>
@@ -1173,6 +1259,7 @@ a.more-item{text-decoration:none;box-sizing:border-box}
 
   <section class="panel" id="addPanel" data-pane="customers" hidden aria-label="Add user">
     <div class="panel-head"><h3>Add a customer</h3><button class="link" type="button" id="add-close">Close</button></div>
+    <p class="add-sev tabs-only"><button class="link" type="button" id="add-several">Add several at once</button> <span class="small muted">one line per customer</span></p><!-- v80: Quick add, reachable from the Add form -->
     <!-- v55: every field stays on the form, grouped as Customer / Plan / Payment; "Have they paid?" is answered here -->
     <form id="addForm" novalidate>
       <fieldset class="add-grp"><legend>Customer</legend>
@@ -1587,7 +1674,7 @@ const TOKEN_RE=/^[A-Za-z0-9_-]{16,64}$/;
 const newId=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 
 const state={users:{},costs:{},settings:{rate:null,template:DEFAULT_TPL,finalTemplate:DEFAULT_FINAL_TPL,prorationBasis:'',packages:[],anchor:DEFAULT_ANCHOR,cycleDay:null,remindDay:DEFAULT_REMIND_DAY,replyDay:DEFAULT_REPLY_DAY,publicBaseUrl:'',queueTemplates:{},payHow:'',waApp:'regular'},mode:'connecting',backend:'local',loaded:false,costsLoaded:false,settingsLoaded:false};
-const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,payFilter:'',pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'queue',cancelPre:{},qStage:null,qStageBy:{},rrDate:'',qOpen:{},amtErr:{},groupWs:true/* v68: customers of one supplier together */};/* v68: qStageBy = previewed stage per cycle date, rrDate = the date the Reminder run / Final notice tabs show */
+const ui={expanded:null,search:'',sort:'status',dir:1,filterUnpaid:false,payFilter:'',pkgFilter:'all',statusFilter:'active',open:{},range:'month',chartCur:'PKR',costEdit:null,pkgEdit:null,rrTab:'queue',cancelPre:{},qStage:null,qStageBy:{},rrDate:'',qOpen:{},amtErr:{},groupWs:true/* v68: customers of one supplier together */,foldWs:{}/* v80: folded wholesaler groups (tabs layout) */};/* v68: qStageBy = previewed stage per cycle date, rrDate = the date the Reminder run / Final notice tabs show */
 let db=null,downloads=null,sample=null,assets=null,canImage=false,seedChecked=false,seedActive=false,migrateChecked=false;
 
 /* ---------- money: PKR is the base; USD, EUR and GBP (v64) each have a default rate in Settings (PKR per 1 unit) and a per-entry rate.
@@ -2225,8 +2312,8 @@ async function resetData(){
 function loadLocal(){try{const raw=localStorage.getItem('pt-data');if(raw){const d=JSON.parse(raw);state.users={};for(const id in d.users||{})state.users[id]=normalizeUser(d.users[id],id);state.costs={};for(const id in d.costs||{})state.costs[id]=normalizeCost(d.costs[id],id);state.settings=Object.assign(DEFAULT_SETTINGS(),d.settings||{});state.settings.packages=normalizePackages(state.settings.packages);if(!isDateKey(state.settings.anchor))state.settings.anchor=DEFAULT_ANCHOR;state.settings.template=tplOf(state.settings.template);state.settings.finalTemplate=finalTplOf(state.settings.finalTemplate);state.settings.prorationBasis=rawBasis(state.settings.prorationBasis);state.settings.appName=rawAppName(state.settings.appName);state.settings.tagline=rawTagline(state.settings.tagline);state.settings.readModel=normModel(state.settings.readModel);state.settings.cycleDay=cycleDay();state.settings.remindDay=remindDay();state.settings.replyDay=replyDay();state.settings.queueTemplates=normQueueTpl(state.settings.queueTemplates);state.settings.payHow=rawPayHow(state.settings.payHow);state.settings.waApp=waApp();state.settings.dimSettled=dimOn();}}catch(e){}}
 /* v42: returns false (and says so) when the browser could not store the data, so a change is never reported as saved when it was not */
 function saveLocal(){try{localStorage.setItem('pt-data',JSON.stringify({users:state.users,costs:state.costs,settings:state.settings}));return true;}catch(e){toast('This browser could not save your change (storage is full or blocked). Nothing was saved.');return false;}}
-function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;if(isDateKey(p.rangeFrom))ui.rangeFrom=p.rangeFrom;if(isDateKey(p.rangeTo))ui.rangeTo=p.rangeTo;if(typeof p.prodFilter==='string')ui.prodFilter=p.prodFilter;if(typeof p.groupWs==='boolean')ui.groupWs=p.groupWs;/* v68 */}catch(e){}}
-function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur,rangeFrom:ui.rangeFrom||'',rangeTo:ui.rangeTo||'',prodFilter:ui.prodFilter||'',groupWs:ui.groupWs!==false/* v68 */}));}catch(e){}}
+function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('pt-ui')||'{}');if(p.sort)ui.sort=p.sort;if(p.dir)ui.dir=p.dir;if(p.range)ui.range=p.range;if(p.chartCur)ui.chartCur=p.chartCur;if(isDateKey(p.rangeFrom))ui.rangeFrom=p.rangeFrom;if(isDateKey(p.rangeTo))ui.rangeTo=p.rangeTo;if(typeof p.prodFilter==='string')ui.prodFilter=p.prodFilter;if(typeof p.groupWs==='boolean')ui.groupWs=p.groupWs;/* v68 */if(Array.isArray(p.foldWs)){ui.foldWs={};for(const k of p.foldWs)if(typeof k==='string'&&k)ui.foldWs[k]=1;}/* v80 */}catch(e){}}
+function savePrefs(){try{localStorage.setItem('pt-ui',JSON.stringify({sort:ui.sort,dir:ui.dir,range:ui.range,chartCur:ui.chartCur,rangeFrom:ui.rangeFrom||'',rangeTo:ui.rangeTo||'',prodFilter:ui.prodFilter||'',groupWs:ui.groupWs!==false/* v68 */,foldWs:Object.keys(ui.foldWs||{})/* v80 */}));}catch(e){}}
 function dbErr(e){const c=e&&e.code;if(c==='stale_app')return 'Wasooli was updated. Reload this page, then try again.';if(c==='conflict')return 'This was changed on another device. The latest details are loaded; check them and tap Save again.';if(c==='quota_exceeded')return 'Storage is full: delete some entries before adding more.';if(c==='invalid_argument')return 'You do not have permission to change shared data.';if(c==='resource_exhausted')return 'Too many changes at once; wait a moment and try again.';if(c==='network')return 'Could not reach the server. Check the connection and try again.';if(c==='local_storage')return 'This browser could not store the change (storage is full or blocked). Nothing was saved.';return 'Could not save ('+(c||'unknown')+'). Try again.';}
 /* v29: the saved user goes into state and is drawn at once on every backend. Before, on the server the page only wrote the document and
    waited for the next poll of /api/version to fetch the list again, so a recorded payment showed as paid only when that round trip had
@@ -2930,8 +3017,10 @@ function renderAcctBar(){const bar=$('#acctBar');const ids=Object.keys(state.use
 function renderPayStrip(today,show){const el=$('#payStrip');el.hidden=!show;if(!show)return;const base=visibleRows(today,true);let owe=newSum();const n={owes:0,soon:0,paid:0};
   for(const r of base){const k=payCat(r.a,r.u,today);if(k)n[k]++;if(k==='owes')owe=sumMerge(owe,r.a.balance);}
   const b=(k,lbl,sub)=>`<button type="button" class="ps-btn" data-pf="${k}" aria-pressed="${ui.payFilter===k}"><b>${n[k]}</b><span class="ps-l">${lbl}</span>${sub?`<span class="ps-s">${esc(sub)}</span>`:''}</button>`;
-  const html=b('owes','Owe money',n.owes&&owe.n?sumParts(owe,'PKR').p:'')+b('soon','Due this week','')+b('paid','Paid up','')+(ui.payFilter?'<button type="button" class="link ps-all" data-pf="">Show everyone</button>':'');
-  if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}renderOweList(today,ui.payFilter==='owes');}
+  /* v80: the tabs layout shows four chips, All first; the owe table is Today's Owes now there */
+  const c=(k,lbl)=>`<button type="button" class="ps-btn" data-pf="${k}" aria-pressed="${ui.payFilter===k}"><span class="ps-l">${lbl}</span><b>${k?n[k]:base.length}</b></button>`;
+  const html=tabsOn()?c('','All')+c('owes','Owes')+c('soon','Due this week')+c('paid','Paid up'):b('owes','Owe money',n.owes&&owe.n?sumParts(owe,'PKR').p:'')+b('soon','Due this week','')+b('paid','Paid up','')+(ui.payFilter?'<button type="button" class="link ps-all" data-pf="">Show everyone</button>':'');
+  if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}renderOweList(today,!tabsOn()&&ui.payFilter==='owes');}
 /* v75: under Owe money, one line per unpaid bill: customer, plan, the period, the day it was due and what is left */
 function oweLines(today,rows){const out=[];for(const r of rows||visibleRows(today)){/* v78: rows = Today's customers; absent = the list's visible rows */if(payCat(r.a)!=='owes')continue;const u=r.u;
   for(const s of u.subscriptions||[]){const sa=r.a.sa[s.id];if(!sa)continue;
@@ -3195,22 +3284,28 @@ function renderTable(){renderToday();/* v78: Today follows every list redraw (it
   $('#th-due').firstChild.textContent='Next bill ';/* v68: each plan on its own cycle */
   const rows=ids.length?visibleRows(today):[];
   renderPayStrip(today,!loading&&ids.length>0);
+  renderCustHead(rows);/* v80 */
   renderRemindAll(rows,today);
   if(!ids.length)return;
-  const nores=$('#nores');nores.hidden=rows.length>0;nores.textContent=ui.payFilter?{owes:'Nobody owes money right now.',soon:'Nobody is due soon.',paid:'Nobody is paid up yet.'}[ui.payFilter]+' Tap Show everyone to see the whole list.':ui.filterUnpaid?(ui.search?'No unpaid users match that search.':'Nobody is overdue or due today.'):(ui.statusFilter==='cancelled'?'No cancelled users.':ui.statusFilter==='active'&&!ui.search?'No active users. Switch Status to All to see cancelled ones.':'No users match that search.');
+  const nores=$('#nores');nores.hidden=rows.length>0;if(tabsOn()){const nh='<span>No customers match.</span><button class="btn" type="button" id="nores-clear">Clear filters</button>';/* v80 */if(nores.dataset.html!==nh){nores.innerHTML=nh;nores.dataset.html=nh;}}else nores.textContent=ui.payFilter?{owes:'Nobody owes money right now.',soon:'Nobody is due soon.',paid:'Nobody is paid up yet.'}[ui.payFilter]+' Tap Show everyone to see the whole list.':ui.filterUnpaid?(ui.search?'No unpaid users match that search.':'Nobody is overdue or due today.'):(ui.statusFilter==='cancelled'?'No cancelled users.':ui.statusFilter==='active'&&!ui.search?'No active users. Switch Status to All to see cancelled ones.':'No users match that search.');
   let html='';
   /* v68: By supplier: direct customers first, then each wholesaler in Settings order, each group under a heading with its count and what it owes; the chosen sort order holds inside a group */
   const grouping=ui.groupWs!==false&&wholesalers().length>0&&!ui.wsFilter;
   const gKey=r=>wsById(r.u.wholesalerId)?r.u.wholesalerId:'';const gOrder=['',...wholesalers().map(w=>w.id)];
   const list=grouping?rows.slice().sort((x,y)=>gOrder.indexOf(gKey(x))-gOrder.indexOf(gKey(y))):rows;let lastG=null;
+  /* v80: in the tabs layout a group heading folds its group (ui.foldWs, saved with the list preferences); a search or a chip other than All shows every match */
+  const T=tabsOn(),foldOn=T&&!ui.search.trim()&&!ui.payFilter;let skipG=false;
   for(const r of list){
     if(grouping){const k=gKey(r);if(k!==lastG){lastG=k;const grp=list.filter(x=>gKey(x)===k);let owe=newSum();for(const x of grp)owe=sumMerge(owe,x.a.balance);const w=wsById(k);
-      html+=`<tr class="grp" data-ws="${esc(k||'direct')}"><td colspan="10"><b>${w?esc(w.name):'Direct'}</b> · ${grp.length} customer${grp.length===1?'':'s'}${owe.n?` · <span class="grp-owe">owes ${esc(ownText(owe,'PKR'))}</span>`:' · nothing owed'}${w&&w.phone?` · <span class="muted">WhatsApp ${esc(fmtPhone(w.phone))}</span>`:''}${w?` · <button class="link sm" type="button" data-act="wspay" data-ws="${esc(w.id)}">Record payment</button>`:''}</td></tr>`;}}
+      if(T){const gk=k||'direct',fold=foldOn&&!!(ui.foldWs&&ui.foldWs[gk])&&!grp.some(x=>x.id===ui.expanded);skipG=fold;
+        html+=`<tr class="grp" data-ws="${esc(gk)}" data-fold="${fold?1:0}"><td colspan="10"><div class="grp-in"><button type="button" class="grp-fold" aria-expanded="${!fold}"><span class="grp-t"><b>${w?esc(w.name):'Direct'}</b> · ${grp.length} customer${grp.length===1?'':'s'}${owe.n?` · <span class="grp-owe">owes ${esc(ownText(owe,'PKR'))}</span>`:' · nothing owed'}${w&&w.phone?`<span class="grp-ph"> · WhatsApp ${esc(fmtPhone(w.phone))}</span>`:''}</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></button>${w?`<button class="link sm grp-pay" type="button" data-act="wspay" data-ws="${esc(w.id)}">Record payment</button>`:''}</div></td></tr>`;}
+      else html+=`<tr class="grp" data-ws="${esc(k||'direct')}"><td colspan="10"><b>${w?esc(w.name):'Direct'}</b> · ${grp.length} customer${grp.length===1?'':'s'}${owe.n?` · <span class="grp-owe">owes ${esc(ownText(owe,'PKR'))}</span>`:' · nothing owed'}${w&&w.phone?` · <span class="muted">WhatsApp ${esc(fmtPhone(w.phone))}</span>`:''}${w?` · <button class="link sm" type="button" data-act="wspay" data-ws="${esc(w.id)}">Record payment</button>`:''}</td></tr>`;}
+      if(skipG)continue;}
     const {u,a,id}=r;const exp=ui.expanded===id;const late=a.status==='overdue';const reductions=billReductions(u,a,today);
     const ptTxt=a.paidThrough?(a.paidThrough<u.joinDate?'nothing yet':fmtD(a.paidThrough)):(a.planParts.length&&!u.cancel?'nothing yet':'—');
     const ndTxt=a.cycleDue.n?ownHTML(a.cycleDue,a.mainCur):(a.cyclePaid?`<span class="muted">paid to ${esc(fmtD(a.paidThrough))}</span>`:'<span class="muted">—</span>');
     html+=`<tr class="row" data-id="${id}" tabindex="0" aria-expanded="${exp}" data-cancelled="${u.cancel?1:0}" data-settled="${dimOn()&&a.settled?1:0}"${a.planParts.some(p=>p.noPkg)?' data-nopkg="1"':''}>
-      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${wsOf(u)?`<span class="ws-tag">via ${esc(wsOf(u).name)}</span>`:''}${contactLine(u)}<span class="m-st"><span class="pill" data-status="${a.status}">${statusLabel(a)}</span>${a.balance.n?`<b class="m-owe">Owes ${esc(ownText(a.balance,a.mainCur))}</b>`:''}</span>${acctHTML(a)?`<span class="m-acct">${acctHTML(a)}</span>`:''}<span class="row-acts">${u.subscriptions.length?`<button class="btn ${a.unpaid||a.status==='due-soon'?'primary ':''}sm row-pay" type="button" data-act="row-pay" data-user="${esc(id)}">Record payment</button>`:''}${!u.cancel&&cpOpenPlans(u).length?`<button class="btn sm row-cancel" type="button" data-act="row-cancel" data-user="${esc(id)}">Cancel plan</button>`:''}</span><span class="row-money">Total paid <b data-role="row-paid">${esc(ownText(a.totals,a.mainCur))}</b><br>Discounts / reductions <b>${esc(ownText(reductions,a.mainCur))}</b><br>${esc(statusLabel(a))}</span></td>
+      <td class="who" title="${esc(displayName(u))}"><span class="nm">${esc(u.name||u.email)}</span>${T?`<span class="cu-prod">${esc(cuProducts(a))}</span>${cuEnd(a)}`:''}${u.name&&u.email?`<span class="em">${esc(u.email)}</span>`:''}${wsOf(u)?`<span class="ws-tag">via ${esc(wsOf(u).name)}</span>`:''}${contactLine(u)}<span class="m-st"><span class="pill" data-status="${a.status}">${statusLabel(a)}</span>${a.balance.n?`<b class="m-owe">Owes ${esc(ownText(a.balance,a.mainCur))}</b>`:''}</span>${acctHTML(a)?`<span class="m-acct">${acctHTML(a)}</span>`:''}<span class="row-acts">${u.subscriptions.length?`<button class="btn ${a.unpaid||a.status==='due-soon'?'primary ':''}sm row-pay" type="button" data-act="row-pay" data-user="${esc(id)}">Record payment</button>`:''}${!u.cancel&&cpOpenPlans(u).length?`<button class="btn sm row-cancel" type="button" data-act="row-cancel" data-user="${esc(id)}">Cancel plan</button>`:''}</span><span class="row-money">Total paid <b data-role="row-paid">${esc(ownText(a.totals,a.mainCur))}</b><br>Discounts / reductions <b>${esc(ownText(reductions,a.mainCur))}</b><br>${esc(statusLabel(a))}</span></td>
       <td class="plan">${planCell(a)}</td>
       <td title="${esc(u.joinDate)}">${esc(fmtD(u.joinDate))}</td>
       <td class="${late?'late':''}">${ptTxt}</td>
@@ -3960,7 +4055,34 @@ function renderToday(){if(!tabsOn()||ui.tab!=='today')return;const body=$('#td-b
       +`<section class="td-sec td-soon" aria-labelledby="td-soon-h"><div class="td-sh"><h3 id="td-soon-h">Due this week <span class="td-warn" id="td-soon-n">${D.soonG.length}</span></h3></div>`
       +`<div class="td-list" id="td-soon">${D.soonG.length?D.soonG.map(soonRow).join(''):'<p class="td-empty">Nothing is due in the next 7 days.</p>'}</div></section></div>`;}
   if(body.dataset.html!==html){body.innerHTML=html;body.dataset.html=html;}syncTabBadge();}
+/* v80: Customers tab (tabs layout). Rows: the products on the left under the name, the status words and what is owed on the right */
+function cuProducts(a){let t=acctCounts(a.accounts||[]).map(x=>acctName(x.k)+(x.n>1?' \u00d7'+x.n:'')).join(' \u00b7 ');
+  if(!t)t=[...new Set((a.planParts||[]).map(p=>p.noPkg?'Package not set':p.name).filter(Boolean))].join(' \u00b7 ');
+  if(a.oneOpen)t+=(t?' \u00b7 ':'')+a.oneOpen+' one-time';return t;}
+function cuEnd(a){const o=a.balance&&a.balance.n?`<b class="cu-owe">${ownText(a.balance,a.mainCur).split(' + ').map((x,i)=>`<span>${i?'+ ':''}${esc(x)}</span>`).join('')}</b>`:'';
+  return `<span class="cu-end"><span class="cu-st" data-status="${esc(a.status)}">${esc(statusLabel(a))}</span>${o}</span>`;}
+/* filters that differ from the defaults: package not all, sold by not all, status not active, Hasn't paid on (sort and grouping do not count) */
+const cuFilterCount=()=>(ui.pkgFilter!=='all'?1:0)+(ui.wsFilter?1:0)+(ui.statusFilter!=='active'?1:0)+(ui.filterUnpaid?1:0);
+function renderCustHead(rows){if(!tabsOn())return;const b=$('#btn-fsheet');if(!b)return;const n=cuFilterCount(),t=n?'Filter \u00b7 '+n:'Filter';if(b.textContent!==t)b.textContent=t;b.dataset.n=String(n);
+  const d=$('#fs-done');if(d){const k=rows.length,s=`Show ${k} customer${k===1?'':'s'}`;if(d.textContent!==s)d.textContent=s;}}
+/* Clear filters: package all, sold by all, status active, Hasn't paid off (sort and grouping stay); all = also the search and the chip (the empty list's button) */
+function cuClear(all){ui.pkgFilter='all';$('#pkgFilter').value='all';ui.wsFilter='';ui.statusFilter='active';ui.filterUnpaid=false;if(all){ui.payFilter='';ui.search='';$('#search').value='';}renderTable();}
+function initCustomersTab(){const sh=$('#filterSheet'),body=$('#fs-body'),fb=$('#btn-fsheet'),tb=document.querySelector('.toolbar'),ps=$('#payStrip');if(!sh||!body||!fb)return;
+  if(tb&&ps)tb.after(ps);/* the title, then search and Filter, then the chips */
+  for(const id of ['pkgFilter','wsFilter','statusFilter','sort','btn-group','btn-filter'])body.appendChild($('#'+id));/* moved, so their listeners keep working */
+  $('#btn-group').textContent='Group by wholesaler';
+  const close=()=>{if(sh.open)sh.close();};
+  fb.addEventListener('click',()=>{if(sh.open)return;if(typeof sh.showModal==='function')sh.showModal();else sh.setAttribute('open','');});
+  sh.addEventListener('close',()=>{if(sh.dataset.keepFocus){delete sh.dataset.keepFocus;return;}fb.focus({preventScroll:true});});
+  sh.addEventListener('click',e=>{if(e.target===sh)close();});/* a tap on the dimmed backdrop */
+  $('#fs-close').addEventListener('click',close);$('#fs-done').addEventListener('click',close);
+  $('#fs-clear').addEventListener('click',()=>cuClear(false));
+  $('#fs-adv').addEventListener('click',()=>{sh.dataset.keepFocus='1';close();if($('#searchPanel').hidden)openSearch();else $('#searchPanel').scrollIntoView({behavior:'smooth',block:'start'});});
+  $('#cu-add').addEventListener('click',()=>{if($('#addPanel').hidden)openAdd();else $('#addPanel').scrollIntoView({behavior:'smooth',block:'start'});});
+  $('#add-several').addEventListener('click',()=>openQuick());
+  $('#nores').addEventListener('click',e=>{if(e.target.closest('#nores-clear'))cuClear(true);});}
 function initTabs(){const tt=$('#tryTabs');if(tt)tt.addEventListener('click',()=>setUiLayout('tabs'));if(!tabsOn())return;
+  initCustomersTab();/* v80 */
   $('#tabBar').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)setTab(b.dataset.go);});
   $('#todayPanel').addEventListener('click',e=>{const p=e.target.closest('[data-td-pay]');if(p){openPaymentDialog(p.dataset.tdPay,p.dataset.sid,null,p.dataset.st||null);return;}
     const o=e.target.closest('[data-td-open]');if(o){openCustomerFrom(null,o.dataset.tdOpen);return;}
@@ -4564,6 +4686,9 @@ function bind(){
   const tbody=$('#tbody');
   tbody.addEventListener('click',async e=>{
     if(e.target.closest('a'))return;
+    /* v80: tapping a group heading (tabs layout) folds or unfolds that group; its Record payment is handled by the wholesaler payment listener */
+    const gh=e.target.closest('tr.grp');if(gh){if(!tabsOn())return;const k=gh.dataset.ws,f=Object.assign({},ui.foldWs);if(f[k])delete f[k];else{f[k]=1;const xu=state.users[ui.expanded];if(xu&&(wsById(xu.wholesalerId)?xu.wholesalerId:'direct')===k)ui.expanded=null;}ui.foldWs=f;savePrefs();renderTable();
+      const nb=document.querySelector('#tbody tr.grp[data-ws="'+(window.CSS&&CSS.escape?CSS.escape(k):k)+'"] .grp-fold');if(nb)nb.focus({preventScroll:true});return;}
     const quickBill=e.target.closest('[data-act="row-bill"]');if(quickBill){openBillDialog(quickBill.dataset.user);return;}
     const quickStart=e.target.closest('[data-act="row-start"]');if(quickStart){openStartDialog(quickStart.dataset.user);return;}
     const quickPay=e.target.closest('[data-act="row-pay"]');if(quickPay){openPaymentDialog(quickPay.dataset.user);return;}

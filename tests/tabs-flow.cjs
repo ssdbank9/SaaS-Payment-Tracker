@@ -19,7 +19,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(base+'/login',{waitUntil:'domcontentloaded'});await page.locator('[name=passcode]').fill('test1234');await page.locator('button[type=submit]').click();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
   // v78: the usual address keeps the page as it was; the new design is a separate file at /new, behind the same sign-in
-  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v79');
+  assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#tabBar').count(),0);assert.equal(await page.locator('#app-ver').textContent(),'v80');
   check('the usual address still serves the page without tabs');
   {const anon=await browser.newContext();const r=await anon.request.get(base+'/new',{maxRedirects:0});assert.equal(r.status(),302);assert.match(r.headers().location||'',/\/login\?next=\/new$/);await anon.close();}
   check('/new asks for sign-in first');
@@ -43,7 +43,7 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
    'costs/t78a':{date:'2026-11-03',description:'Tabs test seats',category:'Tools',packageId:'pkg_cmax',currency:'PKR',cost:2500,tax:0,rate:null,receipt:'',source:'manual'},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v79');assert.equal(new URL(page.url()).pathname,'/new');
+  assert.equal(await page.locator('#app-ver').textContent(),'v80');assert.equal(new URL(page.url()).pathname,'/new');
   assert.deepEqual(await page.locator('#more-oldsite').evaluate(e=>[e.hidden,e.getAttribute('href')]),[false,'/']);check('More links back to the usual address');
   const tab=()=>page.evaluate(()=>document.body.dataset.tab);
   const go=async t=>{await page.locator(`#tabBar [data-go=${t}]`).click();await page.waitForTimeout(250);};
@@ -144,11 +144,113 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   assert.equal(await tab(),'customers');assert.equal(await page.locator('tr.detail[data-id=d3]').count(),1);
   check('Tapping Sam Soon under Due this week opens Customers with Sam expanded; a Search result (More) opens that customer on Customers');
 
+  // 10b. v80 phase 2: the Customers list (tabs layout, 390px)
+  await go('customers');
+  if(await page.locator('tr.row[aria-expanded=true]').count()){await page.locator('tr.row[aria-expanded=true] .nm').click();await page.waitForTimeout(300);}
+  assert.equal(await page.locator('tr.detail').count(),0);
+  const rowNames=async()=>page.locator('#tbody tr.row .nm').evaluateAll(es=>es.map(e=>e.textContent.trim()));
+  const fbtn=()=>page.locator('#btn-fsheet').textContent().then(norm);
+  const vis=(sel)=>`[...document.querySelectorAll(${JSON.stringify(sel)})].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0;})`;
+  // P2-1 header: title and one Add; Add opens the Add form, which links to Add several (Quick add)
+  assert.equal(norm(await page.locator('#cu-title').textContent()),'Customers');assert.equal(await shown('#cu-add'),true);
+  assert.equal(await shown('#btn-add'),false);assert.equal(await shown('#btn-quick'),false);assert.equal(await shown('#btn-io'),false);
+  await page.locator('#cu-add').click();await page.waitForTimeout(300);assert.equal(await shown('#addPanel'),true);assert.equal(await shown('#add-several'),true);
+  await page.locator('#add-several').click();await page.waitForTimeout(300);assert.equal(await shown('#quickPanel'),true);assert.equal(await shown('#addPanel'),false);assert.equal(await tab(),'customers');
+  await page.locator('#quick-close').click();await page.waitForTimeout(200);assert.equal(await shown('#quickPanel'),false);
+  check('Customers header: the title "Customers" and one Add button (Add user, Quick add and Import / export are not on the toolbar); Add opens the Add form, whose "Add several at once" opens Quick add');
+  // P2-2 controls above the first customer, counted on screen
+  await page.evaluate(()=>scrollTo(0,0));await page.waitForTimeout(200);
+  const above=await page.evaluate(()=>{const first=document.querySelector('#tbody tr.row');const top=first.getBoundingClientRect().top;
+    return [...document.querySelectorAll('.wrap button,.wrap input,.wrap select,.wrap a[href],.wrap textarea')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom<=top+1&&getComputedStyle(e).visibility!=='hidden';}).map(e=>e.id||e.dataset.pf!==undefined&&('chip:'+(e.dataset.pf||'all'))||e.className);});
+  assert.deepEqual(above,['cu-add','search','btn-fsheet','chip:all','chip:owes','chip:soon','chip:paid','grp-fold'],JSON.stringify(above));
+  const sb=await page.locator('#search').boundingBox(),fb=await page.locator('#btn-fsheet').boundingBox();assert.ok(Math.abs(sb.y-fb.y)<4&&fb.x+fb.width<=390,'search and Filter on one line');
+  const chipBox=await page.locator('#payStrip .ps-btn').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return {y:Math.round(r.top),r:r.right,h:r.height};}));
+  assert.ok(chipBox.length===4&&chipBox.every(c=>c.y===chipBox[0].y&&c.r<=390&&c.h>=44),JSON.stringify(chipBox));
+  check(`At 390px there are ${above.length} controls above the first customer: Add, search, Filter, the four chips and the Direct group heading; search and Filter share a line, the four chips share a line, each chip 44px tall`);
+  // P2-3 rows: no buttons on a closed row, at least 56px, name and products left, status and amount right
+  const closed=await page.evaluate(`${vis('#tbody tr.row')}.map(r=>({id:r.dataset.id,h:r.getBoundingClientRect().height,ctl:[...r.querySelectorAll('button,a[href],input,select')].filter(e=>{const b=e.getBoundingClientRect();return b.width>0&&b.height>0;}).length,em:[...r.querySelectorAll('.em,.ws-tag')].some(e=>e.getBoundingClientRect().height>0)}))`);
+  assert.ok(closed.length>=6&&closed.every(r=>r.ctl===0&&r.h>=56&&!r.em),JSON.stringify(closed));
+  const wally=norm(await page.locator('#tbody tr.row[data-id=w1] td.who').innerText());
+  assert.match(wally,/^Wally One \S.* Overdue since Nov 1 \$15$/,wally);
+  const ow=await page.locator('#tbody tr.row[data-id=w1] .cu-owe').evaluate(e=>({c:getComputedStyle(e).color,ws:getComputedStyle(e.firstElementChild).whiteSpace,h:e.getBoundingClientRect().height}));assert.equal(ow.ws,'nowrap');assert.ok(ow.h<30,JSON.stringify(ow));
+  check(`A closed row has no buttons, is at least 56px tall and hides the email and "via" lines; Wally One reads "${wally}" with the amount on one line`);
+  // P2-4 chips: All / Owes / Due this week / Paid up with counts; each lists exactly its count
+  const chips=await page.locator('#payStrip .ps-btn').evaluateAll(es=>es.map(e=>({pf:e.dataset.pf,l:e.querySelector('.ps-l').textContent,n:Number(e.querySelector('b').textContent),p:e.getAttribute('aria-pressed')})));
+  assert.deepEqual(chips.map(c=>c.l),['All','Owes','Due this week','Paid up']);assert.equal(chips[0].p,'true');assert.equal(chips[0].n,(await rowNames()).length);
+  assert.equal(await shown('#payStrip .ps-all'),false);assert.equal(await shown('#oweList'),false);
+  for(const c of chips){await page.locator(`#payStrip [data-pf="${c.pf}"]`).click();await page.waitForTimeout(250);
+    assert.equal((await rowNames()).length,c.n,c.l);assert.equal(await page.locator(`#payStrip [data-pf="${c.pf}"]`).getAttribute('aria-pressed'),'true');}
+  await page.locator('#payStrip [data-pf=owes]').click();await page.waitForTimeout(250);assert.ok((await rowNames()).includes('Wally One'));assert.equal(await shown('#oweList'),false,'no owe table in the tabs layout');
+  await page.locator('#payStrip [data-pf=""]').click();await page.waitForTimeout(250);
+  check(`Chips ${chips.map(c=>c.l+' '+c.n).join(', ')}: each lists exactly that many customers, the chosen one is pressed; no "Show everyone" link and no owe table`);
+  // P2-5 Filter sheet: opens, closes by Close, Escape and the backdrop, focus back on Filter
+  const sheet=page.locator('#filterSheet');const isOpen=()=>sheet.evaluate(d=>d.open);
+  assert.equal(await fbtn(),'Filter');
+  await page.locator('#btn-fsheet').click();await page.waitForTimeout(250);assert.equal(await isOpen(),true);
+  for(const id of ['pkgFilter','wsFilter','statusFilter','sort','btn-group','btn-filter','fs-adv','fs-clear'])assert.equal(await page.locator('#filterSheet #'+id).isVisible(),true,id+' in the sheet');
+  const sbox=await sheet.boundingBox();assert.ok(sbox.y+sbox.height>=843&&sbox.x===0&&sbox.width===390,'a bottom sheet: '+JSON.stringify(sbox));
+  await page.screenshot({path:path.join(out,'filter-390-light.png')});
+  await page.keyboard.press('Escape');await page.waitForTimeout(250);assert.equal(await isOpen(),false);assert.equal(await page.evaluate(()=>document.activeElement&&document.activeElement.id),'btn-fsheet');
+  await page.locator('#btn-fsheet').click();await page.waitForTimeout(200);await page.locator('#fs-close').click();await page.waitForTimeout(250);assert.equal(await isOpen(),false);
+  await page.locator('#btn-fsheet').click();await page.waitForTimeout(200);await page.mouse.click(195,40);await page.waitForTimeout(250);assert.equal(await isOpen(),false,'a tap on the backdrop closes the sheet');
+  check('Filter opens a bottom sheet holding Package, Sold by, Status, Sort, Group by wholesaler, Hasn\'t paid, Advanced search and Clear filters; Escape, Close and a tap on the backdrop close it, and focus returns to Filter');
+  // P2-6 filters apply at once and are counted; Clear filters resets them, not the sort
+  await page.locator('#btn-fsheet').click();await page.waitForTimeout(200);
+  await page.locator('#wsFilter').selectOption('ws_a');await page.waitForTimeout(250);
+  assert.deepEqual((await rowNames()).sort(),['Wally One','Wendy Two','Will Three']);assert.equal(await fbtn(),'Filter · 1');
+  await page.locator('#statusFilter').selectOption('all');await page.waitForTimeout(200);await page.locator('#btn-filter').click();await page.waitForTimeout(250);
+  assert.equal(await fbtn(),'Filter · 3');assert.match(norm(await page.locator('#fs-done').textContent()),/^Show \d+ customers?$/);
+  const sortBefore=await page.locator('#sort').inputValue();
+  await page.locator('#fs-clear').click();await page.waitForTimeout(250);
+  assert.equal(await fbtn(),'Filter');assert.equal(await page.locator('#statusFilter').inputValue(),'active');assert.equal(await page.locator('#wsFilter').inputValue(),'');assert.equal(await page.locator('#btn-filter').getAttribute('aria-pressed'),'false');assert.equal(await page.locator('#sort').inputValue(),sortBefore);
+  assert.ok(!(await rowNames()).includes('Carl Cancelled'));assert.equal((await rowNames()).length,chips[0].n);
+  await page.locator('#fs-done').click();await page.waitForTimeout(200);assert.equal(await isOpen(),false);
+  check('In the sheet, Sold by Some Seller lists its 3 customers at once and Filter reads "Filter · 1"; with Status all and Hasn\'t paid it reads "Filter · 3"; Clear filters returns to Filter with Status active and the sort kept');
+  // P2-7 Advanced search opens the Search panel
+  await page.locator('#btn-fsheet').click();await page.waitForTimeout(200);await page.locator('#fs-adv').click();await page.waitForTimeout(400);
+  assert.equal(await isOpen(),false);assert.equal(await shown('#searchPanel'),true);assert.equal(await tab(),'more');
+  await go('customers');check('Advanced search in the sheet opens the Search panel (as More: Search does)');
+  // P2-8 a wholesaler group folds, stays folded after a reload, and a search or a chip shows its matches anyway
+  const ws=['Wally One','Wendy Two','Will Three'];const anyWs=async()=>(await rowNames()).filter(n=>ws.includes(n));
+  await page.locator('tr.grp[data-ws=ws_a] .grp-fold').click();await page.waitForTimeout(300);
+  assert.deepEqual(await anyWs(),[]);assert.equal(await page.locator('tr.grp[data-ws=ws_a] .grp-fold').getAttribute('aria-expanded'),'false');assert.equal(await shown('tr.grp[data-ws=ws_a] [data-act=wspay]'),true);
+  {const g=norm(await page.locator('tr.grp[data-ws=ws_a]').innerText());assert.match(g,/^Some Seller · 3 customers · owes Rs 4,000 \+ \$15 Record payment$/,g);}
+  await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2000);await go('customers');
+  assert.deepEqual(await anyWs(),[],'still folded after a reload');
+  await page.locator('#search').fill('Wally');await page.waitForTimeout(300);assert.deepEqual(await rowNames(),['Wally One']);
+  await page.locator('#search').fill('');await page.waitForTimeout(300);assert.deepEqual(await anyWs(),[]);
+  await page.locator('#payStrip [data-pf=owes]').click();await page.waitForTimeout(300);assert.ok((await anyWs()).includes('Wally One'));
+  await page.locator('#payStrip [data-pf=""]').click();await page.waitForTimeout(300);assert.deepEqual(await anyWs(),[]);
+  await page.locator('tr.grp[data-ws=direct] td').click({position:{x:60,y:20}});await page.waitForTimeout(300);assert.ok(!(await rowNames()).includes('Sam Soon'),'the Direct group folds too');
+  await page.locator('tr.grp[data-ws=direct] .grp-fold').click();await page.waitForTimeout(300);await page.locator('tr.grp[data-ws=ws_a] .grp-fold').click();await page.waitForTimeout(300);
+  assert.equal((await anyWs()).length,3);
+  check('Tapping the Some Seller heading folds its 3 customers (heading keeps "3 customers · owes Rs 4,000 + $15" and Record payment); it stays folded after a reload; a search for Wally and the Owes chip show Wally anyway; the Direct group folds too');
+  // P2-9 nothing matches: one line and Clear filters
+  await page.locator('#search').fill('zzzz');await page.waitForTimeout(300);
+  assert.equal(norm(await page.locator('#nores').innerText()),'No customers match. Clear filters');
+  await page.locator('#nores-clear').click();await page.waitForTimeout(300);assert.equal(await page.locator('#search').inputValue(),'');assert.equal(await shown('#nores'),false);assert.equal((await rowNames()).length,chips[0].n);
+  check('A search that matches nobody shows "No customers match." with Clear filters, which brings the whole list back');
+  // P2-10 opening a row shows the details with Record payment and Cancel plan
+  await page.locator('#tbody tr.row[data-id=w1] .nm').click();await page.waitForTimeout(400);
+  assert.equal(await page.locator('tr.detail[data-id=w1]').count(),1);assert.equal(await shown('#tbody tr.row[data-id=w1] .row-pay'),true);assert.equal(await shown('#tbody tr.row[data-id=w1] .row-cancel'),true);
+  await page.screenshot({path:path.join(out,'customers-open-390-light.png'),fullPage:true});
+  await page.locator('#tbody tr.row[data-id=w1] .row-pay').click();await pd.waitFor();assert.equal(norm(await page.locator('#payment-who').textContent()),'Wally One');
+  await page.locator('#payment-close').click().catch(async()=>{await page.keyboard.press('Escape');});await until(async()=>!(await pd.isVisible()),'payment dialog closed');
+  await page.locator('#tbody tr.row[data-id=w1] .nm').click();await page.waitForTimeout(300);assert.equal(await page.locator('tr.detail').count(),0);
+  assert.equal(await noSideScroll(),true);await page.screenshot({path:path.join(out,'customers-390-light.png'),fullPage:true});
+  check('Tapping Wally One opens the details with Record payment and Cancel plan shown; Record payment opens the payment box for Wally One; tapping again closes it; no sideways scroll');
+
   // 11. More: Settings opens; the old layout and back
   await go('more');await page.locator('[data-more=settings]').click();await page.waitForTimeout(300);assert.equal(await shown('#settingsPanel'),true);assert.equal(await tab(),'more');
   await page.locator('#more-classic').click();await page.waitForLoadState('domcontentloaded');await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(1500);
   assert.equal(await page.evaluate(()=>document.body.dataset.ui),'classic');assert.equal(await shown('#tabBar'),false);assert.equal(await shown('#btn-settings'),true);assert.equal(await shown('#tableWrap'),true);assert.equal(await shown('#todayPanel'),false);
   await page.screenshot({path:path.join(out,'classic-390-light.png')});
+  /* v80: the classic layout keeps the v79 list: the controls on the toolbar, the three-box strip, rows with their buttons, no Filter sheet */
+  for(const id of ['search','btn-filter','pkgFilter','statusFilter','sort','btn-add','btn-quick','btn-io'])assert.equal(await page.locator('.toolbar #'+id).count(),1,id+' on the toolbar');
+  assert.equal(await shown('#btn-fsheet'),false);assert.equal(await shown('#cu-add'),false);assert.equal(await page.locator('#payStrip .ps-btn').count(),3);assert.equal(await page.locator('#payStrip [data-pf=""]').count(),0);
+  assert.equal(await page.locator('#tbody .cu-end,#tbody .grp-fold').count(),0);assert.equal(norm(await page.locator('#payStrip [data-pf=owes] .ps-l').textContent()),'Owe money');
+  assert.ok(await page.locator('#tbody tr.row .row-pay').first().isVisible(),'Record payment on a closed classic row');
+  check('The old layout is unchanged: every control on the toolbar, the three-box strip (Owe money, Due this week, Paid up), Record payment on each row, no Filter sheet or folding headings');
   /* the layout choice has its own storage key: saving a list preference (which rewrites pt-ui) must not flip the layout, and the preference must survive */
   const sortV=await page.locator('#sort option').nth(1).getAttribute('value');await page.locator('#sort').selectOption(sortV);await page.waitForTimeout(300);
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(1500);
@@ -160,14 +262,20 @@ const plan=(id,cur,price,start,payments)=>({id,kind:'monthly',cycle:'monthly',na
   // 12. layout: 390 dark, 1400 light and dark; no sideways scroll; the side bar on a computer
   await page.emulateMedia({colorScheme:'dark'});await page.waitForTimeout(300);await page.screenshot({path:path.join(out,'today-390-dark.png'),fullPage:true});assert.equal(await noSideScroll(),true);
   for(const t of ['customers','money'])await go(t),assert.equal(await noSideScroll(),true,`390 dark ${t}`);
+  await go('customers');await page.screenshot({path:path.join(out,'customers-390-dark.png'),fullPage:true});
+  await page.locator('#btn-fsheet').click();await page.waitForTimeout(250);await page.screenshot({path:path.join(out,'filter-390-dark.png')});await page.keyboard.press('Escape');await page.waitForTimeout(200);
   for(const scheme of ['light','dark']){await page.setViewportSize({width:1400,height:900});await page.emulateMedia({colorScheme:scheme});await go('today');
     const nav=await page.locator('#tabBar').boundingBox();assert.ok(nav.x===0&&nav.width>=200&&nav.width<=240&&nav.height>=880,JSON.stringify(nav));
     const tp=await page.locator('#todayPanel').boundingBox();assert.ok(tp.x>=nav.width,'content to the right of the side bar');
     await page.screenshot({path:path.join(out,`today-1400-${scheme}.png`)});assert.equal(await noSideScroll(),true,`1400 ${scheme} today`);
     await go('customers');await page.screenshot({path:path.join(out,`customers-1400-${scheme}.png`)});assert.equal(await noSideScroll(),true,`1400 ${scheme} customers`);
+    {/* v80: on a computer too, a closed row has no buttons (the Remind column is in the details) and the header, search, Filter and chips sit above the table */
+      const ctl=await page.locator('#tbody tr.row').evaluateAll(rs=>rs.map(r=>[...r.querySelectorAll('button,a[href]')].filter(e=>{const b=e.getBoundingClientRect();return b.width>0&&b.height>0;}).length));
+      assert.ok(ctl.length>=6&&ctl.every(n=>n===0),JSON.stringify(ctl));
+      const tw=await page.locator('#tableWrap').boundingBox(),ch=await page.locator('#payStrip').boundingBox(),hd=await page.locator('#cu-add').boundingBox();assert.ok(hd.y<ch.y&&ch.y<tw.y,'header, chips, then the table');}
     for(const t of ['reminders','money','more']){await go(t);assert.equal(await noSideScroll(),true,`1400 ${scheme} ${t}`);}}
-  check('A computer shows the side bar (220px, full height) with the content to its right; no sideways scroll at 390px and 1400px in light and dark');
+  check('A computer shows the side bar (220px, full height) with the content to its right; Customers has no buttons on a closed row; no sideways scroll at 390px and 1400px in light and dark');
   assert.deepEqual(errors,[]);check('No console or page errors');
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'79',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
+  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({version:'80',checks},null,2));console.log('tabs-flow: '+checks.length+' checks passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

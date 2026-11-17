@@ -37,7 +37,7 @@ const yearCost={frequency:'yearly',anchor:'2026-07-24',first:'prorated',entries:
    'users/y1':{name:'Year Seat',phone:'923001234568',joinDate:'2026-11-15',subscriptions:[{id:'s1',kind:'monthly',cycle:'yearly',name:'',packageId:'pkg_g',currency:'PKR',start:'2026-11-15',end:'2027-07-23',anchor:'2026-11-15',ownStart:true,prorate:false,paymentEvery:1,prices:[{from:'2026-11-15',price:48000}],payments:[{id:'p2',date:'2026-11-15',amount:4000,currency:'PKR',rate:null,note:''}],accountCost:yearCost}]},
   },replace:[]});
   await page.reload();await page.waitForSelector('#app-ver',{timeout:30000});await page.waitForTimeout(2500);
-  assert.equal(await page.locator('#app-ver').textContent(),'v79');
+  assert.equal(await page.locator('#app-ver').textContent(),'v80');
   const pill=async id=>norm(await page.locator(`#tbody tr.row[data-id=${id}] .m-st`).first().textContent());
 
   // 1. statuses: an end-of-cycle wholesaler's customer owes the Oct 15 - Nov 14 period on Nov 15, not since its start
